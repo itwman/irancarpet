@@ -9,13 +9,24 @@ WP_DB=irancarpet_shop
 UPLOADS=/var/www/irancarpet/public_html/wp-content/uploads
 DOMAIN=new.irancarpet.net
 
+# جلوگیری از پنجره‌های تعاملی apt/needrestart در اوبونتو ۲۲.۰۴ (که پنهان می‌مانند و نصب را متوقف می‌کنند)
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1
+
 cd "$APP"
 step() { echo; echo "========== $1 =========="; }
 
 step "۱/۸ نصب پیش‌نیازها"
-apt-get update -qq
-apt-get install -y -qq python3-venv python3-dev apache2-utils openssl >/dev/null
-command -v certbot >/dev/null || apt-get install -y -qq certbot python3-certbot-nginx >/dev/null
+dpkg --configure -a || true
+NEED=""
+for p in python3-venv python3-dev apache2-utils openssl; do dpkg -s "$p" >/dev/null 2>&1 || NEED="$NEED $p"; done
+command -v certbot >/dev/null || NEED="$NEED certbot python3-certbot-nginx"
+if [ -n "$NEED" ]; then
+  echo "نصب:$NEED"
+  apt-get update -qq
+  apt-get install -y -qq -o Dpkg::Options::=--force-confold $NEED
+else
+  echo "همهٔ پیش‌نیازها از قبل نصب هستند."
+fi
 mysql --version
 
 step "۲/۸ محیط پایتون و کتابخانه‌ها"
