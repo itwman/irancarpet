@@ -1,0 +1,101 @@
+{% extends "base.html" %}{% load fa %}
+{% block og %}<meta property="og:type" content="product">{% if product.image %}<meta property="og:image" content="{{ product.image.absolute_url }}">{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <div class="row g-4 g-lg-5 product">
+    <div class="col-lg-6">
+      <div class="gallery">
+        <div class="gallery__main">
+          {% with m=gallery.0 %}{% if m %}<img id="mainImg" src="{{ m.url }}" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %} fetchpriority="high">{% else %}<span class="noimg"></span>{% endif %}{% endwith %}
+        </div>
+        {% if gallery|length > 1 %}
+        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-src="{{ m.url }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      {% if product.brand %}<a class="product__brand" href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}
+      <h1 class="product__title">{{ product.title }}</h1>
+      <div class="product__meta">
+        {% if product.rating_count %}{% stars product.rating_avg %} <a href="#reviews">{{ product.rating_count|fa_num }} نظر</a>{% endif %}
+        {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}
+      </div>
+
+      {% if specs %}
+      <ul class="spec-chips">
+        {% for t in specs %}<li><span>{{ t.attribute.label }}</span>{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}<strong>{{ t.name|fa_num }}</strong>{% endif %}</li>{% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if product.sale_status != "available" %}
+        <div class="status-note status-note--{{ product.sale_status }}">{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این محصول فقط با استعلام قیمت قابل سفارش است.{% endif %}</div>
+      {% endif %}
+
+      {% if variations and pricing.show_size_table %}
+      <form class="size-table" method="post" action="/cart/add/" id="buyForm">
+        {% csrf_token %}
+        <h2 class="h6">قیمت سایزها</h2>
+        <table>
+          <thead><tr><th></th><th>سایز</th><th>ابعاد</th><th>قیمت (تومان)</th></tr></thead>
+          <tbody>
+          {% for v in variations %}
+            {% with ok=v.is_available %}
+            <tr class="{% if not ok %}na{% endif %}">
+              <td><input type="radio" name="variation" value="{{ v.pk }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
+              <td>{{ v.size.label|default:"—" }}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
+                {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
+                {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}</td>
+              <td class="muted">{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} <small>(شامل پرتی)</small>{% endif %}</td>
+              <td class="num">
+                {% if not ok %}<span class="muted">ناموجود</span>
+                {% elif v.sale_price %}<del>{{ v.final_price|toman }}</del> <strong>{{ v.sale_price|toman }}</strong> <span class="off">٪{% percent_off v.sale_price v.final_price %}</span>
+                {% elif v.final_price %}<strong>{{ v.final_price|toman }}</strong>
+                {% else %}<span class="muted">استعلام</span>{% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+          </tbody>
+        </table>
+        <div class="buy-row">
+          <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
+          <button class="btn btn-primary btn-lg flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
+        </div>
+        <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
+      </form>
+      {% endif %}
+
+      {% if product.short_description %}<div class="prose small mt-3">{{ product.short_description|safe }}</div>{% endif %}
+    </div>
+  </div>
+
+  <nav class="tabs-nav"><a href="#desc">توضیحات</a>{% if faqs %}<a href="#faq">پرسش‌ها</a>{% endif %}<a href="#reviews">نظرات ({{ product.rating_count|fa_num }})</a></nav>
+  <section id="desc" class="prose product-desc">{{ product.content|safe }}</section>
+
+  {% if faqs %}
+  <section id="faq" class="faq"><h2>پرسش‌های متداول</h2>
+    {% for f in faqs %}<details><summary>{{ f.question }}</summary><div class="prose">{{ f.answer|safe }}</div></details>{% endfor %}
+  </section>
+  {% endif %}
+
+  <section id="reviews" class="reviews">
+    <h2>نظرات خریداران</h2>
+    {% for r in reviews %}
+      <article class="review">
+        <header><strong>{{ r.author_name }}</strong>{% if r.rating %} {% stars r.rating %}{% endif %}<time datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|jdate }}</time></header>
+        <p>{{ r.content|linebreaksbr }}</p>
+        {% for rep in r.replies.all %}<div class="review review--reply"><header><strong>{{ rep.author_name }}</strong></header><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
+      </article>
+    {% empty %}
+      <p class="muted">هنوز نظری ثبت نشده است.</p>
+    {% endfor %}
+  </section>
+
+  {% if related %}
+  <section class="section"><div class="section-head"><h2>فرش‌های مشابه</h2></div>
+    <div class="p-grid">{% for p in related %}{% include "partials/product_card.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

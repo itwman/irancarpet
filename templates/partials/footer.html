@@ -1,0 +1,22 @@
+{% load fa %}
+<footer class="site-footer">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="brand brand--light mb-3"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text"><strong>{{ site_settings.site_name }}</strong><small>{{ site_settings.tagline }}</small></span></div>
+        <p class="small opacity-75">فروش مستقیم فرش ماشینی کاشان با قیمت کارخانه؛ از ۵۰۰ تا ۱۵۰۰ شانه، در همهٔ سایزها.</p>
+        {% if site_settings.address %}<p class="small opacity-75">{{ site_settings.address }}</p>{% endif %}
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6>فروشگاه</h6>
+        <ul>{% for c in menu_categories|slice:":6" %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a></li>{% endfor %}</ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6>راهنما</h6>
+        <ul><li><a href="/blog/">مجله</a></li><li><a href="/rules/">قوانین</a></li><li><a href="/license/">مجوزها</a></li><li><a href="/carpets-price-list/">لیست قیمت</a></li></ul>
+      </div>
+      <div class="col-lg-4">{{ site_settings.footer_html|safe }}</div>
+    </div>
+    <div class="copy">© {% now "Y" as y %}{{ y|fa_num }} {{ site_settings.site_name }} — irancarpet.net</div>
+  </div>
+</footer>

@@ -1,0 +1,8 @@
+{% load fa %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="pager" aria-label="صفحه‌بندی">
+  {% if prev_url %}<a href="{{ prev_url }}" rel="prev">قبلی</a>{% endif %}
+  {% for n, url in page_links %}{% if not url %}<span class="gap">…</span>{% elif n == page_obj.number %}<span class="cur" aria-current="page">{{ n|fa_num }}</span>{% else %}<a href="{{ url }}">{{ n|fa_num }}</a>{% endif %}{% endfor %}
+  {% if next_url %}<a href="{{ next_url }}" rel="next">بعدی</a>{% endif %}
+</nav>
+{% endif %}

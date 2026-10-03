@@ -1,0 +1,39 @@
+{% load static fa %}<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ meta.title|default:site_settings.site_name }}</title>
+{% if meta.description %}<meta name="description" content="{{ meta.description }}">{% endif %}
+<meta name="robots" content="{% if meta.robots %}{{ meta.robots }}{% else %}index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large{% endif %}">
+{% if meta.canonical %}<link rel="canonical" href="{{ meta.canonical }}">{% endif %}
+{% if prev_url %}<link rel="prev" href="{{ SITE_URL }}{{ prev_url }}">{% endif %}
+{% if next_url %}<link rel="next" href="{{ SITE_URL }}{{ next_url }}">{% endif %}
+<meta property="og:locale" content="fa_IR">
+<meta property="og:site_name" content="{{ site_settings.site_name }}">
+<meta property="og:title" content="{{ meta.title }}">
+{% if meta.description %}<meta property="og:description" content="{{ meta.description }}">{% endif %}
+{% if meta.canonical %}<meta property="og:url" content="{{ meta.canonical }}">{% endif %}
+{% block og %}<meta property="og:type" content="website">{% endblock %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1d2742">
+<link rel="icon" href="/favicon.ico">
+<link rel="preload" href="{% static 'vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/site.css' %}">
+<link rel="alternate" type="application/rss+xml" title="{{ site_settings.site_name }}" href="/feed/">
+{% if jsonld %}<script type="application/ld+json">{{ jsonld|safe }}</script>{% endif %}
+{% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="visually-hidden-focusable skip" href="#main">رفتن به محتوا</a>
+{% include "partials/header.html" %}
+<main id="main">
+{% block content %}{% endblock %}
+</main>
+{% include "partials/footer.html" %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+<script src="{% static 'js/site.js' %}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

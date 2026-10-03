@@ -1,0 +1,1 @@
+{% if crumbs %}<nav aria-label="مسیر" class="crumbs"><ol><li><a href="/">خانه</a></li>{% for name, url in crumbs %}<li>{% if forloop.last %}<span aria-current="page">{{ name }}</span>{% else %}<a href="{{ url }}">{{ name }}</a>{% endif %}</li>{% endfor %}</ol></nav>{% endif %}

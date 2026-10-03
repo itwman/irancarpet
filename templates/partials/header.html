@@ -1,0 +1,49 @@
+{% load fa %}
+<div class="topbar">
+  <div class="container d-flex justify-content-between align-items-center gap-3">
+    <span>خرید مستقیم فرش ماشینی از کارخانه — ارسال به سراسر ایران</span>
+    {% if site_settings.phone %}<a href="tel:{{ site_settings.phone }}" class="d-none d-md-inline">تماس: {{ site_settings.phone|fa_num }}</a>{% endif %}
+  </div>
+</div>
+<header class="site-header">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 py-3">
+      <button class="btn btn-icon d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="منو">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <a href="/" class="brand" aria-label="{{ site_settings.site_name }}">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>{{ site_settings.site_name }}</strong><small>{{ site_settings.tagline|default:"بازار آنلاین فرش ماشینی" }}</small></span>
+      </a>
+      <form class="search ms-auto" action="/search/" method="get" role="search">
+        <input type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="جستجوی نقشه، شانه یا کد فرش…" aria-label="جستجو">
+        <button type="submit" aria-label="جستجو"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </form>
+    </div>
+    <nav class="main-nav d-none d-lg-block" aria-label="منوی اصلی">
+      <ul class="nav">
+        <li><a href="/store/">همهٔ فرش‌ها</a></li>
+        {% for c in menu_categories %}
+          <li class="{% if c.children.all %}has-sub{% endif %}">
+            <a href="{{ c.get_absolute_url }}">{{ c.name }}</a>
+            {% if c.children.all %}<ul class="sub">{% for ch in c.children.all %}<li><a href="{{ ch.get_absolute_url }}">{{ ch.name }}</a></li>{% endfor %}</ul>{% endif %}
+          </li>
+        {% endfor %}
+        {% if menu_more %}<li class="has-sub"><a href="/store/">سایر</a><ul class="sub">{% for c in menu_more %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a></li>{% endfor %}</ul></li>{% endif %}
+        <li><a href="/blog/">مجله</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-label="منو">
+  <div class="offcanvas-header"><strong>{{ site_settings.site_name }}</strong><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="بستن"></button></div>
+  <div class="offcanvas-body">
+    <ul class="mobile-nav">
+      <li><a href="/store/">همهٔ فرش‌ها</a></li>
+      {% for c in menu_categories %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a>
+        {% if c.children.all %}<ul>{% for ch in c.children.all %}<li><a href="{{ ch.get_absolute_url }}">{{ ch.name }}</a></li>{% endfor %}</ul>{% endif %}</li>{% endfor %}
+      {% for c in menu_more %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a></li>{% endfor %}
+      <li><a href="/blog/">مجله</a></li>
+    </ul>
+  </div>
+</div>

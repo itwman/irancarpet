@@ -1,0 +1,9 @@
+Django>=5.2,<5.3
+dj-database-url>=2.1
+PyMySQL>=1.1
+python-dotenv>=1.0
+jdatetime>=5.0
+django-unfold>=0.40
+Pillow>=10.0
+gunicorn>=22.0
+bcrypt

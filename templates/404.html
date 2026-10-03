@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center py-5">
+  <h1 class="display-5">۴۰۴</h1>
+  <p class="lead">صفحه‌ای که دنبالش بودید پیدا نشد.</p>
+  <form action="/search/" class="search search--big mx-auto my-4"><input type="search" name="q" placeholder="جستجو در فرش‌ها…" aria-label="جستجو"><button type="submit">جستجو</button></form>
+  {% if products %}<div class="p-grid text-start mt-5">{% for p in products %}{% include "partials/product_card.html" %}{% endfor %}</div>{% endif %}
+</div>
+{% endblock %}

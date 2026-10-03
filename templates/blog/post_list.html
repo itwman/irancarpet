@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="archive-head"><h1>{{ heading }}</h1>{% if intro %}<div class="prose">{{ intro|safe }}</div>{% endif %}</header>
+  <div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

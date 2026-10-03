@@ -1,0 +1,8 @@
+{% load fa %}
+<article class="post-card">
+  <a href="{{ post.get_absolute_url }}" class="post-card__img">{% if post.image %}<img src="{{ post.image.url }}" alt="{{ post.image.alt|default:post.title }}" loading="lazy">{% else %}<span class="pattern"></span>{% endif %}</a>
+  <div class="post-card__body">
+    <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|jdate }}</time>
+    <h3><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h3>
+  </div>
+</article>
