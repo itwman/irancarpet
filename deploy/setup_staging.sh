@@ -31,8 +31,19 @@ mysql --version
 
 step "۲/۸ محیط پایتون و کتابخانه‌ها"
 [ -d venv ] || python3 -m venv venv
-venv/bin/pip install -q --upgrade pip
-venv/bin/pip install -q -r requirements.txt
+# اتصال سرور به PyPI کند/قطع است؛ اول بسته‌های آماده از گیت‌هاب (شاخهٔ wheels)، بعد PyPI و میرورها
+installed=0
+rm -rf /tmp/ic-wheels
+if git clone -q --depth 1 -b wheels https://github.com/itwman/irancarpet.git /tmp/ic-wheels; then
+  if venv/bin/pip install -q --no-index --find-links /tmp/ic-wheels -r requirements.txt; then installed=1; fi
+fi
+for IDX in https://pypi.org/simple https://mirror-pypi.runflare.com/simple https://package-mirror.liara.ir/repository/pypi/simple; do
+  [ $installed = 1 ] && break
+  echo "تلاش با $IDX"
+  if venv/bin/pip install -q --timeout 60 --retries 2 -i "$IDX" -r requirements.txt; then installed=1; fi
+done
+[ $installed = 1 ] || { echo "!! نصب کتابخانه‌ها ناموفق بود"; exit 1; }
+echo "کتابخانه‌ها نصب شدند."
 
 step "۳/۸ دیتابیس و فایل تنظیمات"
 if [ ! -f .env ]; then
