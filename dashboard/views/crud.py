@@ -122,6 +122,31 @@ def apply_filters(res, qs, request):
     return qs
 
 
+def list_columns(res, request):
+    """ستون‌های پیش‌فرض + ستون‌های اختیاری که کاربر انتخاب کرده (در نشست ذخیره می‌شود)."""
+    if not res.extra_columns:
+        return res.columns, []
+    extra = res.extra_columns()
+    skey = f"panel_cols_{res.key}"
+    if request.GET.get("cols_set"):
+        chosen = [c for c in request.GET.getlist("cols") if c]
+        request.session[skey] = chosen
+    else:
+        chosen = request.session.get(skey, [])
+    cols = list(res.columns)
+    extra_on = [c for c in extra if c.name in chosen]
+    cols[-1:-1] = extra_on   # پیش از آخرین ستون (تاریخ)
+    return cols, [(c.name, c.label, c.name in chosen) for c in extra]
+
+
+def action_specs(res):
+    out = []
+    for k, a in res.actions.items():
+        out.append({"key": k, "label": a[0], "input": a[2] if len(a) > 2 else "",
+                    "choices": a[3]() if len(a) > 3 and a[3] else None})
+    return out
+
+
 @staff_required
 def list_view(request, key):
     res = get_res(key)
@@ -136,6 +161,8 @@ def list_view(request, key):
     if request.method == "POST":
         act = request.POST.get("action")
         ids = request.POST.getlist("ids")
+        if request.POST.get("all") == "1":   # همهٔ نتایج فیلتر (همهٔ صفحه‌ها)
+            ids = list(qs.values_list("pk", flat=True))
         if ids and act:
             sel = res.model.objects.filter(pk__in=ids)
             if act == "delete" and res.can_delete:
@@ -167,10 +194,11 @@ def list_view(request, key):
             w.writerow([strip_tags(str(c.fn(obj) if c.fn else getattr(obj, c.name, ""))) for c in res.columns if True])
         return resp
 
+    columns, col_choices = list_columns(res, request)
     page = Paginator(qs, res.per_page).get_page(request.GET.get("page"))
     rows = []
     for obj in page.object_list:
-        cells = [(c.fn(obj) if c.fn else getattr(obj, c.name, ""), c.cls) for c in res.columns]
+        cells = [(c.fn(obj) if c.fn else getattr(obj, c.name, ""), c.cls) for c in columns]
         rows.append({"obj": obj, "url": res.obj_url(obj), "cells": cells,
                      "public": res.view_url(obj) if res.view_url else ""})
     params = request.GET.copy()
@@ -178,6 +206,7 @@ def list_view(request, key):
     params.pop("o", None)
     return render(request, res.list_template, {
         "res": res, "rows": rows, "page": page, "filters": filter_specs(res, request), "o": o,
+        "columns": columns, "col_choices": col_choices, "actions": action_specs(res),
         "q": request.GET.get("q", ""), "base_qs": params.urlencode(), "d_from": request.GET.get("d_from", ""),
         "d_to": request.GET.get("d_to", ""), "filtered": any(request.GET.get(k) for k in ["q", "d_from", "d_to", *res.filters, *res.custom_filters]),
     })

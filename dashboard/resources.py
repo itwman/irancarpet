@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 
 from blog.models import BlogCategory, BlogTag, Comment, Faq, Page, Post
 from catalog.models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review
@@ -81,19 +81,21 @@ register(Resource(
     columns=[Col("image", "", thumb(), cls="w-thumb"),
              Col("title", "عنوان", lambda o: fa_num(o.title), "title"),
              Col("album", "آلبوم قیمت", lambda o: o.album.name if o.album else "—"),
-             Col("min_price", "از قیمت", money("min_price"), "min_price"),
+             Col("min_price", "قیمت", money("min_price"), "min_price"),
              Col("stock_status", "موجودی", badge("stock_status"), "stock_status"),
              Col("status", "وضعیت", badge("status"), "status"),
              Col("published_at", "انتشار", jd("published_at"), "published_at")],
-    search=["title", "sku", "slug", "=id"], filters=["status", "stock_status", "sale_status", "album", "brand", "categories"],
+    search=["title", "sku", "slug", "=id"], filters=["status", "stock_status", "sale_status", "album", "brand", "categories", "tags", "specs"],
     date_filter="published_at", ordering=("-published_at",),
-    queryset=lambda qs: qs.select_related("image", "album"),
+    queryset=lambda qs: qs.select_related("image", "album", "brand", "primary_category").prefetch_related("tags", "categories", "specs__attribute"),
+    extra_columns=lambda: _product_extra_columns(),
     view_url=lambda o: o.get_absolute_url(), edit_url=lambda o: f"/panel/products/{o.pk}/edit/",
     actions={
         "publish": ("انتشار", lambda r, qs: f"{qs.update(status='publish')} محصول منتشر شد."),
         "draft": ("پیش‌نویس کردن", lambda r, qs: f"{qs.update(status='draft')} محصول پیش‌نویس شد."),
         "available": ("وضعیت فروش: موجود", lambda r, qs: _set_sale(qs, "available")),
         "unavailable": ("وضعیت فروش: ناموجود", lambda r, qs: _set_sale(qs, "unavailable")),
+        "set_album": ("تغییر آلبوم قیمت", lambda r, qs: _set_album(r, qs), "آلبوم", lambda: _album_choices()),
         "follow_album": ("پیروی کامل از قیمت آلبوم (حذف قیمت‌های اختصاصی و حراج)", lambda r, qs: _follow_album(qs)),
         "clear_sale": ("حذف قیمت حراج", lambda r, qs: _clear_sale(qs)),
     },
@@ -101,6 +103,66 @@ register(Resource(
         ("any", "هر نوع"), ("custom", "قیمت پایهٔ اختصاصی"), ("override", "قیمت خرید اختصاصی سایز"), ("sale", "قیمت حراج"),
     ], lambda qs, v: qs.filter(_override_q(v)).distinct())},
 ))
+
+
+def _album_choices():
+    return [("0", "— بدون آلبوم (قیمت دستی) —")] + [
+        (str(a.pk), f"{a.name} — ۱۲ متری {toman(a.size_price(a.base_size)) or '—'}")
+        for a in Album.objects.filter(is_active=True).select_related("base_size").order_by("sort_order", "name")]
+
+
+def _set_album(request, qs):
+    """اختصاص گروهی محصولات به یک آلبوم (یا خارج کردن از آلبوم با ثابت ماندن قیمت فعلی)."""
+    from django.db import transaction
+    from django.utils import timezone
+
+    from catalog.models import Variation
+    from pricing.albums import sync_album_variations
+
+    val = (request.POST.get("action_value") or "").strip()
+    album = Album.objects.filter(pk=val, is_active=True).first() if val.isdigit() and val != "0" else None
+    if val != "0" and album is None:
+        return "آلبوم انتخاب نشد؛ چیزی تغییر نکرد."
+    ids = list(qs.values_list("pk", flat=True))
+    with transaction.atomic():
+        if album is None:
+            # قیمت فعلی هر سایز به‌عنوان قیمت دستی ثابت می‌ماند
+            vs = list(Variation.objects.filter(product_id__in=ids))
+            for v in vs:
+                v.manual_price = v.final_price or v.manual_price
+                v.override_price = None
+            Variation.objects.bulk_update(vs, ["manual_price", "override_price"], batch_size=1000)
+            Product.objects.filter(pk__in=ids).update(album=None, custom_base_price=None, modified_at=timezone.now())
+            Variation.reprice_queryset(Variation.objects.filter(product_id__in=ids), scale_sale=False)
+            return f"{fa_num(len(ids))} محصول از آلبوم خارج شد؛ قیمت فعلی‌شان به‌صورت قیمت دستی ماند."
+        Product.objects.filter(pk__in=ids).update(album=album, custom_base_price=None, modified_at=timezone.now())
+        Variation.objects.filter(product_id__in=ids).update(override_price=None)
+        st = sync_album_variations(list(Product.objects.filter(pk__in=ids).select_related("album")))
+    return (f"{fa_num(len(ids))} محصول به آلبوم «{album.name}» رفت و قیمت‌ها به‌روز شد"
+            f" ({fa_num(st['created'])} سایز تازه، {fa_num(st['deleted'])} سایز خارج از آلبوم حذف شد).")
+
+
+def _chips(items):
+    items = [str(x) for x in items]
+    if not items:
+        return "—"
+    return format_html('<span class="chips-p">{}</span>', format_html_join("", "<span>{}</span>", ((fa_num(x),) for x in items)))
+
+
+def _product_extra_columns():
+    from catalog.models import Attribute
+
+    cols = [
+        Col("sku", "کد کالا", lambda o: fa_num(o.sku or "—"), "sku"),
+        Col("tags", "برچسب‌ها", lambda o: _chips(t.name for t in o.tags.all())),
+        Col("categories", "دسته‌ها", lambda o: _chips(c.name for c in o.categories.all())),
+        Col("brand", "برند", lambda o: o.brand.name if o.brand else "—"),
+        Col("sale_status", "وضعیت فروش", badge("sale_status"), "sale_status"),
+        Col("views", "بازدید", lambda o: fa_num(o.views), "views"),
+    ]
+    for a in Attribute.objects.order_by("order", "label"):
+        cols.append(Col(f"attr_{a.pk}", a.label, (lambda aid: lambda o: _chips(t.name for t in o.specs.all() if t.attribute_id == aid))(a.pk)))
+    return cols
 
 
 def _override_q(kind):

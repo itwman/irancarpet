@@ -156,8 +156,11 @@
     f.querySelectorAll('input[inputmode="numeric"], input[data-jdp], input.ltr-num').forEach(function (i) { i.value = toEn(i.value); });
     dirty = false;
     var del = f.querySelector("[data-bulk-action]");
+    var allOn = f.querySelector("[data-bulk-all]:checked");
     if (del && del.selectedOptions[0] && del.selectedOptions[0].dataset.danger) {
-      if (!confirm("موارد انتخاب‌شده حذف شوند؟ این کار برگشت‌پذیر نیست.")) e.preventDefault();
+      if (!confirm(allOn ? "همهٔ موارد این فیلتر (همهٔ صفحه‌ها) حذف شوند؟ این کار برگشت‌پذیر نیست." : "موارد انتخاب‌شده حذف شوند؟ این کار برگشت‌پذیر نیست.")) e.preventDefault();
+    } else if (allOn && del && del.value && !confirm("عملیات روی همهٔ موارد این فیلتر (همهٔ صفحه‌ها) انجام شود؟")) {
+      e.preventDefault();
     }
   }, true);
 
@@ -175,14 +178,24 @@
     var sync = function () {
       var boxes = bulkForm.querySelectorAll("input[name=ids]"), n = 0;
       boxes.forEach(function (b) { if (b.checked) n++; var tr = b.closest("tr"); if (tr) tr.classList.toggle("is-checked", b.checked); });
+      var all = bulkForm.querySelector("[data-bulk-all]");
+      if (all) { all.closest("label").hidden = n < boxes.length; if (n < boxes.length) all.checked = false; }
       if (bar) { bar.hidden = n === 0; bar.querySelector("[data-count]").textContent = String(n).replace(/\d/g, function (d) { return FA[d]; }); }
     };
     bulkForm.addEventListener("change", function (e) {
       if (e.target.matches("[data-check-all]")) bulkForm.querySelectorAll("input[name=ids]").forEach(function (b) { b.checked = e.target.checked; });
       if (e.target.matches("[data-bulk-action]")) {
         var o = e.target.selectedOptions[0], inp = bulkForm.querySelector("[data-bulk-input]");
-        inp.hidden = !(o && o.dataset.input);
+        var choice = o && o.dataset.choices;
+        inp.hidden = inp.disabled = !(o && o.dataset.input) || !!choice;
         inp.placeholder = (o && o.dataset.input) || "";
+        bulkForm.querySelectorAll("[data-bulk-choice]").forEach(function (sel) {
+          sel.hidden = sel.disabled = sel.dataset.bulkChoice !== choice;
+        });
+      }
+      if (e.target.matches("[data-check-all]") && !e.target.checked) {
+        var all = bulkForm.querySelector("[data-bulk-all]");
+        if (all) all.checked = false;
       }
       sync();
     });

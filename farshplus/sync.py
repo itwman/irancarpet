@@ -286,7 +286,7 @@ def scan(s=None):
     items = {i.product_id: i for i in FarshPlusItem.objects.all()}
     qs = Product.objects.filter(Q(pk__in=[pid for pid, i in items.items() if i.post_id]) |
                                 Q(modified_at__gt=baseline, status="publish"))
-    qs = qs.select_related("image").prefetch_related("variations", "categories", "tags")
+    qs = qs.select_related("image", "album").prefetch_related("variations", "categories", "tags")
     for p in qs.iterator(chunk_size=200):
         item = items.get(p.pk)
         if item is None:

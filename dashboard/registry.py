@@ -41,7 +41,7 @@ class Resource:
     fieldsets: list = field(default_factory=list)   # [(عنوان، [فیلدها]، "main"|"side")]
     readonly: list = field(default_factory=list)    # [(برچسب، تابع obj)]
     inlines: list = field(default_factory=list)
-    actions: dict = field(default_factory=dict)     # key -> (برچسب، تابع(request, qs) -> پیام)
+    actions: dict = field(default_factory=dict)     # key -> (برچسب، تابع(request, qs) -> پیام[، برچسب ورودی[، تابع گزینه‌ها]])
     can_add: bool = True
     can_delete: bool = True
     slug_from: Optional[str] = None
@@ -55,6 +55,7 @@ class Resource:
     per_page: int = 40
     help: str = ""
     initial: Optional[Callable] = None            # مقدارهای پیش‌فرض فرم «افزودن»
+    extra_columns: Optional[Callable] = None      # () -> [Col] ستون‌های اختیاری که کاربر می‌تواند نمایش دهد
 
     @property
     def form_fields(self):

@@ -4,6 +4,12 @@
 <div class="page-top">
   <div><h1>{{ res.title }}</h1><p class="muted">{{ page.paginator.count|fa_num }} مورد{% if filtered %} (با فیلتر){% endif %}</p></div>
   <div class="page-top__actions">
+    {% if col_choices %}<details class="cols-p"><summary class="btn btn-light btn-sm"><svg class="ic"><use href="#i-layers"/></svg> ستون‌ها</summary>
+      <form method="get" class="cols-p__menu">{% for k, v in request.GET.lists %}{% if k != "cols" and k != "cols_set" %}{% for x in v %}<input type="hidden" name="{{ k }}" value="{{ x }}">{% endfor %}{% endif %}{% endfor %}
+        <input type="hidden" name="cols_set" value="1">
+        {% for k, label, on in col_choices %}<label><input type="checkbox" class="form-check-input" name="cols" value="{{ k }}"{% if on %} checked{% endif %}> {{ label }}</label>{% endfor %}
+        <button class="btn btn-ink btn-sm w-100 mt-2" type="submit">نمایش</button>
+      </form></details>{% endif %}
     <a class="btn btn-light btn-sm" href="?{{ base_qs }}{% if base_qs %}&{% endif %}export=csv"><svg class="ic"><use href="#i-download"/></svg> خروجی اکسل (CSV)</a>
     {% if res.can_add %}<a class="btn btn-pink" href="{{ res.url }}add/"><svg class="ic"><use href="#i-plus"/></svg> {{ res.single }} تازه</a>{% endif %}
   </div>
@@ -36,7 +42,7 @@
     <table class="tbl">
       <thead><tr>
         <th class="w-check"><input type="checkbox" class="form-check-input" data-check-all aria-label="انتخاب همه"></th>
-        {% for c in res.columns %}<th class="{{ c.cls }}">{% if c.sort %}<a href="?{{ base_qs }}{% if base_qs %}&{% endif %}o={% if o == c.sort %}-{% endif %}{{ c.sort }}" class="sort{% if o == c.sort %} asc{% elif o == '-'|add:c.sort %} desc{% endif %}">{{ c.label }}</a>{% else %}{{ c.label }}{% endif %}</th>{% endfor %}
+        {% for c in columns %}<th class="{{ c.cls }}">{% if c.sort %}<a href="?{{ base_qs }}{% if base_qs %}&{% endif %}o={% if o == c.sort %}-{% endif %}{{ c.sort }}" class="sort{% if o == c.sort %} asc{% elif o == '-'|add:c.sort %} desc{% endif %}">{{ c.label }}</a>{% else %}{{ c.label }}{% endif %}</th>{% endfor %}
         <th></th>
       </tr></thead>
       <tbody>
@@ -58,12 +64,14 @@
   {% if rows %}
   <div class="bulk" hidden>
     <span><strong data-count>۰</strong> مورد انتخاب شده</span>
+    {% if page.paginator.count > rows|length %}<label class="bulk__all"><input type="checkbox" class="form-check-input" name="all" value="1" data-bulk-all> همهٔ {{ page.paginator.count|fa_num }} مورد{% if filtered %} این فیلتر{% endif %}</label>{% endif %}
     <select name="action" class="form-select form-select-sm" data-bulk-action>
       <option value="">عملیات گروهی…</option>
-      {% for k, a in res.actions.items %}<option value="{{ k }}"{% if a.2 %} data-input="{{ a.2 }}"{% endif %}>{{ a.0 }}</option>{% endfor %}
+      {% for a in actions %}<option value="{{ a.key }}"{% if a.input %} data-input="{{ a.input }}"{% endif %}{% if a.choices %} data-choices="{{ a.key }}"{% endif %}>{{ a.label }}</option>{% endfor %}
       {% if res.can_delete %}<option value="delete" data-danger="1">حذف</option>{% endif %}
     </select>
-    <input name="action_value" class="form-control form-control-sm" hidden data-bulk-input>
+    <input name="action_value" class="form-control form-control-sm" hidden disabled data-bulk-input>
+    {% for a in actions %}{% if a.choices %}<select name="action_value" class="form-select form-select-sm" hidden disabled data-bulk-choice="{{ a.key }}" aria-label="{{ a.input }}"><option value="">{{ a.input }}…</option>{% for v, l in a.choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>{% endif %}{% endfor %}
     <button class="btn btn-ink btn-sm" type="submit">اجرا</button>
   </div>
   {% endif %}
