@@ -233,11 +233,9 @@ class Product(SeoFields):
     def refresh_price_cache(self, save=True):
         vs = self.variations.all()
         live = vs.filter(is_available=True)
-        agg = (live if live.exists() else vs).aggregate(
-            lo=Min("final_price"), lo_sale=Min("sale_price"), hi=Max("final_price")
-        )
-        lows = [x for x in (agg["lo"], agg["lo_sale"]) if x]
-        self.min_price = min(lows) if lows else None
+        pool = live if live.exists() else vs
+        agg = pool.aggregate(hi=Max("final_price"))
+        self.min_price = min((v.price for v in pool.only("sale_price", "final_price") if v.price), default=None)
         self.max_price = agg["hi"]
         if self.sale_status != "available":
             self.stock_status = "outofstock" if self.sale_status == "unavailable" else "onbackorder"
@@ -311,8 +309,28 @@ class Variation(models.Model):
         return bool(self.size and self.size.default_pair_only)
 
     @property
+    def on_sale(self):
+        """حراج فقط وقتی معتبر است که از قیمت نهایی کمتر باشد."""
+        return bool(self.sale_price and self.final_price and self.sale_price < self.final_price)
+
+    @property
     def price(self):
-        return self.sale_price or self.final_price
+        return self.sale_price if self.on_sale else (self.final_price or self.sale_price)
+
+    @property
+    def price_source(self):
+        """قیمت این سایز از کجا می‌آید (برای نمایش در پنل)."""
+        product = self.product
+        album = product.album
+        if self.override_price is not None:
+            return "override", "قیمت خرید اختصاصی همین سایز"
+        if album and album.is_active and self.size and self.size.is_active:
+            if product.custom_base_price is not None:
+                return "custom", "قیمت پایهٔ اختصاصی محصول"
+            return "album", "قیمت آلبوم"
+        if album and not album.is_active:
+            return "manual", "قیمت دستی (آلبوم غیرفعال است)"
+        return "manual", "قیمت دستی"
 
     @property
     def stock_status(self):
@@ -340,14 +358,18 @@ class Variation(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def reprice_queryset(cls, qs):
+    def reprice_queryset(cls, qs, scale_sale=True):
+        """محاسبهٔ دوبارهٔ قیمت‌ها. اگر قیمت نهایی عوض شود، قیمت حراج هم هم‌نسبت تغییر می‌کند تا درصد تخفیف بماند."""
         st = PricingSettings.load()
         items = list(qs.select_related("product__album__base_size", "size"))
         product_ids = set()
         for v in items:
+            old = v.final_price
             v.compute_prices(st, v.product)
+            if scale_sale and v.sale_price and old and v.final_price and old != v.final_price:
+                v.sale_price = int(round(v.sale_price * v.final_price / old, -4)) or None
             product_ids.add(v.product_id)
-        cls.objects.bulk_update(items, ["final_price", "purchase_price"], batch_size=1000)
+        cls.objects.bulk_update(items, ["final_price", "purchase_price", "sale_price"], batch_size=1000)
         for p in Product.objects.filter(pk__in=product_ids):
             p.refresh_price_cache()
         return len(items)

@@ -88,13 +88,37 @@ def product_edit(request, pk=None):
     from farshplus.models import FarshPlusItem
     from farshplus.sync import inactive_reason
 
+    own = None
+    if product and product.album_id:
+        vs = list(product.variations.all())
+        own = {
+            "custom": product.custom_base_price, "album_base": product.album.base_price,
+            "override": sum(1 for v in vs if v.override_price is not None),
+            "sale": sum(1 for v in vs if v.sale_price),
+        }
+        if own["custom"] is None and not own["override"] and not own["sale"]:
+            own = None
     fp_item = FarshPlusItem.objects.filter(product=product).first() if product else None
     gallery = [pi.media for pi in ProductImage.objects.filter(product=product).select_related("media").order_by("order")] if product else []
     return render(request, "dashboard/product_form.html", {
-        "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery,
+        "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery, "own": own,
         "gallery_ids": ",".join(str(m.pk) for m in gallery), "fp": fp_item, "fp_off": inactive_reason(),
         "groups": {"main": MAIN, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
     })
+
+
+@staff_required
+def product_follow_album(request, pk):
+    """حذف قیمت‌های اختصاصی و حراج تا محصول دقیقاً از قیمت آلبوم پیروی کند."""
+    from pricing.overrides import follow_album
+
+    if request.method == "POST":
+        product = get_object_or_404(Product, pk=pk)
+        follow_album([product])
+        log(request, "update", "محصولات", product, "پیروی کامل از قیمت آلبوم")
+        clear_site_cache()
+        messages.success(request, "قیمت‌های اختصاصی و حراج حذف شد؛ قیمت‌ها حالا دقیقاً از آلبوم می‌آیند.")
+    return redirect(f"/panel/products/{pk}/edit/#sizes")
 
 
 @staff_required

@@ -35,6 +35,7 @@ class Resource:
     columns: list = field(default_factory=list)
     search: list = field(default_factory=list)
     filters: list = field(default_factory=list)
+    custom_filters: dict = field(default_factory=dict)  # نام -> (برچسب، [(مقدار، برچسب)]، تابع(qs, مقدار))
     date_filter: Optional[str] = None
     ordering: tuple = ("-pk",)
     fieldsets: list = field(default_factory=list)   # [(عنوان، [فیلدها]، "main"|"side")]

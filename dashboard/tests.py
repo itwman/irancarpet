@@ -81,7 +81,7 @@ class PanelTests(TestCase):
         self.client.post("/panel/albums/", {"action": "percent", "action_value": "۱۰", "ids": [self.album.pk]})
         self.album.refresh_from_db()
         self.assertEqual(self.album.base_price, Decimal("26400000"))
-        self.assertTrue(PriceLog.objects.filter(album=self.album, reason="bulk_percent").exists())
+        self.assertTrue(PriceLog.objects.filter(album=self.album, reason__startswith="bulk_percent").exists())
         self.p.refresh_from_db()
         self.assertGreater(self.p.min_price, 28_100_000)
 

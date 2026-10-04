@@ -156,10 +156,12 @@ class Album(models.Model):
         self.base_price = Decimal(new_price)
         self.last_updated = timezone.now()
         self.save()
-        PriceLog.objects.create(album=self, old_price=old, new_price=self.base_price, reason=reason, user=user)
+        PriceLog.objects.create(album=self, old_price=old, new_price=self.base_price, user=user,
+                                reason=reason + ("+scaled" if getattr(self, "_scaled", False) else ""))
 
     def save(self, *args, **kwargs):
-        changed = False
+        changed, ratio = False, None
+        self._scaled = False
         if self.pk:
             old = Album.objects.filter(pk=self.pk).values("base_price", "base_size_id", "waste_type", "waste_value", "is_active").first()
             changed = old != {
@@ -168,13 +170,23 @@ class Album(models.Model):
             }
             if old and old["base_price"] != self.base_price:
                 self.last_updated = timezone.now()
+                if old["base_price"] and self.base_price and old["base_size_id"] == self.base_size_id:
+                    ratio = Decimal(self.base_price) / Decimal(old["base_price"])
         super().save(*args, **kwargs)
         if changed:
-            self.reprice()
+            self.reprice(ratio)
 
-    def reprice(self):
+    def reprice(self, ratio=None):
+        """قیمت همهٔ سایزهای محصولات آلبوم را دوباره حساب می‌کند.
+        ratio: نسبت قیمت پایهٔ تازه به قبلی؛ قیمت‌های اختصاصی محصولات هم به همین نسبت تغییر می‌کنند
+        تا اختلاف نسبی آن‌ها با آلبوم (مثلاً ارزان‌تر بودن پلی‌استر) حفظ شود."""
         from catalog.models import Variation
 
+        if ratio and ratio != 1:
+            from .overrides import scale_album_overrides
+
+            scale_album_overrides(self, ratio)
+            self._scaled = True
         Variation.reprice_queryset(Variation.objects.filter(product__album=self))
 
 

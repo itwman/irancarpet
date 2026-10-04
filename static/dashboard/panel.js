@@ -257,6 +257,11 @@
   });
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-remove-row]"); if (b) b.parentNode.remove(); });
 
+  /* ------------------------------------------------ تأیید پیش از ارسال فرم‌های حساس */
+  document.querySelectorAll("form[data-confirm]").forEach(function (f) {
+    f.addEventListener("submit", function (e) { if (!window.confirm(f.dataset.confirm)) e.preventDefault(); });
+  });
+
   /* ------------------------------------------------ هشدار تغییرات ذخیره‌نشده */
   var dirty = false;
   document.querySelectorAll("form.edit").forEach(function (f) { f.addEventListener("input", function () { dirty = true; }); });

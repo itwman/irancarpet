@@ -25,7 +25,17 @@
 
       <section class="card-p" id="sizes">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"><h2 class="m-0">سایزها و قیمت‌ها</h2>
-          <small class="muted">قیمت نهایی از آلبوم محاسبه می‌شود. «قیمت خرید اختصاصی» فرمول را برای همان سایز جایگزین می‌کند؛ «قیمت دستی» برای محصول بدون آلبوم است.</small></div>
+          <small class="muted">قیمت نهایی از آلبوم محاسبه می‌شود. «قیمت خرید اختصاصی» فرمول را برای همان سایز جایگزین می‌کند؛ «قیمت دستی» برای محصول بدون آلبوم است. «قیمت حراج» مبلغ نهایی است و فقط وقتی کمتر از قیمت نهایی باشد نمایش داده می‌شود.</small></div>
+        {% if own %}<div class="own-price">
+          <p><strong>قیمت این محصول کاملاً از آلبوم «{{ obj.album.name }}» پیروی نمی‌کند:</strong></p>
+          <ul>
+            {% if own.custom is not None %}<li>قیمت پایهٔ اختصاصی <strong>{{ own.custom|toman }}</strong> به‌جای قیمت پایهٔ آلبوم <strong>{{ own.album_base|toman }}</strong> برای همهٔ سایزها حساب می‌شود.</li>{% endif %}
+            {% if own.override %}<li>{{ own.override|fa_num }} سایز «قیمت خرید اختصاصی» دارد و از فرمول آلبوم پیروی نمی‌کند.</li>{% endif %}
+            {% if own.sale %}<li>{{ own.sale|fa_num }} سایز «قیمت حراج» دارد؛ در سایت قیمت نهایی خط می‌خورد و قیمت حراج نمایش داده می‌شود.</li>{% endif %}
+          </ul>
+          <p class="hint">با تغییر قیمت آلبوم، این قیمت‌ها هم به همان نسبت تغییر می‌کنند. اگر می‌خواهید محصول دقیقاً قیمت آلبوم را بگیرد، دکمهٔ زیر را بزنید.</p>
+          <button class="btn btn-light btn-sm" type="submit" form="followForm">پیروی کامل از قیمت آلبوم</button>
+        </div>{% endif %}
         {{ vfs.management_form }}
         {% if vfs.non_form_errors %}<div class="alert alert-danger">{{ vfs.non_form_errors }}</div>{% endif %}
         <div class="table-wrap"><table class="tbl tbl--form tbl--vars" data-formset="v">
@@ -33,7 +43,11 @@
           <tbody>
           {% for row in vfs.forms %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}
             <td class="w-size">{{ row.size }}{% for e in row.size.errors %}<div class="err">{{ e }}</div>{% endfor %}</td>
-            <td class="num nowrap">{% if row.instance.final_price %}<strong>{{ row.instance.final_price|toman }}</strong>{% else %}<span class="muted">—</span>{% endif %}</td>
+            <td class="num nowrap">{% with v=row.instance %}{% if v.final_price %}
+              {% if v.on_sale %}<del class="muted">{{ v.final_price|toman }}</del><br><strong>{{ v.sale_price|toman }}</strong>{% else %}<strong>{{ v.final_price|toman }}</strong>{% endif %}
+              {% if v.pk %}<small class="src src--{{ v.price_source.0 }}">{{ v.price_source.1 }}{% if v.on_sale %} + حراج{% endif %}</small>{% endif %}
+              {% if v.sale_price and not v.on_sale %}<small class="src src--warn">حراج نادیده گرفته شد (بیشتر از قیمت)</small>{% endif %}
+            {% else %}<span class="muted">—</span>{% endif %}{% endwith %}</td>
             <td>{{ row.is_available }}</td><td>{{ row.sale_price }}</td><td>{{ row.override_price }}</td><td>{{ row.manual_price }}</td>
             <td class="w-attr">{{ row.attributes }}</td><td>{{ row.sku }}</td><td>{{ row.pair_only }}</td><td class="w-order">{{ row.menu_order }}</td>
             <td>{{ row.DELETE }}</td></tr>{% endfor %}
@@ -89,6 +103,7 @@
   </div>
 </form>
 {% if obj %}<form method="post" action="/panel/products/{{ obj.pk }}/duplicate/" id="dupForm">{% csrf_token %}</form>
-<form method="post" action="/panel/products/{{ obj.pk }}/farshplus/" id="fpForm">{% csrf_token %}</form>{% endif %}
+<form method="post" action="/panel/products/{{ obj.pk }}/farshplus/" id="fpForm">{% csrf_token %}</form>
+<form method="post" action="/panel/products/{{ obj.pk }}/follow-album/" id="followForm" data-confirm="قیمت پایهٔ اختصاصی، قیمت‌های خرید اختصاصی و حراج‌های این محصول حذف شود؟">{% csrf_token %}</form>{% endif %}
 {% endblock %}
 {% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% load static %}<script src="{% static 'vendor/sortable/Sortable.min.js' %}"></script>{% endblock %}

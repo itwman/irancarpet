@@ -94,8 +94,32 @@ register(Resource(
         "draft": ("پیش‌نویس کردن", lambda r, qs: f"{qs.update(status='draft')} محصول پیش‌نویس شد."),
         "available": ("وضعیت فروش: موجود", lambda r, qs: _set_sale(qs, "available")),
         "unavailable": ("وضعیت فروش: ناموجود", lambda r, qs: _set_sale(qs, "unavailable")),
+        "follow_album": ("پیروی کامل از قیمت آلبوم (حذف قیمت‌های اختصاصی و حراج)", lambda r, qs: _follow_album(qs)),
+        "clear_sale": ("حذف قیمت حراج", lambda r, qs: _clear_sale(qs)),
     },
+    custom_filters={"own_price": ("قیمت جدا از آلبوم", [
+        ("any", "هر نوع"), ("custom", "قیمت پایهٔ اختصاصی"), ("override", "قیمت خرید اختصاصی سایز"), ("sale", "قیمت حراج"),
+    ], lambda qs, v: qs.filter(_override_q(v)).distinct())},
 ))
+
+
+def _override_q(kind):
+    from pricing.overrides import override_filter
+
+    return override_filter(kind)
+
+
+def _follow_album(qs):
+    from pricing.overrides import follow_album
+
+    n = follow_album(list(qs))
+    return f"{fa_num(n)} محصول حالا دقیقاً از قیمت آلبومش پیروی می‌کند (محصولات بدون آلبوم دست نخوردند)."
+
+
+def _clear_sale(qs):
+    from pricing.overrides import clear_sales
+
+    return f"قیمت حراج {fa_num(clear_sales(list(qs)))} سایز حذف شد."
 
 
 def _set_sale(qs, status):
@@ -197,13 +221,38 @@ register(Resource(
                ("قیمت", ["base_size", "base_price", "waste_type", "waste_value"], "side"),
                ("وضعیت", ["is_active", "sort_order"], "side")],
     after_save=lambda r, o, c, f: _album_log(r, o, c, f),
-    actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)")},
-    help="با تغییر قیمت پایهٔ آلبوم، قیمت همهٔ سایزهای محصولات آن آلبوم خودکار دوباره محاسبه می‌شود.",
+    actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
+             "follow": ("پیروی کامل همهٔ محصولات این آلبوم‌ها از قیمت آلبوم", lambda r, qs: _album_follow(qs))},
+    readonly=[("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],
+    help="با تغییر قیمت پایهٔ آلبوم، قیمت همهٔ سایزهای محصولات آن آلبوم خودکار دوباره محاسبه می‌شود. "
+         "قیمت‌های اختصاصی و حراج محصولات هم به همان نسبت بالا و پایین می‌روند.",
 ))
 def _album_log(request, obj, created, form):
     if not created and "base_price" in form.changed_data:
         PriceLog.objects.create(album=obj, old_price=form.initial.get("base_price") or 0, new_price=obj.base_price,
-                                reason="panel_edit", user=request.user)
+                                reason="panel_edit" + ("+scaled" if getattr(obj, "_scaled", False) else ""), user=request.user)
+
+
+def _album_own_prices(album):
+    from django.utils.html import format_html
+
+    from catalog.models import Product
+    from pricing.overrides import override_filter
+
+    if not album.pk:
+        return "—"
+    n = Product.objects.filter(album=album).filter(override_filter("any")).distinct().count()
+    if not n:
+        return "ندارد؛ همه دقیقاً از قیمت آلبوم پیروی می‌کنند"
+    return format_html('<a href="/panel/products/?album={}&own_price=any">{} محصول</a>', album.pk, fa_num(n))
+
+
+def _album_follow(qs):
+    from catalog.models import Product
+    from pricing.overrides import follow_album
+
+    n = follow_album(list(Product.objects.filter(album__in=qs)))
+    return f"{fa_num(n)} محصول حالا دقیقاً از قیمت آلبومشان پیروی می‌کنند."
 
 
 def _album_percent(request, qs):

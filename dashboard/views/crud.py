@@ -70,6 +70,8 @@ def filter_specs(res, request):
             else:
                 spec["options"] = [(str(o.pk), str(o)) for o in f.related_model.objects.all()[:200]]
         specs.append(spec)
+    for name, (label, options, _) in res.custom_filters.items():
+        specs.append({"name": name, "label": label, "value": request.GET.get(name, ""), "kind": "select", "options": options})
     return specs
 
 
@@ -83,6 +85,10 @@ def apply_filters(res, qs, request):
             qs = qs.filter(**{name: val == "1"})
         else:
             qs = qs.filter(**{name: val})
+    for name, (_, _, fn) in res.custom_filters.items():
+        val = request.GET.get(name, "")
+        if val:
+            qs = fn(qs, val)
     if res.date_filter:
         jf = JalaliDateTimeField(with_time=False, required=False)
         for key, op in (("from", "gte"), ("to", "lte")):
@@ -173,7 +179,7 @@ def list_view(request, key):
     return render(request, res.list_template, {
         "res": res, "rows": rows, "page": page, "filters": filter_specs(res, request), "o": o,
         "q": request.GET.get("q", ""), "base_qs": params.urlencode(), "d_from": request.GET.get("d_from", ""),
-        "d_to": request.GET.get("d_to", ""), "filtered": any(request.GET.get(k) for k in ["q", "d_from", "d_to", *res.filters]),
+        "d_to": request.GET.get("d_to", ""), "filtered": any(request.GET.get(k) for k in ["q", "d_from", "d_to", *res.filters, *res.custom_filters]),
     })
 
 

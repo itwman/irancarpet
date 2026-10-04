@@ -116,8 +116,8 @@ def resolve_in_feed(item, s, mode):
 
 
 def build_fields(product, item, s, mode, img_hash):
-    vs = [v for v in product.variations.all() if v.is_available and (v.sale_price or v.final_price)]
-    price = min((v.sale_price or v.final_price for v in vs), default=product.min_price)
+    vs = [v for v in product.variations.all() if v.is_available and v.price]
+    price = min((v.price for v in vs), default=product.min_price)
     regular = min((v.final_price for v in vs if v.final_price), default=price)
     desc = product.short_description if plain_text(product.short_description) else product.content
     f = {

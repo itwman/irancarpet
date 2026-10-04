@@ -226,3 +226,9 @@ code{color:var(--pink-d);background:var(--pink-t);padding:.05rem .35rem;border-r
 
 .jodit-status-bar-link{display:none!important}
 .b-fp-published{background:#E6F5E1;color:#2F6B22}.b-fp-processing,.b-fp-pending_review,.b-fp-queued{background:var(--saffron-t);color:#7a4f00}.b-fp-error,.b-fp-removed{background:var(--pink-t);color:var(--pink-d)}.b-fp-hidden,.b-fp-archived,.b-fp-none{background:var(--soft);color:var(--ink-2)}
+
+/* قیمت جدا از آلبوم */
+.own-price{background:var(--saffron-t);border:1px solid #F3D9A0;border-radius:12px;padding:.8rem 1rem;margin-bottom:1rem}
+.own-price p{margin:0 0 .3rem}.own-price ul{margin:0 0 .4rem;padding-inline-start:1.2rem}
+.src{display:block;font-size:.72rem;font-weight:500;color:var(--muted);white-space:nowrap}
+.src--custom,.src--override{color:#A35F00}.src--warn{color:var(--pink-d)}

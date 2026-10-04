@@ -42,7 +42,7 @@ def _home_data():
         for p in base.filter(specs=term).select_related("image").order_by("-views")[:12]:
             prices = {}
             for v in Variation.objects.filter(product=p, is_available=True, size__slug__in=size_slugs).select_related("size"):
-                price = v.sale_price or v.final_price
+                price = v.price
                 if price:
                     prices[v.size.slug] = price
             if len(prices) == len(size_slugs):
