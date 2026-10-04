@@ -24,6 +24,19 @@ class ShopSettings(models.Model):
     admin_mobiles = models.CharField(
         "موبایل مدیران برای اطلاع از سفارش", max_length=200, blank=True, help_text="با ویرگول جدا کنید",
     )
+    # درگاه‌ها
+    sep_terminal_id = models.CharField("شمارهٔ ترمینال سامان", max_length=30, blank=True)
+    zarinpal_merchant_id = models.CharField("مرچنت‌کد زرین‌پال", max_length=64, blank=True)
+    zarinpal_sandbox = models.BooleanField("زرین‌پال در حالت آزمایشی (sandbox)", default=False)
+    # پیامک sms.ir
+    smsir_api_key = models.CharField("کلید API پنل sms.ir", max_length=200, blank=True)
+    smsir_otp_template_id = models.CharField("شمارهٔ قالب کد ورود", max_length=20, blank=True, help_text="قالب با متغیر CODE")
+    smsir_order_template_id = models.CharField(
+        "شمارهٔ قالب پیامک پرداخت به مشتری", max_length=20, blank=True, help_text="متغیرها: ORDER و AMOUNT",
+    )
+    smsir_admin_template_id = models.CharField(
+        "شمارهٔ قالب پیامک سفارش به مدیر", max_length=20, blank=True, help_text="متغیرها: ORDER، NAME و AMOUNT",
+    )
 
     class Meta:
         verbose_name = "تنظیمات فروش"

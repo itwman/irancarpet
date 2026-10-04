@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "seo",
     "accounts",
     "shop",
+    "dashboard",
 ]
 
 MIDDLEWARE = [
@@ -109,6 +110,12 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
     "core.hashers.PhpassHasher",
 ]
+
+# کش مشترک بین همهٔ پردازه‌های gunicorn (تا تغییرات پنل فوراً همه‌جا دیده شود)
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "django_cache"}}
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
+FILE_UPLOAD_PERMISSIONS = 0o664
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o2775
 
 AUTHENTICATION_BACKENDS = ["accounts.backends.IdentifierBackend"]
 LOGIN_URL = "/my-account/login/"

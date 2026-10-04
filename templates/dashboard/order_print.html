@@ -1,0 +1,14 @@
+{% load static fa %}<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور سفارش {{ order.number|fa_num }}</title>
+<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}"></head>
+<body class="print-page" onload="window.print()">
+<div class="invoice">
+  <header><img src="{% static 'img/logo.svg' %}" alt="" width="48" height="48"><div><h1>{{ site_settings.site_name }}</h1><p>{{ site_settings.address }} · {{ site_settings.phone|fa_num }}</p></div>
+    <div class="inv-meta"><strong>فاکتور سفارش {{ order.number|fa_num }}</strong><span>{{ order.created_at|jdate }}</span></div></header>
+  <section class="inv-to"><strong>گیرنده:</strong> {{ order.full_name }}، {{ order.mobile|fa_num }}<br>{{ order.province }}، {{ order.city }}، {{ order.address|fa_num }}{% if order.postal_code %}، کد پستی {{ order.postal_code|fa_num }}{% endif %}</section>
+  <table class="tbl"><thead><tr><th>#</th><th>کالا</th><th>سایز</th><th>تعداد</th><th>قیمت واحد (تومان)</th><th>جمع (تومان)</th></tr></thead>
+  <tbody>{% for it in items %}<tr><td>{{ forloop.counter|fa_num }}</td><td>{{ it.title|fa_num }}</td><td>{{ it.size_label|fa_num }}</td><td>{{ it.quantity|fa_num }}</td><td>{{ it.unit_price|toman }}</td><td>{{ it.line_total|toman }}</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><th colspan="5">جمع کل</th><th>{{ order.items_total|toman }}</th></tr><tr><th colspan="5">پرداخت‌شده</th><th>{{ order.paid_amount|toman }}</th></tr><tr><th colspan="5">مانده (موقع تحویل)</th><th>{{ order.remaining|toman }}</th></tr></tfoot></table>
+  <p>روش پرداخت: {{ order.get_payment_mode_display }} · ارسال: {{ order.get_shipping_mode_display }}</p>
+</div>
+</body></html>

@@ -1,0 +1,63 @@
+{% load static fa panel %}<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}پنل مدیریت{% endblock %} · {{ site_settings.site_name }}</title>
+<link rel="icon" href="{% static 'img/logo.svg' %}" type="image/svg+xml">
+<link rel="preload" href="{% static 'vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/jalalidatepicker/jalalidatepicker.min.css' %}">
+{% block head %}{% endblock %}
+<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}">
+</head>
+<body class="panel">
+{% include "dashboard/_icons.html" %}
+<a class="visually-hidden-focusable skip" href="#content">رفتن به محتوا</a>
+<aside class="side offcanvas-lg offcanvas-end" tabindex="-1" id="side" aria-label="منوی پنل">
+  <div class="side__head">
+    <a href="/panel/" class="side__brand"><img src="{% static 'img/logo.svg' %}" alt="" width="36" height="36"><span><strong>{{ site_settings.site_name }}</strong><small>پنل مدیریت</small></span></a>
+    <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#side" aria-label="بستن"></button>
+  </div>
+  <nav class="side__nav">
+    <a href="/panel/" class="side__link{% if request.path == '/panel/' %} on{% endif %}"><svg><use href="#i-home"/></svg>پیشخوان</a>
+    {% panel_nav as navgroups %}
+    {% for g in navgroups %}
+      <details class="side__group"{% for i in g.items %}{% if i.active %} open{% endif %}{% endfor %}{% if forloop.first %} open{% endif %}>
+        <summary><svg><use href="#i-{{ g.icon }}"/></svg>{{ g.title }}</summary>
+        {% for i in g.items %}<a href="{{ i.url }}" class="side__link side__link--sub{% if i.active %} on{% endif %}">{{ i.title }}</a>{% endfor %}
+      </details>
+    {% endfor %}
+  </nav>
+  <div class="side__foot">
+    <a href="/" target="_blank" rel="noopener"><svg><use href="#i-ext"/></svg>دیدن سایت</a>
+    {% if user.is_superuser %}<a href="/panel/system/" title="پنل فنی جنگو، فقط برای موارد اضطراری"><svg><use href="#i-box"/></svg>پنل فنی</a>{% endif %}
+  </div>
+</aside>
+<div class="main">
+  <header class="top">
+    <button class="icon-b d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#side" aria-label="منو"><svg><use href="#i-menu"/></svg></button>
+    <form class="top__search" action="/panel/search/" role="search">
+      <svg aria-hidden="true"><use href="#i-search"/></svg>
+      <input name="q" value="{{ request.GET.q|default:'' }}" placeholder="جستجوی سفارش، محصول، مشتری…" aria-label="جستجو در پنل">
+    </form>
+    <div class="top__user">
+      <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+      <form method="post" action="/my-account/logout/">{% csrf_token %}<button class="icon-b" type="submit" title="خروج" aria-label="خروج"><svg><use href="#i-out"/></svg></button></form>
+    </div>
+  </header>
+  <main id="content" class="content">
+    {% if messages %}<ul class="flash-p" role="status">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'vendor/jalalidatepicker/jalalidatepicker.min.js' %}"></script>
+{% block scripts_before %}{% endblock %}
+<script src="{% static 'dashboard/panel.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

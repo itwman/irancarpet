@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}{% if obj %}{{ obj }}{% else %}{{ res.single }} تازه{% endif %}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="edit" novalidate>{% csrf_token %}
+  <div class="page-top">
+    <div>
+      <a href="{{ res.url }}" class="back">‹ {{ res.title }}</a>
+      <h1>{% if obj %}{{ obj|truncatechars:70 }}{% else %}{{ res.single }} تازه{% endif %}</h1>
+    </div>
+    <div class="page-top__actions">
+      {% if public %}<a class="btn btn-light btn-sm" href="{{ public }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-ext"/></svg> دیدن در سایت</a>{% endif %}
+      {% if obj and res.can_delete %}<a class="btn btn-light btn-sm text-danger" href="{{ res.url }}{{ obj.pk }}/delete/"><svg class="ic"><use href="#i-trash"/></svg> حذف</a>{% endif %}
+      <button class="btn btn-light btn-sm" name="_next" value="list" type="submit">ذخیره و بازگشت</button>
+      <button class="btn btn-pink" type="submit">ذخیره</button>
+    </div>
+  </div>
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="edit__grid">
+    <div class="edit__main">
+      {% for g in groups %}{% if g.place == "main" %}
+      <section class="card-p"><h2>{{ g.title }}</h2>{% for f in g.fields %}{% include "dashboard/_field.html" %}{% endfor %}</section>
+      {% endif %}{% endfor %}
+
+      {% for inline, fs in formsets %}
+      <section class="card-p">
+        <h2>{{ inline.title }}</h2>
+        {{ fs.management_form }}
+        {% if fs.non_form_errors %}<div class="alert alert-danger">{{ fs.non_form_errors }}</div>{% endif %}
+        <div class="table-wrap"><table class="tbl tbl--form" data-formset="{{ fs.prefix }}">
+          <thead><tr>{% for f in fs.empty_form.visible_fields %}{% if f.name != "DELETE" %}<th>{{ f.label }}</th>{% endif %}{% endfor %}<th>حذف</th></tr></thead>
+          <tbody>
+          {% for row in fs.forms %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}{% for f in row.visible_fields %}{% if f.name != "DELETE" %}<td>{{ f }}{% for e in f.errors %}<div class="err">{{ e }}</div>{% endfor %}</td>{% endif %}{% endfor %}<td>{{ row.DELETE }}</td></tr>{% endfor %}
+          </tbody>
+          <template>{% with row=fs.empty_form %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}{% for f in row.visible_fields %}{% if f.name != "DELETE" %}<td>{{ f }}</td>{% endif %}{% endfor %}<td>{{ row.DELETE }}</td></tr>{% endwith %}</template>
+        </table></div>
+        <button type="button" class="btn btn-light btn-sm mt-2" data-add-row="{{ fs.prefix }}"><svg class="ic"><use href="#i-plus"/></svg> ردیف تازه</button>
+      </section>
+      {% endfor %}
+
+      {% if res.key == "reviews" or res.key == "comments" %}
+      <section class="card-p"><h2>پاسخ فروشگاه</h2>
+        {% for rep in obj.replies.all %}<div class="reply-old"><strong>{{ rep.author_name }}</strong><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
+        <div class="fld"><label for="reply">پاسخ تازه</label><textarea id="reply" name="reply" rows="3" class="form-control" placeholder="پاسخ با نام «ایران کارپت» زیر همین {{ res.single }} نمایش داده می‌شود."></textarea></div>
+      </section>
+      {% endif %}
+    </div>
+    <div class="edit__side">
+      {% for g in groups %}{% if g.place == "side" %}
+      <section class="card-p"><h2>{{ g.title }}</h2>{% for f in g.fields %}{% include "dashboard/_field.html" %}{% endfor %}</section>
+      {% endif %}{% endfor %}
+      {% if readonly %}<section class="card-p"><h2>اطلاعات</h2>{% for l, v in readonly %}<div class="kv"><span>{{ l }}</span><strong>{{ v }}</strong></div>{% endfor %}</section>{% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}{{ res.title }}{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>{{ res.title }}</h1><p class="muted">{{ page.paginator.count|fa_num }} مورد{% if filtered %} (با فیلتر){% endif %}</p></div>
+  <div class="page-top__actions">
+    <a class="btn btn-light btn-sm" href="?{{ base_qs }}{% if base_qs %}&{% endif %}export=csv"><svg class="ic"><use href="#i-download"/></svg> خروجی اکسل (CSV)</a>
+    {% if res.can_add %}<a class="btn btn-pink" href="{{ res.url }}add/"><svg class="ic"><use href="#i-plus"/></svg> {{ res.single }} تازه</a>{% endif %}
+  </div>
+</div>
+{% if res.help %}<p class="help-note">{{ res.help }}</p>{% endif %}
+{% block before_table %}{% endblock %}
+<form class="filters-p card-p" method="get">
+  <div class="filters-p__q"><svg aria-hidden="true"><use href="#i-search"/></svg><input name="q" value="{{ q }}" placeholder="جستجو در {{ res.title }}…" aria-label="جستجو"></div>
+  {% for f in filters %}
+    <label class="filters-p__f"><span>{{ f.label }}</span>
+      {% if f.kind == "ac" %}
+        <select name="{{ f.name }}" data-ac="{{ f.ac }}" class="ac ac-sm" data-placeholder="همه"><option value="">همه</option>{% if f.selected %}<option value="{{ f.selected.0 }}" selected>{{ f.selected.1 }}</option>{% endif %}</select>
+      {% else %}
+        <select name="{{ f.name }}" class="form-select form-select-sm" onchange="this.form.submit()"><option value="">همه</option>{% for k, v in f.options %}<option value="{{ k }}"{% if f.value == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+      {% endif %}
+    </label>
+  {% endfor %}
+  {% if res.date_filter %}
+    <label class="filters-p__f"><span>از تاریخ</span><input name="d_from" value="{{ d_from }}" data-jdp data-jdp-only-date class="form-control form-control-sm ltr-num" autocomplete="off"></label>
+    <label class="filters-p__f"><span>تا تاریخ</span><input name="d_to" value="{{ d_to }}" data-jdp data-jdp-only-date class="form-control form-control-sm ltr-num" autocomplete="off"></label>
+  {% endif %}
+  <button class="btn btn-ink btn-sm" type="submit">اعمال</button>
+  {% if filtered %}<a class="btn btn-link btn-sm" href="{{ res.url }}">حذف فیلترها</a>{% endif %}
+</form>
+
+<form method="post" id="bulkForm">{% csrf_token %}
+  {% block table %}
+  <div class="card-p table-wrap">
+    {% if rows %}
+    <table class="tbl">
+      <thead><tr>
+        <th class="w-check"><input type="checkbox" class="form-check-input" data-check-all aria-label="انتخاب همه"></th>
+        {% for c in res.columns %}<th class="{{ c.cls }}">{% if c.sort %}<a href="?{{ base_qs }}{% if base_qs %}&{% endif %}o={% if o == c.sort %}-{% endif %}{{ c.sort }}" class="sort{% if o == c.sort %} asc{% elif o == '-'|add:c.sort %} desc{% endif %}">{{ c.label }}</a>{% else %}{{ c.label }}{% endif %}</th>{% endfor %}
+        <th></th>
+      </tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr data-href="{{ r.url }}">
+          <td class="w-check"><input type="checkbox" class="form-check-input" name="ids" value="{{ r.obj.pk }}" aria-label="انتخاب"></td>
+          {% for v, cls in r.cells %}<td class="{{ cls }}">{{ v }}</td>{% endfor %}
+          <td class="row-actions">{% if r.public %}<a href="{{ r.public }}" target="_blank" rel="noopener" title="دیدن در سایت" aria-label="دیدن در سایت"><svg class="ic"><use href="#i-ext"/></svg></a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-p"><p>{% if filtered %}موردی با این جستجو یا فیلتر پیدا نشد.{% else %}هنوز {{ res.single }}ی ثبت نشده است.{% endif %}</p>{% if res.can_add and not filtered %}<a class="btn btn-pink" href="{{ res.url }}add/">افزودن {{ res.single }}</a>{% endif %}</div>
+    {% endif %}
+  </div>
+  {% endblock %}
+
+  {% if rows %}
+  <div class="bulk" hidden>
+    <span><strong data-count>۰</strong> مورد انتخاب شده</span>
+    <select name="action" class="form-select form-select-sm" data-bulk-action>
+      <option value="">عملیات گروهی…</option>
+      {% for k, a in res.actions.items %}<option value="{{ k }}"{% if a.2 %} data-input="{{ a.2 }}"{% endif %}>{{ a.0 }}</option>{% endfor %}
+      {% if res.can_delete %}<option value="delete" data-danger="1">حذف</option>{% endif %}
+    </select>
+    <input name="action_value" class="form-control form-control-sm" hidden data-bulk-input>
+    <button class="btn btn-ink btn-sm" type="submit">اجرا</button>
+  </div>
+  {% endif %}
+</form>
+{% include "dashboard/_pager.html" %}
+{% endblock %}

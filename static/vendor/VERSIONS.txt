@@ -1,0 +1,4 @@
+tom-select 2.6.2 Apache-2.0
+@majidh1/jalalidatepicker 1.0.0 MIT
+jodit 4.17.1 MIT
+sortablejs 1.15.7 MIT

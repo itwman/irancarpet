@@ -8,9 +8,11 @@ import urllib.request
 
 from django.conf import settings
 
+from . import config
+
 log = logging.getLogger(__name__)
 
-GATEWAY_NAMES = {"sep": "بانک سامان (سپ)", "zarinpal": "زرین‌پال", "fake": "درگاه آزمایشی"}
+GATEWAY_NAMES = {"sep": "بانک سامان (سپ)", "zarinpal": "زرین‌پال", "fake": "درگاه آزمایشی", "manual": "ثبت دستی"}
 
 
 class GatewayError(Exception):
@@ -54,11 +56,11 @@ class Sep:
 
     @staticmethod
     def available():
-        return bool(settings.SEP_TERMINAL_ID)
+        return bool(config.get('SEP_TERMINAL_ID'))
 
     def start(self, payment, callback_url):
         data = post_json(self.TOKEN_URL, {
-            "action": "token", "TerminalId": settings.SEP_TERMINAL_ID, "Amount": payment.amount * 10,
+            "action": "token", "TerminalId": config.get('SEP_TERMINAL_ID'), "Amount": payment.amount * 10,
             "ResNum": payment.res_num, "RedirectUrl": callback_url, "CellNumber": payment.order.mobile,
         })
         payment.raw = {"token_response": data}
@@ -86,7 +88,7 @@ class Sep:
 
         if Payment.objects.filter(gateway=self.key, ref_id=ref, status="ok").exclude(pk=payment.pk).exists():
             return Result(False, message="این تراکنش قبلاً استفاده شده است.", raw=raw)
-        data = post_json(self.VERIFY_URL, {"RefNum": ref, "TerminalNumber": int(settings.SEP_TERMINAL_ID)})
+        data = post_json(self.VERIFY_URL, {"RefNum": ref, "TerminalNumber": int(config.get('SEP_TERMINAL_ID'))})
         raw["verify"] = data
         detail = data.get("TransactionDetail") or {}
         amounts = {detail.get("OrginalAmount"), detail.get("AffectiveAmount")}
@@ -96,7 +98,7 @@ class Sep:
         if data.get("ResultCode") in (0, 2):
             # مبلغ نخواند: برگشت وجه
             try:
-                raw["reverse"] = post_json(self.REVERSE_URL, {"RefNum": ref, "TerminalNumber": int(settings.SEP_TERMINAL_ID)})
+                raw["reverse"] = post_json(self.REVERSE_URL, {"RefNum": ref, "TerminalNumber": int(config.get('SEP_TERMINAL_ID'))})
             except GatewayError:
                 pass
         return Result(False, message=data.get("ResultDescription") or "تأیید پرداخت ناموفق بود.", raw=raw)
@@ -108,11 +110,11 @@ class Zarinpal:
 
     @staticmethod
     def available():
-        return bool(settings.ZARINPAL_MERCHANT_ID)
+        return bool(config.get('ZARINPAL_MERCHANT_ID'))
 
     @property
     def base(self):
-        return "https://sandbox.zarinpal.com" if settings.ZARINPAL_SANDBOX else "https://payment.zarinpal.com"
+        return "https://sandbox.zarinpal.com" if config.zarinpal_sandbox() else "https://payment.zarinpal.com"
 
     def start(self, payment, callback_url):
         o = payment.order
@@ -120,7 +122,7 @@ class Zarinpal:
         if o.email:
             meta["email"] = o.email
         data = post_json(self.base + "/pg/v4/payment/request.json", {
-            "merchant_id": settings.ZARINPAL_MERCHANT_ID, "amount": payment.amount * 10, "currency": "IRR",
+            "merchant_id": config.get('ZARINPAL_MERCHANT_ID'), "amount": payment.amount * 10, "currency": "IRR",
             "callback_url": callback_url, "description": f"سفارش {o.number} ایران کارپت", "metadata": meta,
         })
         payment.raw = {"request": data}
@@ -142,7 +144,7 @@ class Zarinpal:
         if params.get("Status") != "OK":
             return Result(False, message="پرداخت لغو شد یا ناموفق بود.", raw=raw)
         data = post_json(self.base + "/pg/v4/payment/verify.json", {
-            "merchant_id": settings.ZARINPAL_MERCHANT_ID, "amount": payment.amount * 10, "authority": payment.token,
+            "merchant_id": config.get('ZARINPAL_MERCHANT_ID'), "amount": payment.amount * 10, "authority": payment.token,
         })
         raw["verify"] = data
         d = data.get("data") or {}

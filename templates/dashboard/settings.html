@@ -1,0 +1,52 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}تنظیمات{% endblock %}
+{% block content %}
+<div class="page-top"><div><h1>تنظیمات</h1><p class="muted">همهٔ تنظیمات سایت، فروش، درگاه‌ها و پیامک در همین صفحه است.</p></div></div>
+<nav class="tabs-p" aria-label="بخش‌های تنظیمات">{% for k, t in tabs %}<a href="?tab={{ k }}" class="{% if k == tab %}on{% endif %}">{{ t }}</a>{% endfor %}</nav>
+<div class="edit__grid">
+  <div class="edit__main">
+    <form method="post" class="card-p" novalidate>{% csrf_token %}<input type="hidden" name="tab" value="{{ tab }}">
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      {% if tab == "gateways" %}
+        <h2>بانک سامان (سپ)</h2>
+        {% with f=form.sep_enabled %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.sep_terminal_id %}{% include "dashboard/_field.html" %}{% endwith %}
+        <p class="hint">آدرس بازگشت (Callback) برای ثبت در پنل سپ: <code class="ltr-num">{{ callback_sep }}</code>. آی‌پی سرور هم باید در پنل سپ مجاز باشد.</p>
+        <h2 class="mt-4">زرین‌پال</h2>
+        {% with f=form.zarinpal_enabled %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.zarinpal_merchant_id %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.zarinpal_sandbox %}{% include "dashboard/_field.html" %}{% endwith %}
+        <p class="hint">آدرس بازگشت: <code class="ltr-num">{{ callback_zp }}</code></p>
+      {% else %}
+        {% for f in form %}{% include "dashboard/_field.html" %}{% endfor %}
+      {% endif %}
+      {% if tab == "site" %}
+        <h2 class="mt-4">امتیازهای فروشگاه (نوار زیر بالای صفحهٔ اصلی)</h2>
+        <div id="trust">{% for t in trust %}<div class="trust-row"><input name="tp_title" value="{{ t.0 }}" class="form-control" placeholder="عنوان"><input name="tp_sub" value="{{ t.1 }}" class="form-control" placeholder="توضیح کوتاه"><button type="button" class="btn btn-light btn-sm" data-remove-row aria-label="حذف">×</button></div>{% endfor %}</div>
+        <button type="button" class="btn btn-light btn-sm" id="addTrust"><svg class="ic"><use href="#i-plus"/></svg> امتیاز تازه</button>
+        <template id="trustTpl"><div class="trust-row"><input name="tp_title" class="form-control" placeholder="عنوان"><input name="tp_sub" class="form-control" placeholder="توضیح کوتاه"><button type="button" class="btn btn-light btn-sm" data-remove-row aria-label="حذف">×</button></div></template>
+      {% endif %}
+      {% if tab == "pricing" %}<div class="alert alert-warning mt-3 mb-3">با ذخیرهٔ این بخش، قیمت همهٔ سایزهای همهٔ محصولات با فرمول تازه دوباره محاسبه می‌شود.</div>{% endif %}
+      <button class="btn btn-pink mt-3" type="submit">ذخیره</button>
+    </form>
+    {% if tab == "sms" %}
+    <form method="post" class="card-p">{% csrf_token %}<input type="hidden" name="tab" value="sms"><input type="hidden" name="do" value="sms_test">
+      <h2>آزمایش پیامک</h2>
+      <p class="hint">یک پیامک کد ورود با کد ۱۲۳۴۵ به این شماره فرستاده می‌شود.</p>
+      <div class="d-flex gap-2 flex-wrap"><input name="test_mobile" class="form-control ltr-num" style="max-width:220px" placeholder="۰۹۱۲…" inputmode="tel"><button class="btn btn-ink" type="submit">ارسال پیامک آزمایشی</button></div>
+    </form>
+    {% endif %}
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>وضعیت اتصال‌ها</h2>
+      <div class="kv"><span>درگاه سامان</span><strong>{% if info.sep %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
+      <div class="kv"><span>زرین‌پال</span><strong>{% if info.zarinpal %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
+      <div class="kv"><span>پیامک sms.ir</span><strong>{% if info.sms %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
+      <div class="kv"><span>درگاه آزمایشی</span><strong>{% if info.fake %}<span class="dot warn"></span>روشن (فقط نسخهٔ آزمایشی){% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
+      <div class="kv"><span>درگاه‌های نمایش داده‌شده به مشتری</span><strong>{{ info.active|length|fa_num }}</strong></div>
+    </section>
+    {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند.</p></section>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts_before %}{% if tab == "site" %}{% include "dashboard/_editor_assets.html" %}{% endif %}{% endblock %}

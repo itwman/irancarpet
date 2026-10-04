@@ -1,0 +1,35 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}{% if obj %}{{ obj.get_full_name|default:obj.username }}{% else %}کاربر تازه{% endif %}{% endblock %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+<div class="page-top">
+  <div><a href="/panel/customers/" class="back">‹ مشتریان</a><h1>{% if obj %}{{ obj.get_full_name|default:obj.username }}{% else %}کاربر تازه{% endif %}</h1>
+    {% if obj %}<p class="muted">عضو از {{ obj.date_joined|jdate }}{% if obj.last_login %} · آخرین ورود {{ obj.last_login|jdate:"%Y/%m/%d %H:%M" }}{% endif %}</p>{% endif %}</div>
+  <div class="page-top__actions"><button class="btn btn-pink" type="submit">ذخیره</button></div>
+</div>
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p"><h2>اطلاعات</h2>
+      <div class="grid-2">{% with f=form.first_name %}{% include "dashboard/_field.html" %}{% endwith %}{% with f=form.last_name %}{% include "dashboard/_field.html" %}{% endwith %}
+      {% with f=form.mobile %}{% include "dashboard/_field.html" %}{% endwith %}{% with f=form.email %}{% include "dashboard/_field.html" %}{% endwith %}
+      {% with f=form.province %}{% include "dashboard/_field.html" %}{% endwith %}{% with f=form.city %}{% include "dashboard/_field.html" %}{% endwith %}</div>
+      {% with f=form.address %}{% include "dashboard/_field.html" %}{% endwith %}{% with f=form.postal_code %}{% include "dashboard/_field.html" %}{% endwith %}
+    </section>
+    {% if obj %}<section class="card-p"><h2>سفارش‌ها</h2>
+      {% if orders %}<div class="table-wrap"><table class="tbl"><thead><tr><th>شماره</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th></tr></thead><tbody>
+      {% for o in orders %}<tr data-href="/panel/orders/{{ o.pk }}/view/"><td>{{ o.number|fa_num }}</td><td class="num">{{ o.items_total|toman }}</td><td><span class="badge-ic b-{{ o.status }}">{{ o.get_status_display }}</span></td><td>{{ o.created_at|jdate }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">سفارشی ندارد.</p>{% endif %}</section>{% endif %}
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>دسترسی و رمز</h2>
+      {% with f=form.is_active %}{% include "dashboard/_field.html" %}{% endwith %}
+      {% with f=form.is_staff %}{% include "dashboard/_field.html" %}{% endwith %}
+      {% with f=form.is_superuser %}{% include "dashboard/_field.html" %}{% endwith %}
+      {% with f=form.password %}{% include "dashboard/_field.html" %}{% endwith %}
+      <p class="hint">کاربر با «دسترسی به پنل مدیریت» همهٔ بخش‌های پنل را می‌بیند و ویرایش می‌کند. «مدیر کل» علاوه بر آن می‌تواند به دیگران دسترسی بدهد.</p>
+    </section>
+  </div>
+</div>
+</form>
+{% endblock %}

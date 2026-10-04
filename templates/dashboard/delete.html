@@ -1,0 +1,13 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}حذف {{ res.single }}{% endblock %}
+{% block content %}
+<div class="card-p narrow">
+  <h1 class="h4">حذف «{{ obj }}»؟</h1>
+  <p>این کار برگشت‌پذیر نیست.</p>
+  {% if related %}<p class="muted">همراه آن این موارد هم حذف می‌شوند:</p><ul>{% for k, n in related.items %}<li>{{ n|fa_num }} {{ k }}</li>{% endfor %}</ul>{% endif %}
+  <form method="post" class="d-flex gap-2">{% csrf_token %}
+    <button class="btn btn-danger" type="submit">بله، حذف شود</button>
+    <a class="btn btn-light" href="{{ res.url }}{{ obj.pk }}/">انصراف</a>
+  </form>
+</div>
+{% endblock %}

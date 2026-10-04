@@ -1,0 +1,10 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}جستجو{% endblock %}
+{% block content %}
+<div class="page-top"><div><h1>جستجو: «{{ q }}»</h1></div></div>
+{% if not any %}<div class="card-p empty-p"><p>{% if q|length < 2 %}دست‌کم دو حرف بنویسید.{% else %}چیزی پیدا نشد.{% endif %}</p></div>{% endif %}
+{% if res.orders %}<section class="card-p"><h2>سفارش‌ها</h2><table class="tbl"><tbody>{% for o in res.orders %}<tr data-href="/panel/orders/{{ o.pk }}/view/"><td>{{ o.number|fa_num }}</td><td>{{ o.full_name }}</td><td>{{ o.mobile|fa_num }}</td><td class="num">{{ o.items_total|toman }}</td><td><span class="badge-ic b-{{ o.status }}">{{ o.get_status_display }}</span></td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% if res.products %}<section class="card-p"><h2>محصولات</h2><table class="tbl"><tbody>{% for p in res.products %}<tr data-href="/panel/products/{{ p.pk }}/edit/"><td class="w-thumb">{% if p.image %}<img class="thumb" src="{{ p.image.url }}" alt="">{% endif %}</td><td>{{ p.title|fa_num }}</td><td class="num">{{ p.min_price|toman }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% if res.customers %}<section class="card-p"><h2>مشتریان</h2><table class="tbl"><tbody>{% for u in res.customers %}<tr data-href="/panel/customers/{{ u.pk }}/edit/"><td>{{ u.get_full_name|default:"—" }}</td><td>{{ u.profile.mobile|default:u.username|fa_num }}</td><td>{{ u.email }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% if res.posts %}<section class="card-p"><h2>نوشته‌ها</h2><table class="tbl"><tbody>{% for p in res.posts %}<tr data-href="/panel/posts/{{ p.pk }}/"><td>{{ p.title|fa_num }}</td><td>{{ p.published_at|jdate }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% endblock %}

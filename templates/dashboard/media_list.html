@@ -1,0 +1,13 @@
+{% extends "dashboard/list.html" %}{% load fa %}
+{% block before_table %}
+<label class="dropzone card-p" id="dropzone">
+  <input type="file" multiple accept="image/*,.pdf,.mp4" hidden data-upload-to="reload">
+  <strong>فایل‌ها را اینجا رها کنید یا کلیک کنید</strong><span class="muted">تصویر، PDF یا ویدیو؛ حداکثر ۱۵ مگابایت</span>
+</label>
+{% endblock %}
+{% block table %}
+<div class="media-grid">
+  {% for r in rows %}<label class="media-card"><input type="checkbox" class="form-check-input" name="ids" value="{{ r.obj.pk }}" aria-label="انتخاب"><a href="{{ r.url }}"><img src="{{ r.obj.url }}" alt="{{ r.obj.alt }}" loading="lazy"></a><span>{{ r.obj.title|truncatechars:28 }}</span></label>
+  {% empty %}<div class="card-p empty-p">فایلی پیدا نشد.</div>{% endfor %}
+</div>
+{% endblock %}

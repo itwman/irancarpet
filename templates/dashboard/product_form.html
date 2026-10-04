@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}{% load fa panel %}
+{% block title %}{% if obj %}{{ obj.title }}{% else %}محصول تازه{% endif %}{% endblock %}
+{% block content %}
+<form method="post" class="edit" id="productForm" novalidate>{% csrf_token %}
+  <div class="page-top">
+    <div>
+      <a href="/panel/products/" class="back">‹ محصولات</a>
+      <h1>{% if obj %}{{ obj.title|fa_num }}{% else %}محصول تازه{% endif %}</h1>
+      {% if obj %}<p class="muted">{% if obj.min_price %}از {{ obj.min_price|toman }} تا {{ obj.max_price|toman }} تومان · {% endif %}{{ obj.views|fa_num }} بازدید</p>{% endif %}
+    </div>
+    <div class="page-top__actions">
+      {% if obj %}<a class="btn btn-light btn-sm" href="{{ obj.get_absolute_url }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-ext"/></svg> دیدن در سایت</a>
+      <button class="btn btn-light btn-sm" type="submit" form="dupForm"><svg class="ic"><use href="#i-copy"/></svg> کپی</button>
+      <a class="btn btn-light btn-sm text-danger" href="/panel/products/{{ obj.pk }}/delete/"><svg class="ic"><use href="#i-trash"/></svg></a>{% endif %}
+      <button class="btn btn-light btn-sm" name="_next" value="list" type="submit">ذخیره و بازگشت</button>
+      <button class="btn btn-pink" type="submit">ذخیره</button>
+    </div>
+  </div>
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="edit__grid">
+    <div class="edit__main">
+      <section class="card-p"><h2>اطلاعات محصول</h2>
+        {% for name in groups.main %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}
+      </section>
+
+      <section class="card-p" id="sizes">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"><h2 class="m-0">سایزها و قیمت‌ها</h2>
+          <small class="muted">قیمت نهایی از آلبوم محاسبه می‌شود. «قیمت خرید اختصاصی» فرمول را برای همان سایز جایگزین می‌کند؛ «قیمت دستی» برای محصول بدون آلبوم است.</small></div>
+        {{ vfs.management_form }}
+        {% if vfs.non_form_errors %}<div class="alert alert-danger">{{ vfs.non_form_errors }}</div>{% endif %}
+        <div class="table-wrap"><table class="tbl tbl--form tbl--vars" data-formset="v">
+          <thead><tr><th>سایز</th><th>قیمت نهایی</th><th>موجود</th><th>قیمت حراج</th><th>قیمت خرید اختصاصی</th><th>قیمت دستی</th><th>رنگ/ویژگی</th><th>کد</th><th>فقط جفت</th><th>ترتیب</th><th>حذف</th></tr></thead>
+          <tbody>
+          {% for row in vfs.forms %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}
+            <td class="w-size">{{ row.size }}{% for e in row.size.errors %}<div class="err">{{ e }}</div>{% endfor %}</td>
+            <td class="num nowrap">{% if row.instance.final_price %}<strong>{{ row.instance.final_price|toman }}</strong>{% else %}<span class="muted">—</span>{% endif %}</td>
+            <td>{{ row.is_available }}</td><td>{{ row.sale_price }}</td><td>{{ row.override_price }}</td><td>{{ row.manual_price }}</td>
+            <td class="w-attr">{{ row.attributes }}</td><td>{{ row.sku }}</td><td>{{ row.pair_only }}</td><td class="w-order">{{ row.menu_order }}</td>
+            <td>{{ row.DELETE }}</td></tr>{% endfor %}
+          </tbody>
+          <template>{% with row=vfs.empty_form %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}<td class="w-size">{{ row.size }}</td><td class="muted">پس از ذخیره</td><td>{{ row.is_available }}</td><td>{{ row.sale_price }}</td><td>{{ row.override_price }}</td><td>{{ row.manual_price }}</td><td class="w-attr">{{ row.attributes }}</td><td>{{ row.sku }}</td><td>{{ row.pair_only }}</td><td class="w-order">{{ row.menu_order }}</td><td>{{ row.DELETE }}</td></tr>{% endwith %}</template>
+        </table></div>
+        <button type="button" class="btn btn-light btn-sm mt-2" data-add-row="v"><svg class="ic"><use href="#i-plus"/></svg> سایز تازه</button>
+      </section>
+
+      <section class="card-p"><h2>گالری تصاویر</h2>
+        <input type="hidden" name="gallery" id="galleryIds" value="{{ gallery_ids }}">
+        <div class="gallery-p" id="gallery">
+          {% for m in gallery %}<figure data-id="{{ m.pk }}"><img src="{{ m.url }}" alt=""><button type="button" class="x" aria-label="برداشتن">×</button></figure>{% endfor %}
+        </div>
+        <div class="gallery-add">
+          <select class="ac" data-ac="/panel/ac/media/" data-ac-media="1" id="galleryPick"><option value="">انتخاب از کتابخانه…</option></select>
+          <label class="btn btn-light btn-sm mb-0"><svg class="ic"><use href="#i-plus"/></svg> آپلود تصویر<input type="file" accept="image/*" multiple hidden data-upload-to="gallery"></label>
+        </div>
+        <p class="hint mt-2">برای تغییر ترتیب، تصویرها را بکشید. اولین تصویر اگر «تصویر اصلی» خالی باشد، تصویر اصلی می‌شود.</p>
+      </section>
+
+      <section class="card-p"><h2>پرسش‌های متداول این محصول</h2>
+        {{ ffs.management_form }}
+        <div class="table-wrap"><table class="tbl tbl--form" data-formset="f">
+          <thead><tr><th>پرسش</th><th>پاسخ</th><th>ترتیب</th><th>فعال</th><th>حذف</th></tr></thead>
+          <tbody>{% for row in ffs.forms %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}<td>{{ row.question }}</td><td>{{ row.answer }}</td><td class="w-order">{{ row.order }}</td><td>{{ row.is_active }}</td><td>{{ row.DELETE }}</td></tr>{% endfor %}</tbody>
+          <template>{% with row=ffs.empty_form %}<tr>{% for h in row.hidden_fields %}{{ h }}{% endfor %}<td>{{ row.question }}</td><td>{{ row.answer }}</td><td class="w-order">{{ row.order }}</td><td>{{ row.is_active }}</td><td>{{ row.DELETE }}</td></tr>{% endwith %}</template>
+        </table></div>
+        <button type="button" class="btn btn-light btn-sm mt-2" data-add-row="f"><svg class="ic"><use href="#i-plus"/></svg> پرسش تازه</button>
+      </section>
+    </div>
+    <div class="edit__side">
+      <section class="card-p"><h2>انتشار</h2>{% for name in groups.publish %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}{% with f=form.sku %}{% include "dashboard/_field.html" %}{% endwith %}</section>
+      <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+      <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
+      <section class="card-p"><h2>دسته، برند و مشخصات</h2>{% for name in groups.tax %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+      <section class="card-p"><h2>سئو</h2>{% for name in groups.seo %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+    </div>
+  </div>
+</form>
+{% if obj %}<form method="post" action="/panel/products/{{ obj.pk }}/duplicate/" id="dupForm">{% csrf_token %}</form>{% endif %}
+{% endblock %}
+{% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% load static %}<script src="{% static 'vendor/sortable/Sortable.min.js' %}"></script>{% endblock %}

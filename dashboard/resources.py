@@ -1,0 +1,345 @@
+"""همهٔ بخش‌های پنل در اینجا تعریف می‌شوند."""
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.db.models import Count
+from django.utils.html import format_html
+
+from blog.models import BlogCategory, BlogTag, Comment, Faq, Page, Post
+from catalog.models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review
+from core.models import Media
+from core.templatetags.fa import fa_num, jdate, toman
+from pricing.models import Album, PriceLog, Size
+from seo.models import NotFoundLog, Redirect
+from shop.models import Order, Payment
+
+from .models import ActivityLog
+from .registry import Col, Inline, Resource, badge, register, thumb, yesno
+
+SEO = ("سئو (عنوان و توضیح در گوگل)", ["seo_title", "seo_description", "focus_keyword", "robots", "canonical_url"], "side")
+
+
+def jd(attr, fmt="%Y/%m/%d"):
+    return lambda o: jdate(getattr(o, attr), fmt)
+
+
+def money(attr):
+    return lambda o: format_html('<span class="num">{}</span>', toman(getattr(o, attr)) if getattr(o, attr) not in (None, "") else "—")
+
+
+def link(url_fn, text_fn):
+    return lambda o: format_html('<a href="{}" target="_blank" rel="noopener">{}</a>', url_fn(o), text_fn(o))
+
+
+# ================================================================== فروش
+register(Resource(
+    key="orders", model=Order, title="سفارش‌ها", single="سفارش", group="فروش", icon="receipt",
+    columns=[Col("number", "شماره", lambda o: fa_num(o.number), "number"),
+             Col("customer", "مشتری", lambda o: format_html("{}<br><small class='muted'>{}</small>", o.full_name, fa_num(o.mobile))),
+             Col("items_total", "مبلغ", money("items_total"), "items_total"),
+             Col("paid_amount", "پرداخت‌شده", money("paid_amount"), "paid_amount"),
+             Col("payment_mode", "پرداخت", lambda o: o.get_payment_mode_display()),
+             Col("status", "وضعیت", badge("status"), "status"),
+             Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    search=["=number", "mobile", "first_name", "last_name", "email", "city"],
+    filters=["status", "payment_mode", "shipping_mode", "province"], date_filter="created_at",
+    ordering=("-created_at",), can_add=False, edit_url=lambda o: f"/panel/orders/{o.pk}/view/",
+))
+
+register(Resource(
+    key="payments", model=Payment, title="تراکنش‌ها", single="تراکنش", group="فروش", icon="card",
+    columns=[Col("order", "سفارش", lambda o: format_html('<a href="/panel/orders/{}/view/">{}</a>', o.order_id, fa_num(o.order.number))),
+             Col("gateway", "درگاه", lambda o: o.get_gateway_display()),
+             Col("amount", "مبلغ", money("amount"), "amount"),
+             Col("status", "وضعیت", badge("status"), "status"),
+             Col("ref_id", "کد پیگیری", lambda o: fa_num(o.ref_id)),
+             Col("message", "پیام", lambda o: o.message),
+             Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    search=["ref_id", "token", "=order__number"], filters=["gateway", "status"], date_filter="created_at",
+    queryset=lambda qs: qs.select_related("order"), can_add=False, can_delete=False,
+    edit_url=lambda o: f"/panel/orders/{o.order_id}/view/",
+))
+
+User = get_user_model()
+register(Resource(
+    key="customers", model=User, title="مشتریان و کارمندان", single="کاربر", group="فروش", icon="users",
+    columns=[Col("name", "نام", lambda o: o.get_full_name() or "—"),
+             Col("mobile", "موبایل", lambda o: fa_num(getattr(getattr(o, "profile", None), "mobile", "") or o.username)),
+             Col("email", "ایمیل", lambda o: o.email),
+             Col("orders", "سفارش", lambda o: fa_num(o._orders), "_orders"),
+             Col("is_staff", "دسترسی پنل", yesno("is_staff"), "is_staff"),
+             Col("date_joined", "عضویت", jd("date_joined"), "date_joined")],
+    search=["username", "first_name", "last_name", "email", "profile__mobile"], filters=["is_staff", "is_active"],
+    date_filter="date_joined", ordering=("-date_joined",), can_add=True,
+    queryset=lambda qs: qs.select_related("profile").annotate(_orders=Count("orders")),
+    edit_url=lambda o: f"/panel/customers/{o.pk}/edit/",
+))
+
+# ================================================================ فروشگاه
+register(Resource(
+    key="products", model=Product, title="محصولات", single="محصول", group="فروشگاه", icon="carpet",
+    columns=[Col("image", "", thumb(), cls="w-thumb"),
+             Col("title", "عنوان", lambda o: fa_num(o.title), "title"),
+             Col("album", "آلبوم قیمت", lambda o: o.album.name if o.album else "—"),
+             Col("min_price", "از قیمت", money("min_price"), "min_price"),
+             Col("stock_status", "موجودی", badge("stock_status"), "stock_status"),
+             Col("status", "وضعیت", badge("status"), "status"),
+             Col("published_at", "انتشار", jd("published_at"), "published_at")],
+    search=["title", "sku", "slug", "=id"], filters=["status", "stock_status", "sale_status", "album", "brand", "categories"],
+    date_filter="published_at", ordering=("-published_at",),
+    queryset=lambda qs: qs.select_related("image", "album"),
+    view_url=lambda o: o.get_absolute_url(), edit_url=lambda o: f"/panel/products/{o.pk}/edit/",
+    actions={
+        "publish": ("انتشار", lambda r, qs: f"{qs.update(status='publish')} محصول منتشر شد."),
+        "draft": ("پیش‌نویس کردن", lambda r, qs: f"{qs.update(status='draft')} محصول پیش‌نویس شد."),
+        "available": ("وضعیت فروش: موجود", lambda r, qs: _set_sale(qs, "available")),
+        "unavailable": ("وضعیت فروش: ناموجود", lambda r, qs: _set_sale(qs, "unavailable")),
+    },
+))
+
+
+def _set_sale(qs, status):
+    n = 0
+    for p in qs:
+        p.sale_status = status
+        p.save()
+        p.refresh_price_cache()
+        n += 1
+    return f"وضعیت فروش {n} محصول تغییر کرد."
+
+
+TAX_FIELDS = ("اطلاعات", ["name", "slug", "description"], "main")
+register(Resource(
+    key="categories", model=Category, title="دسته‌های محصول", single="دسته", group="فروشگاه", icon="folder",
+    columns=[Col("image", "", thumb(), cls="w-thumb"), Col("name", "نام", sort="name"),
+             Col("parent", "والد", lambda o: o.parent.name if o.parent else "—"),
+             Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("order", "ترتیب", lambda o: fa_num(o.order), "order")],
+    search=["name", "slug"], ordering=("order", "name"), slug_from="name",
+    queryset=lambda qs: qs.select_related("parent", "image").annotate(_n=Count("products")),
+    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image"], "side"), SEO],
+    view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="brands", model=Brand, title="برندها", single="برند", group="فروشگاه", icon="tag",
+    columns=[Col("logo", "", thumb("logo"), cls="w-thumb"), Col("name", "نام", sort="name"), Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
+    search=["name", "slug"], ordering=("name",), slug_from="name",
+    queryset=lambda qs: qs.select_related("logo").annotate(_n=Count("products")),
+    fieldsets=[TAX_FIELDS, ("لوگو", ["logo"], "side"), SEO], view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="tags", model=ProductTag, title="برچسب‌های محصول", single="برچسب", group="فروشگاه", icon="hash",
+    columns=[Col("name", "نام", sort="name"), Col("slug", "نامک"), Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
+    search=["name", "slug"], ordering=("name",), slug_from="name",
+    queryset=lambda qs: qs.annotate(_n=Count("products")), fieldsets=[TAX_FIELDS, SEO], view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="attributes", model=Attribute, title="ویژگی‌ها (شانه، رنگ و…)", single="ویژگی", group="فروشگاه", icon="sliders",
+    columns=[Col("label", "نام", sort="label"), Col("slug", "نامک"), Col("is_public", "صفحهٔ عمومی", yesno("is_public")),
+             Col("show_in_filters", "در فیلترها", yesno("show_in_filters")), Col("n", "مقدار", lambda o: fa_num(o._n), "_n")],
+    search=["label", "slug"], ordering=("order",), slug_from="label",
+    queryset=lambda qs: qs.annotate(_n=Count("terms")),
+    fieldsets=[("اطلاعات", ["label", "slug", "order"], "main"), ("نمایش", ["is_public", "show_in_filters"], "side")],
+    inlines=[Inline(AttributeTerm, "attribute", ["name", "slug", "order"], "مقدارها", extra=2)],
+))
+register(Resource(
+    key="terms", model=AttributeTerm, title="مقدار ویژگی‌ها", single="مقدار", group="فروشگاه", icon="list", nav=False,
+    columns=[Col("attribute", "ویژگی", lambda o: o.attribute.label), Col("name", "مقدار", lambda o: fa_num(o.name), "name"),
+             Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
+    search=["name", "slug"], filters=["attribute"], ordering=("attribute__order", "order"), slug_from="name",
+    queryset=lambda qs: qs.select_related("attribute").annotate(_n=Count("products")),
+    fieldsets=[("اطلاعات", ["attribute", "name", "slug", "order", "description"], "main"), SEO],
+    view_url=lambda o: o.get_absolute_url() if o.attribute.is_public else "",
+))
+
+
+def _review_after_save(request, obj, created, form=None):
+    reply = (request.POST.get("reply") or "").strip()
+    if reply:
+        Review.objects.create(product=obj.product, parent=obj, author_name="ایران کارپت", content=reply, is_approved=True, rating=0)
+
+
+register(Resource(
+    key="reviews", model=Review, title="نظرات محصولات", single="نظر", group="فروشگاه", icon="chat",
+    columns=[Col("author_name", "نویسنده", sort="author_name"),
+             Col("content", "متن", lambda o: (o.content or "")[:90]),
+             Col("product", "محصول", lambda o: fa_num(o.product.title)[:50]),
+             Col("rating", "امتیاز", lambda o: "★" * (o.rating or 0), "rating"),
+             Col("is_approved", "تأیید", yesno("is_approved"), "is_approved"),
+             Col("created_at", "تاریخ", jd("created_at"), "created_at")],
+    search=["author_name", "content", "product__title"], filters=["is_approved", "rating"], date_filter="created_at",
+    ordering=("-created_at",), queryset=lambda qs: qs.select_related("product"),
+    fieldsets=[("نظر", ["author_name", "author_email", "rating", "content"], "main"), ("وضعیت", ["product", "is_approved", "created_at"], "side")],
+    after_save=_review_after_save, can_add=False,
+    view_url=lambda o: o.product.get_absolute_url() + "#reviews",
+    actions={"approve": ("تأیید", lambda r, qs: f"{qs.update(is_approved=True)} نظر تأیید شد."),
+             "unapprove": ("رد تأیید", lambda r, qs: f"{qs.update(is_approved=False)} نظر از نمایش خارج شد.")},
+))
+register(Resource(
+    key="faqs", model=Faq, title="پرسش‌های متداول", single="پرسش", group="فروشگاه", icon="help",
+    columns=[Col("question", "پرسش", sort="question"), Col("product", "محصول", lambda o: o.product.title[:40] if o.product else "عمومی"),
+             Col("is_active", "فعال", yesno("is_active")), Col("order", "ترتیب", lambda o: fa_num(o.order), "order")],
+    search=["question", "answer"], filters=["is_active"], ordering=("order",), queryset=lambda qs: qs.select_related("product"),
+    fieldsets=[("پرسش", ["question", "answer"], "main"), ("تنظیمات", ["product", "group", "order", "is_active"], "side")],
+))
+
+# ============================================================== قیمت‌گذاری
+register(Resource(
+    key="albums", model=Album, title="آلبوم‌های قیمت", single="آلبوم", group="قیمت‌گذاری", icon="layers",
+    columns=[Col("name", "نام", sort="name"), Col("code", "کد"), Col("company", "شرکت"),
+             Col("base_size", "سایز پایه", lambda o: o.base_size.label if o.base_size else "—"),
+             Col("base_price", "قیمت پایه", money("base_price"), "base_price"),
+             Col("waste", "پرتی", lambda o: f"{fa_num(int(o.waste_value or 0)):}" + ("٪" if o.waste_type == "percent" else "")),
+             Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("is_active", "فعال", yesno("is_active")),
+             Col("last_updated", "به‌روزرسانی", jd("last_updated"), "last_updated")],
+    search=["name", "code", "company"], filters=["is_active", "base_size", "waste_type"], ordering=("sort_order", "name"),
+    queryset=lambda qs: qs.select_related("base_size").annotate(_n=Count("products")),
+    fieldsets=[("آلبوم", ["name", "code", "company", "description"], "main"),
+               ("قیمت", ["base_size", "base_price", "waste_type", "waste_value"], "side"),
+               ("وضعیت", ["is_active", "sort_order"], "side")],
+    after_save=lambda r, o, c, f: _album_log(r, o, c, f),
+    actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)")},
+    help="با تغییر قیمت پایهٔ آلبوم، قیمت همهٔ سایزهای محصولات آن آلبوم خودکار دوباره محاسبه می‌شود.",
+))
+def _album_log(request, obj, created, form):
+    if not created and "base_price" in form.changed_data:
+        PriceLog.objects.create(album=obj, old_price=form.initial.get("base_price") or 0, new_price=obj.base_price,
+                                reason="panel_edit", user=request.user)
+
+
+def _album_percent(request, qs):
+    from .forms import to_en
+
+    try:
+        p = Decimal(to_en(request.POST.get("action_value", "")).replace("٪", "").replace("%", "").strip())
+    except Exception:  # noqa: BLE001
+        return "درصد نامعتبر بود؛ چیزی تغییر نکرد."
+    n = 0
+    for album in qs:
+        album.set_base_price((album.base_price * (1 + p / 100)).quantize(Decimal("1")), request.user, "bulk_percent")
+        n += 1
+    return f"قیمت پایهٔ {fa_num(n)} آلبوم {fa_num(p)}٪ تغییر کرد و قیمت محصولاتشان دوباره محاسبه شد."
+
+
+register(Resource(
+    key="sizes", model=Size, title="سایزها", single="سایز", group="قیمت‌گذاری", icon="ruler",
+    columns=[Col("label", "عنوان", lambda o: fa_num(o.label), "label"), Col("slug", "نامک"), Col("type", "نوع", badge("type"), "type"),
+             Col("area", "متراژ", lambda o: fa_num(o.area.normalize()), "area"), Col("default_pair_only", "فقط جفت", yesno("default_pair_only")),
+             Col("needs_waste", "پرتی", yesno("needs_waste")), Col("is_active", "فعال", yesno("is_active")),
+             Col("n", "تنوع", lambda o: fa_num(o._n), "_n")],
+    search=["label", "slug"], filters=["type", "is_active", "needs_waste"], ordering=("sort_order",),
+    queryset=lambda qs: qs.annotate(_n=Count("variations")),
+    fieldsets=[("سایز", ["label", "slug", "type", "width", "length", "diameter", "area"], "main"),
+               ("قواعد", ["default_pair_only", "needs_waste", "is_active", "sort_order"], "side")],
+))
+register(Resource(
+    key="pricelog", model=PriceLog, title="تاریخچهٔ قیمت", single="تغییر قیمت", group="قیمت‌گذاری", icon="clock",
+    columns=[Col("album", "آلبوم", lambda o: o.album.name if o.album else (o.product.title if o.product else "—")),
+             Col("old_price", "قیمت قبلی", money("old_price")), Col("new_price", "قیمت جدید", money("new_price")),
+             Col("reason", "دلیل"), Col("user", "کاربر", lambda o: o.user.get_full_name() or o.user.username if o.user else "—"),
+             Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    filters=["album"], date_filter="created_at", ordering=("-created_at",), can_add=False,
+    queryset=lambda qs: qs.select_related("album", "product", "user"), edit_url=lambda o: "/panel/pricelog/",
+))
+
+# ================================================================== مجله
+register(Resource(
+    key="posts", model=Post, title="نوشته‌های مجله", single="نوشته", group="مجله و برگه‌ها", icon="pen",
+    columns=[Col("image", "", thumb(), cls="w-thumb"), Col("title", "عنوان", lambda o: fa_num(o.title), "title"),
+             Col("status", "وضعیت", badge("status"), "status"), Col("views", "بازدید", lambda o: fa_num(o.views), "views"),
+             Col("published_at", "انتشار", jd("published_at"), "published_at")],
+    search=["title", "slug"], filters=["status", "categories"], date_filter="published_at", ordering=("-published_at",),
+    queryset=lambda qs: qs.select_related("image"), slug_from="title",
+    fieldsets=[("نوشته", ["title", "slug", "content", "excerpt"], "main"),
+               ("انتشار", ["status", "published_at", "author_name"], "side"),
+               ("دسته و برچسب", ["primary_category", "categories", "tags"], "side"),
+               ("تصویر شاخص", ["image"], "side"), SEO],
+    view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="pages", model=Page, title="برگه‌ها", single="برگه", group="مجله و برگه‌ها", icon="file",
+    columns=[Col("title", "عنوان", sort="title"), Col("path", "آدرس", lambda o: format_html('<span class="ltr-num">/{}/</span>', o.path)),
+             Col("template", "قالب ویژه"), Col("status", "وضعیت", badge("status"), "status"),
+             Col("modified_at", "ویرایش", jd("modified_at"), "modified_at")],
+    search=["title", "slug"], filters=["status"], ordering=("title",), slug_from="title",
+    queryset=lambda qs: qs.select_related("parent__parent"),
+    fieldsets=[("برگه", ["title", "slug", "content"], "main"),
+               ("انتشار", ["status", "parent", "template", "menu_order", "published_at"], "side"),
+               ("تصویر", ["image"], "side"), SEO],
+    view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="blog-categories", model=BlogCategory, title="دسته‌های مجله", single="دسته", group="مجله و برگه‌ها", icon="folder",
+    columns=[Col("name", "نام", sort="name"), Col("parent", "والد", lambda o: o.parent.name if o.parent else "—"),
+             Col("n", "نوشته", lambda o: fa_num(o._n), "_n")],
+    search=["name", "slug"], ordering=("name",), slug_from="name",
+    queryset=lambda qs: qs.select_related("parent").annotate(_n=Count("posts")),
+    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent"], "side"), SEO], view_url=lambda o: o.get_absolute_url(),
+))
+register(Resource(
+    key="blog-tags", model=BlogTag, title="برچسب‌های مجله", single="برچسب", group="مجله و برگه‌ها", icon="hash",
+    columns=[Col("name", "نام", sort="name"), Col("n", "نوشته", lambda o: fa_num(o._n), "_n")],
+    search=["name", "slug"], ordering=("name",), slug_from="name",
+    queryset=lambda qs: qs.annotate(_n=Count("posts")), fieldsets=[TAX_FIELDS, SEO], view_url=lambda o: o.get_absolute_url(),
+))
+
+
+def _comment_after_save(request, obj, created, form=None):
+    reply = (request.POST.get("reply") or "").strip()
+    if reply:
+        Comment.objects.create(post=obj.post, parent=obj, author_name="ایران کارپت", content=reply, is_approved=True)
+
+
+register(Resource(
+    key="comments", model=Comment, title="دیدگاه‌های مجله", single="دیدگاه", group="مجله و برگه‌ها", icon="chat",
+    columns=[Col("author_name", "نویسنده"), Col("content", "متن", lambda o: (o.content or "")[:90]),
+             Col("post", "نوشته", lambda o: o.post.title[:50]), Col("is_approved", "تأیید", yesno("is_approved"), "is_approved"),
+             Col("created_at", "تاریخ", jd("created_at"), "created_at")],
+    search=["author_name", "content"], filters=["is_approved"], date_filter="created_at", ordering=("-created_at",),
+    queryset=lambda qs: qs.select_related("post"), can_add=False, after_save=_comment_after_save,
+    fieldsets=[("دیدگاه", ["author_name", "author_email", "content"], "main"), ("وضعیت", ["post", "is_approved", "created_at"], "side")],
+    actions={"approve": ("تأیید", lambda r, qs: f"{qs.update(is_approved=True)} دیدگاه تأیید شد."),
+             "unapprove": ("رد تأیید", lambda r, qs: f"{qs.update(is_approved=False)} دیدگاه پنهان شد.")},
+    view_url=lambda o: o.post.get_absolute_url(),
+))
+
+# ================================================================== رسانه
+register(Resource(
+    key="media", model=Media, title="کتابخانهٔ رسانه", single="فایل", group="رسانه", icon="image",
+    columns=[Col("file", "", lambda o: format_html('<img class="thumb" src="{}" alt="" loading="lazy">', o.url), cls="w-thumb"),
+             Col("title", "عنوان", sort="title"), Col("alt", "متن جایگزین"), Col("size", "ابعاد", lambda o: fa_num(f"{o.width}×{o.height}") if o.width else ""),
+             Col("created_at", "تاریخ", jd("created_at"), "created_at")],
+    search=["title", "alt", "file"], date_filter="created_at", ordering=("-created_at",),
+    fieldsets=[("فایل", ["file", "title", "alt", "caption"], "main")], list_template="dashboard/media_list.html",
+))
+
+# ==================================================================== سئو
+register(Resource(
+    key="redirects", model=Redirect, title="ریدایرکت‌ها", single="ریدایرکت", group="سئو", icon="arrow",
+    columns=[Col("source", "از", lambda o: format_html('<span class="ltr-num">{}</span>', o.source), "source"),
+             Col("target", "به", lambda o: format_html('<span class="ltr-num">{}</span>', o.target or "—")),
+             Col("status_code", "کد", lambda o: fa_num(o.status_code), "status_code"), Col("match", "تطبیق", badge("match")),
+             Col("hits", "بازدید", lambda o: fa_num(o.hits), "hits"), Col("is_active", "فعال", yesno("is_active"))],
+    search=["source", "target"], filters=["status_code", "match", "is_active", "origin"], ordering=("-created_at",),
+    fieldsets=[("ریدایرکت", ["source", "target", "match", "status_code"], "main"), ("وضعیت", ["is_active"], "side")],
+    help="مسیرها را بدون دامنه بنویسید؛ مثل /product/old-name/",
+))
+register(Resource(
+    key="notfound", model=NotFoundLog, title="خطاهای ۴۰۴", single="خطا", group="سئو", icon="alert",
+    columns=[Col("path", "آدرس", lambda o: format_html('<span class="ltr-num">{}</span>', o.path), "path"),
+             Col("hits", "تعداد", lambda o: fa_num(o.hits), "hits"),
+             Col("referrer", "از صفحهٔ", lambda o: format_html('<span class="ltr-num small">{}</span>', (o.referrer or "")[:60])),
+             Col("last_seen", "آخرین بار", jd("last_seen", "%Y/%m/%d %H:%M"), "last_seen"),
+             Col("fix", "", lambda o: format_html('<a class="btn btn-sm btn-ic-soft" href="/panel/redirects/add/?source={}">ساخت ریدایرکت</a>', o.path))],
+    search=["path", "referrer"], ordering=("-hits",), can_add=False, edit_url=lambda o: f"/panel/redirects/add/?source={o.path}",
+))
+
+# ============================================================ گزارش فعالیت
+register(Resource(
+    key="activity", model=ActivityLog, title="گزارش فعالیت", single="فعالیت", group="تنظیمات", icon="clock",
+    columns=[Col("user", "کاربر", lambda o: (o.user.get_full_name() or o.user.username) if o.user else "—"),
+             Col("action", "عمل", badge("action")), Col("section", "بخش"), Col("object_repr", "مورد"), Col("detail", "جزئیات"),
+             Col("created_at", "زمان", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    search=["object_repr", "section", "detail"], filters=["action", "user"], date_filter="created_at",
+    ordering=("-created_at",), can_add=False, can_delete=False, queryset=lambda qs: qs.select_related("user"),
+    edit_url=lambda o: "/panel/activity/",
+))

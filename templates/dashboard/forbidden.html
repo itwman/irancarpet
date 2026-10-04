@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container nf">
+  <p class="nf__code" aria-hidden="true">۴۰۳</p>
+  <h1 class="h3">{% if superuser %}این بخش فقط برای مدیر کل است.{% else %}حساب شما به پنل مدیریت دسترسی ندارد.{% endif %}</h1>
+  <p class="muted">اگر باید دسترسی داشته باشید، از مدیر کل سایت بخواهید آن را برایتان فعال کند.</p>
+  <a href="/" class="btn-ic btn-ic--ink">بازگشت به سایت</a>
+</div>
+{% endblock %}

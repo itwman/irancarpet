@@ -1,0 +1,11 @@
+{% load panel %}{% with t=f|wtype %}
+{% if t == "hidden" %}{{ f }}{% elif t == "check" %}
+<div class="form-check form-switch fld{% if f.errors %} has-err{% endif %}">{{ f }}<label class="form-check-label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+  {% if f.help_text %}<div class="hint">{{ f.help_text|safe }}</div>{% endif %}{% for e in f.errors %}<div class="err">{{ e }}</div>{% endfor %}</div>
+{% else %}
+<div class="fld{% if f.errors %} has-err{% endif %}{% if t == 'rich' %} fld--rich{% endif %}">
+  <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  {{ f }}
+  {% if f.help_text %}<div class="hint">{{ f.help_text|safe }}</div>{% endif %}{% for e in f.errors %}<div class="err">{{ e }}</div>{% endfor %}
+</div>
+{% endif %}{% endwith %}

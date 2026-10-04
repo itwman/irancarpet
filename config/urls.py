@@ -15,7 +15,9 @@ urlpatterns = [
     path("", core_views.home, name="home"),
     # آدرس‌های مخصوص وردپرس → 410 (حذف دائمی)
     re_path(r"^(?:wp-login\.php|xmlrpc\.php|wp-admin|wp-json|wp-includes|wp-cron\.php)(?:/.*)?$", core_views.gone),
-    path("panel/", admin.site.urls),
+    # پنل قدیمی جنگو فقط برای مدیر کل و موارد اضطراری
+    path("panel/system/", admin.site.urls),
+    path("panel/", include("dashboard.urls")),
     path("robots.txt", core_views.robots_txt),
     path("sitemap_index.xml", sitemaps.index),
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),

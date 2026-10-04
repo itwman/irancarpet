@@ -1,0 +1,53 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}پیشخوان{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h1><p class="muted">خلاصهٔ امروز فروشگاه</p></div>
+  <div class="page-top__actions">
+    <a class="btn btn-light btn-sm" href="/panel/posts/add/"><svg class="ic"><use href="#i-pen"/></svg> نوشتهٔ تازه</a>
+    <a class="btn btn-light btn-sm" href="/panel/albums/"><svg class="ic"><use href="#i-layers"/></svg> تغییر قیمت آلبوم‌ها</a>
+    <a class="btn btn-pink" href="/panel/products/add/"><svg class="ic"><use href="#i-plus"/></svg> محصول تازه</a>
+  </div>
+</div>
+
+<div class="tiles">
+  <a class="tile t-pink" href="/panel/orders/?status=paid"><span>فروش امروز</span><strong>{{ stats.today_amount|toman }}</strong><small>تومان · {{ stats.today_orders|fa_num }} سفارش پرداخت‌شده</small></a>
+  <a class="tile t-teal" href="/panel/payments/?status=ok"><span>دریافتی این ماه (شمسی)</span><strong>{{ stats.month_amount|toman }}</strong><small>تومان</small></a>
+  <a class="tile t-saffron" href="/panel/orders/?status=deposit_paid"><span>منتظر ارسال</span><strong>{{ stats.to_ship|fa_num }}</strong><small>سفارش پرداخت‌شده یا در حال آماده‌سازی</small></a>
+  <a class="tile t-ink" href="/panel/orders/?status=pending"><span>پرداخت‌نشده (۷ روز)</span><strong>{{ stats.pending|fa_num }}</strong><small>سفارش؛ شاید نیاز به تماس</small></a>
+</div>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p">
+      <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">دریافتی ۳۰ روز اخیر</h2><span class="muted small">جمع: {{ series_total|toman }} تومان</span></div>
+      <div class="bars" role="img" aria-label="نمودار دریافتی روزانه در ۳۰ روز اخیر؛ جمع {{ series_total|toman }} تومان">
+        {% for s in series %}<div class="bar{% if s.is_today %} today{% endif %}" tabindex="0" data-tip="{{ s.label }}: {{ s.value|toman }} تومان"><i style="height:{% if s.value %}max(4px,{{ s.h }}%){% else %}0{% endif %}"></i></div>{% endfor %}
+      </div>
+      <div class="bars-axis"><span>{{ series.0.label }}</span><span>امروز</span></div>
+    </section>
+    <section class="card-p">
+      <div class="d-flex justify-content-between align-items-center"><h2 class="m-0">آخرین سفارش‌ها</h2><a href="/panel/orders/" class="small">همه</a></div>
+      {% if recent %}<div class="table-wrap"><table class="tbl mt-2"><tbody>
+        {% for o in recent %}<tr data-href="/panel/orders/{{ o.pk }}/view/"><td>{{ o.number|fa_num }}</td><td>{{ o.full_name }}</td><td class="num">{{ o.items_total|toman }}</td><td><span class="badge-ic b-{{ o.status }}">{{ o.get_status_display }}</span></td><td class="muted">{{ o.created_at|jdate:"%d %B %H:%M" }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted mt-2">هنوز سفارشی در سایت تازه ثبت نشده است.</p>{% endif %}
+    </section>
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>کارهای مانده</h2>
+      <a class="todo" href="/panel/reviews/?is_approved=0"><span>نظر منتظر تأیید</span><strong>{{ stats.reviews_wait|fa_num }}</strong></a>
+      <a class="todo" href="/panel/comments/?is_approved=0"><span>دیدگاه مجله منتظر تأیید</span><strong>{{ stats.comments_wait|fa_num }}</strong></a>
+      <a class="todo" href="/panel/products/?stock_status=outofstock&status=publish"><span>محصول ناموجود</span><strong>{{ stats.out_of_stock|fa_num }}</strong></a>
+      <a class="todo" href="/panel/notfound/"><span>آدرس خراب (۴۰۴)</span><strong>{{ stats.notfound|fa_num }}</strong></a>
+    </section>
+    <section class="card-p"><h2>فروشگاه در یک نگاه</h2>
+      <div class="kv"><span>محصول منتشرشده</span><strong>{{ stats.products|fa_num }}</strong></div>
+      <div class="kv"><span>نوشتهٔ مجله</span><strong>{{ posts_count|fa_num }}</strong></div>
+      <div class="kv"><span>مشتری تازه (۳۰ روز)</span><strong>{{ stats.customers_30|fa_num }}</strong></div>
+    </section>
+    {% if top404 %}<section class="card-p"><h2>پربازدیدترین آدرس‌های خراب</h2>
+      {% for n in top404 %}<a class="todo" href="/panel/redirects/add/?source={{ n.path|urlencode }}"><span class="ltr-num small">{{ n.path|truncatechars:38 }}</span><strong>{{ n.hits|fa_num }}</strong></a>{% endfor %}
+    </section>{% endif %}
+  </div>
+</div>
+{% endblock %}
