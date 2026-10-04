@@ -534,3 +534,27 @@ register(Resource(
     },
     help="ارسال‌ها هر ۵ دقیقه به‌صورت خودکار انجام می‌شود. تنظیمات و ارسال گروهی در «تنظیمات ← فرش پلاس» است.",
 ))
+
+
+# ================================================================ اپلیکیشن
+from api.models import AppNotification, Device  # noqa: E402
+
+register(Resource(
+    key="app-notifications", model=AppNotification, title="اعلان‌های اپ", single="اعلان", group="اپلیکیشن", icon="bell",
+    columns=[Col("title", "عنوان", sort="title"), Col("kind", "نوع", badge("kind"), "kind"),
+             Col("target", "مقصد", lambda o: o.product.title if o.product else (o.category.name if o.category else (o.url or "—"))),
+             Col("is_active", "فعال", yesno("is_active")), Col("created_at", "زمان ارسال", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    search=["title", "body"], filters=["kind", "is_active"], ordering=("-created_at",),
+    queryset=lambda qs: qs.select_related("product", "category"),
+    fieldsets=[("اعلان", ["title", "body", "kind", "image"], "main"), ("مقصد با زدن روی اعلان", ["product", "category", "url"], "side"),
+               ("ارسال", ["is_active", "created_at"], "side")],
+    help="اپ هر چند ساعت یک‌بار اعلان‌های تازه را می‌گیرد و روی گوشی نشان می‌دهد. برای ارسال در آینده، «زمان ارسال» را جلوتر بگذارید.",
+))
+register(Resource(
+    key="app-devices", model=Device, title="نصب‌های اپ", single="دستگاه", group="اپلیکیشن", icon="phone",
+    columns=[Col("model", "گوشی"), Col("app_version", "نسخه", sort="app_version"),
+             Col("user", "مشتری", lambda o: (o.user.get_full_name() or o.user.username) if o.user else "—"),
+             Col("first_seen", "نصب", jd("first_seen"), "first_seen"), Col("last_seen", "آخرین استفاده", jd("last_seen", "%Y/%m/%d %H:%M"), "last_seen")],
+    search=["model", "app_version"], filters=["app_version"], date_filter="last_seen", ordering=("-last_seen",),
+    can_add=False, queryset=lambda qs: qs.select_related("user"), edit_url=lambda o: "/panel/app-devices/",
+))

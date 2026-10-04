@@ -8,6 +8,7 @@ from blog.feeds import LatestPostsFeed
 from catalog import views as catalog_views
 from core import views as core_views
 from seo import sitemaps
+from api import views as api_views
 from torob import views as torob_views
 
 P = r"(?:page/(?P<page>\d+)/)?"
@@ -16,6 +17,10 @@ urlpatterns = [
     path("", core_views.home, name="home"),
     # فید ترب (همان آدرس افزونهٔ وردپرس)
     re_path(r"^wp-json/torob/products/?$", torob_views.products),
+    # اپلیکیشن موبایل
+    path("api/app/v1/", include("api.urls")),
+    path("app-img/<int:w>/<path:path>", api_views.thumb),
+    path("app/return/<int:number>/", api_views.app_return),
     # آدرس‌های مخصوص وردپرس → 410 (حذف دائمی)
     re_path(r"^(?:wp-login\.php|xmlrpc\.php|wp-admin|wp-json|wp-includes|wp-cron\.php)(?:/.*)?$", core_views.gone),
     # پنل قدیمی جنگو فقط برای مدیر کل و موارد اضطراری

@@ -135,7 +135,7 @@ def checkout(request):
         if summary["has_problem"]:
             errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
         if not errors:
-            order = create_order(request, form, summary, shop)
+            order = create_order(request.user, form, summary, shop)
             return start_payment(request, order, gw)
     total = summary["total"]
     return render(request, "shop/checkout.html", {
@@ -146,13 +146,13 @@ def checkout(request):
 
 
 @transaction.atomic
-def create_order(request, form, summary, shop):
+def create_order(user, form, summary, shop, source="web"):
     from accounts.views import profile_of
 
     total = summary["total"]
     mode = form["payment_mode"]
     order = Order.objects.create(
-        user=request.user, first_name=form["first_name"][:100], last_name=form["last_name"][:100],
+        user=user, first_name=form["first_name"][:100], last_name=form["last_name"][:100],
         mobile=normalize_mobile(form["mobile"]), email=form["email"][:254], province=form["province"][:60],
         city=form["city"][:80], address=form["address"], postal_code=form["postal_code"][:10], note=form["note"],
         payment_mode=mode, shipping_mode=shop.shipping_for(mode, total), items_total=total,
@@ -164,7 +164,7 @@ def create_order(request, form, summary, shop):
                   size_label=line.size_label[:150], unit_price=line.unit_price, quantity=line.qty)
         for line in summary["lines"] if not line.problem
     ])
-    u = request.user
+    u = user
     u.first_name = u.first_name or form["first_name"][:150]
     u.last_name = u.last_name or form["last_name"][:150]
     u.save(update_fields=["first_name", "last_name"])
@@ -174,17 +174,21 @@ def create_order(request, form, summary, shop):
     return order
 
 
-def start_payment(request, order, gw):
+def start_payment(request, order, gw, source="web"):
     payment = Payment.objects.create(order=order, gateway=gw.key, amount=order.online_amount)
     callback = request.build_absolute_uri(f"/pay/{gw.key}/callback/")
     try:
         action = gw.start(payment, callback)
     except gateways.GatewayError as e:
         payment.status, payment.message = Payment.Status.FAILED, str(e)[:300]
+        payment.raw = {**(payment.raw or {}), "source": source}
         payment.save()
         log.warning("payment start failed %s: %s", gw.key, e)
+        if source == "app":
+            return redirect(f"/app/return/{order.number}/?paid=0")
         messages.error(request, f"اتصال به درگاه ممکن نشد: {e}. می‌توانید دوباره یا با درگاه دیگری پرداخت کنید.")
         return redirect(order.get_absolute_url())
+    payment.raw = {**(payment.raw or {}), "source": source}
     payment.save()
     if "redirect" in action:
         return redirect(action["redirect"])
@@ -216,8 +220,9 @@ def callback(request, gateway):
         return render(request, "shop/result.html", {"meta": {**META, "title": "نتیجهٔ پرداخت"}, "ok": False,
                                                    "message": "تراکنش پیدا نشد. اگر مبلغی کم شده، تا ۷۲ ساعت به حسابتان برمی‌گردد."})
     order = payment.order
+    app = (payment.raw or {}).get("source") == "app"
     if payment.status != Payment.Status.INIT:
-        return redirect(order.get_absolute_url())
+        return redirect(f"/app/return/{order.number}/?paid={int(order.is_paid)}" if app else order.get_absolute_url())
     with transaction.atomic():
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if payment.status != Payment.Status.INIT:
@@ -242,7 +247,11 @@ def callback(request, gateway):
             notify.order_paid(order, payment.amount)
         except Exception:  # noqa: BLE001
             log.exception("notify failed")
+        if app:
+            return redirect(f"/app/return/{order.number}/?paid=1")
         return redirect(order.get_absolute_url() + "?paid=1")
+    if app:
+        return redirect(f"/app/return/{order.number}/?paid=0&msg={res.message[:120]}")
     messages.error(request, f"پرداخت انجام نشد. {res.message}")
     return redirect(order.get_absolute_url())
 

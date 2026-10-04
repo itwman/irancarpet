@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<section class="container py-5" style="max-width:560px;text-align:center">
+  {% if paid %}
+  <h1 class="sec-title">پرداخت انجام شد</h1>
+  <p class="sec-lead">سفارش {{ order.number|fa_num }} ثبت شد. برای دیدن جزئیات به اپ برگردید.</p>
+  {% else %}
+  <h1 class="sec-title">پرداخت انجام نشد</h1>
+  <p class="sec-lead">{% if message %}{{ message }} {% endif %}سفارش {{ order.number|fa_num }} در اپ منتظر پرداخت می‌ماند و می‌توانید دوباره امتحان کنید.</p>
+  {% endif %}
+  <a id="back" class="btn-ic btn-ic--pink" href="intent://order/{{ order.number }}?paid={% if paid %}1{% else %}0{% endif %}#Intent;scheme=irancarpet;package=net.irancarpet.app;end">بازگشت به اپ ایران کارپت</a>
+  <p class="mt-3"><a href="{{ order.get_absolute_url }}">دیدن سفارش در سایت</a></p>
+</section>
+<script>setTimeout(function () { location.href = document.getElementById("back").href; }, 600);</script>
+{% endblock %}

@@ -15,7 +15,8 @@ UP=$(grep '^MEDIA_ROOT=' .env | cut -d= -f2-)
 if [ -n "$UP" ] && [ -d "$UP" ]; then
   M="$UP/$(date +%Y)/$(date +%m)"
   mkdir -p "$M"
-  for D in "$UP" "$UP/$(date +%Y)" "$M"; do chgrp www-data "$D"; chmod g+ws "$D"; done
+  mkdir -p "$UP/app-thumbs"
+  for D in "$UP" "$UP/$(date +%Y)" "$M" "$UP/app-thumbs"; do chgrp www-data "$D"; chmod g+ws "$D"; done
 fi
 echo "== فایل‌های استاتیک"
 venv/bin/python manage.py collectstatic --noinput -v0

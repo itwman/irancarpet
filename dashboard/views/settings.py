@@ -14,6 +14,7 @@ from farshplus.models import FarshPlusItem, FarshPlusSettings
 from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
+from api.models import AppSettings
 from torob.models import TorobSettings
 
 from ..auth import clear_site_cache, staff_required
@@ -30,6 +31,7 @@ TABS = [
     ("pricing", "فرمول قیمت"),
     ("farshplus", "فرش پلاس"),
     ("torob", "فید ترب"),
+    ("app", "اپلیکیشن"),
 ]
 
 FORMS = {
@@ -43,6 +45,7 @@ FORMS = {
                                       "max_images", "categories"]),
     "torob": (TorobSettings, ["enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
                               "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
+    "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice"]),
 }
 
 

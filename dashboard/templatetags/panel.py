@@ -7,9 +7,10 @@ register = template.Library()
 EXTRA_NAV = {
     "فروش": [("کارمندان", "/panel/customers/?is_staff=1", "shield")],
     "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
+    "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
 }
 GROUP_ICONS = {"فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
-               "سئو": "arrow", "تنظیمات": "settings"}
+               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings"}
 
 
 @register.simple_tag(takes_context=True)
