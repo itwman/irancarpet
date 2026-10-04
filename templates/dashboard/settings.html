@@ -29,6 +29,18 @@
       {% if tab == "pricing" %}<div class="alert alert-warning mt-3 mb-3">با ذخیرهٔ این بخش، قیمت همهٔ سایزهای همهٔ محصولات با فرمول تازه دوباره محاسبه می‌شود.</div>{% endif %}
       <button class="btn btn-pink mt-3" type="submit">ذخیره</button>
     </form>
+    {% if tab == "farshplus" %}
+    <section class="card-p">
+      <h2>عملیات</h2>
+      <div class="d-flex gap-2 flex-wrap">
+        <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="farshplus"><button class="btn btn-light" name="do" value="fp_check">بررسی اتصال</button></form>
+        <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="farshplus"><button class="btn btn-light" name="do" value="fp_run">اجرای همگام‌سازی همین الان</button></form>
+        <form method="post" onsubmit="return confirm('همهٔ محصولات منتشرشده‌ای که هنوز در فرش پلاس نیستند در صف ارسال گروهی قرار بگیرند؟')">{% csrf_token %}<input type="hidden" name="tab" value="farshplus"><button class="btn btn-ink" name="do" value="fp_bulk">ارسال گروهی محصولات ارسال‌نشده</button></form>
+        {% if fp.s.paused %}<form method="post">{% csrf_token %}<input type="hidden" name="tab" value="farshplus"><button class="btn btn-light" name="do" value="fp_resume">برداشتن توقف</button></form>{% endif %}
+      </div>
+      <p class="hint mt-2">همگام‌سازی خودکار هر ۵ دقیقه روی سرور اجرا می‌شود؛ تغییر قیمت، موجودی، عنوان و تصویر محصولات خودش به فرش پلاس می‌رود.</p>
+    </section>
+    {% endif %}
     {% if tab == "sms" %}
     <form method="post" class="card-p">{% csrf_token %}<input type="hidden" name="tab" value="sms"><input type="hidden" name="do" value="sms_test">
       <h2>آزمایش پیامک</h2>
@@ -45,6 +57,17 @@
       <div class="kv"><span>درگاه آزمایشی</span><strong>{% if info.fake %}<span class="dot warn"></span>روشن (فقط نسخهٔ آزمایشی){% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
       <div class="kv"><span>درگاه‌های نمایش داده‌شده به مشتری</span><strong>{{ info.active|length|fa_num }}</strong></div>
     </section>
+    {% if fp %}<section class="card-p"><h2>وضعیت فرش پلاس</h2>
+      {% if fp.inactive %}<div class="alert alert-warning py-2">{{ fp.inactive }}</div>{% endif %}
+      {% if fp.s.paused %}<div class="alert alert-warning py-2">سقف روزانه پر شده؛ ارسال تا {{ fp.s.rate_limited_until|jdate:"%d %B ساعت %H:%M" }} متوقف است.</div>{% endif %}
+      {% if fp.page.name %}<div class="kv"><span>صفحه در فرش پلاس</span><strong>{% if fp.page.url %}<a href="{{ fp.page.url }}" target="_blank" rel="noopener">{{ fp.page.name }}</a>{% else %}{{ fp.page.name }}{% endif %}</strong></div>{% endif %}
+      <div class="kv"><span>منتشرشده</span><strong>{{ fp.published|fa_num }}</strong></div>
+      <div class="kv"><span>در صف ارسال</span><strong>{{ fp.queued|fa_num }}</strong></div>
+      <div class="kv"><span>دارای خطا</span><strong>{{ fp.errors|fa_num }}</strong></div>
+      <div class="kv"><span>سقف روزانهٔ محصول تازه</span><strong>{{ fp.limits.daily_products|fa_num }}</strong></div>
+      {% if fp.s.last_scan_at %}<div class="kv"><span>آخرین بررسی</span><strong>{{ fp.s.last_scan_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
+      <a class="btn btn-light btn-sm mt-2" href="/panel/farshplus/">فهرست محصولات در فرش پلاس</a>
+    </section>{% endif %}
     {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند.</p></section>{% endif %}
   </div>
 </div>

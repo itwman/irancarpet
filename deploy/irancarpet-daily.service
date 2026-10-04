@@ -1,0 +1,10 @@
+[Unit]
+Description=IranCarpet: daily cleanup (sessions)
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/irancarpet-django
+EnvironmentFile=/var/www/irancarpet-django/.env
+ExecStart=/var/www/irancarpet-django/venv/bin/python manage.py clearsessions

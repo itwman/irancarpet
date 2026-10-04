@@ -71,6 +71,7 @@ def product_edit(request, pk=None):
                 if not p.image_id and ids:
                     Product.objects.filter(pk=p.pk).update(image_id=ids[0])
                 p.refresh_price_cache()
+                save_fp_flags(request, p)
             log(request, "create" if created else "update", "محصولات", p)
             clear_site_cache()
             messages.success(request, f"«{p.title}» ذخیره شد.")
@@ -84,10 +85,14 @@ def product_edit(request, pk=None):
         ffs = FaqFS(instance=product or Product(), prefix="f")
     for f in vfs.forms + [vfs.empty_form] + ffs.forms + [ffs.empty_form]:
         style_form(f)
+    from farshplus.models import FarshPlusItem
+    from farshplus.sync import inactive_reason
+
+    fp_item = FarshPlusItem.objects.filter(product=product).first() if product else None
     gallery = [pi.media for pi in ProductImage.objects.filter(product=product).select_related("media").order_by("order")] if product else []
     return render(request, "dashboard/product_form.html", {
         "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery,
-        "gallery_ids": ",".join(str(m.pk) for m in gallery),
+        "gallery_ids": ",".join(str(m.pk) for m in gallery), "fp": fp_item, "fp_off": inactive_reason(),
         "groups": {"main": MAIN, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
     })
 
@@ -122,3 +127,47 @@ def product_duplicate(request, pk):
     log(request, "create", "محصولات", src, "کپی از محصول دیگر")
     messages.success(request, "کپی محصول به‌صورت پیش‌نویس ساخته شد.")
     return redirect(f"/panel/products/{src.pk}/edit/")
+
+
+def _tri(v):
+    return {"1": True, "0": False}.get(v)
+
+
+def save_fp_flags(request, product):
+    from farshplus.models import FarshPlusItem
+    from farshplus.sync import get_item
+
+    if "fp_enabled" not in request.POST:
+        return
+    en, feed = _tri(request.POST.get("fp_enabled")), _tri(request.POST.get("fp_in_feed"))
+    item = FarshPlusItem.objects.filter(product=product).first()
+    if item is None and en is None and feed is None:
+        return
+    item = item or get_item(product)
+    item.enabled, item.in_feed = en, feed
+    item.save()
+
+
+@staff_required
+def product_farshplus(request, pk):
+    """ارسال فوری یک محصول به فرش پلاس"""
+    from farshplus.client import ApiError
+    from farshplus.sync import get_item, inactive_reason, process
+
+    if request.method != "POST":
+        return redirect(f"/panel/products/{pk}/edit/")
+    product = get_object_or_404(Product, pk=pk)
+    why = inactive_reason()
+    if why:
+        messages.error(request, why)
+    else:
+        item = get_item(product)
+        item.mode = "manual"
+        if not item.pk:
+            item.save()
+        try:
+            messages.success(request, process(item, interactive=True))
+        except ApiError as e:
+            messages.error(request, f"فرش پلاس: {e}")
+    log(request, "action", "فرش پلاس", product, "ارسال دستی")
+    return redirect(f"/panel/products/{pk}/edit/#farshplus")

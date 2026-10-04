@@ -760,7 +760,7 @@ class Importer:
         self.log(f"ریدایرکت‌ها: {n} از Rank Math + {old} نامک قدیمی — کل: {Redirect.objects.count()}")
 
     # ------------------------------------------------------------------ run
-    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "reviews", "blog", "redirects", "customers", "orders"]
+    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "reviews", "blog", "redirects", "customers", "orders", "farshplus"]
 
     def run(self, only=None):
         steps = only or self.STEPS
@@ -798,3 +798,7 @@ class Importer:
                 ci.import_customers()
             if "orders" in steps:
                 ci.import_orders()
+        if "farshplus" in steps:
+            from farshplus.importer import import_farshplus
+
+            import_farshplus(self.wp, self.log)

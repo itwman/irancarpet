@@ -8,6 +8,9 @@ from django.shortcuts import redirect, render
 from accounts import sms
 from accounts.utils import normalize_mobile
 from core.models import SiteSettings
+from farshplus import sync as fp_sync
+from farshplus.client import ApiError
+from farshplus.models import FarshPlusItem, FarshPlusSettings
 from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
@@ -16,7 +19,7 @@ from ..auth import clear_site_cache, staff_required
 from ..forms import formfield_for, style_form
 from ..models import log
 
-SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id"}
+SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key"}
 
 TABS = [
     ("site", "سایت و تماس"),
@@ -24,6 +27,7 @@ TABS = [
     ("gateways", "درگاه‌های پرداخت"),
     ("sms", "پیامک"),
     ("pricing", "فرمول قیمت"),
+    ("farshplus", "فرش پلاس"),
 ]
 
 FORMS = {
@@ -33,6 +37,8 @@ FORMS = {
     "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox"]),
     "sms": (ShopSettings, ["smsir_api_key", "smsir_otp_template_id", "smsir_order_template_id", "smsir_admin_template_id"]),
     "pricing": (PricingSettings, ["markup_percent", "shipping_fixed", "round_to", "round_method", "show_size_table"]),
+    "farshplus": (FarshPlusSettings, ["enabled", "url", "api_key", "auto_sync", "default_in_feed", "hashtags", "hide_out_of_stock",
+                                      "max_images", "categories"]),
 }
 
 
@@ -83,6 +89,8 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do", "").startswith("fp_"):
+            return farshplus_action(request, request.POST["do"])
         model, _ = FORMS[tab]
         before = model.load()
         form = make_form(tab, request.POST)
@@ -97,6 +105,7 @@ def settings_view(request):
                 messages.info(request, "تغییری نبود.")
                 return redirect(f"/panel/settings/?tab={tab}")
             obj.save()
+            form.save_m2m()
             log(request, "update", "تنظیمات", None, dict(TABS)[tab])
             clear_site_cache()
             msg = "تنظیمات ذخیره شد."
@@ -109,6 +118,46 @@ def settings_view(request):
         form = make_form(tab)
     return render(request, "dashboard/settings.html", {
         "tabs": TABS, "tab": tab, "form": form, "trust": trust, "info": status_info(),
+        "fp": farshplus_info() if tab == "farshplus" else None,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),
     })
+
+
+def farshplus_info():
+    from django.db.models import Count
+
+    s = FarshPlusSettings.load()
+    counts = dict(FarshPlusItem.objects.values_list("status").annotate(n=Count("id")))
+    return {"s": s, "inactive": fp_sync.inactive_reason(s), "counts": counts,
+            "queued": FarshPlusItem.objects.filter(queued=True).count(),
+            "published": counts.get("PUBLISHED", 0), "errors": FarshPlusItem.objects.exclude(error="").count(),
+            "page": (s.connection or {}).get("page") or {}, "limits": s.limits}
+
+
+def farshplus_action(request, do):
+    s = FarshPlusSettings.load()
+    if do == "fp_check":
+        try:
+            me = fp_sync.check_connection(s)
+            page = me.get("page") or {}
+            messages.success(request, f"اتصال برقرار است: صفحهٔ «{page.get('name', '')}» در فرش پلاس.")
+        except ApiError as e:
+            messages.error(request, f"اتصال برقرار نشد: {e}")
+    elif do == "fp_bulk":
+        n = fp_sync.queue_all_unsent(s)
+        log(request, "action", "فرش پلاس", None, f"ارسال گروهی {n} محصول")
+        messages.success(request, f"{n} محصول در صف ارسال گروهی قرار گرفت (روزانه تا سقف مجاز فرستاده می‌شوند).")
+    elif do == "fp_run":
+        why = fp_sync.inactive_reason(s)
+        if why:
+            messages.error(request, why)
+        else:
+            lines = []
+            n = fp_sync.run(limit=3, out=lines.append)
+            messages.info(request, f"{n} درخواست انجام شد. " + " ".join(lines[-3:]))
+    elif do == "fp_resume":
+        s.rate_limited_until = None
+        s.save(update_fields=["rate_limited_until"])
+        messages.success(request, "توقف برداشته شد.")
+    return redirect("/panel/settings/?tab=farshplus")

@@ -1,0 +1,12 @@
+[Unit]
+Description=IranCarpet: sync products with FarshPlus
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/irancarpet-django
+EnvironmentFile=/var/www/irancarpet-django/.env
+ExecStart=/var/www/irancarpet-django/venv/bin/python manage.py farshplus_sync
+TimeoutStartSec=900

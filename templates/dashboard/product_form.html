@@ -70,10 +70,25 @@
       <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
       <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>دسته، برند و مشخصات</h2>{% for name in groups.tax %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+      <section class="card-p" id="farshplus"><h2>فرش پلاس</h2>
+        {% if fp %}
+          <div class="kv"><span>وضعیت</span><strong><span class="badge-ic b-fp-{{ fp.status|default:'none'|lower }}">{{ fp.get_status_display }}</span></strong></div>
+          {% if fp.post_url %}<div class="kv"><span>پست</span><strong><a href="{{ fp.post_url }}" target="_blank" rel="noopener">دیدن در فرش پلاس</a></strong></div>{% endif %}
+          {% if fp.synced_at %}<div class="kv"><span>آخرین ارسال</span><strong>{{ fp.synced_at|jdate:"%Y/%m/%d %H:%M" }}</strong></div>{% endif %}
+          {% if fp.queued %}<div class="kv"><span>صف</span><strong>در انتظار ارسال</strong></div>{% endif %}
+          {% if fp.error %}<div class="alert alert-danger py-2 small mt-2 mb-2">{{ fp.error }}</div>{% endif %}
+        {% else %}<p class="hint">این محصول هنوز به فرش پلاس فرستاده نشده است.</p>{% endif %}
+        <div class="fld mt-2"><label for="fp_enabled">ارسال به فرش پلاس</label>
+          <select id="fp_enabled" name="fp_enabled" class="form-select"><option value="">طبق تنظیمات کلی</option><option value="1"{% if fp and fp.enabled == True %} selected{% endif %}>بله</option><option value="0"{% if fp and fp.enabled == False %} selected{% endif %}>خیر</option></select></div>
+        <div class="fld"><label for="fp_in_feed">نمایش در فید فرش پلاس</label>
+          <select id="fp_in_feed" name="fp_in_feed" class="form-select"><option value="">طبق تنظیمات کلی</option><option value="1"{% if fp and fp.in_feed == True %} selected{% endif %}>بله</option><option value="0"{% if fp and fp.in_feed == False %} selected{% endif %}>خیر</option></select></div>
+        {% if obj %}{% if fp_off %}<p class="hint">{{ fp_off }}</p>{% else %}<button class="btn btn-light btn-sm w-100" type="submit" form="fpForm">ارسال همین الان</button>{% endif %}{% endif %}
+      </section>
       <section class="card-p"><h2>سئو</h2>{% for name in groups.seo %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
     </div>
   </div>
 </form>
-{% if obj %}<form method="post" action="/panel/products/{{ obj.pk }}/duplicate/" id="dupForm">{% csrf_token %}</form>{% endif %}
+{% if obj %}<form method="post" action="/panel/products/{{ obj.pk }}/duplicate/" id="dupForm">{% csrf_token %}</form>
+<form method="post" action="/panel/products/{{ obj.pk }}/farshplus/" id="fpForm">{% csrf_token %}</form>{% endif %}
 {% endblock %}
 {% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% load static %}<script src="{% static 'vendor/sortable/Sortable.min.js' %}"></script>{% endblock %}

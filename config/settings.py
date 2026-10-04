@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "accounts",
     "shop",
     "dashboard",
+    "farshplus",
 ]
 
 MIDDLEWARE = [

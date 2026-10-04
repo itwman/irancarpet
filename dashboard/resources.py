@@ -343,3 +343,42 @@ register(Resource(
     ordering=("-created_at",), can_add=False, can_delete=False, queryset=lambda qs: qs.select_related("user"),
     edit_url=lambda o: "/panel/activity/",
 ))
+
+# ================================================================ فرش پلاس
+from farshplus.models import STATUS_LABELS, FarshPlusItem  # noqa: E402
+
+
+def _fp_queue(request, qs, mode="manual", enabled=None):
+    from farshplus.sync import queue
+
+    n = 0
+    for item in qs:
+        if enabled is not None:
+            item.enabled = enabled
+        queue(item, mode)
+        n += 1
+    return n
+
+
+def _fp_status(o):
+    return format_html('<span class="badge-ic b-fp-{}">{}</span>', (o.status or "none").lower(), o.get_status_display())
+
+
+register(Resource(
+    key="farshplus", model=FarshPlusItem, title="محصولات در فرش پلاس", single="مورد", group="فروشگاه", icon="arrow",
+    columns=[Col("thumb", "", lambda o: thumb()(o.product), cls="w-thumb"),
+             Col("product", "محصول", lambda o: fa_num(o.product.title)),
+             Col("status", "وضعیت", _fp_status, "status"),
+             Col("post", "پست", lambda o: format_html('<a href="{}" target="_blank" rel="noopener">دیدن</a>', o.post_url) if o.post_url else "—"),
+             Col("queued", "در صف", lambda o: "بله" if o.queued else ""),
+             Col("synced_at", "آخرین ارسال", jd("synced_at", "%Y/%m/%d %H:%M"), "synced_at"),
+             Col("error", "خطا", lambda o: format_html('<span class="text-danger small">{}</span>', o.error[:80]) if o.error else "")],
+    search=["product__title", "external_id"], filters=["status", "queued"], ordering=("-synced_at",),
+    queryset=lambda qs: qs.select_related("product__image"), can_add=False, can_delete=False,
+    edit_url=lambda o: f"/panel/products/{o.product_id}/edit/#farshplus",
+    actions={
+        "send": ("ارسال / به‌روزرسانی", lambda r, qs: f"{_fp_queue(r, qs)} مورد در صف ارسال قرار گرفت."),
+        "remove": ("برداشتن از فرش پلاس", lambda r, qs: f"{_fp_queue(r, qs, enabled=False)} مورد برای حذف از فرش پلاس در صف قرار گرفت."),
+    },
+    help="ارسال‌ها هر ۵ دقیقه به‌صورت خودکار انجام می‌شود. تنظیمات و ارسال گروهی در «تنظیمات ← فرش پلاس» است.",
+))
