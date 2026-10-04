@@ -1,23 +1,33 @@
 {% extends "base.html" %}{% load fa %}
+{% block body_class %}auth-page{% endblock %}
 {% block content %}
 <div class="container">
-  <div class="auth">
-    <div class="page-head text-center"><h1>کد تأیید</h1><p>کد ۵ رقمی به {{ mobile|fa_num }} فرستاده شد.</p></div>
-    <div class="card-ic">
+  <div class="auth2">
+    {% include "accounts/_aside.html" %}
+    <section class="auth2__card">
+      <h1>کد را وارد کنید</h1>
+      <p class="auth2__lead">کد ۵ رقمی به <strong dir="ltr">{{ mobile|fa_num }}</strong> پیامک شد. <a href="/my-account/login/?next={{ next|urlencode }}">ویرایش شماره</a></p>
       {% if error %}<div class="alert-ic" role="alert">{{ error }}</div>{% endif %}
-      {% if dev_otp %}<div class="dev-code">نسخهٔ آزمایشی (پیامک واقعی فرستاده نشد). کد: <strong>{{ dev_otp|fa_num }}</strong></div>{% endif %}
-      <form method="post">{% csrf_token %}
+      {% if dev_otp %}<div class="dev-code">نسخهٔ آزمایشی؛ پیامک واقعی فرستاده نشد. کد: <strong>{{ dev_otp|fa_num }}</strong></div>{% endif %}
+      <form method="post" id="otpForm" novalidate>{% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
-        <div class="field"><label for="code">کد تأیید</label><input id="code" class="otp-input ltr" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="5" required autofocus></div>
-        {% if is_new %}<div class="field"><label for="name">نام و نام خانوادگی</label><input id="name" name="name" autocomplete="name"><small>حساب تازه با همین شماره ساخته می‌شود.</small></div>{% endif %}
-        <button class="btn-ic btn-ic--pink" type="submit">ورود</button>
+        <input type="hidden" name="code" id="otpCode">
+        <div class="otp" dir="ltr" role="group" aria-label="کد ۵ رقمی">
+          {% for i in "12345" %}<input class="otp__d" inputmode="numeric" maxlength="1" aria-label="رقم {{ forloop.counter|fa_num }}"{% if forloop.first %} autocomplete="one-time-code" autofocus{% else %} autocomplete="off"{% endif %}>{% endfor %}
+        </div>
+        <noscript><input name="code" class="auth2__big" inputmode="numeric" maxlength="5"></noscript>
+        {% if is_new %}
+        <label class="auth2__label" for="name">نام و نام خانوادگی <small>(اختیاری)</small></label>
+        <input id="name" name="name" class="auth2__big auth2__big--sm" autocomplete="name" placeholder="برای فاکتور و ارسال سفارش">
+        {% endif %}
+        <button class="btn-ic btn-ic--pink auth2__go" type="submit">{% if is_new %}ساخت حساب و ورود{% else %}ورود{% endif %}</button>
       </form>
-      <form method="post" class="d-flex justify-content-between align-items-center mt-3">{% csrf_token %}
+      <form method="post" class="auth2__resend">{% csrf_token %}
         <input type="hidden" name="action" value="resend"><input type="hidden" name="next" value="{{ next }}">
-        <a href="/my-account/login/?next={{ next|urlencode }}" class="small">تغییر شماره</a>
-        <button class="link-btn" type="submit">فرستادن دوبارهٔ کد</button>
+        <span class="muted" data-countdown="60">ارسال دوباره تا <b>۰:۶۰</b></span>
+        <button class="link-btn" type="submit" hidden>کد نرسید؟ ارسال دوباره</button>
       </form>
-    </div>
+    </section>
   </div>
 </div>
 {% endblock %}

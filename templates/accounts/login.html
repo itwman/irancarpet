@@ -1,30 +1,46 @@
 {% extends "base.html" %}{% load fa %}
+{% block body_class %}auth-page{% endblock %}
 {% block content %}
 <div class="container">
-  <div class="auth">
-    <div class="page-head text-center"><h1>ورود یا ثبت‌نام</h1><p>با شمارهٔ موبایل وارد شوید؛ اگر حساب نداشته باشید، ساخته می‌شود.</p></div>
-    <div class="card-ic">
-      <nav class="tabs" aria-label="روش ورود">
-        <a href="?tab=otp&next={{ next|urlencode }}" class="{% if tab != 'password' %}on{% endif %}">کد پیامکی</a>
-        <a href="?tab=password&next={{ next|urlencode }}" class="{% if tab == 'password' %}on{% endif %}">رمز عبور</a>
-      </nav>
-      {% if error %}<div class="alert-ic" role="alert">{{ error }}</div>{% endif %}
-      {% if tab == 'password' %}
-      <form method="post">{% csrf_token %}
-        <input type="hidden" name="action" value="password"><input type="hidden" name="next" value="{{ next }}">
-        <div class="field"><label for="identifier">موبایل یا ایمیل</label><input id="identifier" name="identifier" value="{{ identifier|default:'' }}" autocomplete="username" required class="ltr"></div>
-        <div class="field"><label for="password">رمز عبور</label><input id="password" type="password" name="password" autocomplete="current-password" required class="ltr"></div>
-        <button class="btn-ic btn-ic--pink" type="submit">ورود</button>
-        <p class="small muted mt-3 mb-0">مشتری‌های قبلی سایت با همان رمز قبلی وارد می‌شوند. رمز را فراموش کرده‌اید؟ <a href="?tab=otp&next={{ next|urlencode }}">با کد پیامکی وارد شوید</a>.</p>
-      </form>
-      {% else %}
-      <form method="post">{% csrf_token %}
-        <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="{{ next }}">
-        <div class="field"><label for="mobile">شمارهٔ موبایل</label><input id="mobile" name="mobile" value="{{ mobile|default:'' }}" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" required class="ltr"></div>
-        <button class="btn-ic btn-ic--pink" type="submit">فرستادن کد</button>
-      </form>
-      {% endif %}
-    </div>
+  <div class="auth2">
+    {% include "accounts/_aside.html" %}
+    <section class="auth2__card">
+      {% if "checkout" in next %}<p class="auth2__ctx">برای تکمیل خرید وارد شوید؛ سبد خریدتان سر جایش می‌ماند.</p>{% endif %}
+
+      <div class="auth2__pane" id="paneOtp"{% if tab == 'password' %} hidden{% endif %}>
+        <h1>ورود یا ثبت‌نام</h1>
+        <p class="auth2__lead">شمارهٔ موبایلتان را بنویسید تا یک کد کوتاه برایتان پیامک شود.</p>
+        {% if error and tab != 'password' %}<div class="alert-ic" role="alert">{{ error }}</div>{% endif %}
+        <form method="post" novalidate>{% csrf_token %}
+          <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="{{ next }}">
+          <label class="auth2__label" for="mobile">شمارهٔ موبایل</label>
+          <input id="mobile" name="mobile" class="auth2__big" value="{{ mobile|default:'' }}" inputmode="tel" autocomplete="tel"
+                 placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required {% if tab != 'password' %}autofocus{% endif %}>
+          <button class="btn-ic btn-ic--pink auth2__go" type="submit">دریافت کد ورود</button>
+        </form>
+        <div class="auth2__or"><span>یا</span></div>
+        <a class="auth2__switch" href="?tab=password&next={{ next|urlencode }}" data-pane="paneSecret">ورود با ایمیل یا رمز عبور</a>
+      </div>
+
+      <div class="auth2__pane" id="paneSecret"{% if tab != 'password' %} hidden{% endif %}>
+        <h1>ورود با رمز عبور</h1>
+        <p class="auth2__lead">با موبایل، ایمیل یا نام کاربری و رمزتان وارد شوید.</p>
+        {% if error and tab == 'password' %}<div class="alert-ic" role="alert">{{ error }}</div>{% endif %}
+        <form method="post" novalidate>{% csrf_token %}
+          <input type="hidden" name="action" value="password"><input type="hidden" name="next" value="{{ next }}">
+          <label class="auth2__label" for="identifier">موبایل، ایمیل یا نام کاربری</label>
+          <input id="identifier" name="identifier" class="auth2__big auth2__big--sm" value="{{ identifier|default:'' }}" autocomplete="username" dir="ltr" required {% if tab == 'password' %}autofocus{% endif %}>
+          <label class="auth2__label" for="password">رمز عبور</label>
+          <div class="auth2__pw">
+            <input id="password" type="password" name="password" class="auth2__big auth2__big--sm" autocomplete="current-password" dir="ltr" required>
+            <button type="button" class="auth2__eye" data-toggle-pw aria-label="نمایش رمز">نمایش</button>
+          </div>
+          <button class="btn-ic btn-ic--pink auth2__go" type="submit">ورود</button>
+        </form>
+        <div class="auth2__or"><span>یا</span></div>
+        <a class="auth2__switch" href="?tab=otp&next={{ next|urlencode }}" data-pane="paneOtp">رمز را فراموش کرده‌اید؟ با کد پیامکی وارد شوید</a>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}

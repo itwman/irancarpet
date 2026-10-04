@@ -760,7 +760,7 @@ class Importer:
         self.log(f"ریدایرکت‌ها: {n} از Rank Math + {old} نامک قدیمی — کل: {Redirect.objects.count()}")
 
     # ------------------------------------------------------------------ run
-    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "reviews", "blog", "redirects"]
+    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "reviews", "blog", "redirects", "customers", "orders"]
 
     def run(self, only=None):
         steps = only or self.STEPS
@@ -790,3 +790,11 @@ class Importer:
                 self.import_blog()
         if "redirects" in steps:
             self.import_redirects()
+        if "customers" in steps or "orders" in steps:
+            from .commerce import CommerceImporter
+
+            ci = CommerceImporter(self.wp, self.log)
+            if "customers" in steps:
+                ci.import_customers()
+            if "orders" in steps:
+                ci.import_orders()

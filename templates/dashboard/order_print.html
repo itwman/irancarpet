@@ -1,6 +1,6 @@
 {% load static fa %}<!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور سفارش {{ order.number|fa_num }}</title>
-<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}"></head>
+<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}?v={{ ASSET_V }}"></head>
 <body class="print-page" onload="window.print()">
 <div class="invoice">
   <header><img src="{% static 'img/logo.svg' %}" alt="" width="48" height="48"><div><h1>{{ site_settings.site_name }}</h1><p>{{ site_settings.address }} · {{ site_settings.phone|fa_num }}</p></div>

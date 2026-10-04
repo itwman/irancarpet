@@ -94,6 +94,8 @@ class Order(models.Model):
     paid_amount = models.PositiveBigIntegerField("پرداخت‌شده", default=0)
 
     admin_note = models.TextField("یادداشت داخلی", blank=True)
+    wp_status = models.CharField("وضعیت در وردپرس", max_length=40, blank=True, editable=False)
+    wp_payment = models.CharField("روش پرداخت در وردپرس", max_length=200, blank=True, editable=False)
     tracking_code = models.CharField("کد رهگیری ارسال", max_length=100, blank=True)
     created_at = models.DateTimeField("تاریخ ثبت", default=timezone.now, db_index=True)
     paid_at = models.DateTimeField("تاریخ پرداخت", null=True, blank=True)

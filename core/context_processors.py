@@ -21,6 +21,26 @@ def _menu():
     return tops
 
 
+def _asset_version():
+    """نسخهٔ فایل‌های استاتیک برای شکستن کش مرورگر بعد از هر به‌روزرسانی"""
+    import os
+
+    newest = 0
+    for base in [str(settings.STATIC_ROOT), *[str(d) for d in settings.STATICFILES_DIRS]]:
+        for sub in ("css", "js", "dashboard"):
+            d = os.path.join(base, sub)
+            if os.path.isdir(d):
+                for f in os.listdir(d):
+                    try:
+                        newest = max(newest, int(os.path.getmtime(os.path.join(d, f))))
+                    except OSError:
+                        pass
+    return format(newest, "x")
+
+
+ASSET_V = _asset_version()
+
+
 def site(request):
     tops = cache.get("menu_categories")
     if tops is None:
@@ -32,6 +52,7 @@ def site(request):
         cache.set("site_settings", s, 300)
     return {
         "SITE_URL": settings.SITE_URL,
+        "ASSET_V": ASSET_V,
         "site_settings": s,
         "menu_categories": tops[:7],
         "menu_more": tops[7:],

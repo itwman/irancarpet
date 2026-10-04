@@ -155,4 +155,4 @@
 {% endif %}
 {{ room|json_script:"room-data" }}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/home.js' %}" defer></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/home.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}

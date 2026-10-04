@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/jalalidatepicker/jalalidatepicker.min.css' %}">
 {% block head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/panel.css' %}?v={{ ASSET_V }}">
 </head>
 <body class="panel">
 {% include "dashboard/_icons.html" %}
@@ -57,7 +57,7 @@
 <script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
 <script src="{% static 'vendor/jalalidatepicker/jalalidatepicker.min.js' %}"></script>
 {% block scripts_before %}{% endblock %}
-<script src="{% static 'dashboard/panel.js' %}"></script>
+<script src="{% static 'dashboard/panel.js' %}?v={{ ASSET_V }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

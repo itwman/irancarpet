@@ -19,6 +19,8 @@
         <div class="kv"><span>روش پرداخت</span><strong>{{ order.get_payment_mode_display }}</strong></div>
         <div class="kv"><span>ارسال</span><strong>{{ order.get_shipping_mode_display }}</strong></div>
         <div class="kv"><span>پرداخت‌شده</span><strong>{{ order.paid_amount|toman }} تومان</strong></div>
+        {% if order.wp_id %}<div class="kv"><span>وضعیت در سایت قبلی</span><strong>{{ order.wp_status|default:"—" }}</strong></div>
+        <div class="kv"><span>پرداخت در سایت قبلی</span><strong>{{ order.wp_payment|default:"—" }}</strong></div>{% endif %}
         <div class="kv"><span>مانده</span><strong{% if order.remaining %} class="text-danger"{% endif %}>{{ order.remaining|toman }} تومان</strong></div>
       </div>
     </section>

@@ -12,7 +12,7 @@ from . import config
 
 log = logging.getLogger(__name__)
 
-GATEWAY_NAMES = {"sep": "بانک سامان (سپ)", "zarinpal": "زرین‌پال", "fake": "درگاه آزمایشی", "manual": "ثبت دستی"}
+GATEWAY_NAMES = {"sep": "بانک سامان (سپ)", "zarinpal": "زرین‌پال", "fake": "درگاه آزمایشی", "manual": "ثبت دستی", "wordpress": "سایت قبلی (وردپرس)"}
 
 
 class GatewayError(Exception):

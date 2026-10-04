@@ -21,7 +21,7 @@
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="preload" href="{% static 'vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
-<link rel="stylesheet" href="{% static 'css/site.css' %}">
+<link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ ASSET_V }}">
 <link rel="alternate" type="application/rss+xml" title="{{ site_settings.site_name }}" href="/feed/">
 {% if jsonld %}<script type="application/ld+json">{{ jsonld|safe }}</script>{% endif %}
 {% block head %}{% endblock %}
@@ -35,7 +35,7 @@
 </main>
 {% include "partials/footer.html" %}
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
-<script src="{% static 'js/site.js' %}" defer></script>
+<script src="{% static 'js/site.js' %}?v={{ ASSET_V }}" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
