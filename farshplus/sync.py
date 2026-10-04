@@ -15,7 +15,7 @@ from html import unescape
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 from django.utils.encoding import iri_to_uri
 from django.utils.html import strip_tags
@@ -360,8 +360,9 @@ def run(limit=40, out=print):
             out(f"سقف روزانه پر است؛ ارسال تا {timezone.localtime(s.rate_limited_until):%H:%M} متوقف است.")
             return 0
         now = timezone.now()
+        prio = Case(When(mode="manual", then=Value(0)), When(mode="auto", then=Value(1)), default=Value(2), output_field=IntegerField())
         due = (FarshPlusItem.objects.filter(queued=True).filter(Q(next_try_at__isnull=True) | Q(next_try_at__lte=now))
-               .order_by("-mode", "next_try_at", "pk"))  # manual و auto پیش از bulk
+               .annotate(prio=prio).order_by("prio", "next_try_at", "pk"))  # دستی، بعد به‌روزرسانی‌ها، بعد ارسال گروهی
         for item in due[:limit]:
             try:
                 out(f"#{item.external_id}: {process(item, s)}")

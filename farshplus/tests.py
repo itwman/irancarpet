@@ -150,3 +150,15 @@ class FarshPlusTests(TestCase):
         self.assertIn("فرش".encode(), body)
         self.assertNotIn(b"skip", body)
         self.assertIn(b'name="images"; filename="a.jpg"', body)
+
+
+class PriorityTests(FarshPlusTests):
+    def test_updates_before_bulk(self):
+        p2 = Product.objects.create(title="دوم", slug="dovom", image=self.media)
+        Variation.objects.create(product=p2, size=Size.objects.get(slug="6-meter"), manual_price=1_000_000)
+        p2.refresh_price_cache()
+        bulk = sync.get_item(p2); sync.queue(bulk, "bulk")
+        upd = FarshPlusItem.objects.create(product=self.p, external_id="9", post_id=3, status="PUBLISHED")
+        sync.queue(upd, "auto")
+        sync.run(limit=1, out=lambda m: None)
+        self.assertEqual(self.fake.calls[0][1]["external_id"], "9")
