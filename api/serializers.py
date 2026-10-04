@@ -77,6 +77,7 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "images": [{"full": media_url(m), "thumb": thumb_url(m, 960), "w": m.width or 0, "h": m.height or 0} for m in gallery],
         "short_description": plain(p.short_description),
         "content_html": p.content or "",
+        "content_text": plain(p.content, 3000),
         "sizes": [size_row(v) for v in variations],
         "specs": specs,
         "categories": [{"id": c.pk, "name": c.name} for c in p.categories.all()],
