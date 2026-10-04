@@ -5,13 +5,13 @@
  *
  *   php deploy/hamrah_capture.php [مسیر وردپرس] > /root/hamrah.json
  */
-$wp = $argv[1] ?? '/var/www/irancarpet/public_html';
-define('DISABLE_WP_CRON', true);
+// نام متغیر نباید $wp باشد (متغیر سراسری خود وردپرس است)
+$hc_root = $argv[1] ?? '/var/www/irancarpet/public_html';
 define('WP_USE_THEMES', false);
 $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'irancarpet.net';
 $_SERVER['REQUEST_URI'] = '/';
 $_SERVER['HTTPS'] = 'on';
-require $wp . '/wp-load.php';
+require $hc_root . '/wp-load.php';
 
 function shrink($v)
 {
