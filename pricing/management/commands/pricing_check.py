@@ -8,6 +8,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 
 from catalog.models import Product
+from core.utils.php import php_unserialize
 from core.wp.reader import WPReader
 from pricing.models import Album
 
@@ -37,6 +38,24 @@ class Command(BaseCommand):
             self.out(f"  {k} = {wp.option(k)}")
         active = wp.option("active_plugins") or ""
         self.out("  افزونهٔ ICSD فعال:", "icsd-price-manager" in active, "| افزونهٔ ارزی فعال:", "mnswmc" in active or "currency" in active.lower())
+
+        plugins = php_unserialize(wp.option("active_plugins") or "", default=[]) or []
+        plugins = list(plugins.values()) if isinstance(plugins, dict) else list(plugins)
+        self.out("  افزونه‌های قیمتی فعال:", ", ".join(x for x in plugins if any(k in x for k in ("pricing", "mns", "icsd", "torob", "nosan"))) or "—")
+
+        icap = wp.posts("icap_album", ("publish", "draft", "private"))
+        am = wp.postmeta([a["ID"] for a in icap])
+        linked = wp.rows("SELECT meta_value AS a, COUNT(*) AS c FROM {p}postmeta WHERE meta_key='_icap_album_id' GROUP BY meta_value")
+        cnt = {str(r["a"]): r["c"] for r in linked}
+        self.out(f"\n==== آلبوم‌های افزونهٔ قیمت‌گذاری آلبومی ایران‌کارپت ({len(icap)}) — محصولات وصل‌شده: {sum(cnt.values())}")
+        for a in icap:
+            m = am.get(a["ID"], {})
+            sizes = php_unserialize(m.get("_icap_enabled_sizes") or "", default=[]) or []
+            sizes = list(sizes.values()) if isinstance(sizes, dict) else sizes
+            self.out(f"  #{a['ID']} {a['post_title']} | خرید {n(m.get('_icap_buy_price'))} | سود {m.get('_icap_profit_percent')}٪ "
+                     f"| ارسال {n(m.get('_icap_shipping_fixed'))} | پرتی {m.get('_icap_waste_type')} {m.get('_icap_waste_value')} "
+                     f"| گرد {n(m.get('_icap_round_to'))} | سایزها {','.join(map(str, sizes))} | محصول {cnt.get(str(a['ID']), 0)}")
+        self.out("  سایزهای استاندارد:", wp.option("icap_standard_sizes", "")[:600])
 
         icsd_albums = {}
         if has("icsd_albums"):
@@ -72,6 +91,9 @@ class Command(BaseCommand):
         p = Product.objects.select_related("album").get(pk=product)
         self.out(f"\n==== محصول {p.pk} (وردپرس {p.wp_id}): {p.title}")
         self.out(f"  جنگو: آلبوم {p.album.name if p.album else '—'} | پایهٔ آلبوم {n(p.album.base_price) if p.album else '—'} | پایهٔ اختصاصی {n(p.custom_base_price) if p.custom_base_price is not None else '—'}")
+        if p.wp_id:
+            pm = wp.postmeta([p.wp_id], ["_icap_album_id", "_icap_size_map", "_mnswmc_currency_id", "_mnswmc_active"]).get(p.wp_id, {})
+            self.out(f"  وردپرس: آلبوم ایران‌کارپت {pm.get('_icap_album_id', '—')} | نقشهٔ سایز {pm.get('_icap_size_map', '—')} | ارزی {pm.get('_mnswmc_currency_id', '—')} {pm.get('_mnswmc_active', '')}")
         if has("icsd_product_album") and p.wp_id:
             r = wp.rows("SELECT * FROM {p}icsd_product_album WHERE product_id=%s", [p.wp_id])
             if r:
