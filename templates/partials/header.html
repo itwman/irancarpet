@@ -6,8 +6,8 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
       </button>
       <a href="/" class="brand" aria-label="{{ site_settings.site_name }}، صفحهٔ اصلی">
-        <img class="brand-mark" src="{% static 'img/logo.svg' %}" alt="" width="44" height="44">
-        <span class="brand-text"><strong>{{ site_settings.site_name }}</strong><small>فرش ماشینی کاشان، بی‌واسطه</small></span>
+        <img class="brand-mark" src="{% static 'img/logo.svg' %}" alt="" width="40" height="48">
+        <span class="brand-text"><img class="brand-word" src="{% static 'img/wordmark.svg' %}" alt="" width="124" height="31"><small>فرش ماشینی کاشان، بی‌واسطه</small></span>
       </a>
       <form class="search" action="/search/" method="get" role="search">
         <label class="sr-only" for="q">جستجو در فرش‌ها</label>
@@ -44,7 +44,7 @@
   </div>
 </header>
 <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavTitle">
-  <div class="offcanvas-header"><strong id="mobileNavTitle">{{ site_settings.site_name }}</strong><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="بستن"></button></div>
+  <div class="offcanvas-header"><span id="mobileNavTitle" class="d-flex align-items-center gap-2"><img src="{% static 'img/logo.svg' %}" alt="" width="30" height="36"><img src="{% static 'img/wordmark.svg' %}" alt="{{ site_settings.site_name }}" width="104" height="26"></span><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="بستن"></button></div>
   <div class="offcanvas-body">
     <ul class="mobile-nav">
       <li><a href="/store/">همهٔ فرش‌ها</a></li>

@@ -6,8 +6,8 @@ import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
-import '../widgets/knots.dart';
 import 'checkout.dart' show SectionHead;
 import 'shell.dart';
 
@@ -34,7 +34,7 @@ class AccountTab extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(color: C.ink, borderRadius: BorderRadius.circular(22)),
           child: Row(children: [
-            const KnotLogo(size: 52),
+            const BrandLogo(size: 56, tile: true),
             const SizedBox(width: 14),
             Expanded(
               child: auth.loggedIn

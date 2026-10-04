@@ -97,7 +97,7 @@ def home(request):
     }
     org = {
         "@context": "https://schema.org", "@type": "OnlineStore", "name": "ایران کارپت",
-        "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.svg",
+        "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.png",
     }
     return render(request, "home.html", {
         "meta": seo.build(kind="home"), "page": page, "posts": posts, "categories": cats,

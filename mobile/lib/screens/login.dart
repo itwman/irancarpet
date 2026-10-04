@@ -8,8 +8,8 @@ import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
-import '../widgets/knots.dart';
 
 /// ورود با کد پیامکی (یا رمز). موفقیت: Navigator.pop(context, true)
 class LoginScreen extends StatefulWidget {
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(),
       body: ListView(padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), children: [
-        const Center(child: KnotLogo(size: 64)),
+        const Center(child: BrandLogo(size: 76)),
         const SizedBox(height: 16),
         Text(
           _step == 1 ? 'کد تأیید را وارد کنید' : (_step == 2 ? 'ورود با رمز' : 'ورود یا ثبت‌نام'),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import '../widgets/knots.dart';
 import 'shell.dart';
@@ -78,9 +79,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   Widget _top(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
         child: Row(children: [
-          const KnotLogo(size: 38),
+          const BrandLogo(size: 40),
           const SizedBox(width: 10),
-          const Expanded(child: Text('ایران کارپت', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
+          const Expanded(child: Align(alignment: AlignmentDirectional.centerStart, child: Wordmark(height: 25))),
           IconButton(
               tooltip: 'اعلان‌ها', onPressed: () => Navigator.pushNamed(context, '/notifications'), icon: const Icon(Icons.notifications_none_rounded)),
         ]),

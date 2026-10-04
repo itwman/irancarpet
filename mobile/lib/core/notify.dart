@@ -26,7 +26,7 @@ void notificationDispatcher() {
 
 Future<void> _initPlugin() async {
   await _plugin.initialize(
-    settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+    settings: const InitializationSettings(android: AndroidInitializationSettings('@drawable/ic_stat_notify')),
     onDidReceiveNotificationResponse: (r) {
       if (r.payload != null) onNotificationTap?.call(r.payload!);
     },
@@ -70,7 +70,7 @@ Future<List<Map<String, dynamic>>> checkNotifications({bool show = true}) async 
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails('deals', 'تخفیف‌ها و فرش‌های تازه',
             channelDescription: 'اعلان تخفیف و فرش‌های تازهٔ ایران کارپت', importance: Importance.high, priority: Priority.high,
-            color: Color(0xFFE5395B)),
+            color: Color(0xFF740601)),
       ),
     );
   }

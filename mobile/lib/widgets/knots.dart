@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 
-/// نشان ایران کارپت: ۴×۴ گره روی زمینهٔ سرمه‌ای.
+/// نقش ۴×۴ گره (نماد فرش، برای بارگذاری و جاهای خالی). نشان رسمی در brand.dart است.
 /// [progress] از ۰ تا ۱ گره‌ها را یکی‌یکی «می‌بافد».
 class KnotLogo extends StatelessWidget {
   const KnotLogo({super.key, this.size = 48, this.progress = 1});

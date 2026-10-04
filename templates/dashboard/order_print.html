@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="{% static 'dashboard/panel.css' %}?v={{ ASSET_V }}"></head>
 <body class="print-page" onload="window.print()">
 <div class="invoice">
-  <header><img src="{% static 'img/logo.svg' %}" alt="" width="48" height="48"><div><h1>{{ site_settings.site_name }}</h1><p>{{ site_settings.address }} · {{ site_settings.phone|fa_num }}</p></div>
+  <header><img src="{% static 'img/logo.svg' %}" alt="" width="46" height="55"><div><h1>{{ site_settings.site_name }}</h1><p>{{ site_settings.address }} · {{ site_settings.phone|fa_num }}</p></div>
     <div class="inv-meta"><strong>فاکتور سفارش {{ order.number|fa_num }}</strong><span>{{ order.created_at|jdate }}</span></div></header>
   <section class="inv-to"><strong>گیرنده:</strong> {{ order.full_name }}، {{ order.mobile|fa_num }}<br>{{ order.province }}، {{ order.city }}، {{ order.address|fa_num }}{% if order.postal_code %}، کد پستی {{ order.postal_code|fa_num }}{% endif %}</section>
   <table class="tbl"><thead><tr><th>#</th><th>کالا</th><th>سایز</th><th>تعداد</th><th>قیمت واحد (تومان)</th><th>جمع (تومان)</th></tr></thead>
