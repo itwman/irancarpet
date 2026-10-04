@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "shop",
     "dashboard",
     "farshplus",
+    "torob",
 ]
 
 MIDDLEWARE = [

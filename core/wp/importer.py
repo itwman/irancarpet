@@ -760,7 +760,7 @@ class Importer:
         self.log(f"ریدایرکت‌ها: {n} از Rank Math + {old} نامک قدیمی — کل: {Redirect.objects.count()}")
 
     # ------------------------------------------------------------------ run
-    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "icap", "reviews", "blog", "redirects", "customers", "orders", "farshplus"]
+    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "icap", "reviews", "blog", "redirects", "customers", "orders", "farshplus", "torob"]
 
     def run(self, only=None):
         steps = only or self.STEPS
@@ -802,6 +802,10 @@ class Importer:
                 ci.import_customers()
             if "orders" in steps:
                 ci.import_orders()
+        if "torob" in steps:
+            from torob.importer import import_torob
+
+            import_torob(self.wp, self.log)
         if "farshplus" in steps:
             from farshplus.importer import import_farshplus
 

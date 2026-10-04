@@ -14,6 +14,7 @@ from farshplus.models import FarshPlusItem, FarshPlusSettings
 from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
+from torob.models import TorobSettings
 
 from ..auth import clear_site_cache, staff_required
 from ..forms import formfield_for, style_form
@@ -28,6 +29,7 @@ TABS = [
     ("sms", "پیامک"),
     ("pricing", "فرمول قیمت"),
     ("farshplus", "فرش پلاس"),
+    ("torob", "فید ترب"),
 ]
 
 FORMS = {
@@ -39,6 +41,8 @@ FORMS = {
     "pricing": (PricingSettings, ["markup_percent", "shipping_fixed", "round_to", "round_method", "show_size_table"]),
     "farshplus": (FarshPlusSettings, ["enabled", "url", "api_key", "auto_sync", "default_in_feed", "hashtags", "hide_out_of_stock",
                                       "max_images", "categories"]),
+    "torob": (TorobSettings, ["enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
+                              "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
 }
 
 
@@ -109,8 +113,10 @@ def settings_view(request):
             log(request, "update", "تنظیمات", None, dict(TABS)[tab])
             clear_site_cache()
             msg = "تنظیمات ذخیره شد."
-            if tab == "pricing":
-                msg += " قیمت همهٔ محصولات با فرمول تازه دوباره محاسبه شد."
+            if tab == "torob":
+                from django.core.cache import cache
+
+                cache.delete("torob_rows")
             messages.success(request, msg)
             return redirect(f"/panel/settings/?tab={tab}")
         messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")

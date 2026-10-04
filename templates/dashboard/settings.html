@@ -26,7 +26,7 @@
         <button type="button" class="btn btn-light btn-sm" id="addTrust"><svg class="ic"><use href="#i-plus"/></svg> امتیاز تازه</button>
         <template id="trustTpl"><div class="trust-row"><input name="tp_title" class="form-control" placeholder="عنوان"><input name="tp_sub" class="form-control" placeholder="توضیح کوتاه"><button type="button" class="btn btn-light btn-sm" data-remove-row aria-label="حذف">×</button></div></template>
       {% endif %}
-      {% if tab == "pricing" %}<div class="alert alert-warning mt-3 mb-3">با ذخیرهٔ این بخش، قیمت همهٔ سایزهای همهٔ محصولات با فرمول تازه دوباره محاسبه می‌شود.</div>{% endif %}
+      {% if tab == "pricing" %}<div class="alert alert-info mt-3 mb-3">این‌ها فقط مقدار پیش‌فرض آلبوم‌های تازه است. سود، ارسال و گرد کردن هر آلبوم در <a href="/panel/albums/">صفحهٔ همان آلبوم</a> تنظیم می‌شود.</div>{% endif %}
       <button class="btn btn-pink mt-3" type="submit">ذخیره</button>
     </form>
     {% if tab == "farshplus" %}
@@ -68,6 +68,7 @@
       {% if fp.s.last_scan_at %}<div class="kv"><span>آخرین بررسی</span><strong>{{ fp.s.last_scan_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
       <a class="btn btn-light btn-sm mt-2" href="/panel/farshplus/">فهرست محصولات در فرش پلاس</a>
     </section>{% endif %}
+    {% if tab == "torob" %}<section class="card-p"><h2>آدرس فید برای پنل ترب</h2><p class="hint">همان آدرس قبلی است و نیازی به تغییر در پنل ترب نیست:</p><p dir="ltr"><code>https://irancarpet.net/wp-json/torob/products/?page=1</code></p><p class="hint">محصول آلبومی با قیمت سایز ۱۲ متری در ترب نمایش داده می‌شود، مثل سایت قبلی.</p></section>{% endif %}
     {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند.</p></section>{% endif %}
   </div>
 </div>
