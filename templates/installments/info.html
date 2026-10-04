@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load fa static %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="inst-head">
+    <h1>{{ page.title }}</h1>
+    {% if before %}<div class="prose inst-head__intro">{{ before|safe }}</div>{% endif %}
+  </header>
+
+  {% if plans %}
+  <section class="inst-board" aria-label="محاسبهٔ اقساط">
+    <div class="inst-board__calc card-ic">
+      <h2>اقساطتان را حساب کنید</h2>
+      {% include "installments/_calc.html" with uid="P" open_schedule=True %}
+      <div class="inst-cta">
+        <a class="btn-ic btn-ic--pink btn-ic--sm" href="/carpets-price-list/">انتخاب فرش از لیست قیمت</a>
+        <a class="btn-ic btn-ic--teal btn-ic--sm" href="/store/">همهٔ فرش‌ها</a>
+      </div>
+    </div>
+    <div class="inst-board__plans">
+      {% for p, desc in plans %}
+      <article class="inst-card inst-card--{{ p.kind }}">
+        <h2>{{ p.title }}</h2>
+        <p class="inst-card__meta">{{ desc }}</p>
+        {% if p.description %}<div class="prose small">{{ p.description|safe }}</div>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <div class="alert-ic alert-ic--warn">خرید اقساطی فعلاً فعال نیست. برای راهنمایی با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
+  {% endif %}
+
+  {% if after %}<section class="prose container--narrow inst-after">{{ after|safe }}</section>{% endif %}
+
+  {% if faq %}
+  <section class="faq container--narrow inst-faq">
+    <h2>پرسش‌های متداول خرید اقساطی</h2>
+    {% for f in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/installments.js' %}" defer></script>{% endblock %}

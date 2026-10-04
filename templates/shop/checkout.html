@@ -1,9 +1,10 @@
-{% extends "base.html" %}{% load fa %}
+{% extends "base.html" %}{% load fa static %}
 {% block content %}
 <div class="container">
   <div class="page-head"><h1>تسویه حساب</h1><p>اطلاعات ارسال را وارد کنید و روش پرداخت را انتخاب کنید.</p></div>
   {% if errors.cart %}<div class="alert-ic">{{ errors.cart }} <a href="/cart/">رفتن به سبد</a></div>{% endif %}
-  <form method="post" class="checkout-layout" id="checkoutForm" data-total="{{ total }}" data-deposit="{{ deposit }}" data-free-min="{{ shop.free_shipping_min }}">{% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="checkout-layout" id="checkoutForm" data-total="{{ total }}" data-deposit="{{ deposit }}" data-free-min="{{ shop.free_shipping_min }}">{% csrf_token %}
+    <div class="checkout-main">
     <section class="card-ic">
       <h2>اطلاعات گیرنده</h2>
       <div class="grid-2">
@@ -23,6 +24,39 @@
       {% if shop.checkout_note %}<div class="prose small">{{ shop.checkout_note|linebreaksbr }}</div>{% endif %}
     </section>
 
+    {% if plans %}
+    <section class="card-ic inst-section" id="instSection"{% if form.payment_mode != "installment" %} hidden{% endif %}>
+      <h2>خرید اقساطی</h2>
+      {% if errors.inst_plan %}<div class="alert-ic">{{ errors.inst_plan }}</div>{% endif %}
+      {% if errors.inst_quote %}<div class="alert-ic">{{ errors.inst_quote }}</div>{% endif %}
+      {% include "installments/_calc.html" with fixed_total=total uid="C" %}
+      {% for p, desc in plans %}
+      <fieldset class="inst-docs" data-plan-fields="{{ p.pk }}"{% if not forloop.first %} hidden{% endif %}>
+        <legend>مشخصات و مدارک</legend>
+        {% if p.submit_note %}<p class="inst-docs__note">{{ p.submit_note }}</p>{% endif %}
+        <div class="grid-2">
+        {% for key, label, typ in p.info_fields %}{% with name="inst_"|add:key %}
+          <div class="field{% if errors|get_item:name %} has-err{% endif %}{% if typ == 'image' %} inst-file{% endif %}">
+            <label for="{{ name }}-{{ p.pk }}">{{ label }}</label>
+            {% if typ == "image" %}
+              <input id="{{ name }}-{{ p.pk }}" name="{{ name }}" type="file" accept="image/*">
+              <small>عکس واضح، حداکثر ۸ مگابایت. فقط مدیران فروشگاه آن را می‌بینند.</small>
+            {% elif typ == "pensioner" %}
+              <select id="{{ name }}-{{ p.pk }}" name="{{ name }}"><option value="">انتخاب کنید</option>{% for c in p.PENSIONER_CHOICES %}<option{% if form|get_item:name == c %} selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+            {% else %}
+              <input id="{{ name }}-{{ p.pk }}" name="{{ name }}" value="{% if form|get_item:name %}{{ form|get_item:name }}{% elif key == 'holder_name' %}{{ form.first_name }} {{ form.last_name }}{% endif %}"{% if typ != "text" %} inputmode="numeric" class="ltr"{% endif %}{% if typ == "national_code" %} maxlength="10"{% elif typ == "sayad" %} maxlength="16"{% elif typ == "mobile" %} maxlength="11" placeholder="09xxxxxxxxx"{% endif %} autocomplete="off">
+            {% endif %}
+            {% if errors|get_item:name %}<span class="err">{{ errors|get_item:name }}</span>{% endif %}
+          </div>
+        {% endwith %}{% endfor %}
+        </div>
+        {% if p.down_timing == "approval" %}<p class="inst-docs__note">پیش‌پرداخت بعد از تأیید مدارک، از صفحهٔ سفارش پرداخت می‌شود.</p>{% endif %}
+      </fieldset>
+      {% endfor %}
+    </section>
+    {% endif %}
+    </div>
+
     <aside class="card-ic sum">
       <h2>سفارش شما</h2>
       {% for line in lines %}{% if not line.problem %}
@@ -32,44 +66,69 @@
 
       <h2 class="mt-4">روش پرداخت</h2>
       <div class="choice" role="radiogroup" aria-label="روش پرداخت">
-        {% if "full" in modes %}<label><input type="radio" name="payment_mode" value="full"{% if form.payment_mode != "deposit" %} checked{% endif %}><span><strong>پرداخت کامل آنلاین</strong><small>{{ total|toman }} تومان{% if free_shipping %}، با ارسال رایگان{% endif %}</small></span></label>{% endif %}
-        {% if "deposit" in modes %}<label><input type="radio" name="payment_mode" value="deposit"{% if form.payment_mode == "deposit" or "full" not in modes %} checked{% endif %}><span><strong>{{ shop.deposit_percent|fa_num }}٪ بیعانه، بقیه موقع تحویل</strong><small>الان {{ deposit|toman }} تومان، بقیه ({{ remaining|toman }} تومان) موقع تحویل</small></span></label>{% endif %}
+        {% if "full" in modes %}<label><input type="radio" name="payment_mode" value="full"{% if form.payment_mode != "deposit" and form.payment_mode != "installment" %} checked{% endif %}><span><strong>پرداخت کامل آنلاین</strong><small>{{ total|toman }} تومان{% if free_shipping %}، با ارسال رایگان{% endif %}</small></span></label>{% endif %}
+        {% if "deposit" in modes %}<label><input type="radio" name="payment_mode" value="deposit"{% if form.payment_mode == "deposit" or "full" not in modes and form.payment_mode != "installment" %} checked{% endif %}><span><strong>{{ shop.deposit_percent|fa_num }}٪ بیعانه، بقیه موقع تحویل</strong><small>الان {{ deposit|toman }} تومان، بقیه ({{ remaining|toman }} تومان) موقع تحویل</small></span></label>{% endif %}
+        {% if "installment" in modes %}<label><input type="radio" name="payment_mode" value="installment"{% if form.payment_mode == "installment" %} checked{% endif %}><span><strong>خرید اقساطی</strong><small>{% for p, d in plans %}{{ p.title }}{% if not forloop.last %}، {% endif %}{% endfor %}</small></span></label>{% endif %}
       </div>
       {% if errors.payment_mode %}<div class="alert-ic">{{ errors.payment_mode }}</div>{% endif %}
       <div class="sum-row"><span>پرداخت الان</span><strong id="payNow">{{ total|toman }} تومان</strong></div>
-      <div class="sum-row" id="laterRow" hidden><span>موقع تحویل</span><strong id="payLater"></strong></div>
+      <div class="sum-row" id="laterRow" hidden><span id="laterLabel">موقع تحویل</span><strong id="payLater"></strong></div>
       <div class="ship-note {% if free_shipping %}free{% else %}cod{% endif %}" id="shipNote">{% if free_shipping %}ارسال رایگان است.{% else %}هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).{% endif %}</div>
 
+      <div id="gwBlock">
       <h2 class="mt-4">درگاه پرداخت</h2>
       {% if gateways %}
       <div class="choice">
         {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if form.gateway == g.key or not form.gateway and forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong>{% if g.key == "fake" %}<small>فقط برای آزمایش؛ پول واقعی جابه‌جا نمی‌شود.</small>{% endif %}</span></label>{% endfor %}
       </div>
       {% if errors.gateway %}<div class="alert-ic">{{ errors.gateway }}</div>{% endif %}
-      <button class="btn-ic btn-ic--pink" type="submit" id="payBtn">پرداخت و ثبت سفارش</button>
       {% else %}
       <div class="alert-ic alert-ic--warn">درگاه پرداخت هنوز فعال نشده است. برای ثبت سفارش با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
       {% endif %}
+      </div>
+      {% if gateways or plans %}<button class="btn-ic btn-ic--pink" type="submit" id="payBtn"{% if not gateways %} hidden{% endif %}>پرداخت و ثبت سفارش</button>{% endif %}
     </aside>
   </form>
 </div>
 {% endblock %}
-{% block scripts %}<script>
+{% block scripts %}{% if plans %}<script src="{% static 'js/installments.js' %}"></script>{% endif %}<script>
 (function () {
   var f = document.getElementById("checkoutForm"); if (!f) return;
   var total = +f.dataset.total, dep = +f.dataset.deposit, freeMin = +f.dataset.freeMin, FA = "۰۱۲۳۴۵۶۷۸۹";
+  var inst = document.getElementById("instSection"), gw = document.getElementById("gwBlock"), btn = document.getElementById("payBtn");
+  var hasGw = !!f.querySelector("input[name=gateway]"), q = null;
   function fa(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, function (d) { return FA[d]; }) + " تومان"; }
+  function mode() { return (f.querySelector("input[name=payment_mode]:checked") || {}).value || "full"; }
+  function payAtCheckout() {
+    var p = f.querySelector("input[name=inst_plan]:checked"), cfg = [];
+    try { cfg = JSON.parse(f.querySelector("[data-inst-calc]").dataset.plans); } catch (e) {}
+    var c = cfg.filter(function (x) { return p && x.id === +p.value; })[0];
+    return !c || c.pay_at === "checkout";
+  }
   function upd() {
-    var m = (f.querySelector("input[name=payment_mode]:checked") || {}).value || "full";
-    var now = m === "deposit" ? dep : total;
+    var m = mode(), lr = document.getElementById("laterRow"), now = total, later = 0, label = "موقع تحویل";
+    if (inst) inst.hidden = m !== "installment";
+    if (m === "deposit") { now = dep; later = total - dep; }
+    if (m === "installment") {
+      now = q ? (payAtCheckout() ? q.down : 0) : 0;
+      later = q ? q.installments_total : 0; label = q ? ("اقساط: " + q.count.toString().replace(/\d/g, function (d) { return FA[d]; }) + " قسط") : "اقساط";
+    }
     document.getElementById("payNow").textContent = fa(now);
-    var lr = document.getElementById("laterRow"); lr.hidden = m !== "deposit";
-    document.getElementById("payLater").textContent = fa(total - dep);
+    lr.hidden = !later; document.getElementById("payLater").textContent = fa(later);
+    document.getElementById("laterLabel").textContent = label;
     var free = m === "full" && total >= freeMin, n = document.getElementById("shipNote");
     n.className = "ship-note " + (free ? "free" : "cod");
     n.textContent = free ? "ارسال رایگان است." : "هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).";
+    var needGw = !(m === "installment" && now === 0);
+    if (gw) gw.hidden = !needGw;
+    if (btn) {
+      btn.hidden = needGw && !hasGw;
+      btn.textContent = m === "installment" ? (needGw ? "پرداخت پیش‌پرداخت و ثبت درخواست" : "ثبت درخواست خرید اقساطی") : "پرداخت و ثبت سفارش";
+    }
   }
-  f.addEventListener("change", upd); upd();
-  f.addEventListener("submit", function () { var b = document.getElementById("payBtn"); if (b) { b.disabled = true; b.textContent = "در حال انتقال به درگاه…"; } });
+  f.addEventListener("change", upd);
+  f.addEventListener("inst:quote", function (e) { q = e.detail; upd(); });
+  upd();
+  f.addEventListener("submit", function () { if (btn) { btn.disabled = true; btn.textContent = "در حال ثبت…"; } });
 })();
 </script>{% endblock %}

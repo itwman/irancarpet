@@ -13,3 +13,13 @@ def order_paid(order, amount):
             m = m.strip()
             if m:
                 send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'), {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{amount:,}"})
+
+
+def installment_request(order):
+    """درخواست اقساط بدون پرداخت آنلاین → خبر به مدیران."""
+    if config.get('SMSIR_ADMIN_TEMPLATE_ID'):
+        for m in (ShopSettings.load().admin_mobiles or "").split(","):
+            m = m.strip()
+            if m:
+                send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'),
+                              {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{order.items_total:,} (اقساطی)"})

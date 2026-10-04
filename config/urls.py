@@ -9,6 +9,8 @@ from catalog import views as catalog_views
 from core import views as core_views
 from seo import sitemaps
 from api import views as api_views
+from installments import views as installments_views
+from pricing import views as pricing_views
 from torob import views as torob_views
 
 P = r"(?:page/(?P<page>\d+)/)?"
@@ -25,7 +27,9 @@ urlpatterns = [
     re_path(r"^(?:wp-login\.php|xmlrpc\.php|wp-admin|wp-json|wp-includes|wp-cron\.php)(?:/.*)?$", core_views.gone),
     # پنل قدیمی جنگو فقط برای مدیر کل و موارد اضطراری
     path("panel/system/", admin.site.urls),
+    path("panel/installment-file/<int:pk>/<str:key>/", installments_views.private_file),
     path("panel/", include("dashboard.urls")),
+    path("installments/quote/", installments_views.quote_api),
     path("robots.txt", core_views.robots_txt),
     path("sitemap_index.xml", sitemaps.index),
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),
@@ -40,6 +44,8 @@ urlpatterns = [
     re_path(rf"^brand/(?P<slug>[^/]+)/{P}$", catalog_views.brand_detail),
     re_path(rf"^category/(?P<path>.+?)/{P}$", blog_views.category_detail),
     re_path(rf"^tag/(?P<slug>[^/]+)/{P}$", blog_views.tag_detail),
+    # صفحهٔ هر لیست قیمت (خود /carpets-price-list/ یک برگه با قالب price_list است)
+    re_path(rf"^carpets-price-list/(?P<slug>(?!page/)[^/]+)/{P}$", pricing_views.album_detail),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="pl-head">
+    <h1>{{ page.title }}</h1>
+    <p class="pl-stamp">{% if data.updated %}آخرین تغییر قیمت: <time datetime="{{ data.updated|date:'c' }}">{{ data.updated|jdate:"%d %B %Y" }}</time> · {% endif %}{{ data.albums|fa_num }} لیست قیمت · {{ data.products|fa_num }} فرش</p>
+    {% if before %}<div class="prose pl-intro">{{ before|safe }}</div>{% endif %}
+    {% if data.groups|length > 1 %}
+    <nav class="pl-jump" aria-label="پرش به شانه">
+      {% for g in data.groups %}<a href="#{{ g.anchor }}" class="pl-jump__item {{ g.reeds|reeds_class }}"><strong>{{ g.title|fa_num }}</strong>{% if g.min_base %}<small>۱۲ متری از {{ g.min_base|toman }}</small>{% endif %}</a>{% endfor %}
+    </nav>
+    {% endif %}
+  </header>
+
+  {% for g in data.groups %}
+  <section class="pl-group {{ g.reeds|reeds_class }}" id="{{ g.anchor }}" aria-labelledby="{{ g.anchor }}-h">
+    <div class="pl-group__head">
+      <h2 id="{{ g.anchor }}-h">قیمت {{ g.title|fa_num }}</h2>
+      <p>{% if g.min_base %}{% if g.min_base == g.max_base %}۱۲ متری {{ g.min_base|toman }} تومان{% else %}۱۲ متری از {{ g.min_base|toman }} تا {{ g.max_base|toman }} تومان{% endif %} · {% endif %}{{ g.albums|length|fa_num }} لیست · {{ g.count|fa_num }} فرش</p>
+    </div>
+    <div class="pl-table-wrap" role="region" aria-label="جدول قیمت {{ g.title|fa_num }}" tabindex="0">
+      <table class="pl-table">
+        <caption>قیمت {{ g.title|fa_num }} به تومان، {{ month }}</caption>
+        <thead><tr><th scope="col" class="pl-name">لیست قیمت</th>{% for s in g.sizes %}<th scope="col">{{ s.label|fa_num }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for a in g.albums %}
+          <tr>
+            <th scope="row" class="pl-name"><a href="{{ a.url }}">{{ a.title|fa_num }}</a><small>{{ a.count|fa_num }} فرش{% if a.company %} · {{ a.company }}{% endif %}</small></th>
+            {% for c in a.cells %}<td>{% if c %}{{ c|toman }}{% else %}<span class="pl-na" aria-label="ندارد">—</span>{% endif %}</td>{% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% empty %}
+  <div class="alert-ic alert-ic--warn">لیست قیمت در حال به‌روزرسانی است. برای قیمت روز با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
+  {% endfor %}
+
+  {% if teaser %}
+  <aside class="pl-inst">
+    <div><strong>خرید اقساطی هم داریم</strong>
+      <p>مثلاً فرش {{ teaser.amount|toman }} تومانی: {% if teaser.down_percent %}{{ teaser.down_percent|fa_num }}٪ پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ teaser.count|fa_num }} قسط {% if teaser.step == 2 %}دوماهه{% else %}ماهانه{% endif %} {{ teaser.installment|toman }} تومانی ({{ teaser.plan }}).</p></div>
+    {% if teaser.url %}<a class="btn-ic btn-ic--ink btn-ic--sm" href="{{ teaser.url }}?amount={{ teaser.amount }}">محاسبهٔ اقساط</a>{% endif %}
+  </aside>
+  {% endif %}
+
+  {% if after %}<section class="prose container--narrow pl-after">{{ after|safe }}</section>{% endif %}
+
+  {% if faq %}
+  <section class="faq container--narrow pl-faq">
+    <h2>پرسش‌های متداول قیمت فرش ماشینی</h2>
+    {% for f in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

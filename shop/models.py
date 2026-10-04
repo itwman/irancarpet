@@ -4,7 +4,10 @@ from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
 
-PAYMENT_MODES = [("full", "پرداخت کامل آنلاین"), ("deposit", "بیعانه آنلاین، بقیه موقع تحویل")]
+PAYMENT_MODES = [("full", "پرداخت کامل آنلاین"), ("deposit", "بیعانه آنلاین، بقیه موقع تحویل"), ("installment", "خرید اقساطی")]
+INSTALLMENT_STATES = [
+    ("review", "در انتظار بررسی مدارک"), ("approved", "تأیید شد"), ("rejected", "رد شد"), ("done", "تکمیل شد (چک‌ها / بتا ثبت شد)"),
+]
 SHIPPING_MODES = [("free", "ارسال رایگان"), ("cod", "پس‌کرایه (هزینهٔ ارسال با مشتری)")]
 
 
@@ -63,6 +66,7 @@ class ShopSettings(models.Model):
 class Order(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار پرداخت"
+        ON_HOLD = "on_hold", "در انتظار بررسی اقساط"
         DEPOSIT_PAID = "deposit_paid", "بیعانه پرداخت شد"
         PAID = "paid", "پرداخت کامل"
         PROCESSING = "processing", "در حال آماده‌سازی"
@@ -88,12 +92,20 @@ class Order(models.Model):
     postal_code = models.CharField("کد پستی", max_length=10, blank=True)
     note = models.TextField("توضیح مشتری", blank=True)
 
-    payment_mode = models.CharField("نوع پرداخت", max_length=10, choices=PAYMENT_MODES, default="full")
+    payment_mode = models.CharField("نوع پرداخت", max_length=20, choices=PAYMENT_MODES, default="full")
     shipping_mode = models.CharField("ارسال", max_length=10, choices=SHIPPING_MODES, default="cod")
     items_total = models.PositiveBigIntegerField("جمع کالاها (تومان)", default=0)
     deposit_percent = models.PositiveSmallIntegerField("درصد بیعانه", default=0)
     online_amount = models.PositiveBigIntegerField("مبلغ پرداخت آنلاین", default=0)
     paid_amount = models.PositiveBigIntegerField("پرداخت‌شده", default=0)
+
+    # خرید اقساطی
+    installment_plan = models.ForeignKey("installments.InstallmentPlan", null=True, blank=True, on_delete=models.SET_NULL,
+                                         related_name="orders", verbose_name="روش اقساط")
+    installment = models.JSONField("جدول اقساط", default=dict, blank=True)
+    installment_info = models.JSONField("مشخصات متقاضی اقساط", default=dict, blank=True)
+    installment_state = models.CharField("وضعیت اقساط", max_length=10, choices=INSTALLMENT_STATES, blank=True, db_index=True)
+    installment_reviewed_at = models.DateTimeField("تاریخ بررسی اقساط", null=True, blank=True)
 
     admin_note = models.TextField("یادداشت داخلی", blank=True)
     wp_status = models.CharField("وضعیت در وردپرس", max_length=40, blank=True, editable=False)
@@ -129,22 +141,44 @@ class Order(models.Model):
         return f"{self.first_name} {self.last_name}".strip()
 
     @property
+    def is_installment(self):
+        return self.payment_mode == "installment"
+
+    @property
+    def grand_total(self):
+        """مبلغ کل قابل پرداخت (برای اقساطی: پیش‌پرداخت + جمع اقساط)."""
+        if self.is_installment and self.installment:
+            return int(self.installment.get("payable_total") or self.items_total)
+        return self.items_total
+
+    @property
     def remaining(self):
-        return max(self.items_total - self.paid_amount, 0)
+        return max(self.grand_total - self.paid_amount, 0)
 
     @property
     def is_paid(self):
         return self.status in self.PAID_STATUSES
 
     @property
+    def is_placed(self):
+        """سفارش ثبت قطعی شده (پرداخت شده یا درخواست اقساط بدون پرداخت فرستاده شده)."""
+        return self.is_paid or self.status == self.Status.ON_HOLD
+
+    @property
     def can_pay(self):
-        return self.status == self.Status.PENDING
+        return self.status == self.Status.PENDING and self.online_amount > 0
+
+    @property
+    def status_label(self):
+        if self.is_installment and self.status == self.Status.DEPOSIT_PAID:
+            return "پیش‌پرداخت انجام شد"
+        return self.get_status_display()
 
     def mark_paid(self, amount):
         self.paid_amount += amount
         self.paid_at = self.paid_at or timezone.now()
         if self.status == self.Status.PENDING:
-            self.status = self.Status.PAID if self.paid_amount >= self.items_total else self.Status.DEPOSIT_PAID
+            self.status = self.Status.PAID if self.paid_amount >= self.grand_total else self.Status.DEPOSIT_PAID
         self.save(update_fields=["paid_amount", "paid_at", "status"])
 
 

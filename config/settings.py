@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "farshplus",
     "torob",
     "api",
+    "installments",
 ]
 
 MIDDLEWARE = [
@@ -141,6 +142,8 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # تصاویر دقیقاً در همان مسیر وردپرس سرو می‌شوند تا آدرس تصاویر (و ایندکس Google Images) حفظ شود.
 MEDIA_URL = "/wp-content/uploads/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+# فایل‌های خصوصی (تصویر چک و مدارک مشتری): خارج از media، فقط از راه پنل مدیریت قابل دیدن
+PRIVATE_ROOT = Path(os.environ.get("PRIVATE_ROOT", BASE_DIR / "private"))
 
 # --- امنیت در حالت production --------------------------------------------
 if not DEBUG:

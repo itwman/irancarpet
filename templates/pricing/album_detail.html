@@ -1,0 +1,22 @@
+{% extends "catalog/product_list.html" %}{% load fa %}
+{% block above_list %}
+<section class="al-prices" aria-labelledby="alPricesH">
+  <div class="al-prices__head">
+    <h2 id="alPricesH">قیمت سایزها</h2>
+    <p class="muted">{% if album.company %}{{ album.company }} · {% endif %}به‌روز {{ album.last_updated|jdate:"%d %B %Y" }} · <a href="{{ list_url }}">همهٔ لیست‌های قیمت</a></p>
+  </div>
+  <div class="al-sizes">
+    {% for r in rows %}
+    <div class="al-size{% if r.size.pk == album.base_size_id %} is-base{% endif %}">
+      <span class="al-size__label">{{ r.size.label|fa_num }}{% if r.pair_only %} <small>(جفتی)</small>{% endif %}</span>
+      <strong class="al-size__price">{{ r.price|toman }} <small>تومان</small></strong>
+      <span class="al-size__m2">هر متر مربع {{ r.per_m2|toman }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% if teaser %}
+  <p class="al-inst">خرید اقساطی ۱۲ متری: {% if teaser.down_percent %}{{ teaser.down_percent|fa_num }}٪ پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ teaser.count|fa_num }} قسط {{ teaser.installment|toman }} تومانی{% if teaser.url %} — <a href="{{ teaser.url }}?amount={{ teaser.amount }}">محاسبهٔ اقساط</a>{% endif %}</p>
+  {% endif %}
+</section>
+<h2 class="al-list-h">فرش‌های این لیست</h2>
+{% endblock %}

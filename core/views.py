@@ -142,6 +142,14 @@ def resolve(request, path):
             return catalog_views.shop(request, page_num, page)
         if page.template == "home":
             return HttpResponsePermanentRedirect("/")
+        if page.template == "price_list" and page_num == 1:
+            from pricing.views import price_list
+
+            return price_list(request, page)
+        if page.template == "installment" and page_num == 1:
+            from installments.views import info_page
+
+            return info_page(request, page)
         if page_num == 1:
             return blog_views.page_detail(request, page)
     raise Http404

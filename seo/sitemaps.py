@@ -29,13 +29,16 @@ def sections():
         "product_brand": (Brand.objects.filter(wp_id__isnull=False).annotate(n=Count("products")).filter(n__gt=0), False),
         "product_cat": (Category.objects.annotate(n=Count("products")).filter(n__gt=0).exclude(robots__contains="noindex"), False),
     }
+    from pricing.pricelist import albums_qs
+
+    out["price_list"] = (albums_qs().exclude(slug="").order_by("sort_order", "name"), False)
     for attr in Attribute.objects.filter(is_public=True).exclude(slug__in=["brand"]):
         out[f"pa_{attr.slug}"] = (AttributeTerm.objects.filter(attribute=attr).annotate(n=Count("products")).filter(n__gt=0), False)
     return out
 
 
 def _lastmod(obj):
-    return getattr(obj, "modified_at", None) or getattr(obj, "published_at", None)
+    return getattr(obj, "modified_at", None) or getattr(obj, "published_at", None) or getattr(obj, "last_updated", None)
 
 
 def index(request):

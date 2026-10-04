@@ -1,0 +1,42 @@
+{% load fa %}{# ماشین‌حساب اقساط. ورودی: plans [(plan, توضیح)], plans_json، amount یا fixed_total، و در تسویه حساب form #}
+<div class="inst-calc" data-inst-calc data-plans="{{ plans_json }}"{% if fixed_total %} data-total="{{ fixed_total }}"{% endif %}{% if form.inst_down %} data-down="{{ form.inst_down }}"{% endif %}{% if form.inst_months %} data-months="{{ form.inst_months }}"{% endif %}{% if form.inst_step %} data-step="{{ form.inst_step }}"{% endif %}>
+  {% if not fixed_total %}
+  <div class="field inst-amount"><label for="instAmount">مبلغ خرید <small>(تومان)</small></label>
+    <input id="instAmount" data-amount inputmode="numeric" value="{{ amount }}" class="ltr" autocomplete="off"></div>
+  {% endif %}
+  <div class="inst-plans" role="radiogroup" aria-label="روش اقساط">
+    {% for p, desc in plans %}
+    <label class="inst-plan inst-plan--{{ p.kind }}">
+      <input type="radio" name="inst_plan" value="{{ p.pk }}"{% if form.inst_plan|default:"" == p.pk|stringformat:"s" or not form.inst_plan and forloop.first %} checked{% endif %}>
+      <span><strong>{{ p.title }}</strong><small>{{ desc }}</small></span>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="inst-params">
+    <div class="field"><label for="instDown{{ uid }}">پیش‌پرداخت</label><select id="instDown{{ uid }}" name="inst_down" data-down></select></div>
+    <div class="field" data-step-wrap><span class="lbl">فاصلهٔ قسط‌ها</span>
+      <div class="seg" role="radiogroup" aria-label="فاصلهٔ قسط‌ها">
+        <label><input type="radio" name="inst_step" value="1" checked><span>ماهانه</span></label>
+        <label><input type="radio" name="inst_step" value="2"><span>دوماه‌یک‌بار</span></label>
+      </div></div>
+    <div class="field"><label for="instMonths{{ uid }}">مدت</label><select id="instMonths{{ uid }}" name="inst_months" data-months></select></div>
+  </div>
+  <div class="inst-result" data-result aria-live="polite">
+    <div class="inst-hero">
+      <span class="inst-hero__label">مبلغ هر قسط</span>
+      <strong><span data-o="installment">—</span> <small>تومان</small></strong>
+      <span class="inst-hero__count" data-o="count"></span>
+    </div>
+    <dl class="inst-stats">
+      <div><dt>پیش‌پرداخت</dt><dd data-o="down">—</dd></div>
+      <div><dt>مانده برای قسط</dt><dd data-o="principal">—</dd></div>
+      <div><dt>سود (راس <span data-o="ras"></span>)</dt><dd><span data-o="interest">—</span> · <span data-o="interest_amount"></span></dd></div>
+      <div><dt>جمع کل پرداختی</dt><dd data-o="payable">—</dd></div>
+    </dl>
+    <details class="inst-schedule"{% if open_schedule %} open{% endif %}>
+      <summary>تاریخ و مبلغ قسط‌ها <small>(اولین: <span data-o="first"></span>)</small></summary>
+      <table><thead><tr><th>قسط</th><th>تاریخ</th><th>مبلغ (تومان)</th></tr></thead><tbody data-schedule></tbody></table>
+    </details>
+    <p class="inst-err" data-err hidden></p>
+  </div>
+</div>

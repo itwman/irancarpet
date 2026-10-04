@@ -109,6 +109,16 @@ def _num(d):
     return s
 
 
+def public_title(name, public_name=""):
+    """نام آلبوم در لیست قیمت سایت: «700 شانه ورجین» ← «فرش 700 شانه ورجین» (مگر نام دلخواه داده شده باشد)."""
+    if (public_name or "").strip():
+        return public_name.strip()
+    t = (name or "").strip()
+    if t.startswith("آلبوم"):
+        t = t[len("آلبوم"):].strip(" -–:")
+    return t if t.startswith("فرش") else f"فرش {t}"
+
+
 class Album(models.Model):
     class WasteType(models.TextChoices):
         FIXED = "fixed", "مبلغ ثابت"
@@ -135,6 +145,16 @@ class Album(models.Model):
     sort_order = models.IntegerField("ترتیب", default=0)
     last_updated = models.DateTimeField("آخرین تغییر قیمت", default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
+    # صفحهٔ عمومی «لیست قیمت»
+    in_price_list = models.BooleanField("نمایش در لیست قیمت سایت", default=True)
+    public_name = models.CharField("نام در لیست قیمت", max_length=160, blank=True,
+                                   help_text="خالی = «فرش» + نام آلبوم؛ مثلاً «فرش 700 شانه ورجین مهرآوران»")
+    slug = models.SlugField("نامک صفحهٔ لیست", max_length=160, allow_unicode=True, blank=True,
+                            help_text="آدرس: /carpets-price-list/نامک/ — خالی بگذارید تا از نام ساخته شود")
+    list_intro = models.TextField("متن معرفی در صفحهٔ لیست", blank=True, help_text="HTML ساده؛ زیر فهرست فرش‌ها نمایش داده می‌شود")
+    seo_title = models.CharField("عنوان سئو", max_length=300, blank=True,
+                                 help_text="خالی = خودکار. متغیرها: %title% %currentmonth% %currentyear% %sitename%")
+    seo_description = models.TextField("توضیحات متا", blank=True, help_text="خالی = خودکار از قیمت‌ها")
 
     PRICE_FIELDS = ("base_price", "base_size_id", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to", "is_active")
 
@@ -145,6 +165,24 @@ class Album(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def title(self):
+        return public_title(self.name, self.public_name)
+
+    def get_absolute_url(self):
+        from .pricelist import PRICE_LIST_PATH
+
+        return f"{PRICE_LIST_PATH}{self.slug}/"
+
+    def make_slug(self):
+        from django.utils.text import slugify
+
+        base = slugify(self.title, allow_unicode=True)[:150] or (self.code or "album").lower()
+        slug, n = base, 2
+        while Album.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug, n = f"{base}-{n}", n + 1
+        return slug
 
     # ------------------------------------------------------------ فرمول
     def _base_area(self):
@@ -220,6 +258,8 @@ class Album(models.Model):
     def save(self, *args, **kwargs):
         if not (self.code or "").strip():
             self.code = self.next_code()
+        if not (self.slug or "").strip():
+            self.slug = self.make_slug()
         changed, ratio = False, None
         self._scaled = False
         if self.pk:

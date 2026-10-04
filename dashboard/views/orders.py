@@ -42,8 +42,8 @@ def order_view(request, pk):
                                            message=dict(pay_form.fields["method"].choices)[d["method"]], verified_at=timezone.now())
                     order.paid_amount += d["amount"]
                     order.paid_at = order.paid_at or timezone.now()
-                    if order.status == "pending":
-                        order.status = "paid" if order.paid_amount >= order.items_total else "deposit_paid"
+                    if order.status in ("pending", "on_hold"):
+                        order.status = "paid" if order.paid_amount >= order.grand_total else "deposit_paid"
                     order.save()
                 log(request, "action", "سفارش‌ها", order, f"ثبت دریافت {d['amount']:,} تومان")
                 messages.success(request, "دریافت وجه ثبت شد.")
@@ -55,10 +55,30 @@ def order_view(request, pk):
                 log(request, "update", "سفارش‌ها", order, "وضعیت: " + order.get_status_display())
                 messages.success(request, "سفارش ذخیره شد.")
                 return redirect(request.path)
+    from installments.orders import info_rows
+
     return render(request, "dashboard/order_view.html", {
         "order": order, "form": form, "pay_form": pay_form, "items": order.items.select_related("product"),
         "payments": order.payments.all(), "provinces": PROVINCES,
+        "inst_info": info_rows(order) if order.is_installment else [],
     })
+
+
+@staff_required
+def order_installment(request, pk):
+    """تأیید / رد / تکمیل درخواست اقساط."""
+    from django.conf import settings
+
+    from installments.orders import set_state
+
+    order = get_object_or_404(Order, pk=pk, payment_mode="installment")
+    state = request.POST.get("state")
+    if request.method == "POST" and state in ("review", "approved", "rejected", "done"):
+        msg = set_state(order, state, settings.SITE_URL)
+        label = dict(Order._meta.get_field("installment_state").choices)[state]
+        log(request, "action", "سفارش‌ها", order, f"اقساط: {label}")
+        messages.success(request, f"وضعیت اقساط: {label}. {msg}".strip())
+    return redirect(f"/panel/orders/{order.pk}/view/")
 
 
 @staff_required

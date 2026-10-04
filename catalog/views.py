@@ -33,7 +33,8 @@ def paged_url(base, page, query):
     return url + (f"?{query}" if query else "")
 
 
-def product_listing(request, base_qs, *, page, path, meta, heading, intro="", crumbs=(), archive=None, template="catalog/product_list.html"):
+def product_listing(request, base_qs, *, page, path, meta, heading, intro="", crumbs=(), archive=None, template="catalog/product_list.html",
+                    extra=None):
     page = int(page or 1)
     base_qs = base_qs.published()
     qs = base_qs
@@ -82,7 +83,13 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
         .annotate(n=Count("products", distinct=True)).order_by("-n")[:30],
         "brands": Brand.objects.filter(products__in=ids).annotate(n=Count("products", distinct=True)).order_by("-n"),
     }
-    m = seo.build(**meta, page=page)
+    if "override" in meta:
+        m = {"robots": "", **meta["override"],
+             "canonical": settings.SITE_URL + path + (f"page/{page}/" if page > 1 else "")}
+        if page > 1:
+            m["title"] = f"{m['title']} {seo.page_label(page)}"
+    else:
+        m = seo.build(**meta, page=page)
     if active or g.get("sort"):
         m["robots"] = "noindex,follow"
     ctx = {
@@ -94,6 +101,7 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
         "page_links": [(n, paged_url(path, n, query)) if n != "…" else (n, "") for n in
                        page_obj.paginator.get_elided_page_range(page, on_each_side=2, on_ends=1)],
     }
+    ctx.update(extra or {})
     return render(request, template, ctx)
 
 
@@ -188,6 +196,10 @@ def product_detail(request, slug):
         "faqs": product.faqs.filter(is_active=True),
         "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs), ensure_ascii=False),
     }
+    if product.is_purchasable and product.min_price:
+        from installments.services import teaser
+
+        ctx["inst_teaser"] = teaser(product.min_price)
     return render(request, "catalog/product_detail.html", ctx)
 
 

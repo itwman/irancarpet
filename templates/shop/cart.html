@@ -33,6 +33,7 @@
       <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.</p>
       {% if has_problem %}<div class="alert-ic mt-3 mb-0">کالاهای ناموجود را حذف کنید تا بتوانید ادامه دهید.</div>{% endif %}
       <button class="btn-ic btn-ic--pink" type="submit" name="go" value="checkout"{% if has_problem %} disabled{% endif %}>ادامهٔ خرید</button>
+      {% if inst_teaser and not has_problem %}<a class="inst-teaser" href="/checkout/?mode=installment"><span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span><span><strong>خرید اقساطی</strong> {% if inst_teaser.down_percent %}{{ inst_teaser.down_percent|fa_num }}٪ پیش‌پرداخت، {% else %}بدون پیش‌پرداخت، {% endif %}قسط از {{ inst_teaser.installment|toman }} تومان</span><span class="inst-teaser__go">انتخاب</span></a>{% endif %}
     </aside>
   </form>
   {% else %}

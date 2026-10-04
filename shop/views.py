@@ -12,6 +12,8 @@ from django.views.decorators.http import require_POST
 
 from accounts.utils import latin_digits, normalize_mobile
 from catalog.models import Variation
+from installments.services import active_plans, describe
+from installments.views import plans_payload
 
 from . import gateways, notify
 from .cart import Cart
@@ -31,8 +33,12 @@ PROVINCES = [
 
 # ------------------------------------------------------------------ سبد
 def cart_view(request):
+    from installments.services import teaser
+
     cart = Cart(request)
-    return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **cart.summary(), "shop": ShopSettings.load()})
+    summary = cart.summary()
+    return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **summary, "shop": ShopSettings.load(),
+                                              "inst_teaser": teaser(summary["total"]) if summary["total"] else None})
 
 
 @require_POST
@@ -113,8 +119,14 @@ def checkout(request):
         return redirect("/cart/")
     gws = gateways.enabled(shop)
     modes = [m for m in ("full", "deposit") if getattr(shop, f"allow_{m}")]
+    plans = active_plans(summary["total"])
+    if plans:
+        modes.append("installment")
     form = _initial(request.user)
+    if request.GET.get("mode") in modes:
+        form["payment_mode"] = request.GET["mode"]
     errors = {}
+    inst = None
     if request.method == "POST":
         form = {k: (request.POST.get(k) or "").strip() for k in
                 ("first_name", "last_name", "mobile", "email", "province", "city", "address", "postal_code", "note", "payment_mode", "gateway")}
@@ -129,24 +141,43 @@ def checkout(request):
             errors["postal_code"] = "کد پستی باید ۱۰ رقم باشد."
         if form["payment_mode"] not in modes:
             errors["payment_mode"] = "نوع پرداخت را انتخاب کنید."
+        pay_now = True
+        if form["payment_mode"] == "installment":
+            from installments.orders import read_request
+
+            plan, q, info, uploads, inst_errors = read_request(request.POST, request.FILES, summary["total"])
+            errors.update(inst_errors)
+            inst = (plan, q, info, uploads)
+            form.update({k: request.POST.get(k, "") for k in request.POST if k.startswith("inst_")})
+            pay_now = bool(q and q["down"] and plan.down_timing == plan.DownTiming.CHECKOUT)
         gw = next((g for g in gws if g.key == form["gateway"]), None)
-        if not gw:
+        if pay_now and not gw:
             errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
         if summary["has_problem"]:
             errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
         if not errors:
-            order = create_order(request.user, form, summary, shop)
+            order = create_order(request.user, form, summary, shop, installment=inst)
+            if not pay_now:
+                Cart(request).clear()
+                try:
+                    notify.installment_request(order)
+                except Exception:  # noqa: BLE001
+                    log.exception("notify failed")
+                return redirect(order.get_absolute_url() + "?placed=1")
             return start_payment(request, order, gw)
+        if errors and form["payment_mode"] == "installment" and inst and inst[3]:
+            errors.setdefault("inst_cheque_image", "برای امنیت، تصویر را دوباره انتخاب کنید.")
     total = summary["total"]
     return render(request, "shop/checkout.html", {
         "meta": {**META, "title": "تسویه حساب"}, **summary, "shop": shop, "form": form, "errors": errors,
-        "gateways": gws, "modes": modes, "provinces": PROVINCES,
+        "gateways": gws, "modes": modes, "provinces": PROVINCES, "plans": [(p, describe(p)) for p in plans],
+        "plans_json": plans_payload(plans),
         "deposit": shop.deposit_amount(total), "remaining": total - shop.deposit_amount(total), "free_shipping": total >= shop.free_shipping_min,
     })
 
 
 @transaction.atomic
-def create_order(user, form, summary, shop, source="web"):
+def create_order(user, form, summary, shop, source="web", installment=None):
     from accounts.views import profile_of
 
     total = summary["total"]
@@ -159,6 +190,12 @@ def create_order(user, form, summary, shop, source="web"):
         deposit_percent=shop.deposit_percent if mode == "deposit" else 0,
         online_amount=shop.deposit_amount(total) if mode == "deposit" else total,
     )
+    if mode == "installment" and installment:
+        from installments.orders import apply_to_order, save_uploads
+
+        plan, q, info, uploads = installment
+        apply_to_order(order, plan, q, info, save_uploads(order, uploads))
+        order.save()
     OrderItem.objects.bulk_create([
         OrderItem(order=order, product=line.product, variation=line.variation, title=line.product.title[:300],
                   size_label=line.size_label[:150], unit_price=line.unit_price, quantity=line.qty)
@@ -270,7 +307,8 @@ def order_detail(request, number):
     if request.GET.get("paid") and order.is_paid:
         Cart(request).clear()
     return render(request, "shop/order_detail.html", {
-        "meta": {**META, "title": f"سفارش {order.number}"}, "order": order, "just_paid": bool(request.GET.get("paid")),
+        "meta": {**META, "title": f"سفارش {order.number}"}, "order": order,
+        "just_paid": bool(request.GET.get("paid") or request.GET.get("placed")),
         "gateways": gateways.enabled(ShopSettings.load()) if order.can_pay else [], "shop": ShopSettings.load(),
     })
 

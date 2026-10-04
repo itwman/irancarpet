@@ -6,6 +6,7 @@
     <h1>{{ heading|fa_num }}</h1>
     <p class="muted">{{ page_obj.paginator.count|fa_num }} محصول{% if page_obj.number > 1 %} — صفحهٔ {{ page_obj.number|fa_num }}{% endif %}</p>
   </header>
+  {% block above_list %}{% endblock %}
   <div class="row g-4">
     <aside class="col-lg-3">
       <button class="pill btn-filters d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فیلترها</button>

@@ -46,7 +46,7 @@
           {% for v in variations %}
             {% with ok=v.is_available %}
             <tr class="{% if not ok %}na{% endif %}">
-              <td><input type="radio" name="variation" value="{{ v.pk }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
+              <td><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
               <td>{{ v.size.label|default:"—" }}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
                 {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
                 {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}</td>
@@ -66,6 +66,13 @@
           <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
           <button class="btn-ic btn-ic--pink flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
         </div>
+        {% if inst_teaser %}
+        <a class="inst-teaser" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}">
+          <span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>خرید اقساطی</strong> {% if inst_teaser.down_percent %}{{ inst_teaser.down_percent|fa_num }}٪ پیش‌پرداخت، {% else %}بدون پیش‌پرداخت، {% endif %}قسط از {{ inst_teaser.installment|toman }} تومان</span>
+          <span class="inst-teaser__go">محاسبه</span>
+        </a>
+        {% endif %}
         <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
       </form>
       {% endif %}
@@ -103,3 +110,14 @@
   {% endif %}
 </div>
 {% endblock %}
+{% block scripts %}<script>
+(function () {
+  var t = document.getElementById("instTeaser"), f = document.getElementById("buyForm");
+  if (!t || !f || !t.dataset.base) return;
+  f.addEventListener("change", function (e) {
+    if (e.target.name === "variation" && +e.target.dataset.price) t.href = t.dataset.base + "?amount=" + e.target.dataset.price;
+  });
+  var c = f.querySelector("input[name=variation]:checked");
+  if (c && +c.dataset.price) t.href = t.dataset.base + "?amount=" + c.dataset.price;
+})();
+</script>{% endblock %}

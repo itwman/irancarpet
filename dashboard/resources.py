@@ -38,11 +38,13 @@ register(Resource(
              Col("customer", "مشتری", lambda o: format_html("{}<br><small class='muted'>{}</small>", o.full_name, fa_num(o.mobile))),
              Col("items_total", "مبلغ", money("items_total"), "items_total"),
              Col("paid_amount", "پرداخت‌شده", money("paid_amount"), "paid_amount"),
-             Col("payment_mode", "پرداخت", lambda o: o.get_payment_mode_display()),
+             Col("payment_mode", "پرداخت", lambda o: o.get_payment_mode_display() + (
+                 format_html(' <span class="badge-ic b-inst-{}">{}</span>', o.installment_state, o.get_installment_state_display())
+                 if o.installment_state else "")),
              Col("status", "وضعیت", badge("status"), "status"),
              Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
     search=["=number", "mobile", "first_name", "last_name", "email", "city"],
-    filters=["status", "payment_mode", "shipping_mode", "province"], date_filter="created_at",
+    filters=["status", "payment_mode", "installment_state", "installment_plan", "shipping_mode", "province"], date_filter="created_at",
     ordering=("-created_at",), can_add=False, edit_url=lambda o: f"/panel/orders/{o.pk}/view/",
 ))
 
@@ -74,6 +76,50 @@ register(Resource(
     queryset=lambda qs: qs.select_related("profile").annotate(_orders=Count("orders")),
     edit_url=lambda o: f"/panel/customers/{o.pk}/edit/",
 ))
+
+from installments.models import InstallmentPlan  # noqa: E402
+
+register(Resource(
+    key="installment-plans", model=InstallmentPlan, title="روش‌های اقساط", single="روش اقساط", group="فروش", icon="calendar",
+    columns=[Col("title", "عنوان", sort="title"), Col("kind", "نوع", lambda o: o.get_kind_display()),
+             Col("monthly_rate", "سود ماهانه", lambda o: fa_num(o.monthly_rate.normalize()) + "٪", "monthly_rate"),
+             Col("down", "پیش‌پرداخت", lambda o: f"{fa_num(o.min_down_percent)} تا {fa_num(o.max_down_percent)}٪"),
+             Col("months", "مدت", lambda o: f"{fa_num(o.min_months)} تا {fa_num(o.max_months)} ماه"),
+             Col("orders", "سفارش", lambda o: fa_num(o._n), "_n"), Col("is_active", "فعال", yesno("is_active"))],
+    search=["title"], filters=["is_active", "kind"], ordering=("sort_order", "pk"),
+    queryset=lambda qs: qs.annotate(_n=Count("orders")),
+    fieldsets=[("روش", ["title", "kind", "summary", "description"], "main"),
+               ("اطلاعاتی که از مشتری گرفته می‌شود", ["ask_holder_name", "ask_national_code", "ask_cheque_image", "ask_sayad_id",
+                                                       "ask_bank_name", "ask_pensioner_type", "ask_retiree_id", "ask_sms_mobile",
+                                                       "submit_note"], "main"),
+               ("پیام‌ها", ["review_note", "approved_note", "approved_sms", "rejected_sms"], "main"),
+               ("محاسبه", ["monthly_rate", "min_down_percent", "max_down_percent", "down_step", "min_months", "max_months",
+                           "allow_monthly", "allow_bimonthly", "first_due_days", "round_to", "min_order_amount", "down_timing"], "side"),
+               ("وضعیت", ["is_active", "sort_order"], "side")],
+    readonly=[("نمونهٔ محاسبه برای ۱۰۰ میلیون تومان", lambda o: _plan_example(o))],
+    help="سود با راس‌گیری: درصد ماهانه × (میانگین روزهای سررسید ÷ ۳۰). مثلاً ۲ قسط ماهانه = راس ۴۵ روز = ۱٫۵ × سود ماهانه. "
+         "تاریخ قسط‌ها از «تاریخ سفارش + روزهای آماده‌سازی» شمرده می‌شود.",
+))
+
+
+def _plan_example(p):
+    from installments.calc import QuoteError, quote
+
+    if not p.pk:
+        return "—"
+    rows = []
+    for step in p.steps():
+        for m in sorted({p.months_for(step)[0], p.months_for(step)[-1]} if p.months_for(step) else []):
+            try:
+                q = quote(p, 100_000_000, p.min_down_percent, m, step)
+            except QuoteError as e:
+                rows.append((str(e), "", "", ""))
+                continue
+            rows.append((f"{fa_num(m)} ماه {'دوماهه' if step == 2 else 'ماهانه'}", f"{fa_num(q['interest_percent'])}٪",
+                         f"{fa_num(q['count'])} × {toman(q['installment'])}", toman(q["payable_total"])))
+    return format_html('<table class="tbl tbl-sm"><thead><tr><th>مدت</th><th>سود</th><th>اقساط</th><th>جمع کل</th></tr></thead><tbody>{}</tbody></table>',
+                       format_html_join("", "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>", rows))
+
 
 # ================================================================ فروشگاه
 register(Resource(
@@ -279,10 +325,12 @@ register(Resource(
              Col("waste", "پرتی", lambda o: (toman(int(o.waste_value or 0)) or "۰") + ("٪" if o.waste_type == "percent" else "")),
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("is_active", "فعال", yesno("is_active")),
              Col("last_updated", "به‌روزرسانی", jd("last_updated"), "last_updated")],
-    search=["name", "code", "company"], filters=["is_active", "base_size", "waste_type"], ordering=("sort_order", "name"),
+    search=["name", "code", "company"], filters=["is_active", "in_price_list", "base_size", "waste_type"], ordering=("sort_order", "name"),
+    view_url=lambda o: o.get_absolute_url() if o.slug else None,
     queryset=lambda qs: qs.select_related("base_size").annotate(_n=Count("products")),
     fieldsets=[("آلبوم", ["name", "code", "company", "description"], "main"),
                ("سایزها", ["sizes", "even_sizes"], "main"),
+               ("صفحهٔ لیست قیمت سایت", ["in_price_list", "public_name", "slug", "list_intro", "seo_title", "seo_description"], "main"),
                ("قیمت", ["base_size", "base_price", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to"], "side"),
                ("وضعیت", ["is_active", "sort_order"], "side")],
     readonly=[("قیمت فروش سایزها", lambda o: _album_preview(o)),

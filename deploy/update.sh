@@ -18,9 +18,13 @@ if [ -n "$UP" ] && [ -d "$UP" ]; then
   mkdir -p "$UP/app-thumbs"
   for D in "$UP" "$UP/$(date +%Y)" "$M" "$UP/app-thumbs"; do chgrp www-data "$D"; chmod g+ws "$D"; done
 fi
+echo "== پوشهٔ خصوصی مدارک مشتری (تصویر چک)؛ فقط برای برنامه، نه عموم"
+mkdir -p private
+chgrp www-data private && chmod 2770 private
 echo "== فایل‌های استاتیک"
 venv/bin/python manage.py collectstatic --noinput -v0
 chown -R root:www-data . && chmod -R g+rX .
+chmod -R g+w private && chmod -R o-rwx private
 echo "== راه‌اندازی دوباره"
 systemctl restart irancarpet
 sleep 2

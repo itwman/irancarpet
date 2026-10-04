@@ -3,17 +3,48 @@
 {% block content %}
 <div class="page-top">
   <div><a href="/panel/orders/" class="back">‹ سفارش‌ها</a>
-    <h1>سفارش {{ order.number|fa_num }} <span class="badge-ic b-{{ order.status }}">{{ order.get_status_display }}</span></h1>
+    <h1>سفارش {{ order.number|fa_num }} <span class="badge-ic b-{{ order.status }}">{{ order.status_label }}</span></h1>
     <p class="muted">{{ order.created_at|jdate:"%d %B %Y، ساعت %H:%M" }}{% if order.user %} · <a href="/panel/customers/{{ order.user_id }}/edit/">پروفایل مشتری</a>{% endif %}</p></div>
   <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/orders/{{ order.pk }}/print/" target="_blank"><svg class="ic"><use href="#i-print"/></svg> چاپ فاکتور</a></div>
 </div>
 <div class="edit__grid">
   <div class="edit__main">
+    {% if order.is_installment %}{% with q=order.installment %}
+    <section class="card-p inst-panel">
+      <h2>خرید اقساطی <span class="badge-ic b-inst-{{ order.installment_state|default:'review' }}">{{ order.get_installment_state_display|default:"—" }}</span></h2>
+      <p class="muted mb-2">{{ order.installment_plan.title|default:q.plan_title }}{% if order.installment_reviewed_at %} · بررسی: {{ order.installment_reviewed_at|jdate:"%Y/%m/%d %H:%M" }}{% endif %}</p>
+      <div class="kv-row">
+        <div class="kv"><span>جمع سبد</span><strong>{{ q.total|toman }}</strong></div>
+        <div class="kv"><span>پیش‌پرداخت ({{ q.down_percent|fa_num }}٪)</span><strong>{{ q.down|toman }}</strong></div>
+        <div class="kv"><span>مانده</span><strong>{{ q.principal|toman }}</strong></div>
+        <div class="kv"><span>سود (راس {{ q.ras_days|floatformat:0|fa_num }} روز)</span><strong>{{ q.interest_percent|floatformat:-2|fa_num }}٪ · {{ q.interest_amount|toman }}</strong></div>
+        <div class="kv"><span>اقساط</span><strong>{{ q.count|fa_num }} × {{ q.installment|toman }}</strong></div>
+        <div class="kv"><span>جمع قابل پرداخت</span><strong>{{ q.payable_total|toman }}</strong></div>
+      </div>
+      <div class="grid-2 mt-3">
+        <div>
+          <h3 class="h6">مشخصات متقاضی</h3>
+          <table class="tbl tbl-sm"><tbody>{% for key, label, val, is_file in inst_info %}<tr><th>{{ label }}</th><td>{% if is_file %}<a href="/panel/installment-file/{{ order.pk }}/{{ key }}/" target="_blank" rel="noopener"><img src="/panel/installment-file/{{ order.pk }}/{{ key }}/" alt="{{ label }}" class="inst-thumb"></a>{% else %}<span class="ltr-num">{{ val|fa_num }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+        </div>
+        <div>
+          <h3 class="h6">جدول {% if q.kind == "cheque" %}چک‌ها{% else %}اقساط{% endif %} ({% if q.step == 2 %}دوماه‌یک‌بار{% else %}ماهانه{% endif %})</h3>
+          <table class="tbl tbl-sm"><thead><tr><th>#</th><th>تاریخ</th><th>مبلغ</th></tr></thead>
+          <tbody>{% for r in q.schedule %}<tr><td>{{ r.n|fa_num }}</td><td><bdi>{{ r.jdate|fa_num }}</bdi></td><td class="num">{{ r.amount|toman }}</td></tr>{% endfor %}</tbody></table>
+        </div>
+      </div>
+      <form method="post" action="/panel/orders/{{ order.pk }}/installment/" class="inst-actions" data-confirm="وضعیت اقساط تغییر کند؟ (برای تأیید و رد، به مشتری پیامک می‌رود)">{% csrf_token %}
+        {% if order.installment_state != "approved" %}<button class="btn btn-ink btn-sm" name="state" value="approved">تأیید درخواست</button>{% endif %}
+        {% if order.installment_state != "rejected" %}<button class="btn btn-light btn-sm" name="state" value="rejected">رد درخواست</button>{% endif %}
+        {% if order.installment_state != "done" %}<button class="btn btn-light btn-sm" name="state" value="done">{% if q.kind == "cheque" %}چک‌ها رسید{% else %}ثبت در بتا تکمیل شد{% endif %}</button>{% endif %}
+        {% if order.installment_state != "review" %}<button class="btn btn-light btn-sm" name="state" value="review">برگرداندن به «در انتظار بررسی»</button>{% endif %}
+      </form>
+    </section>
+    {% endwith %}{% endif %}
     <section class="card-p"><h2>اقلام سفارش</h2>
       <div class="table-wrap"><table class="tbl">
         <thead><tr><th>کالا</th><th>سایز</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead>
         <tbody>{% for it in items %}<tr><td>{% if it.product %}<a href="/panel/products/{{ it.product_id }}/edit/">{{ it.title|fa_num }}</a>{% else %}{{ it.title|fa_num }}{% endif %}</td><td>{{ it.size_label|fa_num }}</td><td>{{ it.quantity|fa_num }}</td><td class="num">{{ it.unit_price|toman }}</td><td class="num">{{ it.line_total|toman }}</td></tr>{% endfor %}</tbody>
-        <tfoot><tr><th colspan="4">جمع کل</th><th class="num">{{ order.items_total|toman }} تومان</th></tr></tfoot>
+        <tfoot><tr><th colspan="4">جمع کالاها</th><th class="num">{{ order.items_total|toman }} تومان</th></tr></tfoot>
       </table></div>
       <div class="kv-row">
         <div class="kv"><span>روش پرداخت</span><strong>{{ order.get_payment_mode_display }}</strong></div>
