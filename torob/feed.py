@@ -6,7 +6,7 @@ page_unique همان شناسهٔ محصول در وردپرس بود؛ همین
 import re
 from decimal import Decimal
 from html import unescape
-from urllib.parse import parse_qsl, unquote, urlsplit
+from urllib.parse import parse_qsl, quote, unquote, urlsplit
 
 from django.conf import settings
 from django.core.cache import cache
@@ -18,6 +18,11 @@ from catalog.models import Product, ProductImage
 
 NEW_ID_OFFSET = 1_000_000_000   # محصولات تازه (بدون شناسهٔ وردپرس)
 CACHE_KEY, CACHE_TTL = "torob_rows", 300
+
+
+def wp_url(path):
+    """مثل وردپرس: حروف فارسی به‌صورت درصدی با حروف کوچک (‎%d9%81…)."""
+    return re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), quote(path, safe="/-_.~"))
 
 
 def unique_of(p):
@@ -102,6 +107,7 @@ def format_row(p, s):
     for m in [p.image] + imgs:
         if m and m.absolute_url and m.absolute_url not in links:
             links.append(m.absolute_url)
+    links = [site + wp_url(u[len(site):]) if u.startswith(site) else u for u in links]
     guarantee = ""
     if s.guarantee_attr:
         guarantee = "، ".join(p.specs.filter(attribute__slug=s.guarantee_attr).values_list("name", flat=True))
@@ -115,9 +121,9 @@ def format_row(p, s):
         "old_price": adjust(old, s) if old and old > current else 0,
         "availability": "instock" if p.is_purchasable else "outofstock",
         "category_name": _category(p),
-        "image_link": main.absolute_url if main else "",
+        "image_link": (site + wp_url(main.url)) if main and main.url else "",
         "image_links": links,
-        "page_url": site + p.get_absolute_url(),
+        "page_url": site + wp_url(p.get_absolute_url()),
         "short_desc": _text(p.short_description or p.content),
         "spec": _spec(p, s),
         "guarantee": guarantee,
