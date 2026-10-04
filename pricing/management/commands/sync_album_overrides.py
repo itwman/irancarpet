@@ -7,7 +7,7 @@
     venv/bin/python manage.py sync_album_overrides             # اعمال
 """
 import os
-from datetime import datetime
+from datetime import datetime, timezone as dt_tz
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
@@ -73,5 +73,5 @@ class Command(BaseCommand):
                 raise CommandError("--since نامعتبر است؛ نمونه: 2026-10-03 14:00") from e
         f = "/root/irancarpet-last-cutover"
         if os.path.exists(f):
-            return datetime.fromtimestamp(os.path.getmtime(f), tz=timezone.utc)
+            return datetime.fromtimestamp(os.path.getmtime(f), tz=dt_tz.utc)
         raise CommandError("زمان جایگزینی سایت پیدا نشد؛ با --since مشخص کنید.")
