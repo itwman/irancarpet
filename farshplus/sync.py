@@ -117,6 +117,9 @@ def resolve_in_feed(item, s, mode):
 
 def build_fields(product, item, s, mode, img_hash):
     vs = [v for v in product.variations.all() if v.is_available and v.price]
+    if product.album_id:  # محصول آلبومی: قیمت سایز پایه (۱۲ متری)، مثل سایت قبلی
+        base = [v for v in vs if v.size_id == product.album.base_size_id]
+        vs = base or vs
     price = min((v.price for v in vs), default=product.min_price)
     regular = min((v.final_price for v in vs if v.final_price), default=price)
     desc = product.short_description if plain_text(product.short_description) else product.content

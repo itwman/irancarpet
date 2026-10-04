@@ -27,6 +27,7 @@ class PanelTests(TestCase):
         self.cust = U.objects.create_user("cust", password="x" * 10)
         self.s12 = Size.objects.get(slug="12-meter")
         self.album = Album.objects.create(name="آلبوم آزمایشی", code="T1", base_size=self.s12, base_price=Decimal("24000000"),
+                                          profit_percent=Decimal("15"), shipping_fixed=500_000, round_to=100_000,
                                           waste_type="fixed", waste_value=Decimal("2000000"))
         self.p = Product.objects.create(title="فرش 1200 شانه نقشه آزمایش", slug="test-p", album=self.album)
         Variation.objects.create(product=self.p, size=self.s12)
@@ -47,7 +48,7 @@ class PanelTests(TestCase):
     def test_product_edit_with_sizes_and_gallery(self):
         self.client.force_login(self.staff)
         r = self.client.get(f"/panel/products/{self.p.pk}/edit/")
-        self.assertContains(r, "۲۸٬۱۰۰٬۰۰۰")  # قیمت نهایی ۱۲ متری طبق فرمول ICSD
+        self.assertContains(r, "۲۸٬۱۰۰٬۰۰۰")  # قیمت نهایی ۱۲ متری طبق فرمول آلبوم
         m = Media.objects.create(file="2024/01/a.jpg", title="a")
         v = self.p.variations.get()
         s6 = Size.objects.get(slug="6-meter")
@@ -69,8 +70,8 @@ class PanelTests(TestCase):
         self.assertEqual(self.p.title, "فرش تازه")
         self.assertEqual(self.p.variations.count(), 2)
         self.assertEqual(self.p.variations.get(size=self.s12).sale_price, 26_000_000)
-        self.assertEqual(self.p.variations.get(size=s6).final_price, 14_300_000)
-        self.assertEqual(self.p.min_price, 14_300_000)
+        self.assertEqual(self.p.variations.get(size=s6).final_price, 14_100_000)
+        self.assertEqual(self.p.min_price, 26_000_000)   # محصول آلبومی: قیمت سایز پایه
         self.assertEqual(self.p.image_id, m.pk)
         from django.utils import timezone
         self.assertEqual(timezone.localtime(self.p.published_at).hour, 10)

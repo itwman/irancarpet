@@ -211,22 +211,46 @@ register(Resource(
     key="albums", model=Album, title="آلبوم‌های قیمت", single="آلبوم", group="قیمت‌گذاری", icon="layers",
     columns=[Col("name", "نام", sort="name"), Col("code", "کد"), Col("company", "شرکت"),
              Col("base_size", "سایز پایه", lambda o: o.base_size.label if o.base_size else "—"),
-             Col("base_price", "قیمت پایه", money("base_price"), "base_price"),
-             Col("waste", "پرتی", lambda o: f"{fa_num(int(o.waste_value or 0)):}" + ("٪" if o.waste_type == "percent" else "")),
+             Col("base_price", "خرید ۱۲ متری", money("base_price"), "base_price"),
+             Col("sale12", "فروش ۱۲ متری", lambda o: format_html('<span class="num">{}</span>', toman(o.size_price(o.base_size)) or "—")),
+             Col("profit_percent", "سود", lambda o: fa_num(o.profit_percent.normalize()) + "٪", "profit_percent"),
+             Col("waste", "پرتی", lambda o: (toman(int(o.waste_value or 0)) or "۰") + ("٪" if o.waste_type == "percent" else "")),
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("is_active", "فعال", yesno("is_active")),
              Col("last_updated", "به‌روزرسانی", jd("last_updated"), "last_updated")],
     search=["name", "code", "company"], filters=["is_active", "base_size", "waste_type"], ordering=("sort_order", "name"),
     queryset=lambda qs: qs.select_related("base_size").annotate(_n=Count("products")),
     fieldsets=[("آلبوم", ["name", "code", "company", "description"], "main"),
-               ("قیمت", ["base_size", "base_price", "waste_type", "waste_value"], "side"),
+               ("سایزها", ["sizes", "even_sizes"], "main"),
+               ("قیمت", ["base_size", "base_price", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to"], "side"),
                ("وضعیت", ["is_active", "sort_order"], "side")],
-    after_save=lambda r, o, c, f: _album_log(r, o, c, f),
+    readonly=[("قیمت فروش سایزها", lambda o: _album_preview(o)),
+              ("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],
+    after_save=lambda r, o, c, f: _album_saved(r, o, c, f),
     actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
              "follow": ("پیروی کامل همهٔ محصولات این آلبوم‌ها از قیمت آلبوم", lambda r, qs: _album_follow(qs))},
-    readonly=[("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],
-    help="با تغییر قیمت پایهٔ آلبوم، قیمت همهٔ سایزهای محصولات آن آلبوم خودکار دوباره محاسبه می‌شود. "
-         "قیمت‌های اختصاصی و حراج محصولات هم به همان نسبت بالا و پایین می‌روند.",
+    help="قیمت فروش ۱۲ متری = قیمت خرید × (۱ + درصد سود) + هزینهٔ ارسال؛ بقیهٔ سایزها به نسبت متراژ، رو به بالا گرد می‌شوند. "
+         "مشتری برای محصولات آلبوم همهٔ «سایزهای آلبوم» را می‌بیند و با هر تغییر، قیمت‌ها خودکار به‌روز می‌شوند.",
 ))
+def _album_saved(request, obj, created, form):
+    from catalog.models import Product
+    from pricing.albums import sync_album_variations
+
+    _album_log(request, obj, created, form)
+    if created or {"sizes", "even_sizes"} & set(form.changed_data):
+        sync_album_variations(list(Product.objects.filter(album=obj).select_related("album")))
+
+
+def _album_preview(album):
+    from django.utils.html import format_html, format_html_join
+
+    if not album.pk:
+        return "پس از ذخیره"
+    rows = [(fa_num(s.label), toman(album.size_price(s)) or "—") for s in album.sizes.order_by("sort_order")]
+    if not rows:
+        return "سایزی انتخاب نشده"
+    return format_html('<span class="album-prev">{}</span>', format_html_join("", "<span>{}<b>{}</b></span>", rows))
+
+
 def _album_log(request, obj, created, form):
     if not created and "base_price" in form.changed_data:
         PriceLog.objects.create(album=obj, old_price=form.initial.get("base_price") or 0, new_price=obj.base_price,

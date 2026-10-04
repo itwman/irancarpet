@@ -70,6 +70,10 @@ def product_edit(request, pk=None):
                 ProductImage.objects.bulk_create([ProductImage(product=p, media_id=m, order=i) for i, m in enumerate(ids) if m in valid])
                 if not p.image_id and ids:
                     Product.objects.filter(pk=p.pk).update(image_id=ids[0])
+                if p.album_id:  # سایزهای محصول آلبومی = سایزهای آلبوم
+                    from pricing.albums import sync_album_variations
+
+                    sync_album_variations([Product.objects.select_related("album").get(pk=p.pk)])
                 p.refresh_price_cache()
                 save_fp_flags(request, p)
             log(request, "create" if created else "update", "محصولات", p)

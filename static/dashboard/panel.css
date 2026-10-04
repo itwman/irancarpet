@@ -232,3 +232,6 @@ code{color:var(--pink-d);background:var(--pink-t);padding:.05rem .35rem;border-r
 .own-price p{margin:0 0 .3rem}.own-price ul{margin:0 0 .4rem;padding-inline-start:1.2rem}
 .src{display:block;font-size:.72rem;font-weight:500;color:var(--muted);white-space:nowrap}
 .src--custom,.src--override{color:#A35F00}.src--warn{color:var(--pink-d)}
+.album-prev{display:grid;grid-template-columns:1fr;gap:.15rem;font-weight:500}
+.album-prev span{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px dashed #E3E4F0;padding:.1rem 0}
+.album-prev b{font-weight:700}

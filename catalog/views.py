@@ -23,7 +23,7 @@ SORTS = {
 
 def card_queryset(qs):
     return qs.select_related("image", "brand").only(
-        "title", "slug", "min_price", "max_price", "stock_status", "sale_status", "rating_avg", "rating_count",
+        "title", "slug", "album_id", "min_price", "max_price", "stock_status", "sale_status", "rating_avg", "rating_count",
         "image__file", "image__alt", "image__width", "image__height", "brand__name", "published_at",
     )
 

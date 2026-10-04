@@ -1,12 +1,14 @@
-"""قیمت‌گذاری آلبومی — نسخهٔ جنگوی افزونهٔ ICSD Price Manager v2.
+"""قیمت‌گذاری آلبومی — نسخهٔ جنگوی افزونهٔ «قیمت‌گذاری آلبومی ایران‌کارپت» (irancarpet-album-pricing)
 
-فرمول‌ها (عیناً مطابق افزونه):
-    نرخ هر متر مربع  = قیمت پایه آلبوم ÷ مساحت سایز پایه
-    قیمت خرید سایز   = نرخ × مساحت سایز  (+ پرتی، فقط برای سایزهای needs_waste)
-    قیمت نهایی       = گرد( قیمت خرید × (۱ + markup٪) + حمل ثابت )
+فرمول‌ها (عیناً مطابق افزونه؛ همهٔ تنظیمات برای هر آلبوم جداست):
+    قیمت فروش سایز پایه (۱۲ متری) = قیمت خرید × (۱ + درصد سود) + هزینهٔ ارسال
+    قیمت فروش هر سایز              = قیمت فروش پایه × (متراژ ÷ متراژ پایه)
+    سایز با پرتی (۹ متری ۲٫۵×۳٫۵)  = همان + پرتی (مبلغ ثابت یا درصدی)
+    همه رو به بالا به مضرب «گرد کردن» (پیش‌فرض ۱۰٬۰۰۰ تومان) گرد می‌شوند.
 
-گرد قطر D → مساحت = D² (نه π r²).
+مشتری برای محصولِ دارای آلبوم، همهٔ سایزهای فعال آن آلبوم را می‌بیند.
 """
+import math
 from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 
 from django.conf import settings
@@ -15,15 +17,15 @@ from django.utils import timezone
 
 
 class PricingSettings(models.Model):
-    """تنظیمات سراسری قیمت‌گذاری (یک ردیف)."""
+    """تنظیمات پیش‌فرض قیمت‌گذاری (یک ردیف) — برای آلبوم‌های تازه."""
 
     class RoundMethod(models.TextChoices):
         UP = "up", "رو به بالا"
         NEAREST = "nearest", "نزدیک‌ترین"
 
-    markup_percent = models.DecimalField("درصد سود فروش", max_digits=6, decimal_places=2, default=Decimal("15"))
-    shipping_fixed = models.PositiveBigIntegerField("هزینهٔ حمل ثابت (تومان)", default=500_000)
-    round_to = models.PositiveIntegerField("گرد کردن به (تومان)", default=100_000)
+    markup_percent = models.DecimalField("درصد سود پیش‌فرض آلبوم تازه", max_digits=6, decimal_places=2, default=Decimal("15"))
+    shipping_fixed = models.PositiveBigIntegerField("هزینهٔ ارسال پیش‌فرض آلبوم تازه (تومان)", default=0)
+    round_to = models.PositiveIntegerField("گرد کردن پیش‌فرض آلبوم تازه (تومان)", default=10_000)
     round_method = models.CharField("روش گرد کردن", max_length=10, choices=RoundMethod.choices, default=RoundMethod.UP)
     show_size_table = models.BooleanField("نمایش جدول قیمت سایزها در صفحهٔ محصول", default=True)
 
@@ -42,9 +44,6 @@ class PricingSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
-        from catalog.models import Variation  # جلوگیری از import چرخشی
-
-        Variation.reprice_queryset(Variation.objects.all())
 
     def apply_markup(self, purchase_price):
         """قیمت خرید → قیمت نهایی مشتری (markup + حمل + گرد)."""
@@ -115,19 +114,29 @@ class Album(models.Model):
         FIXED = "fixed", "مبلغ ثابت"
         PERCENT = "percent", "درصدی"
 
-    wp_id = models.PositiveBigIntegerField(unique=True, null=True, blank=True, editable=False, help_text="شناسهٔ گروه mnswmc")
+    wp_id = models.PositiveBigIntegerField(unique=True, null=True, blank=True, editable=False, help_text="شناسهٔ آلبوم در وردپرس")
     name = models.CharField("نام آلبوم", max_length=160)
     code = models.CharField("کد", max_length=40, unique=True)
     company = models.CharField("کارخانه / برند", max_length=120, blank=True)
     description = models.TextField("توضیحات", blank=True)
     base_size = models.ForeignKey(Size, on_delete=models.PROTECT, related_name="+", verbose_name="سایز پایه")
-    base_price = models.DecimalField("قیمت پایه (خرید، تومان)", max_digits=20, decimal_places=2, default=0)
+    base_price = models.DecimalField("قیمت خرید ۱۲ متری (تومان)", max_digits=20, decimal_places=2, default=0)
+    profit_percent = models.DecimalField("درصد سود", max_digits=6, decimal_places=2, default=Decimal("15"))
+    shipping_fixed = models.PositiveBigIntegerField("هزینهٔ ارسال (تومان)", default=0,
+                                                    help_text="به قیمت ۱۲ متری اضافه می‌شود و برای بقیهٔ سایزها به نسبت متراژ")
     waste_type = models.CharField("نوع پرتی", max_length=20, choices=WasteType.choices, default=WasteType.FIXED)
-    waste_value = models.DecimalField("مقدار پرتی", max_digits=20, decimal_places=2, default=0)
+    waste_value = models.DecimalField("مقدار پرتی", max_digits=20, decimal_places=2, default=0,
+                                      help_text="فقط برای سایزهای «با پرتی» (۹ متری ۲٫۵×۳٫۵)، روی قیمت فروش")
+    round_to = models.PositiveIntegerField("گرد کردن به (تومان)", default=10_000, help_text="رو به بالا")
+    sizes = models.ManyToManyField(Size, blank=True, related_name="albums", verbose_name="سایزهای آلبوم",
+                                   help_text="مشتری همین سایزها را برای محصولات این آلبوم می‌بیند")
+    even_sizes = models.ManyToManyField(Size, blank=True, related_name="+", verbose_name="سایزهای فقط زوج")
     is_active = models.BooleanField("فعال", default=True)
     sort_order = models.IntegerField("ترتیب", default=0)
     last_updated = models.DateTimeField("آخرین تغییر قیمت", default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    PRICE_FIELDS = ("base_price", "base_size_id", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to", "is_active")
 
     class Meta:
         verbose_name = "آلبوم قیمت"
@@ -137,19 +146,63 @@ class Album(models.Model):
     def __str__(self):
         return self.name
 
-    def purchase_price(self, size, custom_base_price=None):
-        """هستهٔ فرمول: قیمت خرید یک سایز در این آلبوم."""
-        base_area = Decimal(self.base_size.area or 0)
-        base_price = Decimal(custom_base_price if custom_base_price is not None else self.base_price)
-        if base_area <= 0 or base_price <= 0 or not size:
-            return None
-        price = base_price / base_area * Decimal(size.area)
-        if size.needs_waste and self.waste_value > 0:
+    # ------------------------------------------------------------ فرمول
+    def _base_area(self):
+        a = Decimal(self.base_size.area or 0)
+        return a if a > 0 else Decimal(12)
+
+    def sale_base(self, buy=None):
+        """قیمت فروش سایز پایه (قبل از گرد کردن)."""
+        buy = Decimal(buy if buy is not None else self.base_price)
+        return buy * (1 + Decimal(self.profit_percent) / 100) + Decimal(self.shipping_fixed)
+
+    def _waste(self, price, size):
+        if size.needs_waste and self.waste_value:
             if self.waste_type == self.WasteType.PERCENT:
-                price = price * (1 + self.waste_value / 100)
-            else:
-                price = price + self.waste_value
+                return price * (1 + Decimal(self.waste_value) / 100)
+            return price + Decimal(self.waste_value)
         return price
+
+    def raw_price(self, size, buy=None):
+        base = self.sale_base(buy)
+        if size.pk == self.base_size_id:
+            return base
+        return self._waste(base * Decimal(size.area) / self._base_area(), size)
+
+    def round_up(self, price):
+        price = Decimal(price)
+        if not self.round_to:
+            return int(price.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+        steps = float(price / Decimal(self.round_to))
+        return int(math.ceil(steps - 1e-6)) * int(self.round_to)
+
+    def size_price(self, size, buy=None):
+        """قیمت فروش نهایی یک سایز (همان عددی که مشتری می‌بیند)."""
+        buy = Decimal(buy if buy is not None else self.base_price)
+        if buy <= 0 or not size or not size.area:
+            return None
+        return self.round_up(self.raw_price(size, buy))
+
+    def price_from_purchase(self, purchase, size):
+        """قیمت خرید اختصاصی یک سایز → قیمت فروش (سود + سهم ارسال به نسبت متراژ)."""
+        ship = Decimal(self.shipping_fixed) * Decimal(size.area or 0) / self._base_area()
+        return self.round_up(Decimal(purchase) * (1 + Decimal(self.profit_percent) / 100) + ship)
+
+    def purchase_price(self, size, buy=None):
+        """قیمت خرید معادل یک سایز (فقط برای نمایش)."""
+        buy = Decimal(buy if buy is not None else self.base_price)
+        if buy <= 0 or not size:
+            return None
+        return buy * Decimal(size.area) / self._base_area()
+
+    def size_ids(self):
+        if not hasattr(self, "_size_ids"):
+            self._size_ids = set(self.sizes.values_list("pk", flat=True)) if self.pk else set()
+        return self._size_ids
+
+    def offers(self, size):
+        ids = self.size_ids()
+        return bool(size) and (not ids or size.pk in ids)
 
     def set_base_price(self, new_price, user=None, reason="album_base_update"):
         old = self.base_price
@@ -163,11 +216,8 @@ class Album(models.Model):
         changed, ratio = False, None
         self._scaled = False
         if self.pk:
-            old = Album.objects.filter(pk=self.pk).values("base_price", "base_size_id", "waste_type", "waste_value", "is_active").first()
-            changed = old != {
-                "base_price": self.base_price, "base_size_id": self.base_size_id,
-                "waste_type": self.waste_type, "waste_value": self.waste_value, "is_active": self.is_active,
-            }
+            old = Album.objects.filter(pk=self.pk).values(*self.PRICE_FIELDS).first()
+            changed = old != {f: getattr(self, f) for f in self.PRICE_FIELDS}
             if old and old["base_price"] != self.base_price:
                 self.last_updated = timezone.now()
                 if old["base_price"] and self.base_price and old["base_size_id"] == self.base_size_id:

@@ -236,6 +236,11 @@ class Product(SeoFields):
         pool = live if live.exists() else vs
         agg = pool.aggregate(hi=Max("final_price"))
         self.min_price = min((v.price for v in pool.only("sale_price", "final_price") if v.price), default=None)
+        if self.album_id:
+            # مثل سایت قبلی: قیمت محصول آلبومی = قیمت سایز پایه (۱۲ متری)
+            base = pool.filter(size_id=self.album.base_size_id).only("sale_price", "final_price").first()
+            if base and base.price:
+                self.min_price = base.price
         self.max_price = agg["hi"]
         if self.sale_status != "available":
             self.stock_status = "outofstock" if self.sale_status == "unavailable" else "onbackorder"
@@ -337,20 +342,23 @@ class Variation(models.Model):
         return "instock" if self.is_available else "outofstock"
 
     def compute_prices(self, settings_obj=None, product=None):
+        """قیمت نهایی: از آلبوم (اگر محصول آلبوم دارد و این سایز در آلبوم هست)، وگرنه قیمت دستی."""
         product = product or self.product
         album = product.album
-        purchase = None
-        if self.override_price is not None:
-            purchase = self.override_price
-        elif album and album.is_active and self.size and self.size.is_active:
-            purchase = album.purchase_price(self.size, product.custom_base_price)
-        if purchase is not None:
-            st = settings_obj or PricingSettings.load()
-            self.purchase_price = int(purchase)
-            self.final_price = st.apply_markup(purchase)
-        else:
-            self.purchase_price = None
-            self.final_price = self.manual_price
+        size = self.size if self.size_id else None
+        if album and album.is_active and size and size.is_active and album.offers(size):
+            if self.override_price is not None:
+                final = album.price_from_purchase(self.override_price, size)
+                purchase = self.override_price
+            else:
+                final = album.size_price(size, product.custom_base_price)
+                purchase = album.purchase_price(size, product.custom_base_price)
+            if final is not None:
+                self.final_price = final
+                self.purchase_price = int(purchase) if purchase is not None else None
+                return self.final_price
+        self.purchase_price = None
+        self.final_price = self.manual_price
         return self.final_price
 
     def save(self, *args, **kwargs):
@@ -362,15 +370,20 @@ class Variation(models.Model):
         """محاسبهٔ دوبارهٔ قیمت‌ها. اگر قیمت نهایی عوض شود، قیمت حراج هم هم‌نسبت تغییر می‌کند تا درصد تخفیف بماند."""
         st = PricingSettings.load()
         items = list(qs.select_related("product__album__base_size", "size"))
-        product_ids = set()
+        product_ids, album_sizes = set(), {}
         for v in items:
+            a = v.product.album
+            if a is not None:
+                if a.pk not in album_sizes:
+                    album_sizes[a.pk] = set(a.sizes.values_list("pk", flat=True))
+                a._size_ids = album_sizes[a.pk]
             old = v.final_price
             v.compute_prices(st, v.product)
             if scale_sale and v.sale_price and old and v.final_price and old != v.final_price:
                 v.sale_price = int(round(v.sale_price * v.final_price / old, -4)) or None
             product_ids.add(v.product_id)
         cls.objects.bulk_update(items, ["final_price", "purchase_price", "sale_price"], batch_size=1000)
-        for p in Product.objects.filter(pk__in=product_ids):
+        for p in Product.objects.filter(pk__in=product_ids).select_related("album"):
             p.refresh_price_cache()
         return len(items)
 

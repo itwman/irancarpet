@@ -760,7 +760,7 @@ class Importer:
         self.log(f"ریدایرکت‌ها: {n} از Rank Math + {old} نامک قدیمی — کل: {Redirect.objects.count()}")
 
     # ------------------------------------------------------------------ run
-    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "reviews", "blog", "redirects", "customers", "orders", "farshplus"]
+    STEPS = ["settings", "media", "taxonomies", "pricing", "products", "icap", "reviews", "blog", "redirects", "customers", "orders", "farshplus"]
 
     def run(self, only=None):
         steps = only or self.STEPS
@@ -781,6 +781,10 @@ class Importer:
             with transaction.atomic():
                 self.import_products()
                 self.import_variations()
+        if any(s in steps for s in ("pricing", "products", "icap")):
+            from .icap import import_icap
+
+            import_icap(self.wp, self.log)
         if "reviews" in steps:
             if not hasattr(self, "product_map"):
                 self.product_map = dict(Product.objects.exclude(wp_id=None).values_list("wp_id", "pk"))
