@@ -14,25 +14,94 @@ from . import seo
 PAGED = re.compile(r"^(?P<path>.*?)/?page/(?P<page>\d+)$")
 
 
-def home(request):
-    page = Page.objects.filter(template="home").first()
-    cats = Category.objects.filter(parent=None).select_related("image").order_by("order")[:12]
-    products = catalog_views.card_queryset(Product.objects.published().exclude(stock_status="outofstock").order_by("-published_at"))[:12]
-    popular = catalog_views.card_queryset(Product.objects.published().exclude(stock_status="outofstock").order_by("-views"))[:12]
-    reeds = sorted(
-        (t for t in AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", products__isnull=False).distinct() if t.name.strip().isdigit()),
-        key=lambda t: int(t.name),
+HOME_REEDS = ["700", "1000", "1200", "1500"]
+ROOM_SIZES = [("6-meter", "۶ متری", "۳ × ۲", 3, 2), ("9-meter", "۹ متری", "۳٫۵ × ۲٫۵", 3.5, 2.5), ("12-meter", "۱۲ متری", "۴ × ۳", 4, 3)]
+
+
+REVIEW_GOOD = ("عالی", "زیبا", "قشنگ", "کیفیت", "راضی", "ممنون", "خوب", "دوست")
+REVIEW_SKIP = ("؟", "?", "موجود", "لینک", "نقص", "ایراد", "مشکل", "دیر", "ولی", "اما")
+
+
+def _home_data():
+    """داده‌های صفحهٔ اصلی (۱۰ دقیقه کش می‌شود)."""
+    from django.db.models import Avg, Count
+
+    from catalog.models import Review, Variation
+
+    base = Product.objects.published().exclude(stock_status="outofstock").filter(image__isnull=False)
+    size_slugs = [s[0] for s in ROOM_SIZES]
+
+    groups, showcase = [], []
+    for reeds in HOME_REEDS:
+        term = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", slug=reeds).first()
+        if not term:
+            continue
+        items = list(catalog_views.card_queryset(base.filter(specs=term).order_by("-views"))[:4])
+        groups.append({"term": term, "products": items})
+        # نمایش در «گره‌ها» و «چیدمان اتاق»: پربازدیدترین محصولی که هر سه سایز را دارد
+        for p in base.filter(specs=term).select_related("image").order_by("-views")[:12]:
+            prices = {}
+            for v in Variation.objects.filter(product=p, is_available=True, size__slug__in=size_slugs).select_related("size"):
+                price = v.sale_price or v.final_price
+                if price:
+                    prices[v.size.slug] = price
+            if len(prices) == len(size_slugs):
+                showcase.append({
+                    "name": p.title, "url": p.get_absolute_url(), "img": p.image.url, "reeds": reeds,
+                    "prices": [prices[s] for s in size_slugs],
+                })
+                break
+
+    reviews = list(
+        Review.objects.filter(parent=None, is_approved=True, rating=5, product__status="publish")
+        .select_related("product").order_by("-created_at")[:300]
     )
+    picked, seen = [], set()
+    for r in reviews:
+        text = (r.content or "").strip()
+        if not (45 <= len(text) <= 200) or not r.author_name or r.author_name in seen or r.product_id in seen:
+            continue
+        if any(w in text for w in REVIEW_SKIP) or not any(w in text for w in REVIEW_GOOD):
+            continue
+        if True:
+            r.quote = re.sub(r"^سلام[\s،,.!]*", "", text)
+            picked.append(r)
+            seen.update({r.author_name, r.product_id})
+        if len(picked) == 4:
+            break
+
+    stats = Review.objects.filter(parent=None, is_approved=True, rating__gt=0).aggregate(avg=Avg("rating"), n=Count("id"))
+    return {
+        "groups": groups, "showcase": showcase, "reviews": picked,
+        "rating_avg": round(stats["avg"] or 0, 1), "rating_count": stats["n"],
+        "ready_sizes": Variation.objects.filter(is_available=True, product__status="publish").count(),
+    }
+
+
+def home(request):
+    import json
+
+    from django.core.cache import cache
+
+    data = cache.get("home_data")
+    if data is None:
+        data = _home_data()
+        cache.set("home_data", data, 600)
+    page = Page.objects.filter(template="home").first()
     posts = Post.objects.published().select_related("image")[:4]
+    cats = Category.objects.filter(parent=None).order_by("order")[:12]
+    room = {
+        "sizes": [{"slug": s[0], "label": s[1], "dim": s[2], "w": s[3], "h": s[4]} for s in ROOM_SIZES],
+        "room": [6.5, 4.75],
+        "carpets": data["showcase"],
+    }
     org = {
         "@context": "https://schema.org", "@type": "OnlineStore", "name": "ایران کارپت",
         "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.svg",
     }
-    import json
-
     return render(request, "home.html", {
-        "meta": seo.build(kind="home"), "page": page, "categories": cats, "products": products,
-        "popular": popular, "reeds": reeds, "posts": posts, "jsonld": json.dumps(org, ensure_ascii=False),
+        "meta": seo.build(kind="home"), "page": page, "posts": posts, "categories": cats,
+        "room": room, "jsonld": json.dumps(org, ensure_ascii=False), **data,
     })
 
 

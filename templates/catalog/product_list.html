@@ -3,12 +3,12 @@
 <div class="container">
   {% include "partials/breadcrumbs.html" %}
   <header class="archive-head">
-    <h1>{{ heading }}</h1>
+    <h1>{{ heading|fa_num }}</h1>
     <p class="muted">{{ page_obj.paginator.count|fa_num }} محصول{% if page_obj.number > 1 %} — صفحهٔ {{ page_obj.number|fa_num }}{% endif %}</p>
   </header>
   <div class="row g-4">
     <aside class="col-lg-3">
-      <button class="btn btn-outline-dark w-100 d-lg-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فیلترها</button>
+      <button class="pill btn-filters d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فیلترها</button>
       <form id="filters" class="filters collapse d-lg-block" method="get">
         {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
         <label class="check"><input type="checkbox" name="instock" value="1" {% if active.instock %}checked{% endif %} onchange="this.form.submit()"> فقط کالاهای موجود</label>

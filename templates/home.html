@@ -1,78 +1,158 @@
-{% extends "base.html" %}{% load fa %}
+{% extends "base.html" %}{% load static fa %}
+{% block body_class %}home{% endblock %}
+{% block head %}{% with c=showcase.0 %}{% if c %}<link rel="preload" as="image" href="{{ c.img }}">{% endif %}{% endwith %}{% endblock %}
 {% block content %}
 <section class="hero">
-  <div class="container">
-    <div class="row align-items-center g-4">
-      <div class="col-lg-7">
-        <span class="eyebrow">مستقیم از کارخانه‌های کاشان</span>
-        <h1>{{ page.title|default:"فرش ماشینی ایران کارپت" }}</h1>
-        <p class="lead">بیش از چهار هزار طرح فرش ماشینی از ۵۰۰ تا ۱۵۰۰ شانه؛ با قیمت شفاف برای هر سایز و ارسال به سراسر ایران.</p>
-        <div class="d-flex flex-wrap gap-2 mt-4">
-          <a href="/store/" class="btn btn-primary btn-lg">مشاهدهٔ فرش‌ها</a>
-          <a href="/carpets-price-list/" class="btn btn-outline-light btn-lg">لیست قیمت</a>
-        </div>
+  <div class="container hero__grid">
+    <div>
+      <h1><span class="w">فرش</span> <span class="w">خانه‌ات</span> <span class="w">را</span> <span class="w">گره‌به‌گره</span> <span class="w">انتخاب</span> <span class="w">کن</span></h1>
+      <p class="hero__lead">بیش از چهار هزار و هشتصد نقشهٔ فرش ماشینی، مستقیم از کارخانه‌های کاشان. قیمت هر سایز را همین‌جا می‌بینی و درِ خانه تحویل می‌گیری.</p>
+      <div class="hero__cta">
+        <a href="/store/" class="btn-ic btn-ic--pink">دیدن همهٔ فرش‌ها</a>
+        {% if showcase %}<a href="#room" class="btn-ic btn-ic--teal">کدام سایز برای اتاقم؟</a>{% endif %}
       </div>
-      <div class="col-lg-5">
-        <div class="reeds-picker">
-          <h2 class="h6">انتخاب بر اساس شانه</h2>
-          <div class="reeds-grid">
-            {% for r in reeds %}<a href="{{ r.get_absolute_url }}"><strong>{{ r.name|fa_num }}</strong><small>شانه</small></a>{% endfor %}
-          </div>
-        </div>
+      <div class="hero__proof">
+        {% if rating_count %}<span><span class="gold" aria-hidden="true">★★★★★</span> <strong>{{ rating_avg|fa_dec }} از ۵</strong> در {{ rating_count|toman }} نظر خریدار</span>{% endif %}
+        {% if ready_sizes %}<span><strong>{{ ready_sizes|toman }}</strong> سایز آمادهٔ ارسال</span>{% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="knotbox" id="knotbox">
+        <canvas id="knots" role="img" aria-label="فرشی که از هزاران گرهٔ رنگی بافته می‌شود"></canvas>
+        {% with c=showcase.0 %}{% if c %}<img class="knotbox__fallback" src="{{ c.img }}" alt="{{ c.name }}">{% endif %}{% endwith %}
+      </div>
+      <div class="knotcap" aria-live="polite">
+        <a class="knotcap__link" id="knotLink" href="/store/" hidden><strong id="knotName"></strong><span id="knotInfo"></span></a>
+        <span class="knotcap__hint" id="knotHint">نشانگر را روی گره‌ها بکش؛ کلیک کن تا دوباره بافته شود.</span>
+        <button type="button" class="pill" id="reweave">بافتن دوباره</button>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+{% if site_settings.trust_points %}
+<section class="promises" aria-label="چرا ایران کارپت">
   <div class="container">
-    <div class="section-head"><h2>دسته‌بندی‌ها</h2><a href="/store/">همه</a></div>
-    <div class="cat-grid">
-      {% for c in categories %}
-      <a class="cat-tile" href="{{ c.get_absolute_url }}">
-        {% if c.image %}<img src="{{ c.image.url }}" alt="{{ c.name }}" loading="lazy">{% else %}<span class="pattern"></span>{% endif %}
-        <span>{{ c.name }}</span>
-      </a>
+    <ul>
+      {% for t in site_settings.trust_points %}
+      <li><span class="knot-ico" aria-hidden="true" style="{% cycle '--c1:#E5395B;--c2:#FFB21E' '--c1:#12A9B8;--c2:#7CC46B' '--c1:#FFB21E;--c2:#E5395B' '--c1:#7CC46B;--c2:#12A9B8' %}"><i></i><i></i><i></i><i></i></span>
+        <span><strong>{{ t.0|fa_num }}</strong><small>{{ t.1|fa_num }}</small></span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% if showcase %}
+<section id="room" class="sec sec--pink">
+  <div class="container room">
+    <div>
+      <h2 class="sec-title">فرش را در اتاقت بچین</h2>
+      <p class="sec-lead">یک نقشه و یک سایز انتخاب کن تا ببینی در یک پذیرایی ۶٫۵ در ۴٫۷۵ متری چقدر جا می‌گیرد و چند تمام می‌شود.</p>
+      <p class="room__label" id="roomCarpetsLabel">نقشه</p>
+      <div class="room__carpets" role="group" aria-labelledby="roomCarpetsLabel">
+        {% for c in showcase %}<button type="button" class="room__carpet" data-i="{{ forloop.counter0 }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}" aria-label="{{ c.name }}"><img src="{{ c.img }}" alt="" loading="lazy"></button>{% endfor %}
+      </div>
+      <p class="room__label" id="roomSizesLabel">سایز</p>
+      <div class="room__sizes" role="group" aria-labelledby="roomSizesLabel">
+        {% for s in room.sizes %}<button type="button" class="pill" data-s="{{ forloop.counter0 }}" aria-pressed="{% if forloop.last %}true{% else %}false{% endif %}">{{ s.label }}</button>{% endfor %}
+      </div>
+      {% with c=showcase.0 %}
+      <div class="room__result">
+        <div><span id="roomName">{{ c.name }}</span><strong><span id="roomPrice">{{ c.prices.2|toman }}</span> <small>تومان</small></strong></div>
+        <a href="{{ c.url }}?size=12-meter" class="btn-ic btn-ic--ink" id="roomBuy">دیدن و خرید</a>
+      </div>
+      {% endwith %}
+    </div>
+    <div>
+      <div class="room__plan" aria-hidden="true">
+        <span class="room__sofa"></span><span class="room__chair"></span><span class="room__plant"></span>
+        <div class="room__rug" id="roomRug"><span class="room__dim" id="roomDim">۴ × ۳ متر</span><img id="roomImg" src="{{ showcase.0.img }}" alt=""></div>
+        <span class="room__scale">هر خط ۵۸ سانتی‌متر</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if groups %}
+<section class="sec" id="reeds">
+  <div class="container">
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">شانه‌ات را انتخاب کن</h2>
+        <p class="sec-lead">هرچه شانه بیشتر، گره‌ها ریزتر و نقش ظریف‌تر.</p>
+      </div>
+      <div class="reeds-filter" role="group" aria-label="فیلتر شانه">
+        <button type="button" class="pill" data-reeds="" aria-pressed="true">همه</button>
+        {% for g in groups %}<button type="button" class="pill" data-reeds="{{ g.term.slug }}" aria-pressed="false">{{ g.term.name|fa_num }} شانه</button>{% endfor %}
+      </div>
+    </div>
+    <div class="p-grid reeds-grid">
+      {% for g in groups %}{% with reeds_attr=g.term.slug %}{% for p in g.products %}{% include "partials/product_card.html" %}{% endfor %}{% endwith %}{% endfor %}
+    </div>
+    <div class="reeds-more">
+      <a href="/store/" class="btn-ic btn-ic--teal" data-more="">دیدن همهٔ فرش‌ها</a>
+      {% for g in groups %}<a href="{{ g.term.get_absolute_url }}" class="btn-ic btn-ic--teal" data-more="{{ g.term.slug }}" hidden>همهٔ فرش‌های {{ g.term.name|fa_num }} شانه</a>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if reviews %}
+<section class="sec sec--teal">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-title">خریدارها چه می‌گویند</h2>
+      {% if rating_count %}<div class="rv-head"><span class="big">{{ rating_avg|fa_dec }}</span><span>{% stars rating_avg %}<br>از {{ rating_count|toman }} نظر ثبت‌شده</span></div>{% endif %}
+    </div>
+    <div class="rv-grid">
+      {% for r in reviews %}
+      <figure class="rv">
+        {% stars r.rating %}
+        <blockquote>{{ r.quote|fa_num }}</blockquote>
+        <figcaption><strong>{{ r.author_name }}</strong>خریدار <a href="{{ r.product.get_absolute_url }}">{{ r.product.title|fa_num }}</a></figcaption>
+      </figure>
       {% endfor %}
     </div>
   </div>
 </section>
+{% endif %}
 
-<section class="section section--tint">
+<section class="sec">
   <div class="container">
-    <div class="section-head"><h2>تازه‌ترین طرح‌ها</h2><a href="/store/">مشاهدهٔ همه</a></div>
-    <div class="p-grid">{% for p in products %}{% include "partials/product_card.html" %}{% endfor %}</div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="container">
-    <div class="section-head"><h2>پرطرفدارها</h2><a href="/store/?sort=popular">مشاهدهٔ همه</a></div>
-    <div class="p-grid">{% for p in popular %}{% include "partials/product_card.html" %}{% endfor %}</div>
-  </div>
-</section>
-
-<section class="section section--features">
-  <div class="container">
-    <div class="features">
-      <div><strong>قیمت کارخانه</strong><span>قیمت هر سایز با فرمول شفاف آلبوم محاسبه می‌شود.</span></div>
-      <div><strong>ارسال به سراسر ایران</strong><span>بسته‌بندی ایمن و تحویل درب منزل.</span></div>
-      <div><strong>ضمانت اصالت</strong><span>فرش‌ها مستقیم از تولیدکننده تأمین می‌شوند.</span></div>
-      <div><strong>مشاورهٔ خرید</strong><span>انتخاب نقشه، رنگ و سایز با کارشناس.</span></div>
-    </div>
-  </div>
-</section>
-
-{% if posts %}
-<section class="section">
-  <div class="container">
-    <div class="section-head"><h2>از مجلهٔ ایران کارپت</h2><a href="/blog/">همهٔ مطالب</a></div>
+    {% if categories %}
+    <h2 class="sec-title mb-4">دسته‌ها</h2>
+    <nav class="cat-pills" aria-label="دسته‌های فرش">{% for c in categories %}<a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a>{% endfor %}</nav>
+    {% endif %}
+    {% if posts %}
+    <div class="section-head"><h2 class="sec-title">از مجلهٔ ایران کارپت</h2><a href="/blog/">همهٔ مطالب</a></div>
     <div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+    {% endif %}
+  </div>
+</section>
+
+{% if site_settings.whatsapp or site_settings.phone %}
+<section class="container pb-5">
+  <div class="cta">
+    <div>
+      <h2>بین چند نقشه مانده‌ای؟</h2>
+      <p>عکس اتاقت را در واتساپ بفرست؛ کارشناس ما چند فرش هم‌رنگ با مبلمانت پیشنهاد می‌دهد.</p>
+    </div>
+    {% if site_settings.whatsapp %}<a href="{{ site_settings.whatsapp|wa_link }}" target="_blank" rel="noopener" class="btn-ic btn-ic--ink">فرستادن عکس اتاق</a>
+    {% else %}<a href="tel:{{ site_settings.phone|cut:'-' }}" class="btn-ic btn-ic--ink">تماس با کارشناس</a>{% endif %}
   </div>
 </section>
 {% endif %}
 
 {% if page.content %}
-<section class="section"><div class="container"><div class="prose home-prose">{{ page.content|safe }}</div></div></section>
+<section class="container">
+  <details class="about">
+    <summary>دربارهٔ ایران کارپت</summary>
+    <div class="prose">{{ page.content|safe }}</div>
+  </details>
+</section>
 {% endif %}
+{{ room|json_script:"room-data" }}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/home.js' %}" defer></script>{% endblock %}

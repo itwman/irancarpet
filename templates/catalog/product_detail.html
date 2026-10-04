@@ -16,7 +16,7 @@
     </div>
     <div class="col-lg-6">
       {% if product.brand %}<a class="product__brand" href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}
-      <h1 class="product__title">{{ product.title }}</h1>
+      <h1 class="product__title">{{ product.title|fa_num }}</h1>
       <div class="product__meta">
         {% if product.rating_count %}{% stars product.rating_avg %} <a href="#reviews">{{ product.rating_count|fa_num }} نظر</a>{% endif %}
         {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}
@@ -42,7 +42,7 @@
           {% for v in variations %}
             {% with ok=v.is_available %}
             <tr class="{% if not ok %}na{% endif %}">
-              <td><input type="radio" name="variation" value="{{ v.pk }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
+              <td><input type="radio" name="variation" value="{{ v.pk }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
               <td>{{ v.size.label|default:"—" }}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
                 {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
                 {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}</td>
@@ -60,7 +60,7 @@
         </table>
         <div class="buy-row">
           <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
-          <button class="btn btn-primary btn-lg flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
+          <button class="btn-ic btn-ic--pink flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
         </div>
         <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
       </form>

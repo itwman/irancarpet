@@ -133,6 +133,17 @@ class Importer:
         s.title_separator = titles.get("title_separator") or "-"
         s.home_title = titles.get("homepage_title", "")
         s.home_description = titles.get("homepage_description", "")
+        mods = php_unserialize(self.wp.option("theme_mods_IranCarpet-theme"), default={}) or {}
+        if isinstance(mods, dict):
+            s.phone = s.phone or (mods.get("irancarpet_phone") or "")
+            s.whatsapp = s.whatsapp or re.sub(r"\D", "", str(mods.get("irancarpet_whatsapp") or ""))
+            s.email = s.email or (mods.get("irancarpet_email") or "")
+            s.address = s.address or (mods.get("irancarpet_address") or "")
+            if not s.trust_points:
+                s.trust_points = [
+                    [mods[f"irancarpet_strip_{i}_fa"], mods.get(f"irancarpet_strip_{i}_en") or ""]
+                    for i in range(1, 5) if mods.get(f"irancarpet_strip_{i}_fa")
+                ]
         s.save()
         PricingSettings.load()
         self.log(f"تنظیمات سایت: {len(templates)} قالب عنوان")

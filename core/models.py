@@ -66,7 +66,13 @@ class SiteSettings(models.Model):
         help_text="کلیدها مثل pt_product_title یا tax_product_cat_description (از Rank Math)",
     )
     phone = models.CharField("تلفن", max_length=100, blank=True)
+    whatsapp = models.CharField("شمارهٔ واتساپ", max_length=20, blank=True, help_text="با کد کشور، بدون صفر و +؛ مثل 989121234567")
+    email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
+    trust_points = models.JSONField(
+        "امتیازهای فروشگاه", default=list, blank=True,
+        help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
+    )
     footer_html = models.TextField("HTML فوتر", blank=True)
 
     class Meta:

@@ -16,8 +16,9 @@
 {% if meta.canonical %}<meta property="og:url" content="{{ meta.canonical }}">{% endif %}
 {% block og %}<meta property="og:type" content="website">{% endblock %}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#1d2742">
-<link rel="icon" href="/favicon.ico">
+<meta name="theme-color" content="#22265A">
+<link rel="icon" href="{% static 'img/logo.svg' %}" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
 <link rel="preload" href="{% static 'vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
 <link rel="stylesheet" href="{% static 'css/site.css' %}">

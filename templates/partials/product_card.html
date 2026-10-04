@@ -1,15 +1,16 @@
-{% load fa %}
-<article class="p-card{% if p.stock_status == 'outofstock' %} is-out{% endif %}">
-  <a href="{{ p.get_absolute_url }}" class="p-card__img">
+{% load fa %}{% with r=p.title|reeds_of %}
+<article class="p-card{% if p.stock_status == 'outofstock' %} is-out{% endif %}"{% if reeds_attr %} data-reeds="{{ reeds_attr }}" data-rank="{{ forloop.counter0 }}"{% endif %}>
+  <div class="p-card__img">
     {% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.image.alt|default:p.title }}" loading="lazy" decoding="async"{% if p.image.width %} width="{{ p.image.width }}" height="{{ p.image.height }}"{% endif %}>{% else %}<span class="noimg"></span>{% endif %}
+    {% if r %}<span class="reeds {{ r|reeds_class }}">{{ r|fa_num }} شانه</span>{% endif %}
     {% if p.stock_status == 'outofstock' %}<span class="badge-out">ناموجود</span>{% endif %}
-  </a>
+  </div>
   <div class="p-card__body">
     {% if p.brand %}<span class="p-card__brand">{{ p.brand.name }}</span>{% endif %}
-    <h3 class="p-card__title"><a href="{{ p.get_absolute_url }}">{{ p.title }}</a></h3>
+    <h3 class="p-card__title"><a href="{{ p.get_absolute_url }}">{{ p.title|fa_num }}</a></h3>
     <div class="p-card__foot">
       {% if p.min_price %}<span class="price"><small>از</small> {{ p.min_price|toman }} <small>تومان</small></span>{% else %}<span class="price muted">استعلام قیمت</span>{% endif %}
       {% if p.rating_count %}{% stars p.rating_avg %}{% endif %}
     </div>
   </div>
-</article>
+</article>{% endwith %}

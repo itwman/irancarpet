@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container text-center py-5">
-  <h1 class="display-5">۴۰۴</h1>
-  <p class="lead">صفحه‌ای که دنبالش بودید پیدا نشد.</p>
-  <form action="/search/" class="search search--big mx-auto my-4"><input type="search" name="q" placeholder="جستجو در فرش‌ها…" aria-label="جستجو"><button type="submit">جستجو</button></form>
-  {% if products %}<div class="p-grid text-start mt-5">{% for p in products %}{% include "partials/product_card.html" %}{% endfor %}</div>{% endif %}
+<div class="container nf">
+  <p class="nf__code" aria-hidden="true">۴۰۴</p>
+  <h1 class="h3">این گره باز شده؛ صفحه‌ای که دنبالش بودید اینجا نیست.</h1>
+  <p class="muted">نام نقشه، رنگ یا کد فرش را جستجو کنید.</p>
+  <form action="/search/" class="search search--big mx-auto my-4"><label class="sr-only" for="q404">جستجو در فرش‌ها</label><input id="q404" type="search" name="q" placeholder="نقشه، رنگ یا کد فرش"><button type="submit" aria-label="جستجو"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></form>
+  {% if products %}<h2 class="h4 mt-5 mb-4">پربازدیدترین فرش‌ها</h2><div class="p-grid text-start">{% for p in products %}{% include "partials/product_card.html" %}{% endfor %}</div>{% endif %}
 </div>
 {% endblock %}
