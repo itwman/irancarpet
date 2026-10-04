@@ -558,3 +558,70 @@ register(Resource(
     search=["model", "app_version"], filters=["app_version"], date_filter="last_seen", ordering=("-last_seen",),
     can_add=False, queryset=lambda qs: qs.select_related("user"), edit_url=lambda o: "/panel/app-devices/",
 ))
+
+
+# ================================================================ پیامک گروهی
+from accounts.models import SmsCampaign  # noqa: E402
+
+
+def _sms_count(c):
+    from accounts.campaigns import recipients
+
+    n = len(recipients(c)) if c.pk else 0
+    t = c.text or ""
+    per = 70 if len(t) <= 70 else 67
+    parts = max(1, -(-len(t) // per)) if t else 0
+    return f"{fa_num(n)} گیرنده · {fa_num(len(t))} حرف ({fa_num(parts)} پیامک برای هر نفر)"
+
+
+def _sms_start(request, qs):
+    from accounts import sms
+    from accounts.campaigns import start
+
+    n = 0
+    for c in qs.exclude(status=SmsCampaign.Status.DONE):
+        if not (sms._cfg("SMSIR_API_KEY") and sms._cfg("SMSIR_LINE_NUMBER")):
+            return "اول در «تنظیمات ← پیامک» کلید API و شمارهٔ خط ارسال را وارد کنید."
+        SmsCampaign.objects.filter(pk=c.pk).update(status=SmsCampaign.Status.SENDING, last_error="")
+        start(c)
+        n += 1
+    return f"ارسال {fa_num(n)} پیامک گروهی شروع شد؛ پیشرفت را در همین فهرست ببینید (صفحه را تازه کنید)."
+
+
+def _sms_test(request, qs):
+    from accounts import sms
+    from accounts.utils import normalize_mobile
+    from shop.models import ShopSettings
+
+    admins = [m for m in (normalize_mobile(x) for x in (ShopSettings.load().admin_mobiles or "").replace("،", ",").split(",")) if m]
+    if not admins:
+        return "در «تنظیمات ← فروش» شمارهٔ موبایل مدیر را وارد کنید."
+    c = qs.first()
+    ok, msg = sms.send_bulk(admins[:3], c.text)
+    return f"پیامک آزمایشی به {fa_num(len(admins[:3]))} شمارهٔ مدیر فرستاده شد." if ok else f"sms.ir نپذیرفت: {msg}"
+
+
+def _sms_initial():
+    from api.models import AppSettings
+
+    url = AppSettings.load().update_url or "https://cafebazaar.ir/app/net.irancarpet.app"
+    return {"title": "معرفی اپلیکیشن تازه", "audience": "all",
+            "text": f"ایران کارپت | اپلیکیشن تازهٔ ما آمد: فرش را با دوربین گوشی در اتاقتان ببینید و راحت‌تر بخرید.\nدریافت از بازار: {url}\nلغو۱۱"}
+
+
+register(Resource(
+    key="sms", model=SmsCampaign, title="پیامک گروهی", single="پیامک گروهی", group="فروش", icon="send",
+    columns=[Col("title", "عنوان", sort="title"), Col("audience", "گیرنده‌ها", badge("audience")),
+             Col("status", "وضعیت", badge("status", {"sending": "teal", "done": "green", "failed": "pink"}), "status"),
+             Col("progress", "پیشرفت", lambda o: f"{fa_num(o.sent)} از {fa_num(o.total)}" + (f" · ناموفق {fa_num(o.failed)}" if o.failed else "")),
+             Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
+    search=["title", "text"], filters=["status", "audience"], ordering=("-created_at",),
+    fieldsets=[("پیامک", ["title", "text"], "main"), ("گیرنده‌ها", ["audience", "custom_numbers"], "side")],
+    readonly=[("برآورد", _sms_count), ("وضعیت", lambda o: o.get_status_display()), ("آخرین خطا", lambda o: o.last_error or "—")],
+    initial=_sms_initial,
+    actions={"send": ("شروع یا ادامهٔ ارسال", _sms_start),
+             "stop": ("توقف ارسال", lambda r, qs: f"{fa_num(qs.filter(status='sending').update(status='failed', last_error='متوقف شد'))} ارسال متوقف شد."),
+             "test": ("ارسال آزمایشی به موبایل مدیر", _sms_test)},
+    help="پیامک را بسازید و ذخیره کنید؛ اول «ارسال آزمایشی» و بعد «شروع ارسال» را از عملیات گروهی بزنید. "
+         "برای پیامک تبلیغاتی، عبارت «لغو۱۱» در انتهای متن لازم است.",
+))

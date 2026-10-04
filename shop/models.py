@@ -37,6 +37,8 @@ class ShopSettings(models.Model):
     smsir_admin_template_id = models.CharField(
         "شمارهٔ قالب پیامک سفارش به مدیر", max_length=20, blank=True, help_text="متغیرها: ORDER، NAME و AMOUNT",
     )
+    smsir_line_number = models.CharField("شمارهٔ خط ارسال پیامک گروهی", max_length=20, blank=True,
+                                         help_text="خط اختصاصی یا خدماتی در پنل sms.ir (برای پیامک گروهی)")
 
     class Meta:
         verbose_name = "تنظیمات فروش"

@@ -8,6 +8,7 @@ MAP = {
     "SMSIR_OTP_TEMPLATE_ID": "smsir_otp_template_id",
     "SMSIR_ORDER_TEMPLATE_ID": "smsir_order_template_id",
     "SMSIR_ADMIN_TEMPLATE_ID": "smsir_admin_template_id",
+    "SMSIR_LINE_NUMBER": "smsir_line_number",
 }
 
 

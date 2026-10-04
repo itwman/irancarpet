@@ -50,3 +50,27 @@ def send_template(mobile, template_id, params):
 
 def send_otp(mobile, code):
     return send_template(mobile, _cfg("SMSIR_OTP_TEMPLATE_ID"), {"CODE": code})
+
+
+BULK_API = "https://api.sms.ir/v1/send/bulk"
+
+
+def send_bulk(mobiles, text):
+    """پیامک یکسان به چند شماره (حداکثر ۱۰۰ در هر درخواست). خروجی: (موفق؟, پیام)"""
+    key, line = _cfg("SMSIR_API_KEY"), _cfg("SMSIR_LINE_NUMBER")
+    if not key or not line:
+        return False, "کلید API یا شمارهٔ خط پیامک تنظیم نشده است."
+    body = json.dumps({"lineNumber": int(line), "messageText": text, "mobiles": list(mobiles), "sendDateTime": None}).encode()
+    req = urllib.request.Request(BULK_API, data=body, method="POST", headers={
+        "Content-Type": "application/json", "Accept": "text/plain", "X-API-KEY": key,
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read().decode() or "{}")
+        if data.get("status") == 1:
+            return True, ""
+        return False, str(data.get("message") or data)[:300]
+    except urllib.error.HTTPError as e:
+        return False, f"HTTP {e.code}: {e.read().decode(errors='ignore')[:200]}"
+    except Exception as e:  # noqa: BLE001
+        return False, str(e)[:300]

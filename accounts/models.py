@@ -52,3 +52,39 @@ class OtpCode(models.Model):
             self.used = True
         self.save(update_fields=["attempts", "used"])
         return ok
+
+
+class SmsCampaign(models.Model):
+    """پیامک گروهی به مشتری‌ها (مثلاً معرفی اپلیکیشن تازه)."""
+
+    class Audience(models.TextChoices):
+        ALL = "all", "همهٔ مشتری‌های دارای موبایل"
+        BUYERS = "buyers", "مشتری‌هایی که سفارش داده‌اند"
+        CUSTOM = "custom", "شماره‌های دلخواه"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "پیش‌نویس"
+        SENDING = "sending", "در حال ارسال"
+        DONE = "done", "ارسال شد"
+        FAILED = "failed", "متوقف شد"
+
+    title = models.CharField("عنوان (برای خودتان)", max_length=120)
+    text = models.TextField("متن پیامک")
+    audience = models.CharField("گیرنده‌ها", max_length=10, choices=Audience.choices, default=Audience.ALL)
+    custom_numbers = models.TextField("شماره‌های دلخواه", blank=True, help_text="هر شماره در یک خط")
+    status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.DRAFT)
+    total = models.PositiveIntegerField("تعداد گیرنده", default=0)
+    sent = models.PositiveIntegerField("ارسال‌شده", default=0)
+    failed = models.PositiveIntegerField("ناموفق", default=0)
+    last_error = models.CharField("آخرین خطا", max_length=300, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField("ساخته شده", default=timezone.now)
+    finished_at = models.DateTimeField("پایان ارسال", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "پیامک گروهی"
+        verbose_name_plural = "پیامک‌های گروهی"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
