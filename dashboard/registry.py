@@ -54,6 +54,7 @@ class Resource:
     nav: bool = True
     per_page: int = 40
     help: str = ""
+    initial: Optional[Callable] = None            # مقدارهای پیش‌فرض فرم «افزودن»
 
     @property
     def form_fields(self):

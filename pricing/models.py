@@ -116,7 +116,7 @@ class Album(models.Model):
 
     wp_id = models.PositiveBigIntegerField(unique=True, null=True, blank=True, editable=False, help_text="شناسهٔ آلبوم در وردپرس")
     name = models.CharField("نام آلبوم", max_length=160)
-    code = models.CharField("کد", max_length=40, unique=True)
+    code = models.CharField("کد", max_length=40, unique=True, blank=True, help_text="خالی بگذارید تا خودکار ساخته شود")
     company = models.CharField("کارخانه / برند", max_length=120, blank=True)
     description = models.TextField("توضیحات", blank=True)
     base_size = models.ForeignKey(Size, on_delete=models.PROTECT, related_name="+", verbose_name="سایز پایه")
@@ -212,7 +212,14 @@ class Album(models.Model):
         PriceLog.objects.create(album=self, old_price=old, new_price=self.base_price, user=user,
                                 reason=reason + ("+scaled" if getattr(self, "_scaled", False) else ""))
 
+    @staticmethod
+    def next_code():
+        nums = [int(c[4:]) for c in Album.objects.filter(code__startswith="ALB-").values_list("code", flat=True) if c[4:].isdigit()]
+        return f"ALB-{max(nums, default=0) + 1:03d}"
+
     def save(self, *args, **kwargs):
+        if not (self.code or "").strip():
+            self.code = self.next_code()
         changed, ratio = False, None
         self._scaled = False
         if self.pk:

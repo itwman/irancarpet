@@ -6,11 +6,15 @@
   <div class="row g-4 g-lg-5 product">
     <div class="col-lg-6">
       <div class="gallery">
-        <div class="gallery__main">
-          {% with m=gallery.0 %}{% if m %}<img id="mainImg" src="{{ m.url }}" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %} fetchpriority="high">{% else %}<span class="noimg"></span>{% endif %}{% endwith %}
+        <div class="gallery__stage">
+          <div class="gallery__main" id="gMain"{% if gallery|length > 1 %} tabindex="0" role="region" aria-label="تصاویر محصول؛ برای دیدن بقیه بکشید"{% endif %}>
+            {% for m in gallery %}<figure class="gallery__slide"><img src="{{ m.url }}" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %}{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}></figure>{% empty %}<span class="noimg"></span>{% endfor %}
+          </div>
+          {% if gallery|length > 1 %}<div class="gallery__dots" aria-hidden="true">{% for m in gallery %}<i{% if forloop.first %} class="on"{% endif %}></i>{% endfor %}</div>
+          <span class="gallery__count" aria-hidden="true"><b id="gIdx">۱</b> / {{ gallery|length|fa_num }}</span>{% endif %}
         </div>
         {% if gallery|length > 1 %}
-        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-src="{{ m.url }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
+        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-i="{{ forloop.counter0 }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
         {% endif %}
       </div>
     </div>

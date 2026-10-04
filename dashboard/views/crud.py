@@ -226,7 +226,10 @@ def edit_view(request, key, pk=None):
             return redirect(res.obj_url(o))
         messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
     else:
-        initial = {k: v for k, v in request.GET.items() if k in res.form_fields} if not obj else None
+        initial = None
+        if not obj:
+            initial = res.initial() if res.initial else {}
+            initial.update({k: v for k, v in request.GET.items() if k in res.form_fields})
         form = style_form(Form(instance=obj, initial=initial))
         formsets = [(i, FS(instance=obj or res.model(), prefix=f"in{n}")) for n, (i, FS) in enumerate(inlines)]
     for _, fs in formsets:

@@ -226,6 +226,7 @@ register(Resource(
     readonly=[("قیمت فروش سایزها", lambda o: _album_preview(o)),
               ("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],
     after_save=lambda r, o, c, f: _album_saved(r, o, c, f),
+    initial=lambda: _album_initial(),
     actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
              "follow": ("پیروی کامل همهٔ محصولات این آلبوم‌ها از قیمت آلبوم", lambda r, qs: _album_follow(qs))},
     help="قیمت فروش ۱۲ متری = قیمت خرید × (۱ + درصد سود) + هزینهٔ ارسال؛ بقیهٔ سایزها به نسبت متراژ، رو به بالا گرد می‌شوند. "
@@ -238,6 +239,22 @@ def _album_saved(request, obj, created, form):
     _album_log(request, obj, created, form)
     if created or {"sizes", "even_sizes"} & set(form.changed_data):
         sync_album_variations(list(Product.objects.filter(album=obj).select_related("album")))
+
+
+def _album_initial():
+    """آلبوم تازه: سایز پایه ۱۲ متری، و سایزها/سود/ارسال/پرتی مثل آخرین آلبوم."""
+    from pricing.models import PricingSettings
+
+    st = PricingSettings.load()
+    init = {"base_size": Size.objects.filter(slug="12-meter").values_list("pk", flat=True).first(),
+            "profit_percent": st.markup_percent, "shipping_fixed": st.shipping_fixed, "round_to": st.round_to}
+    last = Album.objects.filter(is_active=True).exclude(sizes=None).order_by("-pk").first()
+    if last:
+        init.update(sizes=list(last.sizes.values_list("pk", flat=True)), even_sizes=list(last.even_sizes.values_list("pk", flat=True)),
+                    waste_type=last.waste_type, waste_value=last.waste_value, round_to=last.round_to)
+    else:
+        init["sizes"] = list(Size.objects.filter(slug__in=["12-meter", "9-meter", "6-meter"]).values_list("pk", flat=True))
+    return init
 
 
 def _album_preview(album):

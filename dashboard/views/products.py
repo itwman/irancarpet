@@ -138,6 +138,7 @@ def product_duplicate(request, pk):
         src.wp_id = None
         src.title = src.title + " (کپی)"
         src.slug = unique_slug(Product, src.title)
+        src.sku = ""   # کد تازه خودکار ساخته می‌شود
         src.status = "draft"
         src.views = 0
         src.rating_avg, src.rating_count = 0, 0

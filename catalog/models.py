@@ -172,7 +172,7 @@ class Product(SeoFields):
     short_description = models.TextField("توضیح کوتاه", blank=True)
     status = models.CharField("وضعیت", max_length=20, choices=Status.choices, default=Status.PUBLISH, db_index=True)
     kind = models.CharField("نوع", max_length=20, choices=Kind.choices, default=Kind.VARIABLE)
-    sku = models.CharField("کد کالا", max_length=100, blank=True)
+    sku = models.CharField("کد کالا", max_length=100, blank=True, help_text="خالی بگذارید تا خودکار ساخته شود")
 
     image = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="تصویر اصلی")
     gallery = models.ManyToManyField(Media, through="ProductImage", related_name="gallery_products", blank=True)
@@ -251,7 +251,15 @@ class Product(SeoFields):
                 min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status
             )
 
+    @staticmethod
+    def next_sku():
+        """کد کالای بعدی: یکی بیشتر از بزرگ‌ترین کد عددی موجود (مثل افزونهٔ کدساز وردپرس)."""
+        nums = [int(x) for x in Product.objects.exclude(sku="").values_list("sku", flat=True) if x.isdigit() and len(x) < 12]
+        return str(max(nums, default=100000) + 1)
+
     def save(self, *args, **kwargs):
+        if not (self.sku or "").strip():
+            self.sku = self.next_sku()
         reprice = False
         if self.pk:
             old = Product.objects.filter(pk=self.pk).values("album_id", "custom_base_price", "sale_status").first()

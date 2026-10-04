@@ -1,11 +1,40 @@
-// گالری محصول
-document.addEventListener("click", function (e) {
-  var b = e.target.closest(".gallery__thumbs button");
-  if (!b) return;
-  var main = document.getElementById("mainImg");
-  if (main) { main.src = b.dataset.src; }
-  document.querySelectorAll(".gallery__thumbs button").forEach(function (x) { x.classList.toggle("on", x === b); });
-});
+// گالری محصول: کشیدن انگشت روی تصویر، دکمه‌های کوچک و کلیدهای جهت
+(function () {
+  var main = document.getElementById("gMain");
+  if (!main) return;
+  var slides = main.querySelectorAll(".gallery__slide");
+  if (slides.length < 2) return;
+  var thumbs = document.querySelectorAll(".gallery__thumbs button");
+  var dots = document.querySelectorAll(".gallery__dots i");
+  var idx = document.getElementById("gIdx");
+  var fa = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var cur = 0;
+  var mark = function (i) {
+    cur = i;
+    thumbs.forEach(function (b, j) { b.classList.toggle("on", j === i); });
+    dots.forEach(function (d, j) { d.classList.toggle("on", j === i); });
+    if (idx) idx.textContent = fa(i + 1);
+  };
+  var go = function (i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    var s = slides[i];
+    main.scrollTo({ left: s.offsetLeft - (main.clientWidth - s.clientWidth) / 2, behavior: reduce ? "auto" : "smooth" });
+    mark(i);
+  };
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) mark([].indexOf.call(slides, e.target)); });
+    }, { root: main, threshold: 0.6 });
+    slides.forEach(function (s) { io.observe(s); });
+  }
+  thumbs.forEach(function (b, i) { b.addEventListener("click", function () { go(i); }); });
+  main.addEventListener("keydown", function (e) {
+    // راست‌به‌چپ: فلش چپ = تصویر بعدی
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(cur + 1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur - 1); }
+  });
+})();
 // تبدیل ارقام فارسی ورودی‌های عددی به لاتین قبل از ارسال
 document.addEventListener("submit", function (e) {
   e.target.querySelectorAll('input[inputmode="numeric"]').forEach(function (i) {
