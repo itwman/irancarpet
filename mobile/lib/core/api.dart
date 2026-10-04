@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const kSite = 'https://irancarpet.net';
+const kSite = String.fromEnvironment('SITE', defaultValue: 'https://irancarpet.net');
 const kApi = '$kSite/api/app/v1';
 const kAppVersion = '1.0.0';
 

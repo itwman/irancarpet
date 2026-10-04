@@ -23,7 +23,7 @@ class AccountTab extends StatelessWidget {
           leading: Icon(i, color: color),
           title: Text(t, style: TextStyle(fontWeight: FontWeight.w700, color: color)),
           subtitle: sub == null ? null : Text(sub),
-          trailing: const Icon(Icons.chevron_left, color: C.muted),
+          trailing: const Icon(Icons.chevron_right, color: C.muted),
           onTap: onTap,
         );
     return Scaffold(
@@ -125,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final provinces = context.watch<AppConfig>().provinces;
     Widget f(String k, String label, {int lines = 1, TextInputType? type}) =>
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FieldLabel(label), TextField(controller: _c[k], maxLines: lines, keyboardType: type)]);
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FieldLabel(label), TextField(controller: _c[k], maxLines: lines, keyboardType: type, textDirection: type == null ? null : TextDirection.ltr)]);
     return Scaffold(
       appBar: AppBar(title: const Text('مشخصات و نشانی')),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [

@@ -79,7 +79,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             controller: _f[key],
             keyboardType: type,
             maxLines: lines,
-            decoration: InputDecoration(hintText: hint, errorText: _errors[key] as String?),
+            textDirection: type == null ? null : TextDirection.ltr,
+            textAlign: type == null ? TextAlign.start : TextAlign.right,
+            decoration: InputDecoration(
+                hintText: hint, hintTextDirection: type == null ? null : TextDirection.ltr, errorText: _errors[key] as String?),
           ),
         ],
       );

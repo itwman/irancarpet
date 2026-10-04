@@ -130,7 +130,7 @@ class _CartScreenState extends State<CartScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(border: Border.all(color: C.line), borderRadius: BorderRadius.circular(18)),
-      child: Column(children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [const Expanded(child: Text('جمع سبد', style: TextStyle(fontWeight: FontWeight.w800))), Price(total, size: 17)]),
         const SizedBox(height: 10),
         Text(

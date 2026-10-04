@@ -143,16 +143,24 @@ def home(request):
 
 @endpoint()
 def categories(request):
-    rows = list(Category.objects.select_related("image").annotate(n=Count("products", filter=Q(products__status="publish")))
-                .order_by("order", "name"))
+    rows = list(Category.objects.select_related("image").order_by("order", "name"))
     by_parent = {}
     for c in rows:
         by_parent.setdefault(c.parent_id, []).append(c)
+    own = {}
+    for cid, pid in Product.categories.through.objects.filter(product__status="publish").values_list("category_id", "product_id"):
+        own.setdefault(cid, set()).add(pid)
 
     def tree(pid):
-        return [{"id": c.pk, "name": c.name, "count": c.n, "image": S.thumb_url(c.image, 240), "children": tree(c.pk)}
-                for c in by_parent.get(pid, [])]
-    return ok(tree(None))
+        out = []
+        for c in by_parent.get(pid, []):
+            children, ids = tree(c.pk)
+            ids = ids | own.get(c.pk, set())
+            out.append(({"id": c.pk, "name": c.name, "count": len(ids), "image": S.thumb_url(c.image, 240),
+                         "children": children}, ids))
+        return [x for x, _ in out], set().union(*[i for _, i in out]) if out else set()
+
+    return ok(tree(None)[0])
 
 
 # ------------------------------------------------------------------ محصولات

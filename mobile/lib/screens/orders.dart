@@ -254,9 +254,9 @@ class _TrackScreenState extends State<TrackScreen> {
         body: ListView(padding: const EdgeInsets.all(20), children: [
           const Text('شمارهٔ سفارش و موبایلی را که با آن سفارش داده‌اید وارد کنید.', style: TextStyle(color: C.muted)),
           const FieldLabel('شمارهٔ سفارش'),
-          TextField(controller: _n, keyboardType: TextInputType.number),
+          TextField(controller: _n, keyboardType: TextInputType.number, textDirection: TextDirection.ltr),
           const FieldLabel('موبایل'),
-          TextField(controller: _m, keyboardType: TextInputType.phone),
+          TextField(controller: _m, keyboardType: TextInputType.phone, textDirection: TextDirection.ltr),
           const SizedBox(height: 16),
           FilledButton(onPressed: _go, child: const Text('پیگیری')),
           if (_err != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_err!, style: const TextStyle(color: C.pinkDark))),

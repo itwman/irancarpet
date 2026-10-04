@@ -23,6 +23,16 @@ import 'screens/splash.dart';
 import 'state/app_state.dart';
 
 final navKey = GlobalKey<NavigatorState>();
+final messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+/// پیام‌های پایین صفحه با رفتن به صفحهٔ دیگر بسته می‌شوند تا روی دکمه‌ها نمانند.
+class _SnackCleaner extends NavigatorObserver {
+  void _clear() => messengerKey.currentState?.hideCurrentSnackBar();
+  @override
+  void didPush(Route route, Route? previousRoute) => _clear();
+  @override
+  void didPop(Route route, Route? previousRoute) => _clear();
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +110,8 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navKey,
+      scaffoldMessengerKey: messengerKey,
+      navigatorObservers: [_SnackCleaner()],
       title: 'ایران کارپت',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),

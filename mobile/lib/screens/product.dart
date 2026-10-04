@@ -17,6 +17,8 @@ class ProductScreen extends StatefulWidget {
   State<ProductScreen> createState() => _ProductScreenState();
 }
 
+final _bubble = IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: .92), elevation: 2, shadowColor: Colors.black26);
+
 class _ProductScreenState extends State<ProductScreen> {
   Json? _p;
   String? _err;
@@ -64,6 +66,8 @@ class _ProductScreenState extends State<ProductScreen> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(
+          duration: const Duration(milliseconds: 2500),
+          persist: false,
           content: Text('«${s['label']}» به سبد اضافه شد.'),
           action: SnackBarAction(label: 'دیدن سبد', textColor: C.saffron, onPressed: () => Navigator.pushNamed(context, '/cart')),
         ));
@@ -90,25 +94,44 @@ class _ProductScreenState extends State<ProductScreen> {
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,
-          expandedHeight: (w * 4 / 3).clamp(300, 620),
+          leading: Padding(
+            padding: const EdgeInsets.all(6),
+            child: IconButton.filled(
+              tooltip: 'بازگشت',
+              style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: .92), foregroundColor: C.ink, elevation: 2, shadowColor: Colors.black26),
+              onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
+          ),
+          expandedHeight: (w * 1.12).clamp(280, 520),
           backgroundColor: Colors.white,
+          actionsPadding: const EdgeInsetsDirectional.only(end: 6),
+          actionsIconTheme: const IconThemeData(color: C.ink),
           actions: [
             IconButton(
+                style: _bubble,
                 tooltip: 'اشتراک‌گذاری',
                 onPressed: () => SharePlus.instance.share(ShareParams(text: '${p['title']}\n${p['url']}')),
                 icon: const Icon(Icons.share_outlined)),
             IconButton(
+                style: _bubble,
                 tooltip: 'مقایسه',
                 onPressed: () {
                   if (!cmp.toggle(id)) return toast(context, 'حداکثر ۳ فرش را می‌شود مقایسه کرد.');
                   if (cmp.has(id)) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(
+                        persist: false,
+                        duration: const Duration(milliseconds: 2500),
                         content: Text('به مقایسه اضافه شد (${faDigits(cmp.ids.length)} از ۳).'),
                         action: SnackBarAction(label: 'مقایسه', textColor: C.saffron, onPressed: () => Navigator.pushNamed(context, '/compare'))));
                   }
                 },
                 icon: Icon(cmp.has(id) ? Icons.compare_rounded : Icons.compare_outlined, color: cmp.has(id) ? C.teal : null)),
             IconButton(
+                style: _bubble,
                 tooltip: 'علاقه‌مندی',
                 onPressed: () => wish.toggle(id),
                 icon: Icon(wish.has(id) ? Icons.favorite : Icons.favorite_border, color: wish.has(id) ? C.pink : null)),
@@ -293,7 +316,7 @@ class _ProductScreenState extends State<ProductScreen> {
                     Text('با دوربین گوشی یا عکس اتاقت', style: TextStyle(fontSize: 12.5, color: C.ink2)),
                   ]),
                 ),
-                Icon(Icons.chevron_left, color: C.tealDark),
+                Icon(Icons.chevron_right, color: C.tealDark),
               ]),
             ),
           ),

@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
             textDirection: TextDirection.ltr,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 20, letterSpacing: 2, fontWeight: FontWeight.w700),
-            decoration: const InputDecoration(hintText: '۰۹۱۲ ۱۲۳ ۴۵۶۷'),
+            decoration: const InputDecoration(hintText: '۰۹۱۲ ۱۲۳ ۴۵۶۷', hintTextDirection: TextDirection.ltr),
             onSubmitted: (_) => _send(),
           ),
           const SizedBox(height: 16),

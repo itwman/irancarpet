@@ -22,7 +22,10 @@ class _ShellState extends State<Shell> {
   bool _checkedUpdate = false;
   final _pages = const [HomeTab(), CategoriesTab(), CartScreen(), WishlistTab(), AccountTab()];
 
-  void go(int i) => setState(() => _i = i);
+  void go(int i) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _i = i);
+  }
 
   @override
   void didChangeDependencies() {

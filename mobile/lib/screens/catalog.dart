@@ -69,7 +69,7 @@ class _CategoriesTabState extends State<CategoriesTab> with AutomaticKeepAliveCl
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           leading: const KnotLogo(size: 36),
           title: const Text('همهٔ فرش‌ها', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-          trailing: const Icon(Icons.chevron_left, color: Colors.white),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white),
           onTap: () => Navigator.pushNamed(context, '/products', arguments: {'title': 'همهٔ فرش‌ها', 'query': <String, dynamic>{}}),
         ),
       );
@@ -106,7 +106,7 @@ class _CatTile extends StatelessWidget {
             leading: leading,
             title: Text(c['name'] as String, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: subtitle,
-            trailing: const Icon(Icons.chevron_left),
+            trailing: const Icon(Icons.chevron_right),
             onTap: () => onOpen(c)),
       );
     }
