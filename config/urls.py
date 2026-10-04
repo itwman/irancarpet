@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import include, path, re_path
 from django.views.static import serve
 
 from blog import views as blog_views
@@ -21,6 +21,7 @@ urlpatterns = [
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),
     path("feed/", LatestPostsFeed()),
     path("search/", catalog_views.search, name="search"),
+    path("", include("shop.urls")),
     path("blog/", blog_views.blog_index, name="blog"),
     re_path(rf"^blog/{P}$", blog_views.blog_index),
     path("product/<str:slug>/", catalog_views.product_detail, name="product"),

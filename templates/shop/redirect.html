@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container fake-gw">
+  <h1 class="h3">در حال انتقال به درگاه بانک…</h1>
+  <p class="muted">اگر صفحه خودکار عوض نشد، دکمهٔ زیر را بزنید.</p>
+  <form method="post" action="{{ action.form }}" id="gwForm">
+    {% for k, v in action.fields.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <button class="btn-ic btn-ic--pink" type="submit">رفتن به درگاه</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script>document.getElementById("gwForm").submit();</script>{% endblock %}

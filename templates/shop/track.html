@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  <div class="auth">
+    <div class="page-head text-center"><h1>پیگیری سفارش</h1><p>شمارهٔ سفارش و موبایلی که با آن خرید کرده‌اید را وارد کنید.</p></div>
+    <div class="card-ic">
+      <form method="post">{% csrf_token %}
+        <div class="field"><label for="number">شمارهٔ سفارش</label><input id="number" name="number" value="{{ number|default:'' }}" inputmode="numeric" class="ltr" required></div>
+        <div class="field"><label for="mobile">موبایل</label><input id="mobile" name="mobile" value="{{ mobile|default:'' }}" inputmode="tel" class="ltr" required></div>
+        <button class="btn-ic btn-ic--pink" type="submit">پیگیری</button>
+      </form>
+      {% if searched %}
+        {% if order %}
+        <div class="mt-4">
+          <div class="sum-row"><span>سفارش {{ order.number|fa_num }}</span><span class="st st-{{ order.status }}">{{ order.get_status_display }}</span></div>
+          <div class="sum-row"><span>تاریخ ثبت</span><span>{{ order.created_at|jdate }}</span></div>
+          {% if order.tracking_code %}<div class="sum-row"><span>کد رهگیری مرسوله</span><strong>{{ order.tracking_code|fa_num }}</strong></div>{% endif %}
+        </div>
+        {% else %}<div class="alert-ic mt-3 mb-0">سفارشی با این مشخصات پیدا نشد.</div>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "catalog",
     "blog",
     "seo",
+    "accounts",
+    "shop",
 ]
 
 MIDDLEWARE = [
@@ -72,6 +74,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.site",
+                "shop.context_processors.cart",
             ],
         },
     },
@@ -106,6 +109,9 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
     "core.hashers.PhpassHasher",
 ]
+
+AUTHENTICATION_BACKENDS = ["accounts.backends.IdentifierBackend"]
+LOGIN_URL = "/my-account/login/"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -152,3 +158,14 @@ UNFOLD = {
 
 PRODUCTS_PER_PAGE = 24
 POSTS_PER_PAGE = 12
+
+# --- پرداخت و پیامک (مقادیر واقعی فقط در .env سرور) -----------------------
+SEP_TERMINAL_ID = os.environ.get("SEP_TERMINAL_ID", "")
+ZARINPAL_MERCHANT_ID = os.environ.get("ZARINPAL_MERCHANT_ID", "")
+ZARINPAL_SANDBOX = env_bool("ZARINPAL_SANDBOX", False)
+# درگاه آزمایشی: فقط در نسخهٔ آزمایشی؛ روی سایت اصلی خاموش
+PAYMENT_FAKE = env_bool("PAYMENT_FAKE", DEBUG or STAGING)
+SMSIR_API_KEY = os.environ.get("SMSIR_API_KEY", "")
+SMSIR_OTP_TEMPLATE_ID = os.environ.get("SMSIR_OTP_TEMPLATE_ID", "")
+SMSIR_ORDER_TEMPLATE_ID = os.environ.get("SMSIR_ORDER_TEMPLATE_ID", "")
+SMSIR_ADMIN_TEMPLATE_ID = os.environ.get("SMSIR_ADMIN_TEMPLATE_ID", "")

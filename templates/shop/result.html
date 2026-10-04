@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container fake-gw">
+  <h1 class="h3">{% if ok %}پرداخت انجام شد{% else %}پرداخت انجام نشد{% endif %}</h1>
+  <p class="muted">{{ message }}</p>
+  <a href="/my-account/" class="btn-ic btn-ic--ink">رفتن به حساب کاربری</a>
+</div>
+{% endblock %}

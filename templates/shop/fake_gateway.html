@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container fake-gw">
+  <div class="card-ic">
+    <span class="knot-ico mx-auto mb-3" aria-hidden="true" style="--c1:#12A9B8;--c2:#FFB21E;width:48px;height:48px"><i></i><i></i><i></i><i></i></span>
+    <h1 class="h4">درگاه آزمایشی</h1>
+    <p class="muted">این صفحه فقط در نسخهٔ آزمایشی هست و پولی جابه‌جا نمی‌شود.</p>
+    <p>سفارش {{ payment.order.number|fa_num }}، مبلغ <strong>{{ payment.amount|toman }} تومان</strong></p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+      <a class="btn-ic btn-ic--pink" href="/pay/fake/callback/?pid={{ payment.pk }}&ok=1">پرداخت موفق</a>
+      <a class="btn-ic btn-ic--teal" href="/pay/fake/callback/?pid={{ payment.pk }}&ok=0">لغو پرداخت</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

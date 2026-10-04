@@ -1,0 +1,75 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  <div class="page-head"><h1>تسویه حساب</h1><p>اطلاعات ارسال را وارد کنید و روش پرداخت را انتخاب کنید.</p></div>
+  {% if errors.cart %}<div class="alert-ic">{{ errors.cart }} <a href="/cart/">رفتن به سبد</a></div>{% endif %}
+  <form method="post" class="checkout-layout" id="checkoutForm" data-total="{{ total }}" data-deposit="{{ deposit }}" data-free-min="{{ shop.free_shipping_min }}">{% csrf_token %}
+    <section class="card-ic">
+      <h2>اطلاعات گیرنده</h2>
+      <div class="grid-2">
+        <div class="field{% if errors.first_name %} has-err{% endif %}"><label for="first_name">نام</label><input id="first_name" name="first_name" value="{{ form.first_name }}" autocomplete="given-name" required>{% if errors.first_name %}<span class="err">{{ errors.first_name }}</span>{% endif %}</div>
+        <div class="field{% if errors.last_name %} has-err{% endif %}"><label for="last_name">نام خانوادگی</label><input id="last_name" name="last_name" value="{{ form.last_name }}" autocomplete="family-name" required>{% if errors.last_name %}<span class="err">{{ errors.last_name }}</span>{% endif %}</div>
+        <div class="field{% if errors.mobile %} has-err{% endif %}"><label for="mobile">موبایل</label><input id="mobile" name="mobile" value="{{ form.mobile }}" inputmode="tel" autocomplete="tel" class="ltr" required>{% if errors.mobile %}<span class="err">{{ errors.mobile }}</span>{% endif %}</div>
+        <div class="field"><label for="email">ایمیل <small>(اختیاری)</small></label><input id="email" name="email" type="email" value="{{ form.email }}" autocomplete="email" class="ltr"></div>
+        <div class="field{% if errors.province %} has-err{% endif %}"><label for="province">استان</label>
+          <select id="province" name="province" required><option value="">انتخاب کنید</option>{% for p in provinces %}<option{% if form.province == p %} selected{% endif %}>{{ p }}</option>{% endfor %}</select>{% if errors.province %}<span class="err">{{ errors.province }}</span>{% endif %}</div>
+        <div class="field{% if errors.city %} has-err{% endif %}"><label for="city">شهر</label><input id="city" name="city" value="{{ form.city }}" autocomplete="address-level2" required>{% if errors.city %}<span class="err">{{ errors.city }}</span>{% endif %}</div>
+      </div>
+      <div class="field{% if errors.address %} has-err{% endif %}"><label for="address">آدرس کامل</label><textarea id="address" name="address" rows="3" autocomplete="street-address" required>{{ form.address }}</textarea>{% if errors.address %}<span class="err">{{ errors.address }}</span>{% endif %}</div>
+      <div class="grid-2">
+        <div class="field{% if errors.postal_code %} has-err{% endif %}"><label for="postal_code">کد پستی <small>(اختیاری)</small></label><input id="postal_code" name="postal_code" value="{{ form.postal_code }}" inputmode="numeric" maxlength="10" class="ltr">{% if errors.postal_code %}<span class="err">{{ errors.postal_code }}</span>{% endif %}</div>
+      </div>
+      <div class="field"><label for="note">توضیح سفارش <small>(اختیاری)</small></label><textarea id="note" name="note" rows="2" placeholder="مثلاً زمان مناسب تحویل">{{ form.note }}</textarea></div>
+      {% if shop.checkout_note %}<div class="prose small">{{ shop.checkout_note|linebreaksbr }}</div>{% endif %}
+    </section>
+
+    <aside class="card-ic sum">
+      <h2>سفارش شما</h2>
+      {% for line in lines %}{% if not line.problem %}
+      <div class="sum-row"><span>{{ line.product.title|fa_num }} <small class="muted">· {{ line.size_label|fa_num }} · {{ line.qty|fa_num }} عدد</small></span><span class="text-nowrap">{{ line.total|toman }}</span></div>
+      {% endif %}{% endfor %}
+      <div class="sum-row big"><span>جمع کل</span><strong>{{ total|toman }} تومان</strong></div>
+
+      <h2 class="mt-4">روش پرداخت</h2>
+      <div class="choice" role="radiogroup" aria-label="روش پرداخت">
+        {% if "full" in modes %}<label><input type="radio" name="payment_mode" value="full"{% if form.payment_mode != "deposit" %} checked{% endif %}><span><strong>پرداخت کامل آنلاین</strong><small>{{ total|toman }} تومان{% if free_shipping %}، با ارسال رایگان{% endif %}</small></span></label>{% endif %}
+        {% if "deposit" in modes %}<label><input type="radio" name="payment_mode" value="deposit"{% if form.payment_mode == "deposit" or "full" not in modes %} checked{% endif %}><span><strong>{{ shop.deposit_percent|fa_num }}٪ بیعانه، بقیه موقع تحویل</strong><small>الان {{ deposit|toman }} تومان، بقیه ({{ remaining|toman }} تومان) موقع تحویل</small></span></label>{% endif %}
+      </div>
+      {% if errors.payment_mode %}<div class="alert-ic">{{ errors.payment_mode }}</div>{% endif %}
+      <div class="sum-row"><span>پرداخت الان</span><strong id="payNow">{{ total|toman }} تومان</strong></div>
+      <div class="sum-row" id="laterRow" hidden><span>موقع تحویل</span><strong id="payLater"></strong></div>
+      <div class="ship-note {% if free_shipping %}free{% else %}cod{% endif %}" id="shipNote">{% if free_shipping %}ارسال رایگان است.{% else %}هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).{% endif %}</div>
+
+      <h2 class="mt-4">درگاه پرداخت</h2>
+      {% if gateways %}
+      <div class="choice">
+        {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if form.gateway == g.key or not form.gateway and forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong>{% if g.key == "fake" %}<small>فقط برای آزمایش؛ پول واقعی جابه‌جا نمی‌شود.</small>{% endif %}</span></label>{% endfor %}
+      </div>
+      {% if errors.gateway %}<div class="alert-ic">{{ errors.gateway }}</div>{% endif %}
+      <button class="btn-ic btn-ic--pink" type="submit" id="payBtn">پرداخت و ثبت سفارش</button>
+      {% else %}
+      <div class="alert-ic alert-ic--warn">درگاه پرداخت هنوز فعال نشده است. برای ثبت سفارش با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
+      {% endif %}
+    </aside>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  var f = document.getElementById("checkoutForm"); if (!f) return;
+  var total = +f.dataset.total, dep = +f.dataset.deposit, freeMin = +f.dataset.freeMin, FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, function (d) { return FA[d]; }) + " تومان"; }
+  function upd() {
+    var m = (f.querySelector("input[name=payment_mode]:checked") || {}).value || "full";
+    var now = m === "deposit" ? dep : total;
+    document.getElementById("payNow").textContent = fa(now);
+    var lr = document.getElementById("laterRow"); lr.hidden = m !== "deposit";
+    document.getElementById("payLater").textContent = fa(total - dep);
+    var free = m === "full" && total >= freeMin, n = document.getElementById("shipNote");
+    n.className = "ship-note " + (free ? "free" : "cod");
+    n.textContent = free ? "ارسال رایگان است." : "هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).";
+  }
+  f.addEventListener("change", upd); upd();
+  f.addEventListener("submit", function () { var b = document.getElementById("payBtn"); if (b) { b.disabled = true; b.textContent = "در حال انتقال به درگاه…"; } });
+})();
+</script>{% endblock %}

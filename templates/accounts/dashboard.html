@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  <div class="page-head d-flex justify-content-between align-items-end flex-wrap gap-3">
+    <div><h1>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h1><p>سفارش‌ها و اطلاعات حسابتان اینجاست.</p></div>
+    <form method="post" action="/my-account/logout/">{% csrf_token %}<button class="pill" type="submit">خروج</button></form>
+  </div>
+  <div class="acc-grid">
+    <section class="card-ic">
+      <h2>سفارش‌های من</h2>
+      {% if orders %}
+      <table class="orders">
+        <thead><tr><th>شماره</th><th class="hide-sm">تاریخ</th><th>مبلغ</th><th>وضعیت</th></tr></thead>
+        <tbody>{% for o in orders %}
+          <tr><td><a href="{{ o.get_absolute_url }}">{{ o.number|fa_num }}</a></td><td class="hide-sm">{{ o.created_at|jdate }}</td>
+            <td>{{ o.items_total|toman }}</td><td><span class="st st-{{ o.status }}">{{ o.get_status_display }}</span></td></tr>
+        {% endfor %}</tbody>
+      </table>
+      {% else %}
+      <p class="muted mb-3">هنوز سفارشی ثبت نکرده‌اید.</p><a href="/store/" class="btn-ic btn-ic--teal btn-ic--sm">دیدن فرش‌ها</a>
+      {% endif %}
+    </section>
+    <section class="card-ic">
+      <h2>اطلاعات حساب</h2>
+      <form method="post">{% csrf_token %}
+        <div class="grid-2">
+          <div class="field"><label for="fn">نام</label><input id="fn" name="first_name" value="{{ user.first_name }}"></div>
+          <div class="field"><label for="ln">نام خانوادگی</label><input id="ln" name="last_name" value="{{ user.last_name }}"></div>
+        </div>
+        <div class="field"><label>موبایل</label><input value="{{ profile.mobile|default:''|fa_num }}" disabled class="ltr"></div>
+        <div class="field{% if errors.email %} has-err{% endif %}"><label for="em">ایمیل</label><input id="em" name="email" type="email" value="{{ user.email }}" class="ltr">{% if errors.email %}<span class="err">{{ errors.email }}</span>{% endif %}</div>
+        <div class="field{% if errors.password %} has-err{% endif %}"><label for="pw">رمز عبور تازه</label><input id="pw" name="password" type="password" autocomplete="new-password" class="ltr"><small>اگر نمی‌خواهید رمز را عوض کنید، خالی بگذارید. با رمز می‌توانید بدون پیامک وارد شوید.</small>{% if errors.password %}<span class="err">{{ errors.password }}</span>{% endif %}</div>
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ذخیرهٔ اطلاعات</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  {% if just_paid and order.is_paid %}
+  <div class="success-hero">
+    <span class="knot-ico" aria-hidden="true" style="--c1:#E5395B;--c2:#7CC46B"><i></i><i></i><i></i><i></i></span>
+    <h1>سفارشتان ثبت شد!</h1>
+    <p class="muted">شمارهٔ سفارش <strong>{{ order.number|fa_num }}</strong>. همکاران ما برای هماهنگی ارسال با شما تماس می‌گیرند.</p>
+  </div>
+  {% else %}
+  <div class="page-head"><h1>سفارش {{ order.number|fa_num }}</h1><p>{{ order.created_at|jdate:"%d %B %Y، ساعت %H:%M" }}</p></div>
+  {% endif %}
+  <div class="acc-grid">
+    <section class="card-ic">
+      <h2>کالاها</h2>
+      {% for it in order.items.all %}
+      <div class="sum-row"><span>{% if it.product %}<a href="{{ it.product.get_absolute_url }}">{{ it.title|fa_num }}</a>{% else %}{{ it.title|fa_num }}{% endif %} <small class="muted">· {{ it.size_label|fa_num }} · {{ it.quantity|fa_num }} عدد</small></span><span class="text-nowrap">{{ it.line_total|toman }}</span></div>
+      {% endfor %}
+      <div class="sum-row big"><span>جمع کل</span><strong>{{ order.items_total|toman }} تومان</strong></div>
+      <h2 class="mt-4">ارسال به</h2>
+      <p class="mb-1">{{ order.full_name }}، {{ order.mobile|fa_num }}</p>
+      <p class="muted mb-0">{{ order.province }}، {{ order.city }}، {{ order.address|fa_num }}{% if order.postal_code %}، کد پستی {{ order.postal_code|fa_num }}{% endif %}</p>
+    </section>
+    <aside class="card-ic">
+      <h2>وضعیت</h2>
+      <p><span class="st st-{{ order.status }}">{{ order.get_status_display }}</span></p>
+      <div class="sum-row"><span>روش پرداخت</span><span>{{ order.get_payment_mode_display }}</span></div>
+      <div class="sum-row"><span>پرداخت‌شده</span><strong>{{ order.paid_amount|toman }} تومان</strong></div>
+      {% if order.is_paid and order.remaining %}<div class="sum-row"><span>موقع تحویل</span><strong>{{ order.remaining|toman }} تومان</strong></div>{% endif %}
+      <div class="ship-note {{ order.shipping_mode }}">{{ order.get_shipping_mode_display }}</div>
+      {% if order.tracking_code %}<div class="sum-row mt-2"><span>کد رهگیری مرسوله</span><strong>{{ order.tracking_code|fa_num }}</strong></div>{% endif %}
+      {% if order.can_pay %}
+        {% if gateways %}
+        <form method="post" action="{{ order.get_absolute_url }}pay/" class="mt-3">{% csrf_token %}
+          <p class="small muted">این سفارش هنوز پرداخت نشده است. مبلغ قابل پرداخت: <strong>{{ order.online_amount|toman }} تومان</strong></p>
+          <div class="choice">{% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong></span></label>{% endfor %}</div>
+          <button class="btn-ic btn-ic--pink w-100" type="submit">پرداخت</button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% with pays=order.payments.all %}{% if pays %}
+      <h2 class="mt-4">تراکنش‌ها</h2>
+      {% for p in pays %}<div class="sum-row small"><span>{{ p.get_gateway_display }} · {{ p.created_at|jdate:"%d %B %H:%M" }}</span><span>{{ p.amount|toman }} · {{ p.get_status_display }}{% if p.ref_id %} · {{ p.ref_id|fa_num }}{% endif %}</span></div>{% endfor %}
+      {% endif %}{% endwith %}
+      <a href="/my-account/" class="pill mt-3">همهٔ سفارش‌ها</a>
+    </aside>
+  </div>
+</div>
+{% endblock %}

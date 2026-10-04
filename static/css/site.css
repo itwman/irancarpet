@@ -150,7 +150,10 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 .room__chair{position:absolute;top:34%;right:4%;width:13%;height:24%;background:var(--teal);border-radius:14px;box-shadow:inset -8px 0 0 rgba(0,0,0,.12)}
 .room__plant{position:absolute;bottom:6%;left:4%;width:10%;aspect-ratio:1;background:var(--pistachio);border-radius:50%;box-shadow:0 0 0 6px rgba(124,196,107,.3)}
 .room__rug{position:absolute;top:24%;left:50%;transform:translateX(-50%);width:61.5%;height:63%;padding:4px;background:#fff;border-radius:6px;box-shadow:0 18px 30px -16px rgba(34,38,90,.6);transition:width .8s cubic-bezier(.3,1.4,.4,1),height .8s cubic-bezier(.3,1.4,.4,1)}
-.room__rug img{width:100%;height:100%;object-fit:cover;display:block;border-radius:4px}
+.room__rug-in{position:absolute;inset:4px;overflow:hidden;border-radius:4px;container-type:size}
+/* عکس فرش‌ها عمودی است و فرش در اتاق افقی پهن می‌شود؛ پس عکس ۹۰ درجه می‌چرخد */
+.room__rug img{position:absolute;top:50%;left:50%;width:100%;height:100%;object-fit:cover;display:block;transform:translate(-50%,-50%)}
+@supports (width:1cqw){.room__rug img{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(90deg)}}
 .room__scale{position:absolute;bottom:8px;right:14px;font-size:.75rem;color:#8A6B4A}
 .room__dim{position:absolute;top:-1.9rem;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:.78rem;font-weight:700;padding:.1rem .6rem;border-radius:999px;white-space:nowrap}
 
@@ -371,3 +374,96 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* ===================== فروش: پیام‌ها، فرم‌ها، سبد، تسویه ===================== */
+.flash{list-style:none;margin:1rem 0 0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.flash li{border-radius:14px;padding:.8rem 1.1rem;font-weight:600;background:var(--teal-t);color:var(--teal-d)}
+.flash li.error{background:var(--pink-t);color:var(--pink-d)}
+.flash li.info,.flash li.warning{background:var(--saffron-t);color:#7a4f00}
+.page-head{padding:1.5rem 0 1.25rem}
+.page-head h1{font-size:clamp(1.6rem,3vw,2.3rem);margin:0}
+.page-head p{margin:.3rem 0 0;color:var(--muted)}
+.card-ic{background:#fff;border-radius:var(--r-lg);box-shadow:0 0 0 1px var(--line);padding:1.5rem}
+.card-ic h2{font-size:1.15rem;margin:0 0 1rem}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.field label{font-weight:700;font-size:.9rem}
+.field input,.field select,.field textarea{border:2px solid var(--line);border-radius:var(--r-sm);padding:.7rem .9rem;font-family:inherit;font-size:1rem;color:var(--ink);background:#fff;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal)}
+.field .err{color:var(--pink-d);font-size:.82rem;font-weight:600}
+.field.has-err input,.field.has-err select,.field.has-err textarea{border-color:var(--pink)}
+.field small{color:var(--muted);font-size:.8rem}
+.ltr{direction:ltr;text-align:left}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1rem}
+.alert-ic{border-radius:14px;padding:.8rem 1.1rem;font-weight:600;background:var(--pink-t);color:var(--pink-d);margin-bottom:1rem}
+.alert-ic--ok{background:var(--teal-t);color:var(--teal-d)}
+.alert-ic--warn{background:var(--saffron-t);color:#7a4f00}
+
+/* سبد */
+.cart-layout,.checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:2rem;align-items:start;padding-bottom:3rem}
+.cart-line{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:1rem;align-items:center;padding:1rem 0;border-bottom:1px dashed var(--line)}
+.cart-line:last-child{border-bottom:0}
+.cart-line img{width:96px;height:124px;object-fit:cover;border-radius:14px;background:var(--soft)}
+.cart-line h3{font-size:1rem;margin:0;line-height:1.8}
+.cart-line h3 a{color:var(--ink)}
+.cart-line .meta{font-size:.85rem;color:var(--muted)}
+.cart-line .problem{color:var(--pink-d);font-size:.85rem;font-weight:700}
+.cart-line .end{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem}
+.qty-box{display:flex;align-items:center;border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.qty-box button{border:0;background:var(--soft);width:34px;height:36px;font-size:1.1rem;font-weight:700;color:var(--ink)}
+.qty-box input{width:44px;border:0;text-align:center;font-family:inherit;font-weight:700;height:36px}
+.link-btn{border:0;background:none;color:var(--pink-d);font-weight:600;font-size:.85rem;padding:0;cursor:pointer;font-family:inherit}
+.sum{position:sticky;top:150px}
+.sum-row{display:flex;justify-content:space-between;gap:1rem;padding:.45rem 0;font-size:.95rem}
+.sum-row strong{font-weight:900}
+.sum-row.big{font-size:1.15rem;border-top:2px solid var(--line);margin-top:.5rem;padding-top:.9rem}
+.sum .btn-ic{width:100%;margin-top:1rem}
+.empty-cart{text-align:center;padding:4rem 1rem}
+.empty-cart .knot-ico{margin:0 auto 1rem;width:56px;height:56px;gap:6px}
+
+/* انتخاب نوع پرداخت و درگاه */
+.choice{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1rem}
+.choice label{display:flex;gap:.75rem;align-items:flex-start;border:2px solid var(--line);border-radius:16px;padding:.85rem 1rem;cursor:pointer;transition:border-color .2s,background .2s}
+.choice label:hover{border-color:var(--teal)}
+.choice input{accent-color:var(--pink);width:1.15rem;height:1.15rem;margin-top:.3rem;flex:none}
+.choice label:has(input:checked){border-color:var(--pink);background:var(--pink-t)}
+.choice strong{display:block}
+.choice small{color:var(--ink-2);font-size:.82rem;line-height:1.8}
+.ship-note{border-radius:14px;padding:.75rem 1rem;font-size:.88rem;font-weight:600;margin-top:.5rem}
+.ship-note.free{background:var(--teal-t);color:var(--teal-d)}
+.ship-note.cod{background:var(--saffron-t);color:#7a4f00}
+
+/* ورود */
+.auth{max-width:460px;margin:2rem auto 4rem}
+.auth .tabs{display:flex;gap:.4rem;background:var(--soft);border-radius:16px;padding:.35rem;margin-bottom:1.25rem}
+.auth .tabs a{flex:1;text-align:center;padding:.6rem;border-radius:12px;font-weight:700;color:var(--ink)}
+.auth .tabs a.on{background:#fff;box-shadow:0 4px 14px -8px rgba(34,38,90,.4)}
+.auth .btn-ic{width:100%}
+.otp-input{font-size:1.6rem!important;letter-spacing:.6em;text-align:center;font-weight:900}
+.dev-code{background:var(--saffron-t);border-radius:12px;padding:.6rem 1rem;margin-bottom:1rem;font-size:.9rem}
+
+/* حساب و سفارش */
+.acc-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:2rem;align-items:start;padding-bottom:3rem}
+.orders{width:100%;border-collapse:collapse;font-size:.92rem}
+.orders th{font-size:.78rem;color:var(--muted);text-align:start;padding:.5rem;border-bottom:2px solid var(--line)}
+.orders td{padding:.75rem .5rem;border-bottom:1px dashed var(--line)}
+.st{display:inline-block;border-radius:999px;padding:.1rem .7rem;font-size:.78rem;font-weight:700;background:var(--soft);color:var(--ink)}
+.st-deposit_paid{background:var(--saffron);color:var(--ink)}.st-paid{background:var(--teal);color:#fff}
+.st-processing{background:var(--pistachio);color:var(--ink)}.st-shipped{background:var(--ink);color:#fff}
+.st-completed{background:#2e7d32;color:#fff}.st-cancelled,.st-refunded{background:var(--pink);color:#fff}
+.success-hero{text-align:center;padding:2rem 1rem 1rem}
+.success-hero .knot-ico{width:64px;height:64px;gap:6px;margin:0 auto 1rem;animation:pop .7s var(--ease) both}
+@keyframes pop{from{transform:scale(.3) rotate(-30deg);opacity:0}to{transform:none;opacity:1}}
+.fake-gw{max-width:480px;margin:3rem auto;text-align:center}
+
+@media(max-width:991.98px){
+  .cart-layout,.checkout-layout,.acc-grid{grid-template-columns:minmax(0,1fr)}
+  .sum{position:static}
+}
+@media(max-width:575.98px){
+  .grid-2{grid-template-columns:minmax(0,1fr)}
+  .cart-line{grid-template-columns:72px minmax(0,1fr)}
+  .cart-line img{width:72px;height:94px}
+  .cart-line .end{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center}
+  .orders .hide-sm{display:none}
+}
+@media(max-width:400px){.hdr__actions .wa{display:none}}

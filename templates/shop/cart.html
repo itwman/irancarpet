@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  <div class="page-head"><h1>سبد خرید</h1></div>
+  {% if lines %}
+  <form method="post" action="/cart/update/" class="cart-layout" id="cartForm">{% csrf_token %}
+    <section class="card-ic">
+      {% for line in lines %}
+      <div class="cart-line">
+        <a href="{{ line.product.get_absolute_url }}">{% if line.product.image %}<img src="{{ line.product.image.url }}" alt="" loading="lazy">{% else %}<span class="noimg" style="width:96px;height:124px;border-radius:14px"></span>{% endif %}</a>
+        <div>
+          <h3><a href="{{ line.product.get_absolute_url }}">{{ line.product.title|fa_num }}</a></h3>
+          <div class="meta">{{ line.size_label|fa_num }}{% if line.variation.is_pair_only %} · فقط جفت{% endif %}</div>
+          {% if line.problem %}<div class="problem">{{ line.problem }}</div>{% else %}<div class="meta">قیمت واحد: {{ line.unit_price|toman }} تومان</div>{% endif %}
+        </div>
+        <div class="end">
+          <div class="qty-box" data-step="{% if line.variation.is_pair_only %}2{% else %}1{% endif %}">
+            <button type="button" data-d="-1" aria-label="کم کردن">−</button>
+            <input name="qty-{{ line.variation.pk }}" value="{{ line.qty }}" inputmode="numeric" aria-label="تعداد">
+            <button type="button" data-d="1" aria-label="زیاد کردن">+</button>
+          </div>
+          {% if not line.problem %}<strong>{{ line.total|toman }} <small class="muted">تومان</small></strong>{% endif %}
+          <button class="link-btn" name="remove" value="{{ line.variation.pk }}" type="submit">حذف</button>
+        </div>
+      </div>
+      {% endfor %}
+      <button class="pill mt-3" type="submit" id="refresh">به‌روزرسانی سبد</button>
+    </section>
+    <aside class="card-ic sum">
+      <h2>خلاصهٔ سفارش</h2>
+      <div class="sum-row"><span>جمع کالاها</span><strong>{{ total|toman }} تومان</strong></div>
+      <div class="sum-row"><span>ارسال</span><span>در مرحلهٔ بعد</span></div>
+      <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.</p>
+      {% if has_problem %}<div class="alert-ic mt-3 mb-0">کالاهای ناموجود را حذف کنید تا بتوانید ادامه دهید.</div>{% endif %}
+      <button class="btn-ic btn-ic--pink" type="submit" name="go" value="checkout"{% if has_problem %} disabled{% endif %}>ادامهٔ خرید</button>
+    </aside>
+  </form>
+  {% else %}
+  <div class="card-ic empty-cart">
+    <span class="knot-ico" aria-hidden="true" style="--c1:#E5395B;--c2:#FFB21E"><i></i><i></i><i></i><i></i></span>
+    <h2>سبد خرید خالی است</h2>
+    <p class="muted">نقشه‌ای را که دوست دارید پیدا کنید و سایزش را به سبد اضافه کنید.</p>
+    <a href="/store/" class="btn-ic btn-ic--pink">دیدن فرش‌ها</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll(".qty-box").forEach(function (b) {
+  var step = +b.dataset.step, inp = b.querySelector("input");
+  b.addEventListener("click", function (e) {
+    var d = e.target.dataset.d; if (!d) return;
+    var v = (parseInt(inp.value.replace(/[۰-۹]/g, function (c) { return "۰۱۲۳۴۵۶۷۸۹".indexOf(c); })) || 0) + d * step;
+    inp.value = Math.max(step, Math.min(20, v));
+    document.getElementById("refresh").click();
+  });
+});
+</script>{% endblock %}
