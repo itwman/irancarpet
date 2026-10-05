@@ -67,9 +67,53 @@ FORMS = {
 }
 
 
+class GeoForm(forms.ModelForm):
+    """طول و عرض جغرافیایی با هر تعداد رقم اعشار، ارقام فارسی، هر دو در یک خانه، یا خودکار از پیوند گوگل‌مپ."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        for name, label in (("latitude", "عرض جغرافیایی (Latitude)"), ("longitude", "طول جغرافیایی (Longitude)")):
+            if name in self.fields:
+                self.fields[name] = forms.CharField(label=label, required=False, help_text=(
+                    "مثل ۳۳٫۹۹۵۶۰۸۹. می‌توانید هر دو عدد را با ویرگول در همین خانه بنویسید، یا خالی بگذارید تا از پیوند گوگل‌مپ خوانده شود."
+                    if name == "latitude" else "مثل ۵۱٫۴۵۸۲۷۱۳"))
+
+    def clean(self):
+        from core import geo
+
+        cd = super().clean()
+        if "latitude" not in self.fields:
+            return cd
+        lat_txt, lng_txt = cd.get("latitude") or "", cd.get("longitude") or ""
+        lat = lng = None
+        try:
+            both = geo.pair(lat_txt) or geo.pair(lng_txt)
+            if both:
+                lat, lng = both
+            else:
+                lat, lng = geo.coord(lat_txt), geo.coord(lng_txt)
+        except ValueError:
+            self.add_error("latitude", "عدد مختصات را درست بنویسید؛ مثل ۳۳٫۹۹۵۶۰۸۹ و ۵۱٫۴۵۸۲۷۱۳.")
+            return cd
+        if lat is None and lng is None:
+            for f in ("map_google", "map_neshan", "map_balad"):
+                got = geo.from_url(cd.get(f) or "")
+                if got:
+                    lat, lng = got
+                    break
+        if (lat is None) != (lng is None):
+            self.add_error("longitude" if lng is None else "latitude", "هر دو عدد طول و عرض جغرافیایی لازم است.")
+        elif lat is not None and not (-90 <= lat <= 90 and -180 <= lng <= 180):
+            self.add_error("latitude", "عددها جابه‌جا یا نادرست‌اند؛ عرض ایران حدود ۲۵ تا ۴۰ و طول حدود ۴۴ تا ۶۳ است.")
+        elif lat is not None and 44 <= lat <= 63 and 25 <= lng <= 40:  # جابه‌جا وارد شده
+            lat, lng = lng, lat
+        cd["latitude"], cd["longitude"] = lat, lng
+        return cd
+
+
 def make_form(tab, data=None):
     model, fields = FORMS[tab]
-    Form = modelform_factory(model, fields=fields, formfield_callback=partial(formfield_for, ac_urls={}))
+    Form = modelform_factory(model, form=GeoForm, fields=fields, formfield_callback=partial(formfield_for, ac_urls={}))
     inst = model.load()
     form = Form(data, instance=inst)
     for name in fields:

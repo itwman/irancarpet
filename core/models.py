@@ -90,9 +90,9 @@ class SiteSettings(models.Model):
     store_hours_note = models.CharField("توضیح ساعت کاری", max_length=150, blank=True, help_text="مثل «جمعه‌ها با هماهنگی تلفنی»")
     latitude = models.DecimalField("عرض جغرافیایی", max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField("طول جغرافیایی", max_digits=9, decimal_places=6, null=True, blank=True)
-    map_google = models.URLField("پیوند گوگل‌مپ", blank=True, max_length=400)
-    map_neshan = models.URLField("پیوند نشان", blank=True, max_length=400)
-    map_balad = models.URLField("پیوند بلد", blank=True, max_length=400)
+    map_google = models.URLField("پیوند گوگل‌مپ", blank=True, max_length=1500)
+    map_neshan = models.URLField("پیوند نشان", blank=True, max_length=1500)
+    map_balad = models.URLField("پیوند بلد", blank=True, max_length=1500)
     trust_points = models.JSONField(
         "امتیازهای فروشگاه", default=list, blank=True,
         help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
