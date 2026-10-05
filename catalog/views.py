@@ -213,7 +213,7 @@ def product_detail(request, slug):
         "meta": m, "product": product, "variations": variations, "specs": specs, "gallery": gallery,
         "crumbs": crumbs, "reviews": reviews, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
-        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs), ensure_ascii=False),
+        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs), ensure_ascii=False),
     }
     if product.is_purchasable and product.min_price:
         from installments.services import teaser
@@ -222,27 +222,49 @@ def product_detail(request, slug):
     return render(request, "catalog/product_detail.html", ctx)
 
 
-def product_jsonld(product, variations, gallery, crumbs):
+def product_jsonld(product, variations, gallery, crumbs, specs=()):
     site = settings.SITE_URL
     priced = [v for v in variations if v.price]
+    url = site + product.get_absolute_url()
     data = {
         "@context": "https://schema.org",
         "@type": "Product",
         "name": product.title,
-        "url": site + product.get_absolute_url(),
+        "url": url,
         "description": seo.plain(product.short_description or product.content, 300),
         "image": [m.absolute_url for m in gallery[:5]],
         "sku": product.sku or str(product.pk),
     }
     if product.brand_id:
         data["brand"] = {"@type": "Brand", "name": product.brand.name}
+    if product.primary_category_id:
+        data["category"] = product.primary_category.name
+    # مشخصات فنی (شانه، تراکم، جنس نخ خاب، رنگ زمینه و...) برای موتورهای جستجو و هوش مصنوعی
+    props = {}
+    for t in specs:
+        props.setdefault(t.attribute.label, []).append(t.name)
+    if props:
+        data["additionalProperty"] = [{"@type": "PropertyValue", "name": k, "value": "، ".join(v)} for k, v in props.items()]
+        for label, key in (("جنس نخ خاب", "material"), ("رنگ زمینه", "color")):
+            for k, v in props.items():
+                if k.replace("\u200c", " ").strip() == label:
+                    data[key] = "، ".join(v)
     if priced:
         # قیمت‌ها به ریال (IRR) برای سازگاری با گوگل
         prices = [v.price * 10 for v in priced]
+        seller = {"@type": "Organization", "name": "ایران کارپت", "url": site + "/"}
+        stock = "https://schema.org/InStock" if product.in_stock else "https://schema.org/OutOfStock"
         data["offers"] = {
             "@type": "AggregateOffer", "priceCurrency": "IRR",
             "lowPrice": min(prices), "highPrice": max(prices), "offerCount": len(priced),
-            "availability": "https://schema.org/InStock" if product.in_stock else "https://schema.org/OutOfStock",
+            "availability": stock,
+            "offers": [{
+                "@type": "Offer", "name": f"{product.title} — {v.size.label}" if v.size_id else product.title,
+                "price": v.price * 10, "priceCurrency": "IRR", "url": url, "seller": seller,
+                "itemCondition": "https://schema.org/NewCondition",
+                "availability": stock if v.is_available else "https://schema.org/OutOfStock",
+                **({"sku": v.sku} if v.sku else {}),
+            } for v in priced[:30]],
         }
     if product.rating_count:
         data["aggregateRating"] = {"@type": "AggregateRating", "ratingValue": float(product.rating_avg), "reviewCount": product.rating_count}

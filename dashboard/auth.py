@@ -27,4 +27,4 @@ def superuser_required(view):
 
 def clear_site_cache():
     """بعد از هر ذخیره در پنل، کش منو، تنظیمات و صفحهٔ اصلی پاک شود تا تغییر بلافاصله دیده شود."""
-    cache.delete_many(["menu_categories", "site_settings", "home_data"])
+    cache.delete_many(["menu_categories", "site_settings", "home_data", "bing_verification"])

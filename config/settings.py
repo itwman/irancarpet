@@ -155,6 +155,7 @@ APPEND_SLASH = True
 
 # در حالت استیجینگ، هدر X-Robots-Tag: noindex اضافه می‌شود تا گوگل نسخهٔ آزمایشی را ایندکس نکند
 STAGING = env_bool("STAGING", False)
+TESTING = len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "test"
 
 LOGGING = {
     "version": 1,

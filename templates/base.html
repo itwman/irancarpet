@@ -24,6 +24,8 @@
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
 <link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ ASSET_V }}">
 <link rel="alternate" type="application/rss+xml" title="{{ site_settings.site_name }}" href="/feed/">
+<link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt">
+{% if bing_verification %}<meta name="msvalidate.01" content="{{ bing_verification }}">{% endif %}
 {% if jsonld %}<script type="application/ld+json">{{ jsonld|safe }}</script>{% endif %}
 {% block head %}{% endblock %}
 </head>

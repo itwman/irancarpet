@@ -8,6 +8,7 @@ from blog.feeds import LatestPostsFeed
 from catalog import views as catalog_views
 from core import views as core_views
 from seo import sitemaps
+from seo import views as seo_views
 from api import views as api_views
 from installments import views as installments_views
 from pricing import views as pricing_views
@@ -31,6 +32,8 @@ urlpatterns = [
     path("panel/", include("dashboard.urls")),
     path("installments/quote/", installments_views.quote_api),
     path("robots.txt", core_views.robots_txt),
+    path("llms.txt", seo_views.llms_txt),
+    re_path(r"^(?P<key>[0-9a-f]{32})\.txt$", seo_views.indexnow_key),
     path("sitemap_index.xml", sitemaps.index),
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),
     path("feed/", LatestPostsFeed()),

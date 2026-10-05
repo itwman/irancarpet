@@ -41,6 +41,13 @@
       <p class="hint mt-2">همگام‌سازی خودکار هر ۵ دقیقه روی سرور اجرا می‌شود؛ تغییر قیمت، موجودی، عنوان و تصویر محصولات خودش به فرش پلاس می‌رود.</p>
     </section>
     {% endif %}
+    {% if tab == "seo" %}
+    <section class="card-p">
+      <h2>ارسال همهٔ صفحه‌ها به IndexNow</h2>
+      <p class="hint">همهٔ نشانی‌های نقشهٔ سایت یک‌جا به Bing و Yandex فرستاده می‌شوند. یک بار بعد از راه‌اندازی کافی است؛ بعد از آن هر تغییر خودکار فرستاده می‌شود.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="seo"><button class="btn btn-ink" name="do" value="indexnow_all">ارسال همهٔ نشانی‌ها</button></form>
+    </section>
+    {% endif %}
     {% if tab == "sms" %}
     <form method="post" class="card-p">{% csrf_token %}<input type="hidden" name="tab" value="sms"><input type="hidden" name="do" value="sms_test">
       <h2>آزمایش پیامک</h2>
@@ -67,6 +74,15 @@
       <div class="kv"><span>سقف روزانهٔ محصول تازه</span><strong>{{ fp.limits.daily_products|fa_num }}</strong></div>
       {% if fp.s.last_scan_at %}<div class="kv"><span>آخرین بررسی</span><strong>{{ fp.s.last_scan_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
       <a class="btn btn-light btn-sm mt-2" href="/panel/farshplus/">فهرست محصولات در فرش پلاس</a>
+    </section>{% endif %}
+    {% if seo %}<section class="card-p"><h2>وضعیت IndexNow</h2>
+      <div class="kv"><span>آخرین ارسال</span><strong>{% if seo.indexnow_last_at %}{{ seo.indexnow_last_at|jdate:"%d %B %H:%M" }}{% else %}هنوز ارسالی نبوده{% endif %}</strong></div>
+      {% if seo.indexnow_last_status %}<div class="kv"><span>نتیجه</span><strong>{{ seo.indexnow_last_status|fa_num }}</strong></div>{% endif %}
+      <div class="kv"><span>مجموع نشانی‌های پذیرفته‌شده</span><strong>{{ seo.indexnow_total|fa_num }}</strong></div>
+      <p class="hint mt-2">فایل کلید: <a dir="ltr" href="/{{ seo.indexnow_key }}.txt" target="_blank" rel="noopener">/{{ seo.indexnow_key|truncatechars:12 }}.txt</a></p>
+    </section>
+    <section class="card-p"><h2>فایل‌های هوش مصنوعی</h2>
+      <p class="hint"><a dir="ltr" href="/llms.txt" target="_blank" rel="noopener">{{ SITE_URL }}/llms.txt</a> — خلاصهٔ فروشگاه، قیمت‌های روز و روش‌های خرید برای ChatGPT، Claude، Gemini و Perplexity. خودکار با قیمت‌ها به‌روز می‌شود.</p>
     </section>{% endif %}
     {% if tab == "torob" %}<section class="card-p"><h2>آدرس فید برای پنل ترب</h2><p class="hint">همان آدرس قبلی است و نیازی به تغییر در پنل ترب نیست:</p><p dir="ltr"><code>https://irancarpet.net/wp-json/torob/products/?page=1</code></p><p class="hint">محصول آلبومی با قیمت سایز ۱۲ متری در ترب نمایش داده می‌شود، مثل سایت قبلی.</p></section>{% endif %}
     {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند.</p></section>{% endif %}

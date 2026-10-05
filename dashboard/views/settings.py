@@ -1,6 +1,7 @@
 from functools import partial
 
 from django import forms
+from django.conf import settings as django_settings
 from django.contrib import messages
 from django.forms import modelform_factory
 from django.shortcuts import redirect, render
@@ -15,6 +16,8 @@ from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
 from api.models import AppSettings
+from seo import indexnow
+from seo.models import SeoSettings
 from torob.models import TorobSettings
 
 from ..auth import clear_site_cache, staff_required
@@ -32,6 +35,7 @@ TABS = [
     ("farshplus", "فرش پلاس"),
     ("torob", "فید ترب"),
     ("app", "اپلیکیشن"),
+    ("seo", "سئو و هوش مصنوعی"),
 ]
 
 FORMS = {
@@ -48,6 +52,7 @@ FORMS = {
     "torob": (TorobSettings, ["enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
                               "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice"]),
+    "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
 }
 
 
@@ -98,6 +103,12 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do") == "indexnow_all":
+            urls = indexnow.all_urls()
+            ok, msg = indexnow.submit(urls)
+            log(request, "action", "IndexNow", None, f"ارسال {len(urls)} نشانی")
+            (messages.success if ok else messages.error)(request, f"IndexNow: {msg} ({len(urls)} نشانی).")
+            return redirect("/panel/settings/?tab=seo")
         if request.POST.get("do", "").startswith("fp_"):
             return farshplus_action(request, request.POST["do"])
         model, _ = FORMS[tab]
@@ -130,6 +141,7 @@ def settings_view(request):
     return render(request, "dashboard/settings.html", {
         "tabs": TABS, "tab": tab, "form": form, "trust": trust, "info": status_info(),
         "fp": farshplus_info() if tab == "farshplus" else None,
+        "seo": SeoSettings.load() if tab == "seo" else None, "SITE_URL": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),
     })

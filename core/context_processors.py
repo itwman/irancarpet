@@ -41,6 +41,16 @@ def _asset_version():
 ASSET_V = _asset_version()
 
 
+def _bing():
+    v = cache.get("bing_verification")
+    if v is None:
+        from seo.models import SeoSettings
+
+        v = SeoSettings.objects.filter(pk=1).values_list("bing_verification", flat=True).first() or ""
+        cache.set("bing_verification", v, 300)
+    return v
+
+
 def site(request):
     tops = cache.get("menu_categories")
     if tops is None:
@@ -56,4 +66,5 @@ def site(request):
         "site_settings": s,
         "menu_categories": tops[:7],
         "menu_more": tops[7:],
+        "bing_verification": _bing(),
     }

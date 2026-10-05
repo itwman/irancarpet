@@ -52,3 +52,39 @@ class NotFoundLog(models.Model):
 
     def __str__(self):
         return self.path
+
+
+class SeoSettings(models.Model):
+    """تنظیمات سئو برای موتورهای جستجو و هوش مصنوعی (یک ردیف)."""
+
+    indexnow_enabled = models.BooleanField(
+        "ارسال خودکار به IndexNow", default=True,
+        help_text="هر بار محصول، قیمت، مقاله یا برگه تغییر کند، نشانی‌اش فوراً به Bing و Yandex خبر داده می‌شود.",
+    )
+    indexnow_key = models.CharField("کلید IndexNow", max_length=64, blank=True, editable=False)
+    indexnow_last_at = models.DateTimeField("آخرین ارسال", null=True, blank=True, editable=False)
+    indexnow_last_status = models.CharField("نتیجهٔ آخرین ارسال", max_length=300, blank=True, editable=False)
+    indexnow_total = models.PositiveIntegerField("تعداد نشانی‌های ارسال‌شده", default=0, editable=False)
+    bing_verification = models.CharField(
+        "کد تأیید Bing", max_length=100, blank=True,
+        help_text="فقط مقدار content از تگ msvalidate.01 که Bing Webmaster Tools می‌دهد؛ مثل 1A2B3C4D5E...",
+    )
+    llms_about = models.TextField(
+        "معرفی فروشگاه برای هوش مصنوعی", blank=True,
+        help_text="چند جملهٔ روشن و دقیق دربارهٔ ایران کارپت (از کی فعالید، کجا هستید، از کدام کارخانه‌ها می‌فروشید، ارسال، ضمانت و...). "
+                  "بالای فایل /llms.txt می‌آید.",
+    )
+
+    class Meta:
+        verbose_name = "تنظیمات سئو و هوش مصنوعی"
+        verbose_name_plural = verbose_name
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        if not obj.indexnow_key:
+            import secrets
+
+            obj.indexnow_key = secrets.token_hex(16)
+            obj.save(update_fields=["indexnow_key"])
+        return obj
