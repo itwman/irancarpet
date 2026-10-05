@@ -7,7 +7,7 @@
     <!-- اپ صدا ضبط نمی‌کند (افزونهٔ دوربین این مجوز را اضافه می‌کند) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
     <application
-        android:label="ایران کارپت"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -31,12 +31,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- بازگشت از درگاه بانک و پیوندهای اپ: irancarpet://order/123 -->
+            <!-- بازگشت از درگاه بانک و پیوندهای اپ: irancarpet://order/123 (فرش‌یاب: farshyab://) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="irancarpet"/>
+                <data android:scheme="${appScheme}"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

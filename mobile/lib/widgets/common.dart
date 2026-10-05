@@ -63,9 +63,12 @@ class Price extends StatelessWidget {
 }
 
 class ProductCard extends StatelessWidget {
-  const ProductCard(this.p, {super.key, this.width});
+  const ProductCard(this.p, {super.key, this.width, this.match});
   final Json p;
   final double? width;
+
+  /// برچسب «چرا این فرش؟» روی عکس (فرش‌یاب)
+  final String? match;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +107,27 @@ class ProductCard extends StatelessWidget {
                         shadows: const [Shadow(blurRadius: 8, color: Colors.black38)]),
                   ),
                 ),
+                if (match != null && match!.isNotEmpty)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    left: 8,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .94), borderRadius: BorderRadius.circular(9)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.check_circle_rounded, size: 14, color: C.tealDark),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(match!, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.ink)),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
                 if (!inStock)
                   Positioned(
                     bottom: 8,
@@ -123,6 +147,8 @@ class ProductCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, height: 1.6)),
                 const SizedBox(height: 4),
                 Price((p['price'] as int?) ?? 0, from: p['price_is_from'] as bool? ?? false, size: 15),
+                if ((p['size_label'] as String? ?? '').isNotEmpty)
+                  Text('برای ${faDigits(p['size_label'])}', style: const TextStyle(fontSize: 11.5, color: C.muted)),
               ]),
             ),
           ]),

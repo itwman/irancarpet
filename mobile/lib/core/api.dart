@@ -6,9 +6,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'flavor.dart';
+
+export 'flavor.dart';
+
 const kSite = String.fromEnvironment('SITE', defaultValue: 'https://irancarpet.net');
 const kApi = '$kSite/api/app/v1';
-const kAppVersion = '1.0.5';
 
 typedef Json = Map<String, dynamic>;
 
@@ -46,6 +49,7 @@ class Api {
         'Content-Type': 'application/json',
         'X-Install-Id': installId,
         'X-App-Version': kAppVersion,
+        if (kIsFinder) 'X-App': 'finder',
         'X-Device-Model': kIsWeb ? 'web' : defaultTargetPlatform.name,
         if (token != null) 'Authorization': 'Token $token',
       };

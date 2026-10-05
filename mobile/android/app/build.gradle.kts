@@ -38,6 +38,27 @@ android {
         versionName = flutter.versionName
     }
 
+    buildFeatures {
+        resValues = true
+    }
+
+    // دو اپ از یک کد: «ایران کارپت» (فروشگاه) و «فرش‌یاب» (پیدا کردن فرش بر اساس نیاز)
+    flavorDimensions += "app"
+    productFlavors {
+        create("store") {
+            dimension = "app"
+            applicationId = "net.irancarpet.app"
+            resValue("string", "app_name", "ایران کارپت")
+            manifestPlaceholders["appScheme"] = "irancarpet"
+        }
+        create("finder") {
+            dimension = "app"
+            applicationId = "net.irancarpet.finder"
+            resValue("string", "app_name", "فرش‌یاب")
+            manifestPlaceholders["appScheme"] = "farshyab"
+        }
+    }
+
     signingConfigs {
         create("release") {
             if (keyProps.isNotEmpty()) {

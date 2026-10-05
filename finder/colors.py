@@ -31,7 +31,7 @@ def _lab(rgb):
     return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
 
 
-def dominant(image, k=5):
+def dominant(image, k=8):
     """[(hex، سهم)] از عکس؛ حاشیه‌ها (پس‌زمینهٔ کف اتاق) کمتر حساب می‌شوند."""
     from PIL import Image
 
@@ -43,11 +43,18 @@ def dominant(image, k=5):
     pal = q.getpalette()
     counts = sorted(q.getcolors(), reverse=True)
     total = sum(c for c, _ in counts) or 1
-    out = []
+    merged = []  # رنگ‌های خیلی نزدیک یکی می‌شوند
     for c, idx in counts:
-        rgb = pal[idx * 3: idx * 3 + 3]
-        out.append((_hex(rgb), round(c / total, 3)))
-    return out
+        rgb = tuple(pal[idx * 3: idx * 3 + 3])
+        lab = _lab(rgb)
+        for m in merged:
+            if math.dist(m["lab"], lab) < 12:
+                m["n"] += c
+                break
+        else:
+            merged.append({"rgb": rgb, "lab": lab, "n": c})
+    merged.sort(key=lambda m: -m["n"])
+    return [(_hex(m["rgb"]), round(m["n"] / total, 3)) for m in merged]
 
 
 def match_needs(colors, needs, limit=2):

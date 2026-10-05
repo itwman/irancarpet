@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(),
       body: ListView(padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), children: [
-        const Center(child: BrandLogo(size: 76)),
+        Center(child: kIsFinder ? Image.asset('assets/brand/finder.png', height: 84) : const BrandLogo(size: 76)),
         const SizedBox(height: 16),
         Text(
           _step == 1 ? 'کد تأیید را وارد کنید' : (_step == 2 ? 'ورود با رمز' : 'ورود یا ثبت‌نام'),

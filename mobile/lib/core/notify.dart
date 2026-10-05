@@ -2,6 +2,7 @@ import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -52,6 +53,7 @@ Future<void> setupNotifications() async {
 Future<List<Map<String, dynamic>>> checkNotifications({bool show = true}) async {
   final p = await SharedPreferences.getInstance();
   await Api.i.init();
+  if (kIsFinder) await _checkFinder(p, show);
   final since = p.getString('notif_since');
   final list = ((await Api.i.get('/notifications/', {'since': since})) as List).cast<Map<String, dynamic>>();
   if (list.isNotEmpty) await p.setString('notif_since', list.first['created_at'] as String);
@@ -75,4 +77,32 @@ Future<List<Map<String, dynamic>>> checkNotifications({bool show = true}) async 
     );
   }
   return list;
+}
+
+
+/// فرش‌یاب: خبر دادن پاسخ تازهٔ کارشناس به درخواست مشتری.
+Future<void> _checkFinder(SharedPreferences p, bool show) async {
+  try {
+    Api.i.token ??= await const FlutterSecureStorage().read(key: 'token');
+    if (Api.i.token == null) return;
+    final r = await Api.i.get('/finder/requests/') as Map<String, dynamic>;
+    final told = (p.getStringList('finder_told') ?? []).toSet();
+    final fresh = (r['results'] as List).cast<Map<String, dynamic>>().where((x) => x['unread'] == true && !told.contains('${x['id']}'));
+    for (final x in fresh.take(3)) {
+      told.add('${x['id']}');
+      if (!show || kIsWeb) continue;
+      await _plugin.show(
+        id: 900000 + (x['id'] as int),
+        title: 'پاسخ کارشناس آماده است',
+        body: 'فرش‌های پیشنهادی برای درخواستت را ببین.',
+        payload: 'request:${x['id']}',
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails('finder', 'پاسخ کارشناس',
+              channelDescription: 'پاسخ کارشناس ایران کارپت به درخواست‌های فرش‌یاب', importance: Importance.high, priority: Priority.high,
+              color: Color(0xFF22265A)),
+        ),
+      );
+    }
+    await p.setStringList('finder_told', told.toList());
+  } catch (_) {}
 }

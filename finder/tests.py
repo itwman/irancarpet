@@ -136,6 +136,8 @@ class FinderTests(TestCase):
         # عکس فقط برای خود مشتری و کارمندان
         self.assertEqual(self.client.get(f"/api/app/v1/finder/requests/{req.pk}/photo/", **h).status_code, 200)
         self.assertEqual(self.client.get(f"/api/app/v1/finder/requests/{req.pk}/photo/").status_code, 401)
+        self.assertEqual(self.client.get(d["photo"].replace("https://irancarpet.net", "")).status_code, 200)  # پیوند امضاشده
+        self.assertEqual(self.client.get(f"/api/app/v1/finder/requests/{req.pk}/photo/?t=bad").status_code, 404)
         self.assertEqual(self.client.get(f"/panel/finder-photo/{req.pk}/").status_code, 404)
         # پاسخ کارشناس
         from finder.services import after_reply

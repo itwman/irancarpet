@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from django.conf import settings
+from django.core import signing
 from django.core.cache import cache
 from django.core.paginator import EmptyPage, Paginator
 from django.http import FileResponse, Http404
@@ -43,12 +44,11 @@ def config(request):
         needs = engine.active_needs()
         groups = []
         for key, title in Need.Group.choices:
-            items = [n for n in needs if n.group == key]
+            items = [{"id": n.pk, "title": n.title, "subtitle": n.subtitle, "swatch": n.swatch, "icon": n.icon,
+                      "count": engine.need_count(n)} for n in needs if n.group == key]
+            items = [x for x in items if x["count"]]  # نیازی که الان فرشی ندارد نمایش داده نمی‌شود
             if items:
-                groups.append({"key": key, "title": title, "needs": [{
-                    "id": n.pk, "title": n.title, "subtitle": n.subtitle, "swatch": n.swatch, "icon": n.icon,
-                    "count": engine.need_count(n),
-                } for n in items]})
+                groups.append({"key": key, "title": title, "needs": items})
         data = {"groups": groups, "sizes": _sizes(), "budgets": [b * 1_000_000 for b in BUDGETS], "examples": EXAMPLES}
         cache.set("finder:config", data, 600)
     return ok(data)
@@ -66,6 +66,11 @@ def wish_from(g):
         s = Size.objects.filter(pk=_int(g["size"])).first()
         if s:
             wish.sizes, wish.size_label = [s], s.label
+    rids = [_int(x) for x in (g.get("reeds") or "").split(",") if x.strip()]
+    if rids:
+        from catalog.models import AttributeTerm
+
+        wish.reeds += [t for t in AttributeTerm.objects.filter(pk__in=rids) if t not in wish.reeds]
     if g.get("max"):
         wish.max_price = _int(g["max"])
     if g.get("min"):
@@ -97,6 +102,9 @@ def search(request):
         results.append(c)
     return ok({
         "understood": wish.chips(), "unknown": wish.words if not (wish.needs or wish.sizes or wish.reeds or wish.max_price) else "",
+        # همان خواسته‌ها به شکل پارامتر، تا اپ بتواند یکی‌یکی حذفشان کند
+        "applied": {"needs": [n.pk for n in wish.needs], "size": wish.sizes[0].pk if wish.sizes else None,
+                    "min": wish.min_price or None, "max": wish.max_price or None, "reeds": [t.pk for t in wish.reeds]},
         "relaxed": relaxed, "count": p.count, "page": page, "pages": p.num_pages if p.count else 0, "results": results,
     })
 
@@ -112,8 +120,8 @@ def _req_row(r, request):
     return {
         "id": r.pk, "kind": r.kind, "status": r.status, "status_label": r.get_status_display(), "text": r.text,
         "wanted": services.need_titles((r.wanted or {}).get("needs")), "query": (r.wanted or {}).get("q", ""),
-        "photo": f"{settings.SITE_URL}/api/app/v1/finder/requests/{r.pk}/photo/" if r.photo else "",
-        "colors": [c["hex"] for c in r.colors if "hex" in c][:5],
+        "photo": f"{settings.SITE_URL}/api/app/v1/finder/requests/{r.pk}/photo/?t={photo_token(r)}" if r.photo else "",
+        "colors": [{"hex": c["hex"], "share": c.get("share", 0)} for c in r.colors if "hex" in c][:5],
         "color_names": [c["title"] for c in r.colors if "title" in c],
         "reply": r.reply, "products": [S.card(p) for p in products], "auto": auto,
         "created_at": timezone.localtime(r.created_at).isoformat(),
@@ -166,10 +174,27 @@ def request_seen(request, pk):
     return ok({"ok": True})
 
 
-@endpoint(login=True)
+PHOTO_SALT = "finder-photo"
+
+
+def photo_token(r):
+    """پیوند امضاشدهٔ عکس (اپ و وب بدون سرآیند ورود هم می‌توانند نشانش دهند)."""
+    return signing.dumps(r.pk, salt=PHOTO_SALT, compress=True)
+
+
+@endpoint()
 def request_photo(request, pk):
-    r = FinderRequest.objects.filter(pk=pk, user=request.api_user).first()
-    return _photo(r)
+    t = request.GET.get("t", "")
+    if t:
+        try:
+            if signing.loads(t, salt=PHOTO_SALT, max_age=60 * 60 * 24 * 30) != pk:
+                raise Http404
+        except signing.BadSignature:
+            raise Http404
+        return _photo(FinderRequest.objects.filter(pk=pk).first())
+    if request.api_user is None:
+        return fail("ابتدا وارد شوید.", 401)
+    return _photo(FinderRequest.objects.filter(pk=pk, user=request.api_user).first())
 
 
 def _photo(r):

@@ -9,6 +9,9 @@ import 'package:provider/provider.dart';
 import 'core/api.dart';
 import 'core/notify.dart';
 import 'core/theme.dart';
+import 'finder/requests.dart';
+import 'finder/shell.dart';
+import 'finder/state.dart';
 import 'screens/account.dart';
 import 'screens/cart.dart';
 import 'screens/catalog.dart';
@@ -41,7 +44,7 @@ Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: Colors.white));
   await Api.i.init();
-  final auth = Auth(), cart = Cart(), wish = Wishlist(), config = AppConfig();
+  final auth = Auth(), cart = Cart(), wish = Wishlist(), config = AppConfig(), finder = FinderData();
   await Future.wait([auth.load(), cart.load(), wish.load()]);
   runApp(MultiProvider(
     providers: [
@@ -49,11 +52,13 @@ Future<void> main() async {
       ChangeNotifierProvider.value(value: cart),
       ChangeNotifierProvider.value(value: wish),
       ChangeNotifierProvider.value(value: config),
+      ChangeNotifierProvider.value(value: finder),
       ChangeNotifierProvider(create: (_) => Compare()),
     ],
     child: const IranCarpetApp(),
   ));
   config.load();
+  if (kIsFinder) finder.load();
   onNotificationTap = _openPayload;
   setupNotifications().catchError((_) {});
 }
@@ -65,6 +70,8 @@ void _openPayload(String payload) {
   switch (parts.first) {
     case 'product':
       nav.pushNamed('/product', arguments: int.tryParse(parts.last));
+    case 'request':
+      nav.push(MaterialPageRoute(builder: (_) => const RequestsScreen()));
     case 'category':
       nav.pushNamed('/products', arguments: {'title': 'فرش‌ها', 'query': {'category': parts.last}});
     default:
@@ -89,7 +96,7 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
   }
 
   void _onLink(Uri uri) {
-    if (uri.scheme != 'irancarpet') return;
+    if (uri.scheme != kScheme) return;
     if (uri.host == 'order' && uri.pathSegments.isNotEmpty) {
       final n = int.tryParse(uri.pathSegments.first);
       if (n == null) return;
@@ -114,7 +121,7 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
       navigatorKey: navKey,
       scaffoldMessengerKey: messengerKey,
       navigatorObservers: [_SnackCleaner()],
-      title: 'ایران کارپت',
+      title: kAppName,
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       locale: const Locale('fa', 'IR'),
@@ -128,7 +135,8 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
       onGenerateRoute: (s) {
         final a = s.arguments;
         Widget page = switch (s.name) {
-          '/home' => const Shell(),
+          '/home' => kIsFinder ? const FinderShell() : const Shell(),
+          '/requests' => const RequestsScreen(),
           '/product' => ProductScreen(id: a as int),
           '/products' => ProductListScreen(
               title: (a as Map)['title'] as String, query: ((a['query'] as Map?) ?? {}).cast<String, dynamic>()),
@@ -145,7 +153,7 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
           '/track' => const TrackScreen(),
           '/pricelist' => const PriceListScreen(),
           '/installment' => InstallmentScreen(amount: a as int?),
-          _ => const Shell(),
+          _ => kIsFinder ? const FinderShell() : const Shell(),
         };
         return MaterialPageRoute(builder: (_) => page, settings: s);
       },

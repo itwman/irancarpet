@@ -10,9 +10,12 @@ import 'cart.dart';
 import 'catalog.dart';
 import 'home.dart';
 
+/// رفتن به یک زبانه از هر جای اپ (پوستهٔ ایران کارپت یا فرش‌یاب خودش را ثبت می‌کند).
+void Function(int)? tabGo;
+
 class Shell extends StatefulWidget {
   const Shell({super.key});
-  static void goTab(BuildContext context, int i) => context.findAncestorStateOfType<_ShellState>()?.go(i);
+  static void goTab(BuildContext context, int i) => tabGo?.call(i);
   @override
   State<Shell> createState() => _ShellState();
 }
@@ -25,6 +28,12 @@ class _ShellState extends State<Shell> {
   void go(int i) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     setState(() => _i = i);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    tabGo = go;
   }
 
   @override
