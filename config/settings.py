@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "torob",
     "api",
     "installments",
+    "finder",
 ]
 
 MIDDLEWARE = [

@@ -1,5 +1,7 @@
 from django.urls import path
 
+from finder import api as finder
+
 from . import views as v
 
 urlpatterns = [
@@ -24,4 +26,9 @@ urlpatterns = [
     path("pay/<str:token>/", v.pay),
     path("installments/quote/", v.installment_quote),
     path("pricelist/", v.price_list),
+    path("finder/config/", finder.config),
+    path("finder/search/", finder.search),
+    path("finder/requests/", finder.requests),
+    path("finder/requests/<int:pk>/seen/", finder.request_seen),
+    path("finder/requests/<int:pk>/photo/", finder.request_photo),
 ]

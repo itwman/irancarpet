@@ -23,3 +23,12 @@ def installment_request(order):
             if m:
                 send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'),
                               {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{order.items_total:,} (اقساطی)"})
+
+
+def admin_text(text):
+    """پیامک متنی ساده به مدیران (نیاز به شمارهٔ خط پیامک)."""
+    from accounts.sms import send_bulk
+
+    mobiles = [m.strip() for m in (ShopSettings.load().admin_mobiles or "").split(",") if m.strip()]
+    if mobiles:
+        send_bulk(mobiles, text)

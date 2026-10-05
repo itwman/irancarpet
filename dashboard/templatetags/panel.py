@@ -10,7 +10,7 @@ EXTRA_NAV = {
     "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
 }
 GROUP_ICONS = {"فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
-               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings"}
+               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search"}
 
 
 @register.simple_tag(takes_context=True)

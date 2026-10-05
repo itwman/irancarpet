@@ -527,7 +527,7 @@ def order_create(request):
     if errors:
         first = next(iter(errors.values()))
         return fail(first if len(errors) == 1 else "لطفاً خطاها را برطرف کنید.", errors=errors)
-    order = create_order(request.api_user, form, summary, shop, source="app", installment=inst)
+    order = create_order(request.api_user, form, summary, shop, source=app_source(request), installment=inst)
     if not pay_now:
         from shop import notify
 
@@ -540,7 +540,7 @@ def order_create(request):
 
 
 def _pay_url(request, order, gateway):
-    token = signing.dumps({"o": order.number, "g": gateway}, salt=PAY_SALT)
+    token = signing.dumps({"o": order.number, "g": gateway, "a": app_source(request)}, salt=PAY_SALT)
     return request.build_absolute_uri(f"/api/app/v1/pay/{token}/")
 
 
@@ -578,17 +578,30 @@ def pay(request, token):
     gw = next((g for g in gateways.enabled(ShopSettings.load()) if g.key == d["g"]), None)
     if not o or not gw:
         raise Http404
+    source = d.get("a") or "app"
     if not o.can_pay:
-        return render(request, "api/return.html", {"order": o, "paid": o.is_paid, "message": "", "meta": {"robots": "noindex"}})
-    return start_payment(request, o, gw, source="app")
+        scheme, package, app_name = APPS["finder" if source == "app-finder" else ""]
+        return render(request, "api/return.html", {"order": o, "paid": o.is_paid, "message": "", "meta": {"robots": "noindex"},
+                                                   "scheme": scheme, "package": package, "app_name": app_name})
+    return start_payment(request, o, gw, source=source)
+
+
+def app_source(request):
+    """کدام اپ: ایران کارپت یا فرش‌یاب (سرآیند X-App یا ?app=finder در پیوند پرداخت)."""
+    return "app-finder" if "finder" in (request.headers.get("X-App") or request.GET.get("app") or "") else "app"
+
+
+APPS = {"finder": ("farshyab", "net.irancarpet.finder", "فرش‌یاب"), "": ("irancarpet", "net.irancarpet.app", "ایران کارپت")}
 
 
 def app_return(request, number):
-    """بعد از بانک: برگشت به اپ با پیوند irancarpet://"""
+    """بعد از بانک: برگشت به اپ با پیوند irancarpet:// یا farshyab://"""
     o = Order.objects.filter(number=number).first()
     if not o:
         raise Http404
+    scheme, package, app_name = APPS.get(request.GET.get("app", ""), APPS[""])
     return render(request, "api/return.html", {
+        "scheme": scheme, "package": package, "app_name": app_name,
         "order": o, "paid": request.GET.get("paid") == "1" and o.is_paid, "message": request.GET.get("msg", "")[:200],
         "meta": {"robots": "noindex", "title": "بازگشت به اپ"},
     })

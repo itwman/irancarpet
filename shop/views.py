@@ -211,6 +211,14 @@ def create_order(user, form, summary, shop, source="web", installment=None):
     return order
 
 
+def app_return_url(order, source, paid, msg=""):
+    """بازگشت از بانک به همان اپی که سفارش را ثبت کرده (ایران کارپت یا فرش‌یاب)."""
+    url = f"/app/return/{order.number}/?paid={int(paid)}"
+    if source == "app-finder":
+        url += "&app=finder"
+    return url + (f"&msg={msg[:120]}" if msg else "")
+
+
 def start_payment(request, order, gw, source="web"):
     payment = Payment.objects.create(order=order, gateway=gw.key, amount=order.online_amount)
     callback = request.build_absolute_uri(f"/pay/{gw.key}/callback/")
@@ -221,8 +229,8 @@ def start_payment(request, order, gw, source="web"):
         payment.raw = {**(payment.raw or {}), "source": source}
         payment.save()
         log.warning("payment start failed %s: %s", gw.key, e)
-        if source == "app":
-            return redirect(f"/app/return/{order.number}/?paid=0")
+        if source.startswith("app"):
+            return redirect(app_return_url(order, source, False))
         messages.error(request, f"اتصال به درگاه ممکن نشد: {e}. می‌توانید دوباره یا با درگاه دیگری پرداخت کنید.")
         return redirect(order.get_absolute_url())
     payment.raw = {**(payment.raw or {}), "source": source}
@@ -257,9 +265,10 @@ def callback(request, gateway):
         return render(request, "shop/result.html", {"meta": {**META, "title": "نتیجهٔ پرداخت"}, "ok": False,
                                                    "message": "تراکنش پیدا نشد. اگر مبلغی کم شده، تا ۷۲ ساعت به حسابتان برمی‌گردد."})
     order = payment.order
-    app = (payment.raw or {}).get("source") == "app"
+    source = (payment.raw or {}).get("source") or "web"
+    app = source.startswith("app")
     if payment.status != Payment.Status.INIT:
-        return redirect(f"/app/return/{order.number}/?paid={int(order.is_paid)}" if app else order.get_absolute_url())
+        return redirect(app_return_url(order, source, order.is_paid) if app else order.get_absolute_url())
     with transaction.atomic():
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if payment.status != Payment.Status.INIT:
@@ -285,10 +294,10 @@ def callback(request, gateway):
         except Exception:  # noqa: BLE001
             log.exception("notify failed")
         if app:
-            return redirect(f"/app/return/{order.number}/?paid=1")
+            return redirect(app_return_url(order, source, True))
         return redirect(order.get_absolute_url() + "?paid=1")
     if app:
-        return redirect(f"/app/return/{order.number}/?paid=0&msg={res.message[:120]}")
+        return redirect(app_return_url(order, source, False, res.message or ""))
     messages.error(request, f"پرداخت انجام نشد. {res.message}")
     return redirect(order.get_absolute_url())
 

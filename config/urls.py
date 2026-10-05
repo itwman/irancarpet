@@ -10,6 +10,7 @@ from core import views as core_views
 from seo import sitemaps
 from seo import views as seo_views
 from api import views as api_views
+from finder import api as finder_api
 from installments import views as installments_views
 from pricing import views as pricing_views
 from torob import views as torob_views
@@ -29,6 +30,7 @@ urlpatterns = [
     # پنل قدیمی جنگو فقط برای مدیر کل و موارد اضطراری
     path("panel/system/", admin.site.urls),
     path("panel/installment-file/<int:pk>/<str:key>/", installments_views.private_file),
+    path("panel/finder-photo/<int:pk>/", finder_api.panel_photo),
     path("panel/", include("dashboard.urls")),
     path("installments/quote/", installments_views.quote_api),
     path("robots.txt", core_views.robots_txt),
