@@ -101,7 +101,7 @@ def home(request):
     org = {
         "@context": "https://schema.org", "@type": "OnlineStore", "name": "ایران کارپت",
         "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.png",
-        "sameAs": [url for key, _, url in site.socials if key != "whatsapp"],
+        "sameAs": [url for _, _, url in site.follows],
     }
     phones = ["+98" + p[1:] if p.startswith("0") else p for p in (re.sub(r"\D", "", x or "") for x in (site.phone, site.mobile)) if p]
     if phones:

@@ -11,8 +11,10 @@
           {% if site_settings.email %}<li>ایمیل: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
           {% if site_settings.address %}<li>{{ site_settings.address }}</li>{% endif %}
         </ul>
-        {% if site_settings.socials %}<p class="small mb-2 mt-3">پاسخگوی شما در:</p>
-        <div class="socials">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener me" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
+        {% if site_settings.messengers %}<p class="small mb-2 mt-3">گفتگو با کارشناس:</p>
+        <div class="socials">{% for key, name, url in site_settings.messengers %}<a href="{{ url }}" target="_blank" rel="noopener" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
+        {% if site_settings.follows %}<p class="small mb-2 mt-3">ما را دنبال کنید:</p>
+        <div class="socials">{% for key, name, url in site_settings.follows %}<a href="{{ url }}" target="_blank" rel="noopener me" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
       </div>
       <div class="col-6 col-lg-2">
         <h2>فروشگاه</h2>

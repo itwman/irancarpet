@@ -70,6 +70,8 @@ class SiteSettings(models.Model):
     mobile = models.CharField("موبایل پاسخگو", max_length=20, blank=True, help_text="برای تماس و پیامک؛ مثل 09121234567")
     telegram = models.URLField("تلگرام", blank=True, help_text="نشانی کامل؛ مثل https://t.me/username")
     eitaa = models.URLField("ایتا", blank=True, help_text="نشانی کامل؛ مثل https://eitaa.com/username")
+    telegram_channel = models.URLField("کانال تلگرام", blank=True)
+    eitaa_channel = models.URLField("کانال ایتا", blank=True)
     instagram = models.URLField("اینستاگرام", blank=True)
     farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
@@ -107,11 +109,17 @@ class SiteSettings(models.Model):
         return out
 
     @property
-    def socials(self):
-        """همهٔ صفحه‌ها: پیام‌رسان‌ها + اینستاگرام و فرش پلاس"""
-        out = list(self.messengers)
-        if self.instagram:
-            out.append(("instagram", "اینستاگرام", self.instagram))
-        if self.farshplus:
-            out.append(("farshplus", "فرش پلاس", self.farshplus))
+    def follows(self):
+        """صفحه‌ها و کانال‌های فروشگاه: [(کلید، نام، نشانی)]"""
+        out = []
+        for key, name in (("telegram_channel", "کانال تلگرام"), ("eitaa_channel", "کانال ایتا"),
+                          ("instagram", "اینستاگرام"), ("farshplus", "فرش پلاس")):
+            url = getattr(self, key)
+            if url:
+                out.append((key, name, url))
         return out
+
+    @property
+    def socials(self):
+        """پیام‌رسان‌های گفتگو + صفحه‌ها و کانال‌ها"""
+        return list(self.messengers) + self.follows

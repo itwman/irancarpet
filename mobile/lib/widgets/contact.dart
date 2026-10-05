@@ -10,7 +10,9 @@ import '../state/app_state.dart';
 IconData socialIcon(String key) => switch (key) {
       'whatsapp' => Icons.chat_rounded,
       'telegram' => Icons.send_rounded,
+      'telegram_channel' => Icons.campaign_rounded,
       'eitaa' => Icons.forum_rounded,
+      'eitaa_channel' => Icons.campaign_outlined,
       'instagram' => Icons.camera_alt_outlined,
       'farshplus' => Icons.storefront_rounded,
       _ => Icons.call_rounded,
@@ -18,16 +20,20 @@ IconData socialIcon(String key) => switch (key) {
 
 Color socialColor(String key) => switch (key) {
       'whatsapp' => const Color(0xFF1F9D55),
-      'telegram' => const Color(0xFF1D8FD1),
-      'eitaa' => const Color(0xFFE08A00),
+      'telegram' || 'telegram_channel' => const Color(0xFF1D8FD1),
+      'eitaa' || 'eitaa_channel' => const Color(0xFFE08A00),
       'instagram' => const Color(0xFFC1356B),
       'farshplus' => C.pinkDark,
       _ => C.tealDark,
     };
 
-List<Json> socials(BuildContext context, {bool messengersOnly = false}) {
+const _messengers = ['whatsapp', 'telegram', 'eitaa'];
+
+List<Json> socials(BuildContext context, {bool messengersOnly = false, bool followsOnly = false}) {
   final all = ((context.read<AppConfig>().data['socials'] as List?) ?? []).cast<Json>();
-  return messengersOnly ? all.where((s) => const ['whatsapp', 'telegram', 'eitaa'].contains(s['key'])).toList() : all;
+  if (messengersOnly) return all.where((s) => _messengers.contains(s['key'])).toList();
+  if (followsOnly) return all.where((s) => !_messengers.contains(s['key'])).toList();
+  return all;
 }
 
 Future<void> openUrl(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
