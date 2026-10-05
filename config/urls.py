@@ -11,8 +11,12 @@ from seo import sitemaps
 from seo import views as seo_views
 from api import views as api_views
 from finder import api as finder_api
+from finder import views as finder_views
+from growth import views as growth_views
 from installments import views as installments_views
+from landing import views as landing_views
 from pricing import views as pricing_views
+from torob import emalls as torob_emalls
 from torob import views as torob_views
 
 P = r"(?:page/(?P<page>\d+)/)?"
@@ -21,6 +25,7 @@ urlpatterns = [
     path("", core_views.home, name="home"),
     # فید ترب (همان آدرس افزونهٔ وردپرس)
     re_path(r"^wp-json/torob/products/?$", torob_views.products),
+    re_path(r"^wp-json/emalls_ext/v1/products/?$", torob_emalls.products),
     # اپلیکیشن موبایل
     path("api/app/v1/", include("api.urls")),
     path("app-img/<int:w>/<path:path>", api_views.thumb),
@@ -34,6 +39,11 @@ urlpatterns = [
     path("panel/", include("dashboard.urls")),
     path("installments/quote/", installments_views.quote_api),
     path("robots.txt", core_views.robots_txt),
+    path("o/<str:token>/", growth_views.quickpay),
+    path("review/<str:token>/", growth_views.review_invite),
+    path("alerts/", growth_views.alert),
+    path("farsh-yab/", finder_views.page),
+    path("product/<str:slug>/review/", growth_views.product_review),
     path("llms.txt", seo_views.llms_txt),
     re_path(r"^(?P<key>[0-9a-f]{32})\.txt$", seo_views.indexnow_key),
     path("sitemap_index.xml", sitemaps.index),
@@ -50,6 +60,7 @@ urlpatterns = [
     re_path(rf"^category/(?P<path>.+?)/{P}$", blog_views.category_detail),
     re_path(rf"^tag/(?P<slug>[^/]+)/{P}$", blog_views.tag_detail),
     # صفحهٔ هر لیست قیمت (خود /carpets-price-list/ یک برگه با قالب price_list است)
+    re_path(rf"^carpets/(?P<slug>[^/]+)/{P}$", landing_views.detail),
     re_path(rf"^carpets-price-list/(?P<slug>(?!page/)[^/]+)/{P}$", pricing_views.album_detail),
 ]
 

@@ -20,6 +20,17 @@
       <p class="muted mb-3">هنوز سفارشی ثبت نکرده‌اید.</p><a href="/store/" class="btn-ic btn-ic--teal btn-ic--sm">دیدن فرش‌ها</a>
       {% endif %}
     </section>
+    {% if referral or gifts %}
+    <section class="card-ic ref-box">
+      {% if referral %}
+      <h2>دوستانتان را دعوت کنید</h2>
+      <p>دوستتان با کد شما در اولین خرید {{ shop.referral_percent|fa_num }}٪ تخفیف می‌گیرد (تا {{ shop.referral_max|toman }} تومان) و بعد از خریدش، یک کد هدیهٔ {{ shop.referral_reward|toman }} تومانی برای شما فرستاده می‌شود.</p>
+      <div class="ref-code"><code dir="ltr" id="refCode">{{ referral.code }}</code><button class="pill" type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ referral.code }}');this.textContent='کپی شد'">کپی کد</button>
+        <a class="pill" href="https://wa.me/?text={{ 'کد تخفیف ایران کارپت برای اولین خرید فرش: '|urlencode }}{{ referral.code }}%20{{ SITE_URL|urlencode }}" target="_blank" rel="noopener">فرستادن در واتساپ</a></div>
+      {% endif %}
+      {% if gifts %}<h3 class="h6 mt-3">کدهای هدیهٔ شما</h3><ul class="mb-0">{% for g in gifts %}<li><code dir="ltr">{{ g.code }}</code> — {{ g.label }}{% if g.ends_at %} (تا {{ g.ends_at|jdate }}){% endif %}</li>{% endfor %}</ul>{% endif %}
+    </section>
+    {% endif %}
     <section class="card-ic">
       <h2>اطلاعات حساب</h2>
       <form method="post">{% csrf_token %}

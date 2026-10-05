@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="fy">
+  <section class="fy-hero">
+    <div class="container">
+      <p class="fy-kicker">فرش‌یاب ایران کارپت</p>
+      <h1>چه فرشی دلت می‌خواد؟</h1>
+      <form method="get" action="/farsh-yab/" class="fy-ask">
+        <input name="q" value="{{ q }}" placeholder="مثلاً: فرش ضخیم قرمز ۶ متری زیر ۴۰ میلیون" aria-label="بنویس چه فرشی می‌خواهی">
+        <button type="submit">پیدا کن</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="container">
+    {% include "partials/breadcrumbs.html" %}
+    {% if asked %}
+      <section class="fy-res">
+        {% if chips %}<p class="muted mb-1">فهمیدم که می‌خواهی:</p><div class="chips mb-3">{% for c in chips %}<span class="chip on">{% if c.swatch %}<i class="fy-sw" style="background:{{ c.swatch }}"></i>{% endif %}{{ c.label|fa_num }}</span>{% endfor %}<a class="chip" href="/farsh-yab/">از نو</a></div>{% endif %}
+        {% if relaxed %}<div class="alert-ic">{{ relaxed }}</div>{% endif %}
+        {% if products %}
+          {% if not relaxed %}<h2 class="fy-count">{{ count|fa_num }} فرش پیدا شد{% if size_label %} <small>(قیمت برای {{ size_label|fa_num }})</small>{% endif %}</h2>{% endif %}
+          <div class="p-grid p-grid--4">{% for p in products %}<div class="fy-card">{% include "partials/product_card.html" %}{% if p.why %}<span class="fy-why">✓ {{ p.why }}</span>{% endif %}</div>{% endfor %}</div>
+          {% if page_obj.has_next %}<p class="text-center mt-3"><a class="pill" href="?{% for k, v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">فرش‌های بیشتر</a></p>{% endif %}
+        {% else %}
+          <div class="empty">فعلاً فرشی با این ویژگی‌ها نداریم. با <a href="tel:{{ site_settings.mobile }}">{{ site_settings.mobile|fa_num }}</a> تماس بگیرید تا از بین موجودی کارخانه‌ها برایتان پیدا کنیم.</div>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    <form method="get" action="/farsh-yab/" class="fy-pick">
+      <h2>{% if asked %}یا دوباره انتخاب کن{% else %}یا انتخاب کن{% endif %}</h2>
+      {% for g in cfg.groups %}
+      <fieldset class="fy-group fy-group--{{ g.key }}"><legend>{{ g.title }}</legend>
+        <div class="fy-opts">{% for n in g.needs %}<label class="fy-opt"><input type="checkbox" name="n" value="{{ n.id }}"{% if n.id in chosen %} checked{% endif %}>{% if n.swatch %}<i class="fy-sw" style="background:{{ n.swatch }}"></i>{% endif %}<span><b>{{ n.title }}</b>{% if n.subtitle %}<small>{{ n.subtitle }}</small>{% endif %}</span></label>{% endfor %}</div>
+      </fieldset>
+      {% endfor %}
+      <div class="fy-row">
+        <label>اندازه<select name="size"><option value="">همهٔ سایزها</option>{% for s in cfg.sizes %}<option value="{{ s.id }}"{% if size == s.id|stringformat:"s" %} selected{% endif %}>{{ s.label|fa_num }}</option>{% endfor %}</select></label>
+        <label>بودجه<select name="max"><option value="">بدون محدودیت</option>{% for b in cfg.budgets %}<option value="{{ b }}"{% if max == b|stringformat:"s" %} selected{% endif %}>تا {{ b|toman }} تومان</option>{% endfor %}</select></label>
+        <button class="btn-ic btn-ic--pink" type="submit">نمایش فرش‌ها</button>
+      </div>
+    </form>
+
+    <aside class="fy-app">
+      <div><strong>عکس فرشی را داری که دوستش داری؟</strong><p class="mb-0">در اپ فرش‌یاب عکسش را بفرست تا کارشناس ایران کارپت شبیه‌ترین فرش‌ها را برایت پیدا کند.</p></div>
+      <a class="btn-ic btn-ic--ink" href="/محاسبه-سایز-فرش/">انتخاب سایز برای اتاقت</a>
+    </aside>
+  </div>
+</div>
+{% endblock %}

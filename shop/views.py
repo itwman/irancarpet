@@ -36,9 +36,19 @@ def cart_view(request):
     from installments.services import teaser
 
     cart = Cart(request)
-    summary = cart.summary()
+    summary = _with_coupon(request, cart.summary())
     return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **summary, "shop": ShopSettings.load(),
                                               "inst_teaser": teaser(summary["total"]) if summary["total"] else None})
+
+
+def _with_coupon(request, summary):
+    """کد تخفیفی که مشتری در سبد زده (در نشست نگه داشته می‌شود)."""
+    from .coupons import apply
+
+    user = request.user if request.user.is_authenticated else None
+    out = apply(summary, request.session.get("coupon", ""), user)
+    out["coupon_code"] = request.session.get("coupon", "")
+    return out
 
 
 @require_POST
@@ -77,7 +87,23 @@ def cart_update(request):
                 cart.set(line.variation, int(latin_digits(val)))
             except ValueError:
                 pass
-    if request.POST.get("go") == "checkout":
+    go = request.POST.get("go")
+    if go == "coupon":
+        from .coupons import check
+
+        code = (request.POST.get("coupon") or "").strip().upper()
+        user = request.user if request.user.is_authenticated else None
+        c, d, err = check(code, user, cart.summary()["total"])
+        if err:
+            messages.error(request, err)
+        else:
+            request.session["coupon"] = code
+            messages.success(request, f"کد {code} اعمال شد: {d:,} تومان تخفیف.")
+        return redirect("/cart/")
+    if go == "nocoupon":
+        request.session.pop("coupon", None)
+        return redirect("/cart/")
+    if go == "checkout":
         return redirect("/checkout/")
     messages.success(request, "سبد به‌روز شد.")
     return redirect("/cart/")
@@ -113,7 +139,7 @@ def _initial(user):
 @login_required(login_url=LOGIN)
 def checkout(request):
     cart = Cart(request)
-    summary = cart.summary()
+    summary = _with_coupon(request, cart.summary())
     shop = ShopSettings.load()
     if not summary["lines"]:
         return redirect("/cart/")
@@ -155,8 +181,11 @@ def checkout(request):
             errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
         if summary["has_problem"]:
             errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
+        if summary["coupon_error"]:
+            errors["coupon"] = summary["coupon_error"] + " کد را از سبد حذف کنید یا کد دیگری بزنید."
         if not errors:
             order = create_order(request.user, form, summary, shop, installment=inst)
+            request.session.pop("coupon", None)
             if not pay_now:
                 Cart(request).clear()
                 try:
@@ -187,6 +216,7 @@ def create_order(user, form, summary, shop, source="web", installment=None):
         mobile=normalize_mobile(form["mobile"]), email=form["email"][:254], province=form["province"][:60],
         city=form["city"][:80], address=form["address"], postal_code=form["postal_code"][:10], note=form["note"],
         payment_mode=mode, shipping_mode=shop.shipping_for(mode, total), items_total=total,
+        coupon_code=summary["coupon"].code if summary.get("coupon") else "", discount=summary.get("discount") or 0,
         deposit_percent=shop.deposit_percent if mode == "deposit" else 0,
         online_amount=shop.deposit_amount(total) if mode == "deposit" else total,
     )
@@ -211,6 +241,15 @@ def create_order(user, form, summary, shop, source="web", installment=None):
     return order
 
 
+def web_return_url(order, source, paid):
+    """پرداخت از پیوند پیامک (بدون ورود): برگشت به همان صفحهٔ پرداخت سریع."""
+    if source == "quickpay":
+        from growth.jobs import quickpay_url
+
+        return quickpay_url(order).replace(settings.SITE_URL, "") + f"?paid={int(paid)}"
+    return order.get_absolute_url() + ("?paid=1" if paid else "")
+
+
 def app_return_url(order, source, paid, msg=""):
     """بازگشت از بانک به همان اپی که سفارش را ثبت کرده (ایران کارپت یا فرش‌یاب)."""
     url = f"/app/return/{order.number}/?paid={int(paid)}"
@@ -232,7 +271,7 @@ def start_payment(request, order, gw, source="web"):
         if source.startswith("app"):
             return redirect(app_return_url(order, source, False))
         messages.error(request, f"اتصال به درگاه ممکن نشد: {e}. می‌توانید دوباره یا با درگاه دیگری پرداخت کنید.")
-        return redirect(order.get_absolute_url())
+        return redirect(web_return_url(order, source, False))
     payment.raw = {**(payment.raw or {}), "source": source}
     payment.save()
     if "redirect" in action:
@@ -268,7 +307,7 @@ def callback(request, gateway):
     source = (payment.raw or {}).get("source") or "web"
     app = source.startswith("app")
     if payment.status != Payment.Status.INIT:
-        return redirect(app_return_url(order, source, order.is_paid) if app else order.get_absolute_url())
+        return redirect(app_return_url(order, source, order.is_paid) if app else web_return_url(order, source, order.is_paid))
     with transaction.atomic():
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if payment.status != Payment.Status.INIT:
@@ -295,11 +334,11 @@ def callback(request, gateway):
             log.exception("notify failed")
         if app:
             return redirect(app_return_url(order, source, True))
-        return redirect(order.get_absolute_url() + "?paid=1")
+        return redirect(web_return_url(order, source, True))
     if app:
         return redirect(app_return_url(order, source, False, res.message or ""))
     messages.error(request, f"پرداخت انجام نشد. {res.message}")
-    return redirect(order.get_absolute_url())
+    return redirect(web_return_url(order, source, False))
 
 
 def fake_gateway(request, pk):

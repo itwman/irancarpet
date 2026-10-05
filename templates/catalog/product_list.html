@@ -32,6 +32,11 @@
       {% include "partials/pagination.html" %}
     </div>
   </div>
+  {% block below_list %}{% if landing_links %}
+  <nav class="lp-related" aria-label="بر اساس سایز و رنگ">
+    <h2>{{ heading|fa_num }} بر اساس سایز و رنگ</h2>
+    <div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+  </nav>{% endif %}{% endblock %}
   {% if intro %}<section class="prose archive-intro">{{ intro|safe }}</section>{% endif %}
 </div>
 {% endblock %}

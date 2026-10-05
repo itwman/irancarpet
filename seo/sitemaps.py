@@ -32,6 +32,9 @@ def sections():
     from pricing.pricelist import albums_qs
 
     out["price_list"] = (albums_qs().exclude(slug="").order_by("sort_order", "name"), False)
+    from landing.build import live
+
+    out["landing"] = (live().order_by("-count"), True)
     for attr in Attribute.objects.filter(is_public=True).exclude(slug__in=["brand"]):
         out[f"pa_{attr.slug}"] = (AttributeTerm.objects.filter(attribute=attr).annotate(n=Count("products")).filter(n__gt=0), False)
     return out

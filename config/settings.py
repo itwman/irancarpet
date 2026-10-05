@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "api",
     "installments",
     "finder",
+    "landing",
+    "growth",
 ]
 
 MIDDLEWARE = [

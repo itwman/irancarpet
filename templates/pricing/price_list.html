@@ -46,6 +46,12 @@
   </aside>
   {% endif %}
 
+  {% if size_links %}
+  <nav class="lp-related container--narrow" aria-label="قیمت بر اساس سایز">
+    <h2>قیمت فرش ماشینی بر اساس سایز و رنگ</h2>
+    <div class="chips">{% for x in size_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+  </nav>
+  {% endif %}
   {% if after %}<section class="prose container--narrow pl-after">{{ after|safe }}</section>{% endif %}
 
   {% if faq %}

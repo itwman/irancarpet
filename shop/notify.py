@@ -6,6 +6,10 @@ from .models import ShopSettings
 
 
 def order_paid(order, amount):
+    if order.coupon_code:
+        from .coupons import reward_referrer
+
+        reward_referrer(order)
     if config.get('SMSIR_ORDER_TEMPLATE_ID'):
         send_template(order.mobile, config.get('SMSIR_ORDER_TEMPLATE_ID'), {"ORDER": order.number, "AMOUNT": f"{amount:,}"})
     if config.get('SMSIR_ADMIN_TEMPLATE_ID'):

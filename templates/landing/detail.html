@@ -1,0 +1,39 @@
+{% extends "catalog/product_list.html" %}{% load fa %}
+{% block above_list %}
+<section class="lp-head">
+  <div class="lp-lead prose">{{ lead|safe }}</div>
+  {% if lp.size_id and lp.min_price %}
+  <div class="lp-stat">
+    <span>قیمت {{ lp.title }}</span>
+    <strong>{% if lp.min_price == lp.max_price %}{{ lp.min_price|toman }}{% else %}{{ lp.min_price|toman }} تا {{ lp.max_price|toman }}{% endif %} <small>تومان</small></strong>
+    <em>به‌روز {{ month }}</em>
+  </div>
+  {% endif %}
+  {% if size_rows %}
+  <div class="lp-sizes" role="table" aria-label="قیمت {{ lp.title }} بر اساس سایز">
+    {% for r in size_rows %}
+    {% if r.url %}<a class="lp-size" href="{{ r.url }}">{% else %}<div class="lp-size">{% endif %}
+      <span>{{ r.label|fa_num }}</span>
+      <strong>{% if r.lo == r.hi %}{{ r.lo|toman }}{% else %}{{ r.lo|toman }}–{{ r.hi|toman }}{% endif %}</strong>
+      <small>{{ r.n|fa_num }} طرح</small>
+    {% if r.url %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block below_list %}
+{% if faqs %}
+<section class="lp-faq">
+  <h2>پرسش‌های پرتکرار دربارهٔ {{ lp.title }}</h2>
+  {% for f in faqs %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
+</section>
+{% endif %}
+{% if lp.content %}<section class="prose archive-intro">{{ lp.content|safe }}</section>{% endif %}
+{% if related %}
+<nav class="lp-related" aria-label="جستجوهای مرتبط">
+  <h2>جستجوهای مرتبط</h2>
+  <div class="chips">{% for x in related %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+</nav>
+{% endif %}
+{% endblock %}

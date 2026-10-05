@@ -28,8 +28,19 @@
     </section>
     <aside class="card-ic sum">
       <h2>خلاصهٔ سفارش</h2>
+      {% if discount %}
+      <div class="sum-row"><span>جمع کالاها</span><span>{{ subtotal|toman }} تومان</span></div>
+      <div class="sum-row sum-discount"><span>تخفیف ({{ coupon.code }})</span><strong>−{{ discount|toman }} تومان</strong></div>
+      <div class="sum-row"><span>قابل پرداخت</span><strong>{{ total|toman }} تومان</strong></div>
+      {% else %}
       <div class="sum-row"><span>جمع کالاها</span><strong>{{ total|toman }} تومان</strong></div>
+      {% endif %}
       <div class="sum-row"><span>ارسال</span><span>در مرحلهٔ بعد</span></div>
+      <div class="coupon-box">
+        {% if coupon %}<span class="coupon-on">کد <b>{{ coupon.code }}</b> اعمال شد</span><button class="link-btn" type="submit" name="go" value="nocoupon">حذف</button>
+        {% else %}{% if coupon_error %}<p class="small text-danger mb-1">{{ coupon_error }}</p>{% endif %}
+        <input name="coupon" placeholder="کد تخفیف" autocomplete="off" dir="ltr" class="ltr-num" value="{{ coupon_code }}"><button class="pill" type="submit" name="go" value="coupon">اعمال</button>{% endif %}
+      </div>
       <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.</p>
       {% if has_problem %}<div class="alert-ic mt-3 mb-0">کالاهای ناموجود را حذف کنید تا بتوانید ادامه دهید.</div>{% endif %}
       <button class="btn-ic btn-ic--pink" type="submit" name="go" value="checkout"{% if has_problem %} disabled{% endif %}>ادامهٔ خرید</button>

@@ -20,7 +20,7 @@ MAIN = ["title", "slug", "english_name", "short_description", "content"]
 SIDE_PUBLISH = ["status", "published_at", "menu_order"]
 SIDE_PRICE = ["album", "custom_base_price", "sale_status"]
 SIDE_TAX = ["primary_category", "categories", "brand", "tags", "specs"]
-SIDE_IMAGE = ["image"]
+SIDE_IMAGE = ["image", "video_url"]
 SEO = ["seo_title", "seo_description", "focus_keyword", "robots", "canonical_url"]
 VAR_FIELDS = ["size", "attributes", "sku", "is_available", "override_price", "manual_price", "sale_price", "pair_only", "menu_order"]
 

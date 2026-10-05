@@ -21,6 +21,7 @@
       {% for it in order.items.all %}
       <div class="sum-row"><span>{% if it.product %}<a href="{{ it.product.get_absolute_url }}">{{ it.title|fa_num }}</a>{% else %}{{ it.title|fa_num }}{% endif %} <small class="muted">· {{ it.size_label|fa_num }} · {{ it.quantity|fa_num }} عدد</small></span><span class="text-nowrap">{{ it.line_total|toman }}</span></div>
       {% endfor %}
+      {% if order.discount %}<div class="sum-row sum-discount"><span>تخفیف ({{ order.coupon_code }})</span><strong>−{{ order.discount|toman }}</strong></div>{% endif %}
       <div class="sum-row big"><span>جمع کل</span><strong>{{ order.items_total|toman }} تومان</strong></div>
       {% if order.is_installment %}{% with q=order.installment plan=order.installment_plan %}
       <div class="inst-order inst-order--{{ order.installment_state|default:'review' }}">

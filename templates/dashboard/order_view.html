@@ -44,7 +44,8 @@
       <div class="table-wrap"><table class="tbl">
         <thead><tr><th>کالا</th><th>سایز</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead>
         <tbody>{% for it in items %}<tr><td>{% if it.product %}<a href="/panel/products/{{ it.product_id }}/edit/">{{ it.title|fa_num }}</a>{% else %}{{ it.title|fa_num }}{% endif %}</td><td>{{ it.size_label|fa_num }}</td><td>{{ it.quantity|fa_num }}</td><td class="num">{{ it.unit_price|toman }}</td><td class="num">{{ it.line_total|toman }}</td></tr>{% endfor %}</tbody>
-        <tfoot><tr><th colspan="4">جمع کالاها</th><th class="num">{{ order.items_total|toman }} تومان</th></tr></tfoot>
+        <tfoot>{% if order.discount %}<tr><th colspan="4">تخفیف (کد {{ order.coupon_code }})</th><th class="num">−{{ order.discount|toman }} تومان</th></tr>{% endif %}
+          <tr><th colspan="4">{% if order.discount %}جمع پس از تخفیف{% else %}جمع کالاها{% endif %}</th><th class="num">{{ order.items_total|toman }} تومان</th></tr></tfoot>
       </table></div>
       <div class="kv-row">
         <div class="kv"><span>روش پرداخت</span><strong>{{ order.get_payment_mode_display }}</strong></div>

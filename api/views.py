@@ -280,6 +280,10 @@ def products(request):
     qs = card_queryset(filtered_products(request.GET))
     page = max(1, _int(request.GET.get("page"), 1))
     p = Paginator(qs, PER_PAGE)
+    if request.GET.get("q") and page == 1:
+        from growth.search_log import log as log_search
+
+        log_search(request.GET["q"], "app", p.count)
     try:
         items = p.page(page).object_list if p.count else []
     except EmptyPage:
@@ -324,7 +328,7 @@ def product(request, pk):
     specs = {}
     for t in p.specs.select_related("attribute").order_by("attribute__order", "order"):
         specs.setdefault(t.attribute.label, []).append(t.name)
-    reviews = Review.objects.filter(product=p, parent=None, is_approved=True).order_by("-created_at")[:20]
+    reviews = Review.objects.filter(product=p, parent=None, is_approved=True).prefetch_related("photos").order_by("-created_at")[:20]
     faqs = p.faqs.filter(is_active=True).order_by("order")
     related = []
     if p.primary_category_id or p.categories.exists():
@@ -471,6 +475,10 @@ def _summary_json(summary, shop, mode="full"):
                    "image": S.thumb_url(x.product.image, 240), "unit_price": x.unit_price, "qty": x.qty, "total": x.total,
                    "pair_only": x.variation.is_pair_only, "problem": x.problem} for x in summary["lines"]],
         "total": total, "has_problem": summary["has_problem"],
+        "subtotal": summary.get("subtotal", total), "discount": summary.get("discount", 0),
+        "coupon": ({"code": summary["coupon"].code, "label": summary["coupon"].title or summary["coupon"].label}
+                   if summary.get("coupon") else None),
+        "coupon_error": summary.get("coupon_error", ""),
         "deposit": shop.deposit_amount(total), "remaining_after_deposit": total - shop.deposit_amount(total),
         "free_shipping": total >= shop.free_shipping_min, "free_shipping_min": shop.free_shipping_min,
         "shipping": {m: shop.shipping_for(m, total) for m in ("full", "deposit")},
@@ -479,18 +487,26 @@ def _summary_json(summary, shop, mode="full"):
 
 @endpoint(methods=("POST",))
 def cart_quote(request):
-    return ok(_summary_json(_summary(payload(request).get("items")), ShopSettings.load()))
+    from shop.coupons import apply
+
+    d = payload(request)
+    summary = apply(_summary(d.get("items")), d.get("coupon") or "", request.api_user, app_source(request))
+    return ok(_summary_json(summary, ShopSettings.load()))
 
 
 @endpoint(methods=("POST",), login=True)
 def order_create(request):
     from shop.views import create_order
 
+    from shop.coupons import apply
+
     d = payload(request)
     shop = ShopSettings.load()
-    summary = _summary(d.get("items"))
+    summary = apply(_summary(d.get("items")), d.get("coupon") or "", request.api_user, app_source(request))
     if not summary["lines"]:
         return fail("سبد خرید خالی است.")
+    if summary["coupon_error"]:
+        return fail(summary["coupon_error"], errors={"coupon": summary["coupon_error"]})
     form = {k: str(d.get(k) or "").strip() for k in
             ("first_name", "last_name", "mobile", "email", "province", "city", "address", "postal_code", "note", "payment_mode", "gateway")}
     form["mobile"] = normalize_mobile(form["mobile"]) or form["mobile"]
@@ -679,3 +695,58 @@ def thumb(request, w, path):
     resp = FileResponse(open(out, "rb"), content_type="image/webp")
     resp["Cache-Control"] = "public, max-age=2592000, immutable"
     return resp
+
+
+# ------------------------------------------------------------------ رشد فروش: خبرم کن، کد معرفی، نظر با عکس
+@endpoint(methods=("POST",))
+def alert(request):
+    from growth.views import create_alert
+
+    d = payload(request)
+    p = Product.objects.published().filter(pk=_int(d.get("product"))).first()
+    if not p:
+        return fail("این فرش پیدا نشد.", 404)
+    mobile = d.get("mobile") or ""
+    if not mobile and request.api_user:
+        from accounts.views import profile_of
+
+        mobile = profile_of(request.api_user).mobile or request.api_user.username
+    kind = d.get("kind") or ("price" if p.is_purchasable else "stock")
+    ok_, msg = create_alert(p, kind, mobile, request.api_user, "app", request.META.get("REMOTE_ADDR", ""))
+    return ok({"message": msg}) if ok_ else fail(msg)
+
+
+@endpoint(login=True)
+def referral(request):
+    from shop.coupons import referral_code
+    from shop.models import Coupon
+
+    s = ShopSettings.load()
+    gifts = [{"code": c.code, "label": c.label, "ends_at": c.ends_at.date().isoformat() if c.ends_at else None}
+             for c in Coupon.objects.filter(for_user=request.api_user, is_active=True).order_by("-created_at")[:5]]
+    if not s.referral_enabled:
+        return ok({"enabled": False, "gifts": gifts})
+    c = referral_code(request.api_user)
+    return ok({
+        "enabled": True, "code": c.code, "percent": s.referral_percent, "max": s.referral_max, "reward": s.referral_reward,
+        "min_order": s.referral_min_order, "gifts": gifts,
+        "share": f"با کد {c.code} در اولین خرید فرش از ایران کارپت {s.referral_percent}٪ تخفیف بگیر: {settings.SITE_URL}",
+    })
+
+
+@endpoint(methods=("POST",), login=True)
+def product_review(request, pk):
+    from catalog import reviews as R
+    from accounts.views import profile_of
+
+    p = Product.objects.published().filter(pk=pk).first()
+    if not p:
+        return fail("این فرش پیدا نشد.", 404)
+    d = payload(request)
+    rating, text = _int(d.get("rating")), str(d.get("text") or "").strip()
+    if not rating and len(text) < 5:
+        return fail("امتیاز بدهید یا چند کلمه بنویسید.")
+    u = request.api_user
+    R.create(p, user=u, name=u.get_full_name() or "مشتری ایران کارپت", mobile=profile_of(u).mobile or "", rating=rating,
+             text=text or "—", photos=request.FILES.getlist("photos"))
+    return ok({"message": "ممنون! نظر شما بعد از بررسی نمایش داده می‌شود."}, status=201)

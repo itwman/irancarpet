@@ -98,7 +98,11 @@ def price_list(request, page):
     if faq:
         graph.append({"@type": "FAQPage", "mainEntity": [
             {"@type": "Question", "name": f["q"], "acceptedAnswer": {"@type": "Answer", "text": f["a"]}} for f in faq]})
+    from landing.build import live
+
+    size_links = list(live().filter(reeds=None, style=None).order_by("color_id", "-count")[:30])
     return render(request, "pricing/price_list.html", {
+        "size_links": size_links,
         "meta": meta, "page": page, "data": data, "before": before, "after": after, "faq": faq, "teaser": teaser,
         "crumbs": [(page.title, page.get_absolute_url())], "month": vars_["currentdate"],
         "jsonld": json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False),

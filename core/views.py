@@ -108,9 +108,10 @@ def home(request):
     if phones:
         org["contactPoint"] = [{"@type": "ContactPoint", "telephone": p, "contactType": "sales", "areaServed": "IR",
                                 "availableLanguage": "Persian"} for p in phones]
+    store = site.local_business()
     return render(request, "home.html", {
         "meta": seo.build(kind="home"), "page": page, "posts": posts, "categories": cats,
-        "room": room, "jsonld": json.dumps(org, ensure_ascii=False), **data,
+        "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
     })
 
 
@@ -159,6 +160,10 @@ def resolve(request, path):
             from installments.views import info_page
 
             return info_page(request, page)
+        if page.template == "size_tool" and page_num == 1:
+            from landing.views import size_tool
+
+            return size_tool(request, page)
         if page.template == "license" and page_num == 1:
             return license_page(request, page)
         if page_num == 1:

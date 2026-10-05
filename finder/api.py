@@ -89,6 +89,10 @@ def search(request):
         items = list(p.page(page).object_list) if p.count else []
     except EmptyPage:
         items = []
+    if g.get("q") and page == 1:
+        from growth.search_log import log as log_search
+
+        log_search(g["q"], "finder", 0 if relaxed else p.count)
     ids = [x.pk for x in items]
     prices = engine.size_prices(ids, wish.sizes)
     whys = engine.why(ids, wish.needs) if wish.needs else {}

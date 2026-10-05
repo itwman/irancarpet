@@ -32,6 +32,13 @@ class ShopSettings(models.Model):
     zarinpal_merchant_id = models.CharField("مرچنت‌کد زرین‌پال", max_length=64, blank=True)
     zarinpal_sandbox = models.BooleanField("زرین‌پال در حالت آزمایشی (sandbox)", default=False)
     # پیامک sms.ir
+    referral_enabled = models.BooleanField("کد معرفی دوستان فعال باشد", default=False,
+                                           help_text="هر مشتری یک کد اختصاصی می‌گیرد؛ دوستش با آن تخفیف می‌گیرد و خودش بعد از خرید دوست، کد هدیه.")
+    referral_percent = models.PositiveSmallIntegerField("تخفیف دوستِ معرفی‌شده (درصد)", default=3)
+    referral_max = models.PositiveBigIntegerField("سقف تخفیف دوست (تومان)", default=2_000_000)
+    referral_min_order = models.PositiveBigIntegerField("حداقل خرید برای کد معرفی (تومان)", default=10_000_000)
+    referral_reward = models.PositiveBigIntegerField("هدیهٔ معرف (تومان)", default=1_000_000,
+                                                     help_text="بعد از خرید دوست، یک کد تخفیف با این مبلغ برای معرف ساخته و پیامک می‌شود")
     smsir_api_key = models.CharField("کلید API پنل sms.ir", max_length=200, blank=True)
     smsir_otp_template_id = models.CharField("شمارهٔ قالب کد ورود", max_length=20, blank=True, help_text="قالب با متغیر CODE")
     smsir_order_template_id = models.CharField(
@@ -111,6 +118,11 @@ class Order(models.Model):
     wp_status = models.CharField("وضعیت در وردپرس", max_length=40, blank=True, editable=False)
     wp_payment = models.CharField("روش پرداخت در وردپرس", max_length=200, blank=True, editable=False)
     tracking_code = models.CharField("کد رهگیری ارسال", max_length=100, blank=True)
+    coupon_code = models.CharField("کد تخفیف", max_length=40, blank=True, db_index=True)
+    discount = models.PositiveBigIntegerField("تخفیف (تومان)", default=0, help_text="از جمع کالاها کم شده است")
+    reminded_count = models.PositiveSmallIntegerField("تعداد یادآوری پرداخت", default=0, editable=False)
+    reminded_at = models.DateTimeField("آخرین یادآوری پرداخت", null=True, blank=True, editable=False)
+    review_invited_at = models.DateTimeField("دعوت به ثبت نظر", null=True, blank=True, editable=False)
     created_at = models.DateTimeField("تاریخ ثبت", default=timezone.now, db_index=True)
     paid_at = models.DateTimeField("تاریخ پرداخت", null=True, blank=True)
 
@@ -238,3 +250,48 @@ class Payment(models.Model):
     def res_num(self):
         """شناسهٔ یکتای تراکنش برای بانک"""
         return f"IC{self.pk}"
+
+
+class Coupon(models.Model):
+    """کد تخفیف: عمومی (مثل «اولین خرید»)، ویژهٔ اپ، یا کد معرفی هر مشتری."""
+
+    class Kind(models.TextChoices):
+        PERCENT = "percent", "درصدی"
+        FIXED = "fixed", "مبلغ ثابت (تومان)"
+
+    code = models.CharField("کد", max_length=40, unique=True, help_text="حروف انگلیسی و عدد؛ بزرگ و کوچک فرقی ندارد")
+    title = models.CharField("عنوان", max_length=120, blank=True, help_text="مثل «تخفیف اولین خرید»")
+    kind = models.CharField("نوع", max_length=10, choices=Kind.choices, default=Kind.PERCENT)
+    value = models.PositiveBigIntegerField("مقدار", help_text="برای درصدی: درصد؛ برای ثابت: تومان")
+    max_discount = models.PositiveBigIntegerField("سقف تخفیف (تومان)", default=0, help_text="۰ یعنی بدون سقف")
+    min_order = models.PositiveBigIntegerField("حداقل مبلغ سبد (تومان)", default=0)
+    starts_at = models.DateTimeField("شروع", null=True, blank=True)
+    ends_at = models.DateTimeField("پایان", null=True, blank=True)
+    usage_limit = models.PositiveIntegerField("سقف کل استفاده", default=0, help_text="۰ یعنی بی‌سقف")
+    per_user_limit = models.PositiveIntegerField("سقف استفادهٔ هر مشتری", default=1, help_text="۰ یعنی بی‌سقف")
+    first_order_only = models.BooleanField("فقط اولین خرید", default=False)
+    app_only = models.BooleanField("فقط خرید از اپ", default=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="referral_codes",
+                              verbose_name="صاحب کد معرفی", help_text="اگر پر باشد، کد معرفی همین مشتری است و بعد از خرید دوستش هدیه می‌گیرد")
+    for_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="+",
+                                 verbose_name="فقط برای این مشتری")
+    is_active = models.BooleanField("فعال", default=True)
+    created_at = models.DateTimeField("ساخته شده", default=timezone.now)
+
+    class Meta:
+        verbose_name = "کد تخفیف"
+        verbose_name_plural = "کدهای تخفیف"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.code
+
+    def save(self, *args, **kwargs):
+        self.code = (self.code or "").strip().upper()
+        super().save(*args, **kwargs)
+
+    @property
+    def label(self):
+        if self.kind == self.Kind.PERCENT:
+            return f"{self.value}٪ تخفیف"
+        return f"{self.value:,} تومان تخفیف"

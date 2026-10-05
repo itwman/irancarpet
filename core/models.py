@@ -76,6 +76,23 @@ class SiteSettings(models.Model):
     farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
+    # فروشگاه حضوری (برای گوگل‌مپ، نشان، بلد و Schema کسب‌وکار محلی)
+    store_name = models.CharField("نام فروشگاه حضوری", max_length=150, blank=True, help_text="مثل «فروشگاه فرش ایران کارپت کاشان»")
+    store_city = models.CharField("شهر", max_length=80, blank=True, default="کاشان")
+    store_province = models.CharField("استان", max_length=80, blank=True, default="اصفهان")
+    store_postal_code = models.CharField("کد پستی فروشگاه", max_length=10, blank=True)
+    store_days = models.CharField("روزهای کاری", max_length=10, blank=True, default="sat-thu", choices=[
+        ("sat-thu", "شنبه تا پنجشنبه"), ("sat-wed", "شنبه تا چهارشنبه"), ("all", "همهٔ روزها"), ("sat-fri", "شنبه تا جمعه")])
+    store_open = models.TimeField("ساعت باز شدن", null=True, blank=True)
+    store_close = models.TimeField("ساعت بسته شدن", null=True, blank=True)
+    store_open2 = models.TimeField("نوبت عصر: باز شدن", null=True, blank=True, help_text="اگر ظهر تعطیل است")
+    store_close2 = models.TimeField("نوبت عصر: بسته شدن", null=True, blank=True)
+    store_hours_note = models.CharField("توضیح ساعت کاری", max_length=150, blank=True, help_text="مثل «جمعه‌ها با هماهنگی تلفنی»")
+    latitude = models.DecimalField("عرض جغرافیایی", max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField("طول جغرافیایی", max_digits=9, decimal_places=6, null=True, blank=True)
+    map_google = models.URLField("پیوند گوگل‌مپ", blank=True, max_length=400)
+    map_neshan = models.URLField("پیوند نشان", blank=True, max_length=400)
+    map_balad = models.URLField("پیوند بلد", blank=True, max_length=400)
     trust_points = models.JSONField(
         "امتیازهای فروشگاه", default=list, blank=True,
         help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
@@ -101,6 +118,58 @@ class SiteSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    DAY_CODES = {"sat-thu": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+                 "sat-wed": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"],
+                 "all": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                 "sat-fri": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]}
+
+    @property
+    def has_store(self):
+        return bool(self.address and (self.store_open or self.map_google or self.map_neshan or self.map_balad or self.latitude))
+
+    @property
+    def store_hours(self):
+        """«شنبه تا پنجشنبه ۹ تا ۱۳ و ۱۶ تا ۲۱»"""
+        if not self.store_open or not self.store_close:
+            return self.store_hours_note
+        from .templatetags.fa import fa_num
+
+        t = lambda x: fa_num(x.strftime("%H:%M").lstrip("0").replace(":00", ""))  # noqa: E731
+        txt = f"{self.get_store_days_display()} {t(self.store_open)} تا {t(self.store_close)}"
+        if self.store_open2 and self.store_close2:
+            txt += f" و {t(self.store_open2)} تا {t(self.store_close2)}"
+        return txt + (f"؛ {self.store_hours_note}" if self.store_hours_note else "")
+
+    def local_business(self):
+        """Schema کسب‌وکار محلی برای گوگل."""
+        import re
+
+        from django.conf import settings
+
+        if not self.has_store:
+            return None
+        phones = ["+98" + p[1:] if p.startswith("0") else p for p in (re.sub(r"\D", "", x or "") for x in (self.phone, self.mobile)) if p]
+        data = {
+            "@context": "https://schema.org", "@type": "HomeGoodsStore", "@id": settings.SITE_URL + "/#store",
+            "name": self.store_name or self.site_name, "url": settings.SITE_URL + "/",
+            "image": settings.SITE_URL + "/static/img/logo.png", "priceRange": "$$",
+            "address": {"@type": "PostalAddress", "streetAddress": self.address, "addressLocality": self.store_city,
+                        "addressRegion": self.store_province, "postalCode": self.store_postal_code or None, "addressCountry": "IR"},
+            "telephone": phones[0] if phones else None,
+            "sameAs": [u for u in (self.map_google, self.map_neshan, self.map_balad) if u] + [url for _, _, url in self.follows],
+        }
+        if self.latitude and self.longitude:
+            data["geo"] = {"@type": "GeoCoordinates", "latitude": float(self.latitude), "longitude": float(self.longitude)}
+        if self.store_open and self.store_close:
+            days = self.DAY_CODES.get(self.store_days or "sat-thu", self.DAY_CODES["sat-thu"])
+            spans = [(self.store_open, self.store_close)]
+            if self.store_open2 and self.store_close2:
+                spans.append((self.store_open2, self.store_close2))
+            data["openingHoursSpecification"] = [{"@type": "OpeningHoursSpecification", "dayOfWeek": days,
+                                                  "opens": a.strftime("%H:%M"), "closes": b.strftime("%H:%M")} for a, b in spans]
+        data["address"] = {k: v for k, v in data["address"].items() if v}
+        return {k: v for k, v in data.items() if v}
 
     @property
     def messengers(self):

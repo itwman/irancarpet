@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<section class="container py-4" style="max-width:640px">
+  {% if paid or order.is_paid %}
+    <div class="card-ic qp-done">
+      <h1 class="sec-title">پرداخت انجام شد</h1>
+      <p>سفارش {{ order.number|fa_num }} ثبت شد. همکاران ما برای هماهنگی ارسال با شما تماس می‌گیرند.</p>
+      <a class="btn-ic btn-ic--ink" href="{{ order.get_absolute_url }}">جزئیات سفارش</a>
+    </div>
+  {% elif not order.can_pay %}
+    <div class="card-ic"><h1 class="sec-title">سفارش {{ order.number|fa_num }}</h1><p>وضعیت: {{ order.status_label }}</p>
+      <a class="btn-ic btn-ic--ink" href="/">بازگشت به فروشگاه</a></div>
+  {% else %}
+  <h1 class="sec-title">پرداخت سفارش {{ order.number|fa_num }}</h1>
+  <p class="muted">{{ order.full_name }} عزیز، فرش‌هایی که انتخاب کرده بودید:</p>
+  <div class="card-ic sum">
+    {% for it in order.items.all %}<div class="sum-row"><span>{{ it.title|fa_num }} <small class="muted">· {{ it.size_label|fa_num }} · {{ it.quantity|fa_num }} عدد</small></span><span class="text-nowrap">{{ it.unit_price|toman }}</span></div>{% endfor %}
+    {% if order.discount %}<div class="sum-row sum-discount"><span>تخفیف</span><strong>−{{ order.discount|toman }}</strong></div>{% endif %}
+    <div class="sum-row big"><span>{% if order.payment_mode == "deposit" %}بیعانه (الان){% else %}مبلغ پرداخت{% endif %}</span><strong>{{ order.online_amount|toman }} تومان</strong></div>
+    {% if messages %}{% for m in messages %}<div class="alert-ic">{{ m }}</div>{% endfor %}{% endif %}
+    <form method="post">{% csrf_token %}
+      <div class="choice" role="radiogroup" aria-label="درگاه پرداخت">
+        {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong></span></label>{% endfor %}
+      </div>
+      <button class="btn-ic btn-ic--pink mt-3" type="submit">پرداخت آنلاین</button>
+    </form>
+    <p class="small muted mt-3 mb-0">سؤالی دارید؟ با {{ site_settings.mobile|default:site_settings.phone|fa_num }} تماس بگیرید.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

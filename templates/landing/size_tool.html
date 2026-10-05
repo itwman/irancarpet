@@ -1,0 +1,102 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container container--narrow">
+  {% include "partials/breadcrumbs.html" %}
+  <article class="article">
+    <header><h1>{{ page.title }}</h1></header>
+    {% if before %}<div class="prose">{{ before|safe }}</div>{% endif %}
+
+    <section class="sz" aria-label="محاسبهٔ سایز فرش">
+      <form class="sz-form" id="stForm" onsubmit="return false">
+        <label>طول اتاق (متر)<input id="stL" inputmode="decimal" placeholder="مثلاً ۶" autocomplete="off"></label>
+        <label>عرض اتاق (متر)<input id="stW" inputmode="decimal" placeholder="مثلاً ۴" autocomplete="off"></label>
+        <label>فاصله از دیوار
+          <select id="stM"><option value="0.3">کم (۳۰ سانت)</option><option value="0.45" selected>معمول (۴۵ سانت)</option><option value="0.6">زیاد (۶۰ سانت)</option></select>
+        </label>
+      </form>
+      <div class="sz-room" id="stRoom" hidden aria-hidden="true"><div class="sz-floor" id="stFloor"></div></div>
+      <div id="stOut" class="sz-out" aria-live="polite"><p class="muted">ابعاد اتاق را بنویسید تا سایزهای مناسب را ببینید.</p></div>
+    </section>
+
+    {% if after %}<div class="prose">{{ after|safe }}</div>{% endif %}
+
+    <section class="lp-faq">
+      <h2>پرسش‌های پرتکرار</h2>
+      {% for f in faqs %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
+    </section>
+  </article>
+</div>
+{{ sizes|json_script:"stSizes" }}
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  "use strict";
+  var sizes = JSON.parse(document.getElementById("stSizes").textContent);
+  var L = document.getElementById("stL"), W = document.getElementById("stW"), M = document.getElementById("stM");
+  var out = document.getElementById("stOut"), room = document.getElementById("stRoom"), floor = document.getElementById("stFloor");
+  var FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(x) { return String(x).replace(/\d/g, function (d) { return FA[d]; }); }
+  function num(v) { return parseFloat(String(v).replace(/[۰-۹]/g, function (d) { return FA.indexOf(d); }).replace(/[٫,\/]/g, ".")) || 0; }
+  function money(n) { return fa(Math.round(n).toLocaleString("en-US")); }
+  function m(x) { return fa((Math.round(x * 100) / 100).toString()); }
+
+  function options(l, w, gap) {
+    var maxL = l - 2 * gap, maxW = w - 2 * gap, area = maxL * maxW, out = [];
+    sizes.forEach(function (s) {
+      if (s.type !== "rect") return;
+      var a = Math.max(s.l, s.w), b = Math.min(s.l, s.w);
+      [1, 2].forEach(function (n) {
+        // دو تخته کنار هم از سمت عرض فرش: ابعاد (۲b × a) یا در طول (۲a × b)
+        var cands = n === 1 ? [[a, b]] : [[2 * b, a], [2 * a, b]];
+        cands.forEach(function (d) {
+          var dl = Math.max(d[0], d[1]), dw = Math.min(d[0], d[1]);
+          if (dl <= maxL + 0.01 && dw <= maxW + 0.01) {
+            out.push({ s: s, n: n, dl: dl, dw: dw, row: d[0] >= d[1], cover: (dl * dw) / (l * w), fit: (dl * dw) / area });
+          }
+        });
+      });
+    });
+    out.sort(function (x, y) { return y.fit - x.fit || x.n - y.n; });
+    var seen = {}, best = [];
+    out.forEach(function (o) { var k = o.s.id + ":" + o.n; if (!seen[k] && best.length < 4) { seen[k] = 1; best.push(o); } });
+    return best;
+  }
+
+  function draw(l, w, o) {
+    room.hidden = false;
+    room.style.aspectRatio = l + " / " + w;
+    floor.innerHTML = "";
+    if (!o) return;
+    var n = o.n, el = document.createElement("div");
+    el.className = "sz-rugs";
+    el.style.width = (o.dl / l * 100) + "%";
+    el.style.height = (o.dw / w * 100) + "%";
+    for (var i = 0; i < n; i++) { var r = document.createElement("i"); el.appendChild(r); }
+    el.style.flexDirection = o.row ? "row" : "column";
+    floor.appendChild(el);
+  }
+
+  function run() {
+    var l = num(L.value), w = num(W.value), gap = +M.value;
+    if (l && w && w > l) { var t = l; l = w; w = t; }
+    if (!(l >= 1 && w >= 0.8)) { room.hidden = true; out.innerHTML = '<p class="muted">ابعاد اتاق را بنویسید تا سایزهای مناسب را ببینید.</p>'; return; }
+    var best = options(l, w, gap);
+    draw(l, w, best[0]);
+    if (!best.length) {
+      out.innerHTML = '<p>برای اتاق ' + m(l) + ' در ' + m(w) + ' متر، فرش کناره یا قالیچه مناسب‌تر است. <a href="/carpets-price-list/">لیست قیمت</a> را ببینید.</p>';
+      return;
+    }
+    out.innerHTML = '<h2 class="sz-h">پیشنهاد برای اتاق ' + m(l) + ' × ' + m(w) + ' متر</h2>' + best.map(function (o, i) {
+      var name = (o.n === 2 ? "جفت " : "یک تخته ") + o.s.label;
+      var price = o.s.lo ? ("هر فرش از " + money(o.s.lo) + " تومان" + (o.n === 2 ? "؛ جفت از " + money(o.s.lo * 2) + " تومان" : "")) : "";
+      return '<div class="sz-opt' + (i === 0 ? " is-best" : "") + '">' +
+        (i === 0 ? '<span class="sz-badge">بهترین اندازه</span>' : "") +
+        "<strong>" + fa(name) + "</strong>" +
+        "<span>سطح فرش: " + m(o.dl) + " × " + m(o.dw) + " متر · " + fa(Math.round(o.cover * 100)) + "٪ کف اتاق</span>" +
+        (price ? "<span>" + price + "</span>" : "") +
+        (o.s.url ? '<a class="pill" href="' + o.s.url + '">دیدن فرش‌های این سایز</a>' : "") + "</div>";
+    }).join("");
+  }
+  [L, W, M].forEach(function (e) { e.addEventListener("input", run); e.addEventListener("change", run); });
+})();
+</script>{% endblock %}

@@ -9,8 +9,16 @@
           {% if site_settings.phone %}<li>تلفن: <a href="tel:{{ site_settings.phone|cut:'-' }}">{{ site_settings.phone|fa_num }}</a></li>{% endif %}
           {% if site_settings.mobile %}<li>موبایل: <a href="tel:{{ site_settings.mobile }}">{{ site_settings.mobile|fa_num }}</a></li>{% endif %}
           {% if site_settings.email %}<li>ایمیل: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
-          {% if site_settings.address %}<li>{{ site_settings.address }}</li>{% endif %}
+          {% if site_settings.address and not site_settings.has_store %}<li>{{ site_settings.address }}</li>{% endif %}
         </ul>
+        {% if site_settings.has_store %}
+        <div class="store-box small">
+          <strong>فروشگاه حضوری{% if site_settings.store_city %} {{ site_settings.store_city }}{% endif %}</strong>
+          <p class="mb-1">{{ site_settings.address|fa_num }}</p>
+          {% if site_settings.store_hours %}<p class="mb-1">ساعت کاری: {{ site_settings.store_hours }}</p>{% endif %}
+          <div class="store-maps">{% if site_settings.map_neshan %}<a href="{{ site_settings.map_neshan }}" target="_blank" rel="noopener">مسیریابی با نشان</a>{% endif %}{% if site_settings.map_balad %}<a href="{{ site_settings.map_balad }}" target="_blank" rel="noopener">بلد</a>{% endif %}{% if site_settings.map_google %}<a href="{{ site_settings.map_google }}" target="_blank" rel="noopener">گوگل‌مپ</a>{% endif %}</div>
+        </div>
+        {% endif %}
         {% if site_settings.messengers %}<p class="small mb-2 mt-3">گفتگو با کارشناس:</p>
         <div class="socials">{% for key, name, url in site_settings.messengers %}<a href="{{ url }}" target="_blank" rel="noopener" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
         {% if site_settings.follows %}<p class="small mb-2 mt-3">ما را دنبال کنید:</p>
@@ -23,10 +31,11 @@
       <div class="col-6 col-lg-2">
         <h2>با شانه</h2>
         <ul><li><a href="/reeds-per-meter/700/">فرش ۷۰۰ شانه</a></li><li><a href="/reeds-per-meter/1000/">فرش ۱۰۰۰ شانه</a></li><li><a href="/reeds-per-meter/1200/">فرش ۱۲۰۰ شانه</a></li><li><a href="/reeds-per-meter/1500/">فرش ۱۵۰۰ شانه</a></li></ul>
+        {% if footer_sizes %}<h2 class="mt-4">با سایز</h2><ul>{% for t, u in footer_sizes %}<li><a href="{{ u }}">{{ t }}</a></li>{% endfor %}</ul>{% endif %}
       </div>
       <div class="col-6 col-lg-2">
         <h2>راهنما</h2>
-        <ul><li><a href="/carpets-price-list/">لیست قیمت</a></li><li><a href="/خرید-اقساطی-فرش/">خرید اقساطی</a></li><li><a href="/blog/">مجله</a></li><li><a href="/rules/">قوانین</a></li><li><a href="/license/">مجوزها</a></li></ul>
+        <ul><li><a href="/carpets-price-list/">لیست قیمت</a></li><li><a href="/خرید-اقساطی-فرش/">خرید اقساطی</a></li><li><a href="/blog/">مجله</a></li><li><a href="/rules/">قوانین</a></li><li><a href="/license/">مجوزها</a></li><li><a href="/farsh-yab/">فرش‌یاب</a></li><li><a href="/محاسبه-سایز-فرش/">انتخاب سایز فرش</a></li></ul>
       </div>
       <div class="col-6 col-lg-2">
         <h2>مجوزها</h2>

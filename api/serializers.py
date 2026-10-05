@@ -64,6 +64,16 @@ def size_row(v):
     }
 
 
+def _video(p):
+    from catalog.video import info
+
+    v = info(p)
+    if not v:
+        return None
+    url = v.get("page") or v.get("src") or ""
+    return {"kind": v["kind"], "url": url if url.startswith("http") else settings.SITE_URL + url}
+
+
 def product_detail(p, gallery, variations, specs, reviews, faqs, related):
     return {
         **card(p),
@@ -83,7 +93,9 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "categories": [{"id": c.pk, "name": c.name} for c in p.categories.all()],
         "tags": [t.name for t in p.tags.all()],
         "reviews": [{"author": r.author_name, "rating": r.rating or 0, "text": plain(r.content, 600),
-                     "date": r.created_at.date().isoformat()} for r in reviews],
+                     "date": r.created_at.date().isoformat(), "verified": r.verified,
+                     "photos": [settings.SITE_URL + ph.url for ph in r.photos.all()]} for r in reviews],
+        "video": _video(p),
         "faqs": [{"q": f.question, "a": plain(f.answer)} for f in faqs],
         "related": [card(x) for x in related],
     }
@@ -98,6 +110,7 @@ def order_row(o, items=False):
         "grand_total": o.grand_total,
         "created_at": o.created_at.isoformat(),
         "items_total": o.items_total,
+        "discount": o.discount, "coupon_code": o.coupon_code,
         "paid_amount": o.paid_amount,
         "remaining": o.remaining,
         "online_amount": o.online_amount,

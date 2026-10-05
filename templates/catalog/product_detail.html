@@ -16,6 +16,13 @@
         {% if gallery|length > 1 %}
         <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-i="{{ forloop.counter0 }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
         {% endif %}
+        <div class="p-tools">
+          {% if product.image %}<button type="button" class="p-tool" id="roomBtn" data-img="{{ product.image.url }}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 10l9-6 9 6v10H3z M8 20v-5h8v5"/></svg>ببین در اتاق خودت</button>{% endif %}
+          {% if video %}<button type="button" class="p-tool" id="videoBtn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>ویدیوی فرش</button>{% endif %}
+        </div>
+        {% if video %}
+        <div class="p-video" id="pVideo" hidden data-kind="{{ video.kind }}" data-src="{% if video.kind == 'aparat' %}{{ video.embed }}{% elif video.kind == 'file' %}{{ video.src }}{% else %}{{ video.page }}{% endif %}" data-poster="{{ video.poster }}"></div>
+        {% endif %}
       </div>
     </div>
     <div class="col-lg-6">
@@ -77,6 +84,14 @@
       </form>
       {% endif %}
 
+      <details class="alert-box"{% if alert_kind == "stock" %} open{% endif %}>
+        <summary>{% if alert_kind == "stock" %}<b>موجود شد خبرم کن</b>{% else %}<b>ارزان شد خبرم کن</b>{% endif %}<span>با پیامک</span></summary>
+        <form method="post" action="/alerts/">{% csrf_token %}
+          <input type="hidden" name="product" value="{{ product.pk }}"><input type="hidden" name="kind" value="{{ alert_kind }}">
+          {% if not user.is_authenticated %}<input name="mobile" inputmode="tel" placeholder="شمارهٔ موبایل" required class="ltr-num">{% endif %}
+          <button class="pill" type="submit">{% if user.is_authenticated %}خبرم کن{% else %}ثبت{% endif %}</button>
+        </form>
+      </details>
       {% if product.short_description %}<div class="prose small mt-3">{{ product.short_description|safe }}</div>{% endif %}
     </div>
   </div>
@@ -92,10 +107,24 @@
 
   <section id="reviews" class="reviews">
     <h2>نظرات خریداران</h2>
+    {% if review_photos %}<div class="rv-wall"><h3>فرش در خانهٔ مشتری‌ها</h3><div class="rv-photos">{% for ph in review_photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس مشتری از {{ product.title }}" loading="lazy" width="120" height="120"></a>{% endfor %}</div></div>{% endif %}
+    <details class="rv-form">
+      <summary>نظر یا عکس فرش خودتان را بفرستید</summary>
+      {% if user.is_authenticated %}
+      <form method="post" action="/product/{{ product.slug }}/review/" enctype="multipart/form-data">{% csrf_token %}
+        <fieldset class="rv-stars"><legend>امتیاز شما</legend>{% for n in "54321" %}<input type="radio" name="rating" value="{{ n }}" id="st{{ n }}"><label for="st{{ n }}" title="{{ n }} ستاره">★</label>{% endfor %}</fieldset>
+        <textarea name="text" rows="3" placeholder="تجربه‌تان از این فرش: کیفیت، رنگ، ارسال…"></textarea>
+        <label class="rv-file">عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ثبت نظر</button>
+      </form>
+      {% else %}<p class="muted">برای ثبت نظر <a href="/my-account/login/?next={{ request.path }}%23reviews">وارد شوید</a>.</p>{% endif %}
+    </details>
     {% for r in reviews %}
       <article class="review">
         <header><strong>{{ r.author_name }}</strong>{% if r.rating %} {% stars r.rating %}{% endif %}<time datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|jdate }}</time></header>
+        {% if r.verified %}<span class="rv-verified">خریدار این فرش</span>{% endif %}
         <p>{{ r.content|linebreaksbr }}</p>
+        {% if r.photos.all %}<div class="rv-photos">{% for ph in r.photos.all %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس {{ product.title }} در خانهٔ مشتری" loading="lazy" width="96" height="96"></a>{% endfor %}</div>{% endif %}
         {% for rep in r.replies.all %}<div class="review review--reply"><header><strong>{{ rep.author_name }}</strong></header><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
       </article>
     {% empty %}
@@ -103,6 +132,11 @@
     {% endfor %}
   </section>
 
+  {% if landing_links %}
+  <nav class="lp-related" aria-label="جستجوهای مرتبط"><h2>جستجوهای مرتبط</h2>
+    <div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+  </nav>
+  {% endif %}
   {% if related %}
   <section class="section"><div class="section-head"><h2>فرش‌های مشابه</h2></div>
     <div class="p-grid">{% for p in related %}{% include "partials/product_card.html" %}{% endfor %}</div>
@@ -110,7 +144,7 @@
   {% endif %}
 </div>
 {% endblock %}
-{% block scripts %}<script>
+{% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script><script>
 (function () {
   var t = document.getElementById("instTeaser"), f = document.getElementById("buyForm");
   if (!t || !f || !t.dataset.base) return;

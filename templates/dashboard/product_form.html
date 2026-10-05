@@ -83,6 +83,7 @@
       <section class="card-p"><h2>انتشار</h2>{% for name in groups.publish %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}{% with f=form.sku %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
       <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
+      <section class="card-p"><h2>ویدیو</h2>{% with f=form.video_url %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>دسته، برند و مشخصات</h2>{% for name in groups.tax %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
       <section class="card-p" id="farshplus"><h2>فرش پلاس</h2>
         {% if fp %}

@@ -10,7 +10,7 @@ from django.utils.html import strip_tags
 from core import seo
 from pricing.models import PricingSettings
 
-from .models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review, Variation
+from .models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review, ReviewPhoto, Variation
 
 SORTS = {
     "new": ("-published_at", "جدیدترین"),
@@ -166,11 +166,14 @@ def brand_detail(request, slug, page=1):
 
 
 def attribute_term_detail(request, term, page=1):
+    from landing.build import links_for
+
     return product_listing(
         request, term.products.all(), page=page, path=term.get_absolute_url(),
         meta={"obj": term, "kind": f"pa_{term.attribute.slug}"},
         heading=f"{term.attribute.label} {term.name}", intro=term.description,
         crumbs=[(f"{term.attribute.label} {term.name}", term.get_absolute_url())], archive=term,
+        extra={"landing_links": links_for(reeds_id=term.pk, limit=30)},
     )
 
 
@@ -181,7 +184,20 @@ def search(request, page=1):
         request, qs, page=request.GET.get("p", 1), path="/search/", meta={"kind": "home"},
         heading=f"نتیجهٔ جستجو برای «{q}»" if q else "جستجو", crumbs=[("جستجو", "/search/")],
     )
+    if q and not request.GET.get("p"):
+        from growth.search_log import log as log_search
+
+        log_search(q, "web", qs.published().count())
     return resp
+
+
+def _landing_links(product):
+    try:
+        from landing.build import product_links
+
+        return product_links(product)
+    except Exception:  # noqa: BLE001  — پیوندهای کمکی نباید صفحهٔ محصول را از کار بیندازند
+        return []
 
 
 def product_detail(request, slug):
@@ -200,7 +216,7 @@ def product_detail(request, slug):
         crumbs = [(c.name, c.get_absolute_url()) for c in cat.ancestors()] + [(cat.name, cat.get_absolute_url())]
     crumbs.append((product.title, product.get_absolute_url()))
     reviews = product.reviews.filter(is_approved=True, parent=None).prefetch_related(
-        Prefetch("replies", queryset=Review.objects.filter(is_approved=True))
+        Prefetch("replies", queryset=Review.objects.filter(is_approved=True)), "photos"
     ).order_by("-created_at")[:30]
     related = card_queryset(
         Product.objects.published().filter(categories=cat).exclude(pk=product.pk).exclude(stock_status="outofstock")
@@ -209,11 +225,19 @@ def product_detail(request, slug):
     Product.objects.filter(pk=product.pk).update(views=F("views") + 1)
 
     m = seo.build(product, "product", extra={"wc_price": f"{product.min_price:,}" if product.min_price else ""})
+    from .video import info as video_info, schema as video_schema
+
+    video = video_info(product)
+    vschema = video_schema(product, video)
     ctx = {
         "meta": m, "product": product, "variations": variations, "specs": specs, "gallery": gallery,
         "crumbs": crumbs, "reviews": reviews, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
-        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs), ensure_ascii=False),
+        "landing_links": _landing_links(product),
+        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs) + ([vschema] if vschema else []),
+                             ensure_ascii=False),
+        "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
+        "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
     }
     if product.is_purchasable and product.min_price:
         from installments.services import teaser

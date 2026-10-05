@@ -7,6 +7,8 @@ class TorobSettings(models.Model):
     """تنظیمات فید ترب (معادل افزونهٔ irancarpet-torob-pricing وردپرس)."""
 
     enabled = models.BooleanField("فید ترب فعال", default=True)
+    emalls_enabled = models.BooleanField("فید ایمالز فعال", default=True,
+                                         help_text="نشانی برای پنل ایمالز: https://irancarpet.net (همان روش افزونهٔ رسمی ووکامرس ایمالز)")
     only_album = models.BooleanField("فقط محصولات دارای آلبوم قیمت", default=True,
                                      help_text="مثل سایت قبلی؛ محصولات بدون آلبوم در ترب نمی‌آیند")
     per_page = models.PositiveIntegerField("تعداد در هر صفحه", default=100, help_text="ترب حداقل ۱۰۰ می‌خواهد")

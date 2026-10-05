@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<section class="container py-4" style="max-width:720px">
+  {% if done %}
+  <div class="card-ic"><h1 class="sec-title">ممنون از نظرتان!</h1>
+    <p>نظر شما بعد از بررسی در صفحهٔ فرش نمایش داده می‌شود و به خریداران دیگر کمک می‌کند.</p>
+    <a class="btn-ic btn-ic--ink" href="/">بازگشت به ایران کارپت</a></div>
+  {% else %}
+  <h1 class="sec-title">فرش‌تان چطور است؟</h1>
+  <p class="muted">{{ order.first_name }} عزیز، برای هر فرش امتیاز بدهید و اگر دوست دارید عکس فرش در خانه‌تان را هم بفرستید.</p>
+  {% for m in messages %}<div class="alert-ic">{{ m }}</div>{% endfor %}
+  <form method="post" enctype="multipart/form-data" class="rv-invite">{% csrf_token %}
+    {% for it in items %}
+    <fieldset class="card-ic">
+      <legend>{{ it.title|fa_num }}{% if it.size_label %} <small class="muted">({{ it.size_label|fa_num }})</small>{% endif %}</legend>
+      <div class="rv-stars" role="radiogroup" aria-label="امتیاز">{% for n in "54321" %}<input type="radio" name="rating_{{ it.product_id }}" value="{{ n }}" id="s{{ it.product_id }}_{{ n }}"><label for="s{{ it.product_id }}_{{ n }}" title="{{ n }} ستاره">★</label>{% endfor %}</div>
+      <textarea name="text_{{ it.product_id }}" rows="3" placeholder="کیفیت، رنگ، ارسال و…"></textarea>
+      <label class="rv-file">عکس فرش در خانه (تا ۴ عکس، اختیاری)<input type="file" name="photos_{{ it.product_id }}" accept="image/*" multiple></label>
+    </fieldset>
+    {% endfor %}
+    <button class="btn-ic btn-ic--pink" type="submit">ثبت نظر</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

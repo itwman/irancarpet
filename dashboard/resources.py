@@ -285,9 +285,29 @@ register(Resource(
 
 
 def _review_after_save(request, obj, created, form=None):
+    from catalog.reviews import recompute
+
     reply = (request.POST.get("reply") or "").strip()
     if reply:
         Review.objects.create(product=obj.product, parent=obj, author_name="ایران کارپت", content=reply, is_approved=True, rating=0)
+    recompute(obj.product)
+
+
+def _review_set(qs, approved):
+    from catalog.reviews import recompute
+
+    n = qs.update(is_approved=approved)
+    for p in {r.product for r in qs.select_related("product")}:
+        recompute(p)
+    return n
+
+
+def _review_photos(o):
+    photos = list(o.photos.all())
+    if not photos:
+        return "—"
+    return format_html_join("", '<a href="{0}" target="_blank"><img src="{0}" alt="" style="width:110px;height:110px;object-fit:cover;'
+                                'border-radius:10px;margin:0 0 6px 6px"></a>', ((p.url,) for p in photos))
 
 
 register(Resource(
@@ -296,15 +316,19 @@ register(Resource(
              Col("content", "متن", lambda o: (o.content or "")[:90]),
              Col("product", "محصول", lambda o: fa_num(o.product.title)[:50]),
              Col("rating", "امتیاز", lambda o: "★" * (o.rating or 0), "rating"),
+             Col("photos", "عکس", lambda o: fa_num(o._ph) if o._ph else ""),
              Col("is_approved", "تأیید", yesno("is_approved"), "is_approved"),
              Col("created_at", "تاریخ", jd("created_at"), "created_at")],
     search=["author_name", "content", "product__title"], filters=["is_approved", "rating"], date_filter="created_at",
-    ordering=("-created_at",), queryset=lambda qs: qs.select_related("product"),
-    fieldsets=[("نظر", ["author_name", "author_email", "rating", "content"], "main"), ("وضعیت", ["product", "is_approved", "created_at"], "side")],
+    ordering=("-created_at",), queryset=lambda qs: qs.select_related("product").annotate(_ph=Count("photos")),
+    fieldsets=[("نظر", ["author_name", "author_email", "rating", "content"], "main"),
+               ("وضعیت", ["product", "is_approved", "verified", "created_at"], "side")],
     after_save=_review_after_save, can_add=False,
     view_url=lambda o: o.product.get_absolute_url() + "#reviews",
-    actions={"approve": ("تأیید", lambda r, qs: f"{qs.update(is_approved=True)} نظر تأیید شد."),
-             "unapprove": ("رد تأیید", lambda r, qs: f"{qs.update(is_approved=False)} نظر از نمایش خارج شد.")},
+    actions={"approve": ("تأیید", lambda r, qs: f"{_review_set(qs, True)} نظر تأیید شد."),
+             "unapprove": ("رد تأیید", lambda r, qs: f"{_review_set(qs, False)} نظر از نمایش خارج شد.")},
+    readonly=[("عکس‌های مشتری", _review_photos), ("خریدار این فرش", lambda o: "بله" if o.verified else "خیر"),
+              ("موبایل", lambda o: fa_num(o.mobile) or "—")],
 ))
 register(Resource(
     key="faqs", model=Faq, title="پرسش‌های متداول", single="پرسش", group="فروشگاه", icon="help",
@@ -674,3 +698,4 @@ register(Resource(
          "برای پیامک تبلیغاتی، عبارت «لغو۱۱» در انتهای متن لازم است.",
 ))
 import finder.panel  # noqa: E402,F401  فرش‌یاب
+import growth.panel  # noqa: E402,F401  رشد فروش

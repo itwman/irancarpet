@@ -168,6 +168,8 @@ class Product(SeoFields):
     title = models.CharField("عنوان", max_length=300)
     slug = models.SlugField("نامک", max_length=255, allow_unicode=True, unique=True)
     english_name = models.CharField("نام انگلیسی", max_length=300, blank=True)
+    video_url = models.URLField("ویدیوی فرش", blank=True, max_length=400,
+                                help_text="پیوند ویدیو در آپارات (aparat.com/v/...) یا فایل mp4. در صفحهٔ فرش و نتایج گوگل نمایش داده می‌شود.")
     content = models.TextField("توضیحات کامل (HTML)", blank=True)
     short_description = models.TextField("توضیح کوتاه", blank=True)
     status = models.CharField("وضعیت", max_length=20, choices=Status.choices, default=Status.PUBLISH, db_index=True)
@@ -406,6 +408,9 @@ class Review(models.Model):
     content = models.TextField("متن")
     is_approved = models.BooleanField("تأییدشده", default=False, db_index=True)
     created_at = models.DateTimeField("تاریخ", default=timezone.now)
+    user = models.ForeignKey("auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="کاربر")
+    mobile = models.CharField("موبایل", max_length=11, blank=True)
+    verified = models.BooleanField("خریدار این فرش", default=False, help_text="نظر از طرف کسی که همین فرش را خریده")
 
     class Meta:
         verbose_name = "نظر محصول"
@@ -414,3 +419,19 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.author_name} — {self.product}"
+
+
+class ReviewPhoto(models.Model):
+    """عکس مشتری از فرش در خانه‌اش (همراه نظر)."""
+
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField("عکس", upload_to="reviews/%Y/%m/")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = "عکس نظر"
+        verbose_name_plural = "عکس‌های نظر"
+
+    @property
+    def url(self):
+        return self.image.url if self.image else ""

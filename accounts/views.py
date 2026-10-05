@@ -184,6 +184,16 @@ def dashboard(request):
             messages.success(request, "اطلاعات حساب ذخیره شد.")
             return redirect("/my-account/")
     orders = Order.objects.filter(user=user).prefetch_related("items").order_by("-created_at")
+    from shop.models import Coupon, ShopSettings
+
+    shop = ShopSettings.load()
+    referral = None
+    if shop.referral_enabled:
+        from shop.coupons import referral_code
+
+        referral = referral_code(user)
+    gifts = Coupon.objects.filter(for_user=user, is_active=True).order_by("-created_at")[:5]
     return render(request, "accounts/dashboard.html", {
         "meta": {**META, "title": "حساب کاربری"}, "profile": profile, "orders": orders, "errors": errors,
+        "referral": referral, "shop": shop, "gifts": gifts,
     })

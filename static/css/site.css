@@ -681,3 +681,103 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 .seals-row{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;align-items:center;min-height:150px}
 .seals-row img{max-width:170px;height:auto}
 .seals-note{margin:.75rem 0 0;color:var(--muted);font-size:.85rem}
+/* صفحه‌های فرود ترکیبی */
+.lp-head{margin:0 0 1.5rem}
+.lp-lead{max-width:80ch;color:var(--ink-2)}
+.lp-stat{display:inline-flex;flex-direction:column;gap:.1rem;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:.9rem 1.2rem;margin:.5rem 0 1rem}
+.lp-stat span{font-size:.85rem;color:#c9cbe6}.lp-stat strong{font-size:1.35rem;font-weight:900}.lp-stat small{font-weight:500;font-size:.8rem}.lp-stat em{font-style:normal;font-size:.75rem;color:var(--saffron)}
+.lp-sizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.6rem;margin:.75rem 0}
+.lp-size{display:flex;flex-direction:column;gap:.15rem;padding:.75rem .9rem;border-radius:var(--r-sm);background:var(--soft);color:var(--ink);text-decoration:none;border:2px solid transparent}
+a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
+.lp-size span{font-size:.85rem;color:var(--ink-2)}.lp-size strong{font-weight:900}.lp-size small{color:var(--muted);font-size:.75rem}
+.lp-faq{margin:2.5rem 0 1rem;max-width:80ch}.lp-faq h2,.lp-related h2{font-size:1.15rem;font-weight:900;margin-bottom:.75rem}
+.lp-faq details{border-bottom:1px solid var(--line);padding:.7rem 0}.lp-faq summary{font-weight:800;cursor:pointer}.lp-faq p{margin:.5rem 0 0;color:var(--ink-2)}
+.lp-related{margin:2rem 0}
+/* کد تخفیف */
+.coupon-box{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.75rem 0;padding:.6rem;border:2px dashed var(--line);border-radius:var(--r-sm)}
+.coupon-box input{flex:1;min-width:0;border:0;background:var(--soft);border-radius:10px;padding:.45rem .7rem;text-transform:uppercase}
+.coupon-box p{flex-basis:100%}
+.coupon-on{flex:1;color:var(--teal-d);font-weight:700}.link-btn{background:none;border:0;color:var(--pink-d);font-weight:700}
+.sum-discount strong,.sum-discount span{color:var(--teal-d)}
+/* ابزارهای صفحهٔ فرش */
+.p-tools{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0}
+.p-tool{display:inline-flex;align-items:center;gap:.4rem;border:0;border-radius:999px;background:var(--soft);color:var(--ink);font-weight:800;padding:.5rem 1rem;font-size:.9rem}
+.p-tool:hover{background:var(--ink);color:#fff}
+.p-video{margin:.5rem 0 1rem}.p-video video{width:100%;border-radius:var(--r-md);background:#000}
+.p-video__box{position:relative;padding-top:56.25%;border-radius:var(--r-md);overflow:hidden;background:#000}.p-video__box iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.myroom{position:fixed;inset:0;z-index:1080;background:#0e1030;display:flex;flex-direction:column;color:#fff}
+.myroom[hidden]{display:none}
+.myroom__bar{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem}
+.myroom__x{background:none;border:0;color:#fff;font-size:2rem;line-height:1}
+.myroom__stage{position:relative;flex:1;overflow:hidden;touch-action:none}
+.myroom__bg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.myroom__rug{position:absolute;left:50%;top:50%;width:min(80vw,520px);cursor:grab;transform-origin:center;box-shadow:0 30px 40px -20px rgba(0,0,0,.6);user-select:none;-webkit-user-drag:none}
+.myroom__empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:2rem;text-align:center;color:#c9cbe6}
+.myroom__empty p{max-width:36ch}
+.myroom__ctl{display:flex;flex-wrap:wrap;gap:.75rem 1.25rem;align-items:center;padding:.9rem 1rem calc(.9rem + env(safe-area-inset-bottom));background:#181b45}
+.myroom__ctl label{display:flex;flex-direction:column;font-size:.8rem;gap:.2rem;flex:1;min-width:120px}
+.myroom__pick{flex:0 0 auto!important;background:var(--saffron);color:var(--ink);border-radius:999px;padding:.45rem 1rem;font-weight:800;cursor:pointer;text-align:center}
+.alert-box{margin:1rem 0;border:2px dashed var(--line);border-radius:var(--r-sm);padding:.6rem .9rem}
+.alert-box summary{cursor:pointer;display:flex;justify-content:space-between;gap:.5rem}.alert-box summary span{color:var(--muted);font-size:.85rem}
+.alert-box form{display:flex;gap:.5rem;margin-top:.6rem}.alert-box input{flex:1;min-width:0;border:0;background:var(--soft);border-radius:10px;padding:.45rem .7rem}
+.rv-verified{display:inline-block;font-size:.75rem;font-weight:800;color:var(--teal-d);background:var(--teal-t);border-radius:8px;padding:.1rem .5rem;margin:.2rem 0}
+.rv-photos{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}.rv-photos img{width:96px;height:96px;object-fit:cover;border-radius:12px}
+.rv-wall{margin:.5rem 0 1.25rem}.rv-wall h3{font-size:1rem;font-weight:900}.rv-wall img{width:120px;height:120px}
+.rv-form{margin:0 0 1.5rem;background:var(--soft);border-radius:var(--r-md);padding:.8rem 1rem}
+.rv-form summary{font-weight:800;cursor:pointer}
+.rv-form form{display:flex;flex-direction:column;gap:.6rem;margin-top:.75rem}
+.rv-form textarea{border:0;border-radius:12px;padding:.6rem .8rem}
+.rv-stars{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:.15rem;border:0;padding:0;margin:0}
+.rv-stars legend{font-size:.85rem;float:right;margin-left:.5rem}
+.rv-stars input{position:absolute;opacity:0;pointer-events:none}
+.rv-stars label{font-size:1.7rem;color:#d4d6e8;cursor:pointer;line-height:1}
+.rv-stars input:checked~label,.rv-stars label:hover,.rv-stars label:hover~label{color:var(--saffron)}
+.rv-stars input:focus-visible+label{outline:2px solid var(--pink)}
+.rv-file{font-size:.85rem;color:var(--ink-2);display:flex;flex-direction:column;gap:.25rem}
+.rv-invite{display:flex;flex-direction:column;gap:1rem}.rv-invite fieldset{display:flex;flex-direction:column;gap:.6rem}
+.rv-invite legend{font-weight:900;font-size:1rem;float:none;padding:0}.rv-invite textarea{border:0;background:var(--soft);border-radius:12px;padding:.6rem .8rem}
+.store-box{margin-top:1rem;padding:.8rem 1rem;border-radius:var(--r-sm);background:rgba(255,255,255,.06)}
+.store-box strong{color:#fff}.store-maps{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
+.store-maps a{background:var(--saffron);color:var(--ink)!important;font-weight:800;border-radius:999px;padding:.2rem .75rem;font-size:.8rem}
+/* ابزار انتخاب سایز فرش */
+.sz{margin:1.5rem 0;padding:1.25rem;border-radius:var(--r-lg);background:var(--soft)}
+.sz-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem}
+.sz-form label{display:flex;flex-direction:column;gap:.3rem;font-weight:800;font-size:.9rem}
+.sz-form input,.sz-form select{border:2px solid var(--line);border-radius:12px;padding:.6rem .8rem;font-size:1.1rem;background:#fff}
+.sz-form input:focus,.sz-form select:focus{border-color:var(--pink);outline:0}
+.sz-room{margin:1.25rem auto 0;max-width:420px;width:100%;background:#e9e2d4;border:6px solid #bfb39d;border-radius:6px;position:relative}
+.sz-floor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.sz-rugs{display:flex;gap:2px}
+.sz-rugs i{flex:1;background:repeating-linear-gradient(45deg,var(--pink) 0 6px,#b52a46 6px 12px);border:3px solid var(--saffron);border-radius:3px}
+.sz-out{margin-top:1.25rem;display:grid;gap:.6rem}
+.sz-h{font-size:1.05rem;font-weight:900;margin:0 0 .25rem}
+.sz-opt{position:relative;display:flex;flex-direction:column;gap:.2rem;background:#fff;border-radius:var(--r-md);padding:.9rem 1rem;border:2px solid var(--line)}
+.sz-opt.is-best{border-color:var(--pink)}
+.sz-opt strong{font-size:1.05rem;font-weight:900}.sz-opt span{color:var(--ink-2);font-size:.9rem}
+.sz-opt .pill{align-self:flex-start;margin-top:.35rem}
+.sz-badge{position:absolute;top:-.7rem;left:1rem;background:var(--pink);color:#fff!important;font-size:.75rem!important;font-weight:800;border-radius:999px;padding:.1rem .6rem}
+/* فرش‌یاب وب */
+.fy-hero{background:var(--ink);color:#fff;padding:2.2rem 0 2.6rem;border-radius:0 0 34px 34px;margin-bottom:1rem}
+.fy-kicker{color:var(--saffron);font-weight:800;margin:0}
+.fy-hero h1{font-weight:900;font-size:clamp(1.7rem,4vw,2.6rem);margin:.2rem 0 1rem}
+.fy-ask{display:flex;gap:.5rem;background:#fff;border-radius:22px;padding:.4rem;max-width:720px}
+.fy-ask input{flex:1;min-width:0;border:0;padding:.6rem .9rem;font-size:1.05rem;border-radius:16px}
+.fy-ask input:focus{outline:2px solid var(--pink)}
+.fy-ask button{border:0;background:var(--pink);color:#fff;font-weight:900;border-radius:16px;padding:0 1.4rem}
+.fy-res{margin:1rem 0 2rem}.fy-count{font-size:1.2rem;font-weight:900}.fy-count small{font-size:.85rem;color:var(--muted);font-weight:500}
+.fy-card{display:flex;flex-direction:column}.fy-why{font-size:.8rem;font-weight:800;color:var(--teal-d);margin-top:.3rem}
+.fy-sw{display:inline-block;width:16px;height:16px;border-radius:50%;vertical-align:middle;margin-left:.3rem;border:1px solid #0002}
+.fy-pick{margin:1.5rem 0}.fy-pick h2{font-size:1.2rem;font-weight:900}
+.fy-group{border:0;padding:0;margin:1rem 0}.fy-group legend{font-weight:900;font-size:1rem;margin-bottom:.5rem}
+.fy-opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.5rem}
+.fy-group--color .fy-opts{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.fy-opt{display:flex;align-items:flex-start;gap:.4rem;background:var(--soft);border-radius:14px;padding:.6rem .7rem;cursor:pointer;border:2px solid transparent}
+.fy-opt:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.fy-opt input{margin-top:.3rem;accent-color:var(--saffron)}
+.fy-opt span{display:flex;flex-direction:column}.fy-opt small{color:var(--muted);font-size:.75rem}.fy-opt:has(input:checked) small{color:#c9cbe6}
+.fy-row{display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-top:1rem}
+.fy-row label{display:flex;flex-direction:column;gap:.25rem;font-weight:800;font-size:.9rem}
+.fy-row select{border:2px solid var(--line);border-radius:12px;padding:.5rem .7rem;background:#fff}
+.fy-app{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;background:var(--saffron-t);border-radius:var(--r-lg);padding:1.2rem 1.4rem;margin:2rem 0}
+.ref-code{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.ref-code code{font-size:1.3rem;font-weight:900;background:var(--saffron-t);color:var(--ink);padding:.3rem .8rem;border-radius:10px}
+.myroom__ctl input{accent-color:var(--saffron)}

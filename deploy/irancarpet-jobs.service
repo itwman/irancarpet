@@ -1,0 +1,12 @@
+[Unit]
+Description=IranCarpet: sales jobs (payment reminders, alerts, review invites, landing pages)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/irancarpet-django
+EnvironmentFile=/var/www/irancarpet-django/.env
+ExecStart=/var/www/irancarpet-django/venv/bin/python manage.py run_jobs
+TimeoutStartSec=900

@@ -62,6 +62,8 @@
       {% for line in lines %}{% if not line.problem %}
       <div class="sum-row"><span>{{ line.product.title|fa_num }} <small class="muted">· {{ line.size_label|fa_num }} · {{ line.qty|fa_num }} عدد</small></span><span class="text-nowrap">{{ line.total|toman }}</span></div>
       {% endif %}{% endfor %}
+      {% if discount %}<div class="sum-row sum-discount"><span>تخفیف ({{ coupon.code }})</span><strong>−{{ discount|toman }}</strong></div>{% endif %}
+      {% if errors.coupon %}<div class="alert-ic">{{ errors.coupon }}</div>{% endif %}
       <div class="sum-row big"><span>جمع کل</span><strong>{{ total|toman }} تومان</strong></div>
 
       <h2 class="mt-4">روش پرداخت</h2>

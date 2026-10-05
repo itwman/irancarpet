@@ -67,4 +67,19 @@ def site(request):
         "menu_categories": tops[:7],
         "menu_more": tops[7:],
         "bing_verification": _bing(),
+        "footer_sizes": _footer_sizes(),
     }
+
+
+def _footer_sizes():
+    """پیوند صفحه‌های فرود سایز در فوتر (پیوند داخلی برای گوگل)."""
+    rows = cache.get("landing:footer")
+    if rows is None:
+        try:
+            from landing.build import live
+
+            rows = [(x.title, x.get_absolute_url()) for x in live().filter(reeds=None, color=None, style=None).order_by("size__sort_order")[:6]]
+        except Exception:  # noqa: BLE001
+            rows = []
+        cache.set("landing:footer", rows, 3600)
+    return rows
