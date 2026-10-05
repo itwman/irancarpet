@@ -54,6 +54,7 @@ urlpatterns = [
     path("blog/", blog_views.blog_index, name="blog"),
     re_path(rf"^blog/{P}$", blog_views.blog_index),
     path("product/<str:slug>/", catalog_views.product_detail, name="product"),
+    path("p/<int:pk>/", catalog_views.short_link),
     re_path(rf"^product-category/(?P<path>.+?)/{P}$", catalog_views.category_detail),
     re_path(rf"^product-tag/(?P<slug>[^/]+)/{P}$", catalog_views.tag_detail),
     re_path(rf"^brand/(?P<slug>[^/]+)/{P}$", catalog_views.brand_detail),

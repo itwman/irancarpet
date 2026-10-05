@@ -297,3 +297,11 @@ def product_jsonld(product, variations, gallery, crumbs, specs=()):
         "itemListElement": [{"@type": "ListItem", "position": i + 1, "name": n, "item": site + u} for i, (n, u) in enumerate(crumbs)],
     }
     return [data, breadcrumb]
+
+
+def short_link(request, pk):
+    """پیوند کوتاه فرش برای پیام‌رسان‌ها: /p/123/ ← صفحهٔ فرش"""
+    from django.http import HttpResponsePermanentRedirect
+
+    p = get_object_or_404(Product, pk=pk, status=Product.Status.PUBLISH)
+    return HttpResponsePermanentRedirect(p.get_absolute_url())

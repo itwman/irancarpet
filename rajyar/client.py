@@ -122,7 +122,7 @@ def build_payload(p, s, publish_at=None, force_new=False):
         blocks.append(fa_num(plain(p.short_description, 220)))
     if s.footer:
         blocks.append(s.footer)
-    url = settings.SITE_URL + p.get_absolute_url()
+    url = f"{settings.SITE_URL}/p/{p.pk}/"  # پیوند کوتاه؛ نشانی فارسی در پیام‌رسان‌ها خیلی بلند و ناخوانا می‌شود
     tags = [t.strip() for t in (s.tags or "").replace("،", ",").split(",") if t.strip()]
     if reeds:
         tags.append(f"فرش {reeds} شانه")

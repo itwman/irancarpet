@@ -57,7 +57,8 @@ class RajyarTests(TestCase):
         self.assertNotIn("۱۲ متری", c)
         self.s.price_sizes.clear()
         self.assertIn("+03:30", body["publish_at"])
-        self.assertTrue(body["url"].endswith("/product/afshan/"))
+        self.assertTrue(body["url"].endswith(f"/p/{self.p.pk}/"))
+        self.assertRedirects(self.client.get(f"/p/{self.p.pk}/"), "/product/afshan/", status_code=301, fetch_redirect_response=False)
         with mock.patch("urllib.request.urlopen", return_value=Resp({"ok": True, "post": {"id": 12, "publications": []}})) as op:
             post = send(self.p, publish_at=timezone.now() + timezone.timedelta(hours=1))
         req = op.call_args[0][0]
