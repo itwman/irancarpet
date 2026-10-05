@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/contact.dart';
 import '../widgets/installment.dart';
 import '../widgets/knots.dart';
 
@@ -435,13 +435,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   const Expanded(child: Text('این فرش الان قابل خرید آنلاین نیست.', style: TextStyle(color: C.muted))),
                   FilledButton.icon(
                     style: FilledButton.styleFrom(backgroundColor: C.pistachio, foregroundColor: C.ink, minimumSize: const Size(10, 48)),
-                    onPressed: () {
-                      final wa = context.read<AppConfig>().data['whatsapp'] as String? ?? '';
-                      if (wa.isNotEmpty) {
-                        launchUrl(Uri.parse('https://wa.me/${wa.replaceAll(RegExp(r'\D'), '')}?text=${Uri.encodeComponent(p['url'] as String)}'),
-                            mode: LaunchMode.externalApplication);
-                      }
-                    },
+                    onPressed: () => showContactSheet(context, text: p['url'] as String),
                     icon: const Icon(Icons.chat_rounded, size: 20),
                     label: const Text('پرسیدن از کارشناس'),
                   ),

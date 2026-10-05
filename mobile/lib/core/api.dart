@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const kSite = String.fromEnvironment('SITE', defaultValue: 'https://irancarpet.net');
 const kApi = '$kSite/api/app/v1';
-const kAppVersion = '1.0.2';
+const kAppVersion = '1.0.3';
 
 typedef Json = Map<String, dynamic>;
 

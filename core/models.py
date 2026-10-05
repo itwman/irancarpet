@@ -67,6 +67,11 @@ class SiteSettings(models.Model):
     )
     phone = models.CharField("تلفن", max_length=100, blank=True)
     whatsapp = models.CharField("شمارهٔ واتساپ", max_length=20, blank=True, help_text="با کد کشور، بدون صفر و +؛ مثل 989121234567")
+    mobile = models.CharField("موبایل پاسخگو", max_length=20, blank=True, help_text="برای تماس و پیامک؛ مثل 09121234567")
+    telegram = models.URLField("تلگرام", blank=True, help_text="نشانی کامل؛ مثل https://t.me/username")
+    eitaa = models.URLField("ایتا", blank=True, help_text="نشانی کامل؛ مثل https://eitaa.com/username")
+    instagram = models.URLField("اینستاگرام", blank=True)
+    farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
     trust_points = models.JSONField(
@@ -86,3 +91,27 @@ class SiteSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    @property
+    def messengers(self):
+        """پیام‌رسان‌ها برای گفتگو: [(کلید، نام، نشانی)]"""
+        from .templatetags.fa import wa_link
+
+        out = []
+        if self.whatsapp:
+            out.append(("whatsapp", "واتساپ", wa_link(self.whatsapp)))
+        if self.telegram:
+            out.append(("telegram", "تلگرام", self.telegram))
+        if self.eitaa:
+            out.append(("eitaa", "ایتا", self.eitaa))
+        return out
+
+    @property
+    def socials(self):
+        """همهٔ صفحه‌ها: پیام‌رسان‌ها + اینستاگرام و فرش پلاس"""
+        out = list(self.messengers)
+        if self.instagram:
+            out.append(("instagram", "اینستاگرام", self.instagram))
+        if self.farshplus:
+            out.append(("farshplus", "فرش پلاس", self.farshplus))
+        return out

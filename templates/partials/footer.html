@@ -7,10 +7,12 @@
         <p class="small">فروش آنلاین فرش ماشینی کاشان، از ۵۰۰ تا ۱۵۰۰ شانه، در همهٔ سایزها و با قیمت روشن برای هر سایز.</p>
         <ul class="contact small">
           {% if site_settings.phone %}<li>تلفن: <a href="tel:{{ site_settings.phone|cut:'-' }}">{{ site_settings.phone|fa_num }}</a></li>{% endif %}
-          {% if site_settings.whatsapp %}<li>واتساپ: <a href="{{ site_settings.whatsapp|wa_link }}" target="_blank" rel="noopener">پیام بدهید</a></li>{% endif %}
+          {% if site_settings.mobile %}<li>موبایل: <a href="tel:{{ site_settings.mobile }}">{{ site_settings.mobile|fa_num }}</a></li>{% endif %}
           {% if site_settings.email %}<li>ایمیل: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
           {% if site_settings.address %}<li>{{ site_settings.address }}</li>{% endif %}
         </ul>
+        {% if site_settings.socials %}<p class="small mb-2 mt-3">پاسخگوی شما در:</p>
+        <div class="socials">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener me" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
       </div>
       <div class="col-6 col-lg-2">
         <h2>فروشگاه</h2>

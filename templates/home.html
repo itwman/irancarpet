@@ -132,18 +132,18 @@
   </div>
 </section>
 
-{% if site_settings.whatsapp or site_settings.phone %}
+{% with ms=site_settings.messengers %}{% if ms or site_settings.phone %}
 <section class="container pb-5">
   <div class="cta">
     <div>
       <h2>بین چند نقشه مانده‌ای؟</h2>
-      <p>عکس اتاقت را در واتساپ بفرست؛ کارشناس ما چند فرش هم‌رنگ با مبلمانت پیشنهاد می‌دهد.</p>
+      <p>عکس اتاقت را {% if ms %}در {% for key, name, url in ms %}{{ name }}{% if not forloop.last %}{% if forloop.revcounter == 2 %} یا {% else %}، {% endif %}{% endif %}{% endfor %} {% endif %}بفرست؛ کارشناس ما چند فرش هم‌رنگ با مبلمانت پیشنهاد می‌دهد.</p>
     </div>
-    {% if site_settings.whatsapp %}<a href="{{ site_settings.whatsapp|wa_link }}" target="_blank" rel="noopener" class="btn-ic btn-ic--ink">فرستادن عکس اتاق</a>
+    {% if ms %}<div class="cta__btns">{% for key, name, url in ms %}<a href="{{ url }}" target="_blank" rel="noopener" class="btn-ic btn-ic--ink btn-ic--sm soc--{{ key }}">{% include "partials/_sico.html" %}{{ name }}</a>{% endfor %}</div>
     {% else %}<a href="tel:{{ site_settings.phone|cut:'-' }}" class="btn-ic btn-ic--ink">تماس با کارشناس</a>{% endif %}
   </div>
 </section>
-{% endif %}
+{% endif %}{% endwith %}
 
 {% if page.content %}
 <section class="container">

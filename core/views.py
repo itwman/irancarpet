@@ -95,10 +95,18 @@ def home(request):
         "room": [6.5, 4.75],
         "carpets": data["showcase"],
     }
+    from core.models import SiteSettings
+
+    site = SiteSettings.load()
     org = {
         "@context": "https://schema.org", "@type": "OnlineStore", "name": "ایران کارپت",
         "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.png",
+        "sameAs": [url for key, _, url in site.socials if key != "whatsapp"],
     }
+    phones = ["+98" + p[1:] if p.startswith("0") else p for p in (re.sub(r"\D", "", x or "") for x in (site.phone, site.mobile)) if p]
+    if phones:
+        org["contactPoint"] = [{"@type": "ContactPoint", "telephone": p, "contactType": "sales", "areaServed": "IR",
+                                "availableLanguage": "Persian"} for p in phones]
     return render(request, "home.html", {
         "meta": seo.build(kind="home"), "page": page, "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps(org, ensure_ascii=False), **data,
