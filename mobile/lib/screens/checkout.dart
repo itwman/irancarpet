@@ -27,6 +27,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _province, _gateway;
   late String _mode = widget.initialMode ?? 'full';
   Json? _quote;
+  final _couponC = TextEditingController();
+  String _coupon = '';
+  bool _couponBusy = false;
   Map<String, dynamic> _errors = {};
   bool _busy = false;
   // خرید اقساطی
@@ -57,13 +60,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     final prov = (u['province'] ?? '') as String;
     _province = prov.isEmpty ? null : prov;
-    Api.i.post('/cart/quote/', {'items': context.read<Cart>().payload}).then((q) {
-      if (mounted) setState(() => _quote = q as Json);
-    }).catchError((_) {});
+    _requote();
+  }
+
+  Future<void> _requote([String? code]) async {
+    final c = (code ?? _coupon).trim().toUpperCase();
+    setState(() => _couponBusy = true);
+    try {
+      final q = await Api.i.post('/cart/quote/', {'items': context.read<Cart>().payload, if (c.isNotEmpty) 'coupon': c}) as Json;
+      if (!mounted) return;
+      final err = q['coupon_error'] as String? ?? '';
+      setState(() {
+        _quote = q;
+        _coupon = err.isEmpty ? c : '';
+        _inst = null;
+        _instQuote = null;
+      });
+      if (err.isNotEmpty) toast(context, err);
+      if (err.isEmpty && c.isNotEmpty) toast(context, 'کد تخفیف اعمال شد.');
+    } catch (_) {}
+    if (mounted) setState(() => _couponBusy = false);
   }
 
   @override
   void dispose() {
+    _couponC.dispose();
     for (final c in [..._f.values, ..._docs.values]) {
       c.dispose();
     }
@@ -101,6 +122,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'province': _province ?? '',
         'payment_mode': _mode,
         'gateway': _gateway ?? '',
+        if (_coupon.isNotEmpty) 'coupon': _coupon,
       };
       dynamic r;
       if (_mode == 'installment') {
@@ -193,6 +215,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _field('address', 'نشانی کامل', lines: 3),
         _field('postal_code', 'کد پستی (اختیاری)', type: TextInputType.number),
         _field('note', 'توضیح برای فروشگاه (اختیاری)', lines: 2),
+        const SectionHead('کد تخفیف'),
+        Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _couponC,
+              enabled: _coupon.isEmpty,
+              textDirection: TextDirection.ltr,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(hintText: 'کد تخفیف یا کد معرفی دوست', errorText: _errors['coupon'] as String?),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(minimumSize: const Size(84, 52)),
+            onPressed: _couponBusy
+                ? null
+                : () {
+                    if (_coupon.isNotEmpty) {
+                      _couponC.clear();
+                      _coupon = '';
+                      _requote('');
+                    } else if (_couponC.text.trim().isNotEmpty) {
+                      _requote(latin(_couponC.text));
+                    }
+                  },
+            child: Text(_coupon.isNotEmpty ? 'حذف' : 'اعمال'),
+          ),
+        ]),
+        if (((q?['discount'] as int?) ?? 0) > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('تخفیف ${q!['coupon']?['code'] ?? ''}: ${toman(q['discount'] as int)} — مبلغ نهایی ${toman(total)}',
+                style: const TextStyle(color: C.tealDark, fontWeight: FontWeight.w800)),
+          ),
         const SectionHead('نحوهٔ پرداخت'),
         if (shop['allow_full'] != false)
           _choice('full', 'پرداخت کامل آنلاین', q?['free_shipping'] == true ? 'ارسال رایگان' : 'هزینهٔ ارسال موقع تحویل', total),

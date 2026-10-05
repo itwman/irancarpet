@@ -21,7 +21,7 @@ samples, guidance on mobile development, and a full API reference.
 | اپ | بسته | ساخت |
 |---|---|---|
 | ایران کارپت (فروشگاه) | `net.irancarpet.app` | `flutter build apk --release --flavor store --split-per-abi --target-platform android-arm,android-arm64` |
-| فرش‌یاب (پیدا کردن فرش بر اساس نیاز و عکس) | `net.irancarpet.finder` | `flutter build apk --release --flavor finder --split-per-abi --target-platform android-arm,android-arm64 --build-name 1.0.0 --build-number 1` |
+| فرش‌یاب (پیدا کردن فرش بر اساس نیاز و عکس) | `net.irancarpet.finder` | `flutter build apk --release --flavor finder --split-per-abi --target-platform android-arm,android-arm64 --build-name 1.0.1 --build-number 2` |
 
 کدهای فرش‌یاب در `lib/finder/` است؛ آیکون و صفحهٔ شروعش در `android/app/src/finder/res`.
 برای آزمایش روی وب: `--dart-define=APP=finder`.

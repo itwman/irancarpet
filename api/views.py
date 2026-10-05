@@ -748,5 +748,6 @@ def product_review(request, pk):
         return fail("امتیاز بدهید یا چند کلمه بنویسید.")
     u = request.api_user
     R.create(p, user=u, name=u.get_full_name() or "مشتری ایران کارپت", mobile=profile_of(u).mobile or "", rating=rating,
-             text=text or "—", photos=request.FILES.getlist("photos"))
+             text=text or "—",
+             photos=request.FILES.getlist("photos") + [request.FILES[k] for k in sorted(request.FILES) if k.startswith("photo_")])
     return ok({"message": "ممنون! نظر شما بعد از بررسی نمایش داده می‌شود."}, status=201)

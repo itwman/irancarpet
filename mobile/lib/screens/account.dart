@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import '../widgets/contact.dart';
+import '../widgets/growth.dart';
 import 'checkout.dart' show SectionHead;
 import 'shell.dart';
 
@@ -64,6 +65,7 @@ class AccountTab extends StatelessWidget {
         if (context.watch<AppConfig>().installmentPlans.isNotEmpty)
           tile(Icons.calendar_month_rounded, 'خرید اقساطی', () => Navigator.pushNamed(context, '/installment'),
               sub: 'چک صیادی و ویژهٔ بازنشستگان'),
+        tile(Icons.card_giftcard_rounded, 'دعوت از دوستان', () => showReferralSheet(context), sub: 'کد معرفی و کدهای هدیه'),
         tile(Icons.favorite_border, 'علاقه‌مندی‌ها', () => Shell.goTab(context, 3)),
         tile(Icons.compare_outlined, 'مقایسهٔ فرش‌ها', () => Navigator.pushNamed(context, '/compare'),
             sub: cmp.ids.isEmpty ? 'از صفحهٔ هر فرش اضافه کنید' : '${faDigits(cmp.ids.length)} فرش'),

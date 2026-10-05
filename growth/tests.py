@@ -187,6 +187,17 @@ class GrowthTests(TestCase):
         r = self.client.post(f"/product/{self.p.slug}/review/", {"rating": "4", "text": "خوب"})
         self.assertTrue(r["Location"].startswith("/my-account/login/"))
 
+    def test_app_review_with_photos(self):
+        r = self.client.post("/api/app/v1/auth/otp/", json.dumps({"mobile": "09125550000"}), content_type="application/json")
+        code = r.json()["dev_code"]
+        r = self.client.post("/api/app/v1/auth/verify/", json.dumps({"mobile": "09125550000", "code": code, "name": "سارا"}),
+                             content_type="application/json")
+        h = {"HTTP_AUTHORIZATION": f"Token {r.json()['token']}"}
+        r = self.client.post(f"/api/app/v1/products/{self.p.pk}/reviews/",
+                             {"rating": "5", "text": "عالی", "photo_0": jpeg(), "photo_1": jpeg()}, **h)
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(Review.objects.get().photos.count(), 2)
+
     # ---------------------------------------------------------- صفحه‌های فرود
     def test_landing_pages(self):
         from landing.build import sync

@@ -9,6 +9,7 @@ import '../screens/cart.dart';
 import '../screens/shell.dart' show tabGo;
 import '../state/app_state.dart';
 import '../widgets/contact.dart';
+import '../widgets/growth.dart';
 import 'home.dart';
 import 'requests.dart';
 import 'state.dart';
@@ -139,6 +140,7 @@ class FinderAccount extends StatelessWidget {
                 ? Badge(label: Text(faDigits(unread)), backgroundColor: C.pink, child: const Icon(Icons.chevron_left_rounded, color: C.muted))
                 : null),
         if (auth.loggedIn) tile(Icons.receipt_long_outlined, 'سفارش‌های من', () => Navigator.pushNamed(context, '/orders')),
+        tile(Icons.card_giftcard_rounded, 'دعوت از دوستان', () => showReferralSheet(context), sub: 'کد معرفی و کدهای هدیه'),
         tile(Icons.local_shipping_outlined, 'پیگیری سفارش با شماره', () => Navigator.pushNamed(context, '/track')),
         if (context.watch<AppConfig>().installmentPlans.isNotEmpty)
           tile(Icons.calendar_month_rounded, 'خرید اقساطی', () => Navigator.pushNamed(context, '/installment'),

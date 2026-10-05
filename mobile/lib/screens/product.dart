@@ -8,6 +8,7 @@ import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/contact.dart';
+import '../widgets/growth.dart';
 import '../widgets/installment.dart';
 import '../widgets/knots.dart';
 
@@ -196,6 +197,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 plans: context.watch<AppConfig>().installmentPlans, amount: (_size?['price'] as int?) ?? (p['price'] as int)),
           ),
         SliverToBoxAdapter(child: _roomBanner(p)),
+        SliverToBoxAdapter(child: ProductExtras(p)),
         SliverToBoxAdapter(child: _specs(p)),
         SliverToBoxAdapter(child: _description(p)),
         SliverToBoxAdapter(child: _reviews(p)),
@@ -378,11 +380,15 @@ class _ProductScreenState extends State<ProductScreen> {
 
   Widget _reviews(Json p) {
     final rs = (p['reviews'] as List).cast<Json>();
-    if (rs.isEmpty) return const SizedBox.shrink();
+    final hasPhotos = rs.any((r) => ((r['photos'] as List?) ?? []).isNotEmpty);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      SectionTitle('نظر خریدارها', subtitle: '${sep(p['rating_count'] as int)} نظر'),
+      SectionTitle('نظر خریدارها',
+          subtitle: rs.isEmpty ? 'اولین نظر را شما بنویسید' : '${sep(p['rating_count'] as int)} نظر',
+          action: 'نظر بدهید',
+          onAction: () => showReviewSheet(context, p['id'] as int)),
+      if (rs.isNotEmpty)
       SizedBox(
-        height: 150,
+        height: hasPhotos ? 230 : 150,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -397,8 +403,24 @@ class _ProductScreenState extends State<ProductScreen> {
                 Expanded(child: Text(rs[i]['author'] as String, style: const TextStyle(fontWeight: FontWeight.w800))),
                 for (var k = 0; k < (rs[i]['rating'] as int); k++) const Icon(Icons.star_rounded, size: 16, color: C.saffron),
               ]),
+              if (rs[i]['verified'] == true)
+                const Text('خریدار این فرش', style: TextStyle(fontSize: 11, color: C.tealDark, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
               Expanded(child: Text(rs[i]['text'] as String, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+              if (((rs[i]['photos'] as List?) ?? []).isNotEmpty)
+                SizedBox(
+                  height: 70,
+                  child: ListView(scrollDirection: Axis.horizontal, children: [
+                    for (final ph in (rs[i]['photos'] as List).cast<String>())
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 6),
+                        child: GestureDetector(
+                          onTap: () => _fullscreen([{'full': ph}], 0),
+                          child: SizedBox(width: 70, child: NetImage(ph, radius: 10)),
+                        ),
+                      ),
+                  ]),
+                ),
             ]),
           ),
         ),
