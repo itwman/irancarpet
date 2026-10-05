@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container container--narrow">
+  {% include "partials/breadcrumbs.html" %}
+  <article class="article">
+    <header><h1>{{ page.title }}</h1></header>
+    {% if before %}<div class="prose">{{ before|safe }}</div>{% endif %}
+    {% if site.trust_html or site.trust_badge or request.user.is_staff %}<section class="seals" aria-label="نماد اعتماد">
+      {% if site.trust_html %}
+        <div class="seals-row">{{ site.trust_html|safe }}</div>
+        <p class="seals-note">اگر تصویر نماد دیر نمایش داده شد، چند ثانیه صبر کنید؛ نماد از سرور اینماد بار می‌شود.</p>
+      {% elif site.trust_badge %}
+        <div class="seals-row"><img src="{{ site.trust_badge.url }}" alt="نماد اعتماد الکترونیکی {{ site.site_name }}" width="150" height="150"></div>
+      {% elif request.user.is_staff %}
+        <p class="seals-note">کد نماد اینماد را در «پنل ← تنظیمات ← سایت و تماس ← کد نماد اعتماد» بچسبانید تا اینجا نمایش داده شود.</p>
+      {% endif %}
+    </section>{% endif %}
+    {% if after %}<div class="prose">{{ after|safe }}</div>{% endif %}
+  </article>
+</div>
+{% endblock %}

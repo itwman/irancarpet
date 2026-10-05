@@ -28,7 +28,11 @@
         <h2>راهنما</h2>
         <ul><li><a href="/carpets-price-list/">لیست قیمت</a></li><li><a href="/خرید-اقساطی-فرش/">خرید اقساطی</a></li><li><a href="/blog/">مجله</a></li><li><a href="/rules/">قوانین</a></li><li><a href="/license/">مجوزها</a></li></ul>
       </div>
-      <div class="col-6 col-lg-2">{{ site_settings.footer_html|safe }}</div>
+      <div class="col-6 col-lg-2">
+        <h2>مجوزها</h2>
+        <a href="/license/" class="trust-badge" title="مجوزها و نماد اعتماد الکترونیکی">{% if site_settings.trust_badge %}<img src="{{ site_settings.trust_badge.url }}" alt="نماد اعتماد الکترونیکی {{ site_settings.site_name }}" width="104" height="104" loading="lazy" decoding="async">{% else %}<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg><span>نماد اعتماد<small>دیدن مجوزها</small></span>{% endif %}</a>
+        {{ site_settings.footer_html|safe }}
+      </div>
     </div>
     <div class="copy">© {% now "Y" as y %}{{ y|fa_num }} {{ site_settings.site_name }}، irancarpet.net</div>
   </div>

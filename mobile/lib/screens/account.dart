@@ -78,6 +78,9 @@ class AccountTab extends StatelessWidget {
           tile(Icons.call_outlined, 'تماس با فروشگاه', () => launchUrl(Uri.parse('tel:${(cfg['phone'] as String).replaceAll(RegExp(r'[^\d+]'), '')}')),
               sub: faDigits(cfg['phone'])),
         tile(Icons.public, 'سایت ایران کارپت', () => launchUrl(Uri.parse(kSite), mode: LaunchMode.externalApplication)),
+        tile(Icons.verified_user_outlined, 'مجوزها و نماد اعتماد',
+            () => launchUrl(Uri.parse(cfg['license_url'] as String? ?? '$kSite/license/'), mode: LaunchMode.externalApplication),
+            sub: 'نماد اعتماد الکترونیکی (اینماد)'),
         for (final s in socials(context, followsOnly: true))
           tile(socialIcon(s['key'] as String), s['name'] as String, () => openUrl(s['url'] as String), sub: 'ایران کارپت'),
         if (auth.loggedIn) tile(Icons.logout_rounded, 'خروج از حساب', () => auth.logout(), color: C.pinkDark),

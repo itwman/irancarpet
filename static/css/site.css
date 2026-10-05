@@ -670,3 +670,14 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 .socials--nav .soc:hover{color:var(--ink);background:var(--line)}
 .cta__btns{display:flex;flex-wrap:wrap;gap:.6rem}
 .cta__btns .btn-ic svg{color:#fff}
+/* نماد اعتماد: فوتر فقط تصویر سبک؛ کد اصلی در /license/ */
+.trust-badge{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;background:#fff;color:var(--ink)!important;border-radius:14px;padding:.5rem;min-width:120px;min-height:120px;text-align:center}
+.trust-badge img{width:104px;height:104px;object-fit:contain;display:block}
+.trust-badge:not(:has(img)){min-height:0;padding:.6rem .85rem;flex-direction:row;text-align:start;font-weight:800}
+.trust-badge svg{color:var(--teal);flex:none}
+.trust-badge span{display:flex;flex-direction:column;line-height:1.4}.trust-badge small{font-weight:500;color:var(--ink-2);font-size:.78rem}
+.trust-badge:hover{outline:3px solid var(--saffron)}
+.seals{margin:1.5rem 0;padding:1.5rem;border:2px dashed var(--line);border-radius:20px;text-align:center;background:#fff}
+.seals-row{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;align-items:center;min-height:150px}
+.seals-row img{max-width:170px;height:auto}
+.seals-note{margin:.75rem 0 0;color:var(--muted);font-size:.85rem}

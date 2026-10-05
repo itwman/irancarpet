@@ -81,6 +81,14 @@ class SiteSettings(models.Model):
         help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
     )
     footer_html = models.TextField("HTML فوتر", blank=True)
+    trust_badge = models.ForeignKey(
+        "core.Media", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="تصویر نماد (فوتر)",
+        help_text="تصویر سبک از نماد اعتماد که در پایین همهٔ صفحه‌ها می‌آید و به برگهٔ مجوزها لینک می‌شود.",
+    )
+    trust_html = models.TextField(
+        "کد نماد اعتماد (اینماد و...)", blank=True,
+        help_text="کدی که اینماد داده را کامل اینجا بچسبانید. فقط در برگهٔ مجوزها (/license/) بار می‌شود تا سرعت سایت کم نشود.",
+    )
 
     class Meta:
         verbose_name = "تنظیمات سایت"

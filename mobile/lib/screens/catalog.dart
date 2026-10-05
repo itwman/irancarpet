@@ -216,7 +216,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  int get _activeFilters => ['reeds', 'color', 'size', 'brand', 'min', 'max', 'instock'].where((k) => _q[k] != null).length;
+  int get _activeFilters => _q.keys.where(isFilterKey).length;
 
   Future<void> _filters() async {
     final r = await showModalBottomSheet<Map<String, dynamic>>(
@@ -308,6 +308,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 }
 
+/// کلیدهای فیلتر: گروه‌های ویژگی (`attr_<id>`) و چند کلید قدیمی/ثابت
+const _legacyFilterKeys = ['reeds', 'color', 'term', 'size', 'brand', 'min', 'max', 'instock'];
+bool isFilterKey(String k) => k.startsWith('attr_') || _legacyFilterKeys.contains(k);
+
 class _FilterSheet extends StatefulWidget {
   const _FilterSheet({required this.query});
   final Map<String, dynamic> query;
@@ -325,11 +329,26 @@ class _FilterSheetState extends State<_FilterSheet> {
     super.initState();
     _min.text = q['min'] == null ? '' : '${q['min']}';
     _max.text = q['max'] == null ? '' : '${q['max']}';
-    final base = Map.of(widget.query)..removeWhere((k, _) => ['reeds', 'color', 'size', 'brand', 'min', 'max', 'instock', 'sort'].contains(k));
+    final base = Map.of(widget.query)..removeWhere((k, _) => isFilterKey(k) || k == 'sort');
     Api.i.get('/products/filters/', base).then((r) {
-      if (mounted) setState(() => _f = r as Json);
+      final f = r as Json;
+      // فیلتر «شانه»ی صفحهٔ خانه (reeds=<id>) را به گروه خودش وصل کن تا انتخاب‌شده دیده شود
+      for (final old in ['reeds', 'color', 'term']) {
+        final v = q[old];
+        if (v == null) continue;
+        for (final g in _groups(f)) {
+          if ((g['terms'] as List).any((t) => '${t['id']}' == '$v')) {
+            q[g['key'] as String] = v;
+            q.remove(old);
+            break;
+          }
+        }
+      }
+      if (mounted) setState(() => _f = f);
     }).catchError((_) {});
   }
+
+  List<Json> _groups(Json f) => ((f['groups'] as List?) ?? []).cast<Json>();
 
   Widget _group(String title, String key, List items) {
     if (items.isEmpty) return const SizedBox.shrink();
@@ -340,7 +359,7 @@ class _FilterSheetState extends State<_FilterSheet> {
           FilterChip(
             showCheckmark: false,
             selected: '${q[key]}' == '${it['id']}',
-            label: Text('${it['name']}'),
+            label: Text(faDigits('${it['name']}')),
             onSelected: (on) => setState(() => on ? q[key] = it['id'] : q.remove(key)),
           ),
       ]),
@@ -367,10 +386,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                     value: q['instock'] != null,
                     onChanged: (v) => setState(() => v ? q['instock'] = 1 : q.remove('instock')),
                   ),
-                  _group('شانه', 'reeds', f['reeds'] as List),
-                  _group('سایز', 'size', f['sizes'] as List),
-                  _group('رنگ زمینه', 'color', f['colors'] as List),
-                  _group('برند', 'brand', f['brands'] as List),
+                  for (final g in _groups(f)) _group(g['label'] as String, g['key'] as String, g['terms'] as List),
                   const FieldLabel('قیمت (تومان)'),
                   Row(children: [
                     Expanded(child: TextField(controller: _min, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'از'))),
@@ -386,8 +402,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             child: Row(children: [
               Expanded(
                 child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, Map<String, dynamic>.of(widget.query)
-                      ..removeWhere((k, _) => ['reeds', 'color', 'size', 'brand', 'min', 'max', 'instock'].contains(k))),
+                    onPressed: () => Navigator.pop(context, Map<String, dynamic>.of(widget.query)..removeWhere((k, _) => isFilterKey(k))),
                     child: const Text('حذف فیلترها')),
               ),
               const SizedBox(width: 10),

@@ -12,16 +12,10 @@
       <button class="pill btn-filters d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فیلترها</button>
       <form id="filters" class="filters collapse d-lg-block" method="get">
         {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+        {% for k, v in active.items %}{% if k != "instock" %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}{% if request.GET.sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
         <label class="check"><input type="checkbox" name="instock" value="1" {% if active.instock %}checked{% endif %} onchange="this.form.submit()"> فقط کالاهای موجود</label>
-        {% if facets.sizes %}<fieldset><legend>سایز</legend>
-          <div class="chips">{% for s in facets.sizes %}<a class="chip{% if active.size == s.slug %} on{% endif %}" href="{% query_replace size=s.slug %}">{{ s.label }}</a>{% endfor %}
-          {% if active.size %}<a class="chip clear" href="{% query_replace size='' %}">حذف</a>{% endif %}</div></fieldset>{% endif %}
-        {% if facets.reeds|length > 1 %}<fieldset><legend>شانه</legend>
-          <div class="chips">{% for t in facets.reeds %}<a class="chip{% if active|get_item:'reeds-per-meter' == t.slug %} on{% endif %}" href="{% query_replace "reeds-per-meter" t.slug %}">{{ t.name|fa_num }}</a>{% endfor %}</div></fieldset>{% endif %}
-        {% if facets.colors %}<fieldset><legend>رنگ زمینه</legend>
-          <div class="chips">{% for t in facets.colors %}<a class="chip{% if active|get_item:'background-color' == t.slug %} on{% endif %}" href="{% query_replace "background-color" t.slug %}">{{ t.name }}</a>{% endfor %}</div></fieldset>{% endif %}
-        {% if facets.brands|length > 1 %}<fieldset><legend>برند</legend>
-          <div class="chips">{% for b in facets.brands %}<a class="chip{% if active.brand == b.slug %} on{% endif %}" href="{% query_replace brand=b.slug %}">{{ b.name }}</a>{% endfor %}</div></fieldset>{% endif %}
+        {% for f in facets %}<fieldset><legend>{{ f.attr.label }}</legend>
+          <div class="chips">{% for t in f.terms %}{% if f.active == t.slug %}<a class="chip on" href="{% query_replace f.attr.slug '' %}" rel="nofollow" title="حذف این فیلتر">{{ t.name|fa_num }}</a>{% else %}<a class="chip" href="{% query_replace f.attr.slug t.slug %}" rel="nofollow">{{ t.name|fa_num }}</a>{% endif %}{% endfor %}</div></fieldset>{% endfor %}
         {% if active %}<a href="{{ base_path }}" class="small">حذف همهٔ فیلترها</a>{% endif %}
       </form>
     </aside>

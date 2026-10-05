@@ -20,10 +20,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from accounts.models import OtpCode
 from accounts.utils import latin_digits, normalize_mobile
-from catalog.models import AttributeTerm, Brand, Category, Product, ProductImage, Review, Variation
+from catalog.models import AttributeTerm, Category, Product, ProductImage, Review, Variation
 from catalog.views import SORTS, card_queryset
 from core.models import SiteSettings
-from pricing.models import Size
 from shop import gateways
 from shop.models import Order, ShopSettings
 from shop.views import PROVINCES
@@ -114,7 +113,7 @@ def config(request):
         "update_url": app.update_url, "update_note": app.update_note,
         "site_name": site.site_name, "phone": site.phone, "whatsapp": site.whatsapp, "email": site.email,
         "mobile": site.mobile, "telegram": site.telegram, "eitaa": site.eitaa, "instagram": site.instagram,
-        "farshplus": site.farshplus,
+        "farshplus": site.farshplus, "license_url": settings.SITE_URL + "/license/",
         "socials": [{"key": k, "name": n, "url": u} for k, n, u in site.socials],
         "shop": {"deposit_percent": shop.deposit_percent, "free_shipping_min": shop.free_shipping_min,
                  "allow_full": shop.allow_full, "allow_deposit": shop.allow_deposit, "note": S.plain(shop.checkout_note)},
@@ -256,6 +255,10 @@ def filtered_products(g):
         vals = [x for x in (g.getlist(key) if hasattr(g, "getlist") else [g.get(key)]) if x]
         for val in vals:
             qs = qs.filter(specs__pk=_int(val))
+    for key in [k for k in g.keys() if k.startswith("attr_")]:
+        val = _int(g.get(key))
+        if val:
+            qs = qs.filter(specs__pk=val, specs__attribute__pk=_int(key[5:]))
     if g.get("size"):
         qs = qs.filter(variations__size__pk=_int(g["size"]), variations__is_available=True)
     if g.get("instock"):
@@ -287,19 +290,24 @@ def products(request):
 
 @endpoint()
 def filters(request):
+    """گروه‌های فیلتر = ویژگی‌های «در فیلترها» (شانه، تراکم، جنس نخ خاب، رنگ زمینه)؛ کلید هر گروه attr_<id>."""
+    from catalog.views import attribute_facets, filter_attributes
+
     ids = filtered_products(request.GET).values("pk")
-    terms = lambda slug, n=40: [  # noqa: E731
-        {"id": t.pk, "name": t.name, "count": t.n}
-        for t in AttributeTerm.objects.filter(attribute__slug=slug, products__in=ids).annotate(n=Count("products", distinct=True))
-        .order_by("order", "name")[:n]]
+    attrs = filter_attributes()
+    chosen = {a.slug: "1" for a in attrs if request.GET.get(f"attr_{a.pk}")}
+    groups = [{
+        "id": f["attr"].pk, "key": f"attr_{f['attr'].pk}", "label": f["attr"].label,
+        "terms": [{"id": t.pk, "name": t.name, "count": t.n} for t in f["terms"]],
+    } for f in attribute_facets(attrs, ids, chosen)]
+    old = {g["id"]: g["terms"] for g in groups}
+    by_slug = {a.slug: a.pk for a in attrs}
     return ok({
-        "reeds": terms("reeds-per-meter"),
-        "colors": sorted(terms("background-color", 60), key=lambda x: -x["count"]),
-        "sizes": [{"id": s.pk, "name": s.label, "count": s.n} for s in Size.objects.filter(
-            variations__product__in=ids, is_active=True).exclude(type="custom").annotate(
-            n=Count("variations__product", distinct=True)).order_by("sort_order")],
-        "brands": [{"id": b.pk, "name": b.name, "count": b.n} for b in Brand.objects.filter(products__in=ids)
-                   .annotate(n=Count("products", distinct=True)).order_by("-n")[:40]],
+        "groups": groups,
+        # سازگاری با نسخه‌های قدیمی اپ (سایز و برند دیگر فیلتر نیستند)
+        "reeds": old.get(by_slug.get("reeds-per-meter"), []),
+        "colors": old.get(by_slug.get("background-color"), []),
+        "sizes": [], "brands": [],
     })
 
 

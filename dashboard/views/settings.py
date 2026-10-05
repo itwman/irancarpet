@@ -37,7 +37,7 @@ TABS = [
 FORMS = {
     "site": (SiteSettings, ["site_name", "tagline", "title_separator", "home_title", "home_description", "phone", "mobile", "whatsapp",
                             "telegram", "eitaa", "telegram_channel", "eitaa_channel", "instagram", "farshplus",
-                            "email", "address", "footer_html"]),
+                            "email", "address", "trust_badge", "trust_html", "footer_html"]),
     "shop": (ShopSettings, ["allow_full", "allow_deposit", "deposit_percent", "free_shipping_min", "checkout_note", "admin_mobiles"]),
     "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox"]),
     "sms": (ShopSettings, ["smsir_api_key", "smsir_otp_template_id", "smsir_order_template_id", "smsir_admin_template_id",

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.html import strip_tags
 
 from core import seo
-from pricing.models import PricingSettings, Size
+from pricing.models import PricingSettings
 
 from .models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review, Variation
 
@@ -28,6 +28,32 @@ def card_queryset(qs):
     )
 
 
+def filter_attributes():
+    """ویژگی‌هایی که در فیلترها می‌آیند (پنل ← ویژگی‌ها ← «در فیلترها»): شانه، تراکم، جنس نخ خاب، رنگ زمینه."""
+    return list(Attribute.objects.filter(show_in_filters=True).order_by("order", "label"))
+
+
+def attribute_facets(attrs, product_ids, active=None, limit=40):
+    """[{attr, terms:[term با n], active}] فقط برای مقدارهایی که در این فهرست محصول دارند."""
+    active = active or {}
+    if not attrs:
+        return []
+    terms = (AttributeTerm.objects.filter(attribute__in=attrs, products__in=product_ids)
+             .annotate(n=Count("products", distinct=True)).order_by("order", "name"))
+    by_attr = {}
+    for t in terms:
+        by_attr.setdefault(t.attribute_id, []).append(t)
+    out = []
+    for a in attrs:
+        items = by_attr.get(a.pk, [])
+        if len(items) > 12:  # مثل رنگ‌ها: پرتکرارترها اول
+            items = sorted(items, key=lambda t: -t.n)[:limit]
+        cur = active.get(a.slug, "")
+        if len(items) > 1 or cur:
+            out.append({"attr": a, "terms": items, "active": cur})
+    return out
+
+
 def paged_url(base, page, query):
     url = base + (f"page/{page}/" if page > 1 else "")
     return url + (f"?{query}" if query else "")
@@ -44,11 +70,12 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
     if g.get("size"):
         qs = qs.filter(variations__size__slug=g["size"], variations__is_available=True)
         active["size"] = g["size"]
-    for attr in ("reeds-per-meter", "picks-per-meter", "background-color"):
-        val = g.get(attr)
+    attrs = filter_attributes()
+    for attr in attrs:
+        val = g.get(attr.slug)
         if val:
-            qs = qs.filter(specs__attribute__slug=attr, specs__slug=val)
-            active[attr] = val
+            qs = qs.filter(specs__attribute=attr, specs__slug=val)
+            active[attr.slug] = val
     if g.get("brand"):
         qs = qs.filter(brand__slug=g["brand"])
         active["brand"] = g["brand"]
@@ -74,15 +101,7 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
 
     query = g.urlencode()
     ids = base_qs.values("pk")
-    facets = {
-        "sizes": Size.objects.filter(variations__product__in=ids, is_active=True).exclude(type="custom")
-        .annotate(n=Count("variations__product", distinct=True)).order_by("sort_order"),
-        "reeds": AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", products__in=ids)
-        .annotate(n=Count("products", distinct=True)).order_by("order", "name"),
-        "colors": AttributeTerm.objects.filter(attribute__slug="background-color", products__in=ids)
-        .annotate(n=Count("products", distinct=True)).order_by("-n")[:30],
-        "brands": Brand.objects.filter(products__in=ids).annotate(n=Count("products", distinct=True)).order_by("-n"),
-    }
+    facets = attribute_facets(attrs, ids, active)
     if "override" in meta:
         m = {"robots": "", **meta["override"],
              "canonical": settings.SITE_URL + path + (f"page/{page}/" if page > 1 else "")}

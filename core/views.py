@@ -10,6 +10,7 @@ from catalog import views as catalog_views
 from catalog.models import Attribute, AttributeTerm, Category, Product
 
 from . import seo
+from .models import SiteSettings
 
 PAGED = re.compile(r"^(?P<path>.*?)/?page/(?P<page>\d+)$")
 
@@ -158,9 +159,26 @@ def resolve(request, path):
             from installments.views import info_page
 
             return info_page(request, page)
+        if page.template == "license" and page_num == 1:
+            return license_page(request, page)
         if page_num == 1:
             return blog_views.page_detail(request, page)
     raise Http404
+
+
+TRUST_SHORTCODE = "[trust_seals]"
+
+
+def license_page(request, page):
+    """برگهٔ «مجوزها» (قالب license): کد اصلی اینماد فقط همین‌جا بار می‌شود؛ جای [trust_seals] در متن."""
+    if page.status != "publish" and not request.user.is_staff:
+        raise Http404
+    content = page.content or ""
+    before, _, after = content.partition(TRUST_SHORTCODE) if TRUST_SHORTCODE in content else (content, "", "")
+    return render(request, "blog/license.html", {
+        "meta": seo.build(page, "page"), "page": page, "before": before, "after": after,
+        "site": SiteSettings.load(), "crumbs": [(page.title, page.get_absolute_url())],
+    })
 
 
 def _page_by_path(slugs):
