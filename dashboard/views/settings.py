@@ -16,6 +16,7 @@ from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
 from api.models import AppSettings
+from content.models import ContentSettings
 from rajyar.models import RajyarSettings
 from seo import indexnow
 from seo.models import SeoSettings
@@ -38,6 +39,7 @@ TABS = [
     ("app", "اپلیکیشن"),
     ("seo", "سئو و هوش مصنوعی"),
     ("rajyar", "رج‌یار (کانال‌ها)"),
+    ("content", "متن محصولات"),
 ]
 
 FORMS = {
@@ -61,6 +63,7 @@ FORMS = {
     "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes",
                                 "price_mode", "price_sizes", "show_specs", "show_summary", "button_text", "tags", "footer"]),
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
+    "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
 

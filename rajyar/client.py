@@ -116,10 +116,12 @@ def build_payload(p, s, publish_at=None, force_new=False):
     prices = price_lines(p, s, publish_at or timezone.now())
     if prices:
         blocks.append("\n".join(prices))
-    if s.show_summary and p.short_description:
-        from core.seo import plain
+    if s.show_summary:
+        from content.render import summary_text
 
-        blocks.append(fa_num(plain(p.short_description, 220)))
+        summary = summary_text(p)
+        if summary:
+            blocks.append(fa_num(summary[:400]))
     if s.footer:
         blocks.append(s.footer)
     url = f"{settings.SITE_URL}/p/{p.pk}/"  # پیوند کوتاه؛ نشانی فارسی در پیام‌رسان‌ها خیلی بلند و ناخوانا می‌شود

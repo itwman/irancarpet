@@ -2,6 +2,8 @@ from django.urls import path
 
 from . import resources  # noqa: F401  ثبت بخش‌ها
 from .ac import autocomplete
+from content import views as content_views
+
 from .views import crud, home, media, orders, people, products, settings
 
 urlpatterns = [
@@ -11,6 +13,9 @@ urlpatterns = [
     path("ac/<str:key>/", autocomplete),
     path("media/upload/", media.upload),
     path("products/add/", products.product_edit),
+    path("products/bulk/", content_views.bulk),
+    path("content-tools/", content_views.tools),
+    path("content-templates/<int:pk>/preview/", content_views.preview),
     path("products/<int:pk>/edit/", products.product_edit),
     path("products/<int:pk>/duplicate/", products.product_duplicate),
     path("products/<int:pk>/follow-album/", products.product_follow_album),

@@ -122,7 +122,13 @@ def build_fields(product, item, s, mode, img_hash):
         vs = base or vs
     price = min((v.price for v in vs), default=product.min_price)
     regular = min((v.final_price for v in vs if v.final_price), default=price)
-    desc = product.short_description if plain_text(product.short_description) else product.content
+    if product.use_template:
+        from content.render import build, to_text
+
+        doc = build(product)
+        desc = (to_text(doc["bullets"]) + "\n\n" + to_text(doc["html"])).strip()
+    else:
+        desc = product.short_description if plain_text(product.short_description) else product.content
     f = {
         "external_id": item.external_id,
         "title": plain_text(product.title, 0),

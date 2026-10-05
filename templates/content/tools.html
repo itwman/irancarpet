@@ -1,0 +1,78 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}جایگزینی متن و لینک‌ها{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/products/" class="back">‹ محصولات</a><h1>جایگزینی متن و اصلاح لینک‌ها</h1>
+    <p class="muted">{{ stats.template|fa_num }} فرش متن قالبی دارند و {{ stats.manual|fa_num }} فرش متن دستی.</p></div>
+</div>
+<p class="help-note">بهترین راه برای فرش‌هایی که متن قدیمی تکراری دارند این است که در «محصولات» انتخابشان کنید و عملیات «متن از قالب» را بزنید؛
+متن قدیمی پاک نمی‌شود و هر وقت بخواهید برمی‌گردد. ابزارهای این صفحه فقط روی متن دستی کار می‌کنند و هر تغییری قابل برگرداندن است.</p>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p" id="replace"><h2>پیدا کردن و جایگزینی</h2>
+      <form method="get" action="#replace">
+        <input type="hidden" name="do" value="preview">
+        <div class="row g-2">
+          <div class="col-md-6 fld"><label for="find">این عبارت</label><textarea name="find" id="find" class="form-control" rows="2" required>{{ find }}</textarea></div>
+          <div class="col-md-6 fld"><label for="repl">بشود این (خالی = حذف)</label><textarea name="replace" id="repl" class="form-control" rows="2">{{ repl }}</textarea></div>
+        </div>
+        <div class="d-flex flex-wrap gap-3 align-items-end">
+          {% for k, l in fields.items %}<label class="form-check"><input class="form-check-input" type="checkbox" name="field" value="{{ k }}"{% if k in chosen_fields or not chosen_fields and k == "content" %} checked{% endif %}> {{ l }}</label>{% endfor %}
+          <div class="fld mb-0"><label for="alb">آلبوم</label><select name="album" id="alb" class="form-select form-select-sm"><option value="">همه</option>{% for a in albums %}<option value="{{ a.pk }}"{% if album_sel == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name }}</option>{% endfor %}</select></div>
+          <button class="btn btn-ink btn-sm" type="submit">پیش‌نمایش</button>
+        </div>
+        <p class="hint mt-2">عین عبارت جستجو می‌شود (کد HTML هم حساب است؛ مثلاً برای حذف یک لینک خاص، کل &lt;a href="…"&gt;…&lt;/a&gt; را بنویسید).</p>
+      </form>
+      {% if hits is not None %}
+        {% if hits %}
+        <p><strong>{{ hit_total|fa_num }}</strong> بار در <strong>{{ hit_products|fa_num }}</strong> فرش پیدا شد{% if hits|length < hit_products %} (نمونه‌ها){% endif %}:</p>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>فرش</th><th>جا</th><th>تغییر</th></tr></thead><tbody>
+          {% for p, f, n, snip in hits %}<tr><td><a href="/panel/products/{{ p.pk }}/edit/" target="_blank">{{ p.title|fa_num|truncatechars:50 }}</a></td><td>{% if f == "content" %}توضیحات{% else %}خلاصه{% endif %} ×{{ n|fa_num }}</td><td class="diff-p">{{ snip|safe }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <form method="post" class="mt-2" data-confirm="جایگزینی در {{ hit_products|fa_num }} فرش انجام شود؟">{% csrf_token %}
+          <input type="hidden" name="do" value="replace"><input type="hidden" name="find" value="{{ find }}"><input type="hidden" name="replace" value="{{ repl }}">
+          <input type="hidden" name="album" value="{{ album_sel }}">{% for f in chosen_fields %}<input type="hidden" name="field" value="{{ f }}">{% endfor %}
+          <button class="btn btn-pink" type="submit">جایگزینی در همه</button>
+        </form>
+        {% else %}<p class="muted">در متن دستی فرش‌ها پیدا نشد.</p>{% endif %}
+      {% endif %}
+    </section>
+
+    <section class="card-p" id="links"><h2>بررسی لینک‌های متن فرش‌ها</h2>
+      <form method="get" action="#links" class="d-flex flex-wrap gap-2 align-items-end">
+        <input type="hidden" name="do" value="audit">
+        <div class="fld mb-0"><label for="alb2">آلبوم</label><select name="album" id="alb2" class="form-select form-select-sm"><option value="">همه</option>{% for a in albums %}<option value="{{ a.pk }}"{% if album_sel == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name }}</option>{% endfor %}</select></div>
+        <button class="btn btn-ink btn-sm" type="submit">بررسی</button>
+      </form>
+      <p class="hint mt-2">هر نشانی داخلی واقعاً باز می‌شود تا خراب‌ها (۴۰۴) و منتقل‌شده‌ها (ریدایرکت) پیدا شوند؛ ممکن است چند ثانیه طول بکشد.</p>
+      {% if kinds %}
+      <form method="post" action="#links" data-confirm="لینک‌های انتخاب‌شده اصلاح شوند؟ (قابل برگرداندن است)">{% csrf_token %}
+        <input type="hidden" name="do" value="fix"><input type="hidden" name="album" value="{{ album_sel }}">
+        <p>{{ audited|fa_num }} فرش با متن دستی بررسی شد.</p>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>مشکل</th><th>فرش</th><th>نمونه</th><th>اصلاح</th></tr></thead><tbody>
+          {% for k, x in kinds.items %}<tr><td><input class="form-check-input" type="checkbox" name="kind" value="{{ k }}"{% if x.n %} checked{% else %} disabled{% endif %}></td>
+            <td>{{ x.label }}</td><td>{{ x.n|fa_num }}</td>
+            <td>{% for p in x.products %}<a href="{{ p.get_absolute_url }}" target="_blank">{{ p.title|fa_num|truncatechars:28 }}</a>{% if not forloop.last %}، {% endif %}{% endfor %}</td>
+            <td class="small muted">{% if k == "redirect" %}نشانی تازه جایش می‌نشیند{% else %}لینک برداشته می‌شود، متن می‌ماند{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <button class="btn btn-pink mt-2" type="submit">اصلاح موارد تیک‌خورده</button>
+      </form>
+      {% if bad_paths %}<details class="mt-3"><summary>نشانی‌های مشکل‌دار ({{ bad_paths|length|fa_num }})</summary>
+        <ul class="small">{% for p, c, l in bad_paths %}<li><code dir="ltr">{{ p }}</code> — {% if c %}{{ c|fa_num }}{% else %}خطا{% endif %}{% if l %} ← <code dir="ltr">{{ l }}</code>{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      {% endif %}
+    </section>
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>سابقهٔ تغییرها</h2>
+      {% for e in edits %}<div class="kv-block"><p class="mb-1">{{ e.summary|fa_num }}</p><small class="muted">{{ e.created_at|jdate:"%Y/%m/%d %H:%M" }}{% if e.user %} · {{ e.user.get_full_name|default:e.user.username }}{% endif %}</small>
+        {% if not e.undone %}<form method="post" class="d-inline" data-confirm="این تغییر برگردانده شود؟">{% csrf_token %}<input type="hidden" name="do" value="undo"><input type="hidden" name="edit" value="{{ e.pk }}"><button class="btn btn-link btn-sm p-0 ms-2" type="submit">برگرداندن</button></form>{% else %}<span class="badge-ic b-draft ms-2">برگردانده شد</span>{% endif %}</div>
+      {% empty %}<p class="hint">هنوز تغییری ثبت نشده.</p>{% endfor %}
+    </section>
+    <section class="card-p"><h2>قاعدهٔ لینک‌ها</h2>
+      <ul class="small mb-0"><li>۳ تا ۴ لینک در هر متن: دستهٔ فرش، لیست قیمت، صفحهٔ ۱۲ متری، خرید اقساطی.</li><li>هر نشانی یک بار.</li><li>بدون لینک در تیترها.</li><li>بدون لینک کلمه به صفحهٔ اول.</li><li>متن لینک گویا (نه «اینجا»).</li></ul>
+      <p class="hint mt-2">متن قالبی همین قاعده‌ها را خودکار رعایت می‌کند.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

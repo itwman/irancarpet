@@ -81,6 +81,11 @@
     </div>
     <div class="edit__side">
       <section class="card-p"><h2>انتشار</h2>{% for name in groups.publish %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}{% with f=form.sku %}{% include "dashboard/_field.html" %}{% endwith %}</section>
+      <section class="card-p" id="text"><h2>متن و نقشه</h2>
+        {% for name in groups.text %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}
+        <p class="hint">{% if tpl %}قالب این فرش: <a href="/panel/content-templates/{{ tpl.pk }}/">{{ tpl.name }}</a>.{% else %}هنوز قالبی برای این فرش نیست؛ <a href="/panel/content-templates/">قالب‌های متن</a>.{% endif %}
+          بخش‌های مشترک (ارسال، پرداخت، ضمانت…) در <a href="/panel/info-blocks/">بخش‌های مشترک</a> نوشته می‌شوند و زیر متن همهٔ فرش‌ها می‌آیند.</p>
+      </section>
       <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
       <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>ویدیو</h2>{% with f=form.video_url %}{% include "dashboard/_field.html" %}{% endwith %}</section>

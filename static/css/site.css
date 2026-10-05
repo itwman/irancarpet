@@ -305,7 +305,26 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 .tabs-nav{display:flex;gap:.4rem;margin:3.5rem 0 1.75rem;position:sticky;top:132px;background:rgba(255,255,255,.95);z-index:5;padding:.5rem 0;border-bottom:1px solid var(--line)}
 .tabs-nav a{padding:.45rem 1rem;color:var(--ink);font-weight:700;border-radius:999px}
 .tabs-nav a:hover{background:var(--pink-t);color:var(--pink-d)}
-.product-desc,.faq,.reviews{max-width:900px}
+.product-desc,.faq,.reviews,.info-blocks{max-width:900px}
+/* رنگ‌های دیگر همین نقشه */
+.swatches{margin:1.1rem 0 .4rem}.swatches__label{font-size:.82rem;color:var(--ink-2);margin:0 0 .5rem;font-weight:600}
+.swatches__row{display:flex;gap:.55rem;overflow-x:auto;padding:.15rem .1rem .45rem;scrollbar-width:thin}
+.swatch{flex:0 0 auto;width:76px;display:flex;flex-direction:column;align-items:center;gap:.3rem;color:var(--ink);font-size:.75rem;text-align:center;line-height:1.5}
+.swatch img,.swatch .noimg{width:64px;height:64px;border-radius:14px;object-fit:cover;box-shadow:0 0 0 1px var(--line);transition:box-shadow .2s}
+.swatch:hover img{box-shadow:0 0 0 2px var(--ink-2)}
+.swatch.on img,.swatch.on .noimg{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pink)}.swatch.on span{font-weight:800;color:var(--pink-d)}
+.p-summary ul{padding-inline-start:1.1rem;margin:0}.p-summary li{margin-bottom:.15rem}
+.price-lines{list-style:none;padding:0;margin:.6rem 0 1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.2rem 1.5rem}
+.price-lines li{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;border-bottom:1px dashed var(--line);padding:.3rem 0}
+.price-lines small{color:var(--muted);font-size:.8em}.price-lines li>span:last-child{white-space:nowrap}
+/* ارسال، پرداخت، ضمانت */
+.info-blocks{margin:2.2rem 0 0;border-top:1px solid var(--line)}
+.info-blocks details{border-bottom:1px solid var(--line);padding:.2rem 0}
+.info-blocks summary{list-style:none;cursor:pointer;font-weight:800;font-size:1.05rem;padding:.85rem 0;display:flex;align-items:center;justify-content:space-between}
+.info-blocks summary::-webkit-details-marker{display:none}
+.info-blocks summary::after{content:"+";font-size:1.4rem;font-weight:400;color:var(--muted);transition:transform .2s}
+.info-blocks details[open] summary::after{transform:rotate(45deg)}
+.info-blocks .prose{padding:0 0 1rem}.info-blocks ul{padding-inline-start:1.2rem;margin:0}
 .faq details{background:var(--soft);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:.6rem}.faq summary{font-weight:700;cursor:pointer}
 .reviews{margin:3rem 0}.review{background:#fff;border-radius:var(--r-md);padding:1.1rem 1.25rem;margin-bottom:.8rem;box-shadow:0 0 0 1px var(--line)}
 .review header{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;font-size:.88rem;margin-bottom:.4rem}.review time{color:var(--muted);margin-inline-start:auto}

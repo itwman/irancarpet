@@ -75,6 +75,10 @@ def _video(p):
 
 
 def product_detail(p, gallery, variations, specs, reviews, faqs, related):
+    from content.render import build, color_siblings, full_text, to_text
+
+    doc = build(p, list(variations))
+    blocks_html = "".join(f"<h2>{b['title']}</h2>{b['html']}" for b in doc["blocks"])
     return {
         **card(p),
         "slug": p.slug,
@@ -85,9 +89,12 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "sale_status": p.sale_status,
         "album": p.album.name if p.album_id else "",
         "images": [{"full": media_url(m), "thumb": thumb_url(m, 960), "w": m.width or 0, "h": m.height or 0} for m in gallery],
-        "short_description": plain(p.short_description),
-        "content_html": p.content or "",
-        "content_text": plain(p.content, 3000),
+        "short_description": to_text(doc["bullets"]),
+        "content_html": (doc["html"] or "") + blocks_html,
+        "content_text": full_text(doc)[:6000],
+        "info_blocks": [{"title": b["title"], "text": to_text(b["html"]), "html": b["html"]} for b in doc["blocks"]],
+        "colors": [{"id": x["product"].pk, "title": x["product"].title, "color": x["color"], "current": x["current"],
+                    "image": thumb_url(x["product"].image, 240) if x["product"].image_id else ""} for x in color_siblings(p)],
         "sizes": [size_row(v) for v in variations],
         "specs": specs,
         "categories": [{"id": c.pk, "name": c.name} for c in p.categories.all()],

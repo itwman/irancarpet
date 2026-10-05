@@ -48,6 +48,13 @@
       <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="rajyar"><button class="btn btn-ink" name="do" value="rajyar_ping">بررسی اتصال و دریافت کانال‌ها</button></form>
     </section>
     {% endif %}
+    {% if tab == "content" %}
+    <section class="card-p">
+      <h2>کجا به‌کار می‌روند؟</h2>
+      <p class="hint">این مقدارها در <a href="/panel/content-templates/">قالب‌های متن</a> و <a href="/panel/info-blocks/">بخش‌های مشترک صفحهٔ فرش</a> با متغیرهایی مثل {هزینه_ارسال}، {زمان_آماده_سازی}، {جریمه_لغو}، {ضمانت} و {جفتی} می‌نشینند و با تغییرشان متن همهٔ فرش‌ها یک‌جا عوض می‌شود.
+        سقف ارسال رایگان و درصد بیعانه از زبانهٔ «فروش و ارسال» و روش‌های اقساط از «روش‌های اقساط» خوانده می‌شوند.</p>
+    </section>
+    {% endif %}
     {% if tab == "seo" %}
     <section class="card-p">
       <h2>ارسال همهٔ صفحه‌ها به IndexNow</h2>

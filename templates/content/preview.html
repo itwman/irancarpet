@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}پیش‌نمایش قالب {{ tpl.name }}{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/content-templates/{{ tpl.pk }}/" class="back">‹ {{ tpl.name }}</a><h1>پیش‌نمایش روی «{{ p.title|fa_num }}»</h1>
+    <p class="muted">عنوان نمونه در ساخت گروهی: {{ title_sample|fa_num }}</p></div>
+  <div class="page-top__actions">
+    <form method="get" class="d-flex gap-2"><select name="product" class="ac" data-ac="/panel/ac/product/"><option value="">فرش دیگر…</option></select><button class="btn btn-light btn-sm">نمایش</button></form>
+  </div>
+</div>
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p preview-p"><h2>توضیحات</h2><div class="prose-p">{{ doc.html|safe }}</div></section>
+    <section class="card-p preview-p"><h2>بخش‌های مشترک</h2>
+      {% for b in doc.blocks %}<details{% if b.open %} open{% endif %}><summary>{{ b.title }}</summary><div class="prose-p">{{ b.html|safe }}</div></details>{% empty %}<p class="hint">بخش فعالی نیست.</p>{% endfor %}</section>
+  </div>
+  <div class="edit__side">
+    <section class="card-p preview-p"><h2>خلاصهٔ کنار قیمت</h2><div class="prose-p">{{ doc.bullets|safe }}</div></section>
+    <p class="hint">این فقط پیش‌نمایش است. برای اینکه متن فرشی از قالب بیاید، در صفحهٔ آن فرش «متن از قالب» را روشن کنید یا از عملیات گروهی محصولات استفاده کنید.</p>
+  </div>
+</div>
+{% endblock %}

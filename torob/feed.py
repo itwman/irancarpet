@@ -124,7 +124,8 @@ def format_row(p, s):
         "image_link": (site + wp_url(main.url)) if main and main.url else "",
         "image_links": links,
         "page_url": site + wp_url(p.get_absolute_url()),
-        "short_desc": _text(p.short_description or p.content),
+        "short_desc": _text(__import__("content.render", fromlist=["build"]).build(p)["bullets"] if p.use_template
+                            else (p.short_description or p.content)),
         "spec": _spec(p, s),
         "guarantee": guarantee,
         "registry": s.registry_text,

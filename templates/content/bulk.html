@@ -1,0 +1,147 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}ساخت گروهی فرش{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/products/" class="back">‹ محصولات</a><h1>ساخت گروهی فرش‌های یک نقشه</h1>
+    <p class="muted">{% if step == "preview" %}مرحلهٔ ۲ از ۲: بررسی عنوان‌ها و عکس‌ها{% else %}مرحلهٔ ۱ از ۲: آلبوم، نقشه، رنگ‌ها و عکس‌ها{% endif %}</p></div>
+</div>
+
+{% if step == "preview" %}
+<form method="post" class="bulkwiz">{% csrf_token %}
+  <input type="hidden" name="step" value="create">
+  <input type="hidden" name="album" value="{{ album.pk }}"><input type="hidden" name="design" value="{{ design }}">
+  <input type="hidden" name="color_count" value="{{ data.color_count }}"><input type="hidden" name="embossed" value="{{ data.embossed }}">
+  <input type="hidden" name="status" value="{{ data.status }}"><input type="hidden" name="note" value="{{ data.note }}">
+  <input type="hidden" name="sample" value="{{ data.sample }}"><input type="hidden" name="media_ids" value="{{ data.media_ids }}">
+  <input type="hidden" name="rajyar" value="{{ data.rajyar }}">
+  <input type="hidden" name="rows_n" value="{{ rows|length }}">
+  {% for r in rows %}<input type="hidden" name="row_{{ r.i }}" value="{% if r.color.pk %}{{ r.color.pk }}{% else %}new:{{ r.color.name }}{% endif %}">{% endfor %}
+  {% for x in cats %}<input type="hidden" name="categories" value="{{ x.pk }}">{% endfor %}
+  {% for x in spec_ids %}<input type="hidden" name="specs" value="{{ x }}">{% endfor %}
+
+  <section class="card-p">
+    <h2>مشترک بین همه</h2>
+    <div class="kv"><span>آلبوم</span><strong>{{ album.name }}</strong></div>
+    <div class="kv"><span>نقشه</span><strong>{{ design }}</strong></div>
+    <div class="kv"><span>مشخصات</span><strong>{% for t in terms %}{{ t.attribute.label }}: {{ t.name|fa_num }}{% if not forloop.last %}، {% endif %}{% empty %}—{% endfor %} + رنگ زمینهٔ هر ردیف</strong></div>
+    <div class="kv"><span>دسته‌ها</span><strong>{% for x in cats %}{{ x.name }}{% if not forloop.last %}، {% endif %}{% empty %}—{% endfor %}</strong></div>
+    <div class="kv"><span>برند، برچسب‌ها</span><strong>{% if sample %}مثل «{{ sample.title|fa_num }}»{% else %}—{% endif %}</strong></div>
+    <div class="kv"><span>متن</span><strong>{% if tpl %}از قالب «{{ tpl.name }}»{% else %}قالبی نیست؛ اول یک قالب پیش‌فرض بسازید{% endif %}</strong></div>
+    <div class="kv"><span>وضعیت</span><strong>{% if data.status == "publish" %}منتشر شود{% else %}پیش‌نویس{% endif %}</strong></div>
+    {% if not sample and not terms %}<p class="alert alert-warning py-2 small mt-2">این آلبوم هنوز فرشی ندارد که مشخصاتش (شانه، تراکم، جنس نخ…) کپی شود. برگردید و «مشخصات» را خودتان انتخاب کنید.</p>{% endif %}
+  </section>
+
+  <section class="card-p">
+    <h2>فرش‌ها ({{ rows|length|fa_num }})</h2>
+    <p class="hint">عکس‌ها از روی نام فایل به رنگ‌ها وصل شده‌اند (مثلاً arshan-سرمه‌ای-1.jpg). اولین عکس تیک‌خورده، عکس اصلی است.</p>
+    {% for r in rows %}
+    <div class="bulk-row">
+      <label class="bulk-row__make"><input type="checkbox" class="form-check-input" name="make_{{ r.i }}" value="1"{% if not r.dup %} checked{% endif %}> ساخته شود</label>
+      <div class="bulk-row__main">
+        <div class="fld mb-2"><label>عنوان — زمینهٔ {{ r.color.name }}{% if not r.color.pk %} <span class="badge-ic b-draft">رنگ تازه</span>{% endif %}</label>
+          <input class="form-control" name="title_{{ r.i }}" value="{{ r.title }}"></div>
+        {% if r.dup %}<p class="err">فرشی با همین عنوان هست: <a href="/panel/products/{{ r.dup.pk }}/edit/" target="_blank">{{ r.dup.title|fa_num }}</a></p>{% endif %}
+        <div class="bulk-imgs">
+          {% for m in medias %}<label class="bulk-img{% if m.pk in r.imgs %} on{% endif %}"><input type="checkbox" name="img_{{ r.i }}" value="{{ m.pk }}"{% if m.pk in r.imgs %} checked{% endif %}><img src="{{ m.url }}" alt="" loading="lazy"><small>{{ m.title|truncatechars:22 }}</small></label>{% empty %}<p class="hint">عکسی آپلود نشده؛ بعداً در صفحهٔ هر فرش اضافه کنید.</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% if unmatched %}<p class="hint mt-2">{{ unmatched|length|fa_num }} عکس به هیچ رنگی وصل نشد؛ اگر لازم است، در ردیف درست تیک بزنید.</p>{% endif %}
+  </section>
+  <div class="d-flex gap-2"><button class="btn btn-pink" type="submit">ساخت فرش‌ها</button><a class="btn btn-light" href="/panel/products/bulk/">شروع دوباره</a></div>
+</form>
+
+{% else %}
+<form method="post" class="bulkwiz" id="bulkForm">{% csrf_token %}
+  <input type="hidden" name="step" value="preview">
+  <input type="hidden" name="media_ids" id="mediaIds" value="{{ data.media_ids }}">
+  <div class="edit__grid">
+    <div class="edit__main">
+      <section class="card-p"><h2>نقشه</h2>
+        <div class="fld"><label for="album">آلبوم قیمت <span class="req">*</span></label>
+          <select name="album" id="album" class="form-select" required><option value="">انتخاب…</option>
+            {% for a in albums %}<option value="{{ a.pk }}"{% if data.album == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name }}</option>{% endfor %}</select>
+          <div class="hint">سایزها و قیمت‌ها از آلبوم می‌آید؛ مشخصات، دسته‌ها، برند و برچسب‌ها از آخرین فرش همین آلبوم کپی می‌شود.</div></div>
+        <div class="fld"><label for="design">نام نقشه <span class="req">*</span></label><input name="design" id="design" class="form-control" value="{{ data.design }}" placeholder="مثلاً آرشان" required></div>
+        <div class="row g-2">
+          <div class="col-sm-6 fld"><label for="cc">تعداد رنگ</label><input name="color_count" id="cc" class="form-control" inputmode="numeric" value="{{ data.color_count }}" placeholder="مثلاً ۸"></div>
+          <div class="col-sm-6 fld d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="embossed" id="emb" value="1"{% if data.embossed %} checked{% endif %}><label class="form-check-label" for="emb">گل برجسته</label></div></div>
+        </div>
+        <div class="fld"><label for="note">یادداشت اختصاصی این نقشه (اختیاری)</label><textarea name="note" id="note" class="form-control" rows="2" placeholder="یک جمله دربارهٔ حس طرح یا اتاق مناسب">{{ data.note }}</textarea></div>
+      </section>
+
+      <section class="card-p"><h2>رنگ‌های زمینه</h2>
+        <div class="color-pick">{% for c in colors %}<label><input type="checkbox" name="colors" value="{{ c.pk }}"{% if c.pk|stringformat:"s" in sel_colors %} checked{% endif %}><span>{{ c.name }}</span></label>{% empty %}<p class="hint">ویژگی «رنگ زمینه» پیدا نشد.</p>{% endfor %}</div>
+        <div class="fld mt-3"><label for="nc">رنگ تازه</label><input name="new_colors" id="nc" class="form-control" value="{{ data.new_colors }}" placeholder="با ویرگول جدا کنید؛ مثلاً یشمی، فیلی"></div>
+      </section>
+
+      <section class="card-p"><h2>عکس‌ها</h2>
+        <label class="dropzone-p" id="bulkDrop"><input type="file" accept="image/*" multiple hidden id="bulkFiles">
+          <strong>عکس همهٔ رنگ‌ها را یک‌جا بکشید و رها کنید</strong><span>یا برای انتخاب کلیک کنید. اگر نام فایل رنگ را داشته باشد (مثل arshan-سرمه‌ای.jpg)، خودکار به همان رنگ وصل می‌شود.</span></label>
+        <div class="bulk-up" id="bulkUp"></div>
+      </section>
+    </div>
+    <div class="edit__side">
+      <section class="card-p"><h2>انتشار</h2>
+        <div class="fld"><label for="st">وضعیت</label><select name="status" id="st" class="form-select"><option value="draft">پیش‌نویس</option><option value="publish"{% if data.status == "publish" %} selected{% endif %}>منتشر شود</option></select></div>
+        {% if rajyar.enabled %}{% if rajyar.auto %}<p class="hint">فرش‌های منتشرشده خودکار به کانال‌ها (رج‌یار) می‌روند.</p>{% else %}
+        <div class="form-check form-switch fld"><input class="form-check-input" type="checkbox" name="rajyar" id="rj" value="1"{% if data.rajyar %} checked{% endif %}><label class="form-check-label" for="rj">ارسال به کانال‌ها (رج‌یار)</label><div class="hint">با فاصلهٔ تنظیم‌شده، یکی‌یکی</div></div>{% endif %}{% endif %}
+      </section>
+      <section class="card-p"><h2>از روی فرش نمونه</h2>
+        <div class="fld"><label for="sample">فرش نمونه (اختیاری)</label><select name="sample" id="sample" class="ac" data-ac="/panel/ac/product/"><option value="">آخرین فرش همان آلبوم</option></select>
+          <div class="hint">مشخصات، دسته‌ها، برند و برچسب‌ها از این فرش کپی می‌شود (به‌جز رنگ زمینه).</div></div>
+        <div class="fld"><label for="specs">مشخصات جایگزین (اختیاری)</label><select name="specs" id="specs" class="ac" data-ac="/panel/ac/term/" multiple></select>
+          <div class="hint">مثلاً جنس نخ تازه؛ جای همان ویژگی نمونه را می‌گیرد.</div></div>
+        <div class="fld"><label for="cats">دسته‌ها (اختیاری)</label><select name="categories" id="cats" class="ac" data-ac="/panel/ac/category/" multiple></select></div>
+      </section>
+      <button class="btn btn-pink w-100" type="submit" id="bulkNext">بعدی: بررسی</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}{{ block.super }}<script>
+(function () {
+  var inp = document.getElementById("bulkFiles"), drop = document.getElementById("bulkDrop"), box = document.getElementById("bulkUp"),
+      ids = document.getElementById("mediaIds"), next = document.getElementById("bulkNext");
+  if (!inp) return;
+  var busy = 0;
+  function csrf() { return document.querySelector("input[name=csrfmiddlewaretoken]").value; }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+  function sync() {
+    ids.value = Array.prototype.map.call(box.querySelectorAll("figure[data-id]"), function (f) { return f.dataset.id; }).join(",");
+    next.disabled = busy > 0;
+    next.textContent = busy > 0 ? "در حال آپلود " + busy + " عکس…" : "بعدی: بررسی";
+  }
+  function send(files) {
+    var list = Array.prototype.slice.call(files);
+    var run = function () {
+      var f = list.shift();
+      if (!f) return;
+      var fig = document.createElement("figure");
+      fig.innerHTML = '<span class="ph"></span><figcaption>' + esc(f.name) + "</figcaption>";
+      box.appendChild(fig);
+      busy++; sync();
+      var fd = new FormData(); fd.append("file", f);
+      fetch("/panel/media/upload/", { method: "POST", headers: { "X-CSRFToken": csrf() }, body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j.files && j.files.length) {
+            fig.dataset.id = j.files[0].value;
+            fig.innerHTML = '<img src="' + esc(j.files[0].url) + '" alt=""><figcaption>' + esc(f.name) + '</figcaption><button type="button" class="x" aria-label="برداشتن">×</button>';
+          } else { fig.classList.add("bad"); fig.querySelector("figcaption").textContent = (j.errors || ["خطا"]).join(" "); }
+        })
+        .catch(function () { fig.classList.add("bad"); fig.querySelector("figcaption").textContent = f.name + ": آپلود نشد"; })
+        .then(function () { busy--; sync(); run(); });
+    };
+    run(); run();  // دو آپلود هم‌زمان
+  }
+  inp.addEventListener("change", function () { send(inp.files); inp.value = ""; });
+  ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("drag"); }); });
+  ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("drag"); }); });
+  drop.addEventListener("drop", function (e) { send(e.dataTransfer.files); });
+  box.addEventListener("click", function (e) { var x = e.target.closest(".x"); if (x) { x.parentNode.remove(); sync(); } });
+})();
+document.querySelectorAll(".bulk-img input").forEach(function (i) { i.addEventListener("change", function () { i.parentNode.classList.toggle("on", i.checked); }); });
+</script>{% endblock %}

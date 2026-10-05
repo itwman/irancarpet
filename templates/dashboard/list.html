@@ -11,6 +11,7 @@
         <button class="btn btn-ink btn-sm w-100 mt-2" type="submit">نمایش</button>
       </form></details>{% endif %}
     <a class="btn btn-light btn-sm" href="?{{ base_qs }}{% if base_qs %}&{% endif %}export=csv"><svg class="ic"><use href="#i-download"/></svg> خروجی اکسل (CSV)</a>
+    {% if res.key == "products" %}<a class="btn btn-light btn-sm" href="/panel/products/bulk/"><svg class="ic"><use href="#i-layers"/></svg> ساخت گروهی</a>{% endif %}
     {% if res.can_add %}<a class="btn btn-pink" href="{{ res.url }}add/"><svg class="ic"><use href="#i-plus"/></svg> {{ res.single }} تازه</a>{% endif %}
   </div>
 </div>

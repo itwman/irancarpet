@@ -39,6 +39,12 @@
       </ul>
       {% endif %}
 
+      {% if siblings %}
+      <div class="swatches"><p class="swatches__label">رنگ‌های دیگر نقشهٔ {{ design }}</p>
+        <div class="swatches__row">{% for s in siblings %}<a class="swatch{% if s.current %} on{% endif %}" href="{{ s.product.get_absolute_url }}"{% if s.current %} aria-current="page"{% endif %} title="{{ s.product.title|fa_num }}">{% if s.thumb %}<img src="{{ s.thumb }}" alt="" loading="lazy" width="64" height="64">{% else %}<span class="noimg"></span>{% endif %}<span>{{ s.color }}</span></a>{% endfor %}</div>
+      </div>
+      {% endif %}
+
       {% if product.sale_status != "available" %}
         <div class="status-note status-note--{{ product.sale_status }}">{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این محصول فقط با استعلام قیمت قابل سفارش است.{% endif %}</div>
       {% endif %}
@@ -92,12 +98,17 @@
           <button class="pill" type="submit">{% if user.is_authenticated %}خبرم کن{% else %}ثبت{% endif %}</button>
         </form>
       </details>
-      {% if product.short_description %}<div class="prose small mt-3">{{ product.short_description|safe }}</div>{% endif %}
+      {% if doc.bullets %}<div class="prose small mt-3 p-summary">{{ doc.bullets|safe }}</div>{% endif %}
     </div>
   </div>
 
   <nav class="tabs-nav"><a href="#desc">توضیحات</a>{% if faqs %}<a href="#faq">پرسش‌ها</a>{% endif %}<a href="#reviews">نظرات ({{ product.rating_count|fa_num }})</a></nav>
-  <section id="desc" class="prose product-desc">{{ product.content|safe }}</section>
+  <section id="desc" class="prose product-desc">{{ doc.html|safe }}</section>
+  {% if doc.blocks %}
+  <section class="info-blocks" aria-label="ارسال، پرداخت و ضمانت">
+    {% for b in doc.blocks %}<details{% if b.open %} open{% endif %}><summary>{{ b.title }}</summary><div class="prose">{{ b.html|safe }}</div></details>{% endfor %}
+  </section>
+  {% endif %}
 
   {% if faqs %}
   <section id="faq" class="faq"><h2>پرسش‌های متداول</h2>

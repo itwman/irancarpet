@@ -700,3 +700,4 @@ register(Resource(
 import finder.panel  # noqa: E402,F401  فرش‌یاب
 import growth.panel  # noqa: E402,F401  رشد فروش
 import rajyar.panel  # noqa: E402,F401  رج‌یار
+import content.panel  # noqa: E402,F401  متن محصولات

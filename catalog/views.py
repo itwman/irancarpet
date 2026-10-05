@@ -224,6 +224,15 @@ def product_detail(request, slug):
     )[:8] if cat else []
     Product.objects.filter(pk=product.pk).update(views=F("views") + 1)
 
+    from content.render import build as build_doc, color_siblings, design_of
+
+    doc = build_doc(product, variations)
+    siblings = color_siblings(product)
+    if siblings:
+        from api.serializers import thumb_url
+
+        for x in siblings:
+            x["thumb"] = thumb_url(x["product"].image, 240) if x["product"].image_id else ""
     m = seo.build(product, "product", extra={"wc_price": f"{product.min_price:,}" if product.min_price else ""})
     from .video import info as video_info, schema as video_schema
 
@@ -234,7 +243,8 @@ def product_detail(request, slug):
         "crumbs": crumbs, "reviews": reviews, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
         "landing_links": _landing_links(product),
-        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs) + ([vschema] if vschema else []),
+        "doc": doc, "siblings": siblings, "design": design_of(product) if siblings else "",
+        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
                              ensure_ascii=False),
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
         "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
@@ -246,8 +256,12 @@ def product_detail(request, slug):
     return render(request, "catalog/product_detail.html", ctx)
 
 
-def product_jsonld(product, variations, gallery, crumbs, specs=()):
+def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
     site = settings.SITE_URL
+    if doc is None:
+        from content.render import build as build_doc
+
+        doc = build_doc(product, variations)
     priced = [v for v in variations if v.price]
     url = site + product.get_absolute_url()
     data = {
@@ -255,7 +269,7 @@ def product_jsonld(product, variations, gallery, crumbs, specs=()):
         "@type": "Product",
         "name": product.title,
         "url": url,
-        "description": seo.plain(product.short_description or product.content, 300),
+        "description": seo.plain(doc["bullets"] or doc["html"], 300) or product.title,
         "image": [m.absolute_url for m in gallery[:5]],
         "sku": product.sku or str(product.pk),
     }

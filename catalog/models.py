@@ -172,6 +172,16 @@ class Product(SeoFields):
                                 help_text="پیوند ویدیو در آپارات (aparat.com/v/...) یا فایل mp4. در صفحهٔ فرش و نتایج گوگل نمایش داده می‌شود.")
     content = models.TextField("توضیحات کامل (HTML)", blank=True)
     short_description = models.TextField("توضیح کوتاه", blank=True)
+    # متن خودکار از «قالب متن محصول» (برنامهٔ content)
+    use_template = models.BooleanField(
+        "متن از قالب", default=False,
+        help_text="روشن: توضیحات و خلاصه از «قالب متن محصول» ساخته می‌شود و با قیمت و تنظیمات به‌روز می‌ماند؛ "
+                  "متن دستی بالا نگه داشته می‌شود ولی نمایش داده نمی‌شود.")
+    design_name = models.CharField("نام نقشه", max_length=120, blank=True, db_index=True,
+                                   help_text="مثل «آرشان». فرش‌های هم‌آلبوم با نقشهٔ یکسان، «رنگ‌های دیگر» همدیگر نشان داده می‌شوند.")
+    color_count = models.PositiveSmallIntegerField("تعداد رنگ", null=True, blank=True)
+    custom_note = models.TextField("یادداشت اختصاصی", blank=True,
+                                   help_text="یک یا دو جملهٔ مخصوص همین فرش (مثلاً حس طرح یا پیشنهاد اتاق)؛ جای {یادداشت} در قالب می‌نشیند.")
     status = models.CharField("وضعیت", max_length=20, choices=Status.choices, default=Status.PUBLISH, db_index=True)
     kind = models.CharField("نوع", max_length=20, choices=Kind.choices, default=Kind.VARIABLE)
     sku = models.CharField("کد کالا", max_length=100, blank=True, help_text="خالی بگذارید تا خودکار ساخته شود")

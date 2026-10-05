@@ -30,7 +30,7 @@ def schema(product, v):
     data = {
         "@context": "https://schema.org", "@type": "VideoObject",
         "name": f"ویدیوی {product.title}",
-        "description": seo.plain(product.short_description or product.content, 200) or product.title,
+        "description": seo.plain(_desc(product), 200) or product.title,
         "thumbnailUrl": [v["poster"]] if v["poster"] else [],
         "uploadDate": (product.published_at or product.modified_at).isoformat() if (product.published_at or product.modified_at) else None,
     }
@@ -42,3 +42,12 @@ def schema(product, v):
     else:
         data["url"] = v["page"]
     return {k: x for k, x in data.items() if x}
+
+
+def _desc(product):
+    if product.use_template:
+        from content.render import build
+
+        d = build(product)
+        return d["bullets"] or d["html"]
+    return product.short_description or product.content

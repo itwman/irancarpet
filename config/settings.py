@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "rajyar",
     "landing",
     "growth",
+    "content",
 ]
 
 MIDDLEWARE = [

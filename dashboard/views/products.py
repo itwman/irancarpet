@@ -21,10 +21,11 @@ SIDE_PUBLISH = ["status", "published_at", "menu_order"]
 SIDE_PRICE = ["album", "custom_base_price", "sale_status"]
 SIDE_TAX = ["primary_category", "categories", "brand", "tags", "specs"]
 SIDE_IMAGE = ["image", "video_url"]
+SIDE_TEXT = ["use_template", "design_name", "color_count", "custom_note"]
 SEO = ["seo_title", "seo_description", "focus_keyword", "robots", "canonical_url"]
 VAR_FIELDS = ["size", "attributes", "sku", "is_available", "override_price", "manual_price", "sale_price", "pair_only", "menu_order"]
 
-ProductForm = modelform_factory(Product, fields=MAIN + SIDE_PUBLISH + SIDE_PRICE + SIDE_TAX + SIDE_IMAGE + ["sku"] + SEO,
+ProductForm = modelform_factory(Product, fields=MAIN + SIDE_TEXT + SIDE_PUBLISH + SIDE_PRICE + SIDE_TAX + SIDE_IMAGE + ["sku"] + SEO,
                                 formfield_callback=partial(formfield_for, ac_urls={}))
 class VariationBaseFS(forms.BaseInlineFormSet):
     def clean(self):
@@ -104,10 +105,14 @@ def product_edit(request, pk=None):
             own = None
     fp_item = FarshPlusItem.objects.filter(product=product).first() if product else None
     gallery = [pi.media for pi in ProductImage.objects.filter(product=product).select_related("media").order_by("order")] if product else []
+    from content.render import template_for
+
+    tpl = template_for(product) if product else None
     return render(request, "dashboard/product_form.html", {
+        "tpl": tpl,
         "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery, "own": own,
         "gallery_ids": ",".join(str(m.pk) for m in gallery), "fp": fp_item, "fp_off": inactive_reason(),
-        "groups": {"main": MAIN, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
+        "groups": {"main": MAIN, "text": SIDE_TEXT, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
     })
 
 
