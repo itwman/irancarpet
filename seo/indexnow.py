@@ -66,6 +66,34 @@ def flush():
             log.exception("IndexNow")
 
 
+# هر موتوری که IndexNow را بپذیرد، نشانی‌ها را با بقیه (Bing، Yandex، Naver، Seznam، Yep) هم به اشتراک می‌گذارد.
+# api.indexnow.org مال مایکروسافت است و ممکن است درخواست سرورهای ایران را رد کند (403)؛ پس اگر نشد، بعدی‌ها امتحان می‌شوند.
+ENDPOINTS = [
+    ("IndexNow (Bing)", ENDPOINT),
+    ("Yandex", "https://yandex.com/indexnow"),
+    ("Naver", "https://searchadvisor.naver.com/indexnow"),
+    ("Seznam", "https://search.seznam.cz/indexnow"),
+]
+CODES = {400: "درخواست نادرست", 403: "رد شد (403)", 422: "نشانی‌ها با دامنهٔ سایت نمی‌خوانند", 429: "درخواست زیاد؛ بعداً دوباره"}
+
+
+def _post(url, body):
+    """(کد، متن کوتاه پاسخ)"""
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Content-Type": "application/json; charset=utf-8", "User-Agent": "irancarpet.net"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.status, ""
+    except urllib.error.HTTPError as e:
+        try:
+            txt = e.read(400).decode("utf-8", "ignore")
+        except Exception:  # noqa: BLE001
+            txt = ""
+        return e.code, " ".join(txt.split())[:120]
+    except Exception as e:  # noqa: BLE001
+        return 0, e.__class__.__name__
+
+
 def submit(urls):
     """ارسال مستقیم؛ خروجی: (موفق؟، پیام)."""
     from .models import SeoSettings
@@ -76,27 +104,25 @@ def submit(urls):
     host = urlparse(settings.SITE_URL).netloc
     urls = [_abs(u) for u in urls]
     ok, msg, sent = True, "", 0
+    endpoints = list(ENDPOINTS)
     for i in range(0, len(urls), BATCH):
         part = urls[i:i + BATCH]
         body = json.dumps({"host": host, "key": s.indexnow_key, "keyLocation": f"{settings.SITE_URL}/{s.indexnow_key}.txt",
                            "urlList": part}).encode()
-        req = urllib.request.Request(ENDPOINT, data=body, method="POST",
-                                     headers={"Content-Type": "application/json; charset=utf-8", "User-Agent": "irancarpet.net"})
-        try:
-            with urllib.request.urlopen(req, timeout=20) as r:
-                code = r.status
-        except urllib.error.HTTPError as e:
-            code = e.code
-        except Exception as e:  # noqa: BLE001
-            ok, msg = False, f"اتصال برقرار نشد: {e.__class__.__name__}"
-            break
-        if code in (200, 202):
-            sent += len(part)
-            msg = f"پذیرفته شد (کد {code})"
-        else:
-            ok = False
-            msg = {400: "درخواست نادرست (400)", 403: "کلید پذیرفته نشد (403) — فایل کلید در دسترس نیست",
-                   422: "نشانی‌ها با دامنهٔ سایت نمی‌خوانند (422)", 429: "درخواست زیاد؛ بعداً دوباره (429)"}.get(code, f"کد {code}")
+        tried, accepted = [], False
+        for name, url in list(endpoints):
+            code, detail = _post(url, body)
+            if code in (200, 202):
+                sent += len(part)
+                msg, accepted = f"پذیرفته شد از راه {name} (کد {code})", True
+                endpoints = [(name, url)] + [e for e in endpoints if e[1] != url]  # دستهٔ بعد اول همین را امتحان کند
+                break
+            label = CODES.get(code, f"کد {code}") if code else f"اتصال برقرار نشد ({detail})"
+            tried.append(f"{name}: {label}" + (f" «{detail}»" if code and detail else ""))
+            if code in (400, 422):  # ایراد از خود درخواست است؛ موتور دیگر هم همین را می‌گوید
+                break
+        if not accepted:
+            ok, msg = False, " | ".join(tried)
             break
     type(s).objects.filter(pk=s.pk).update(
         indexnow_last_at=timezone.now(), indexnow_last_status=f"{msg} — {sent} نشانی"[:300],

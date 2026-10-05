@@ -85,6 +85,7 @@ class SeoSettings(models.Model):
         if not obj.indexnow_key:
             import secrets
 
-            obj.indexnow_key = secrets.token_hex(16)
-            obj.save(update_fields=["indexnow_key"])
+            # فقط اگر هنوز کسی کلید نساخته (دو درخواست هم‌زمان کلید یکدیگر را عوض نکنند)
+            cls.objects.filter(pk=obj.pk, indexnow_key="").update(indexnow_key=secrets.token_hex(16))
+            obj.refresh_from_db()
         return obj

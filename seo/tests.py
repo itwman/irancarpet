@@ -68,6 +68,36 @@ class GeoTests(TestCase):
         self.assertEqual(SeoSettings.load().indexnow_total, 1)
         self.assertIn("/product/version/", indexnow.all_urls())
 
+    def test_fallback_when_bing_refuses(self):
+        import urllib.error
+
+        calls = []
+
+        class R:
+            status = 202
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def fake(req, timeout=0):
+            calls.append(req.full_url)
+            if "indexnow.org" in req.full_url:
+                raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {}, None)
+            return R()
+
+        with mock.patch("urllib.request.urlopen", side_effect=fake):
+            ok, msg = indexnow.submit(["/product/version/"])
+        self.assertTrue(ok, msg)
+        self.assertIn("Yandex", msg)
+        self.assertEqual(len(calls), 2)
+        with mock.patch("urllib.request.urlopen", side_effect=urllib.error.HTTPError("u", 403, "x", {}, None)):
+            ok, msg = indexnow.submit(["/product/version/"])
+        self.assertFalse(ok)
+        self.assertIn("Seznam", msg)
+
     @override_settings(TESTING=False, DEBUG=False, STAGING=False)
     def test_queue_on_save(self):
         with mock.patch.object(indexnow, "queue") as q, self.captureOnCommitCallbacks(execute=True):
