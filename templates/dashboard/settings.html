@@ -41,6 +41,13 @@
       <p class="hint mt-2">همگام‌سازی خودکار هر ۵ دقیقه روی سرور اجرا می‌شود؛ تغییر قیمت، موجودی، عنوان و تصویر محصولات خودش به فرش پلاس می‌رود.</p>
     </section>
     {% endif %}
+    {% if tab == "rajyar" %}
+    <section class="card-p">
+      <h2>بررسی اتصال</h2>
+      <p class="hint">کلید را بررسی می‌کند و فهرست کانال‌هایی که این کلید به آن‌ها دسترسی دارد را کنار صفحه نشان می‌دهد.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="rajyar"><button class="btn btn-ink" name="do" value="rajyar_ping">بررسی اتصال و دریافت کانال‌ها</button></form>
+    </section>
+    {% endif %}
     {% if tab == "seo" %}
     <section class="card-p">
       <h2>ارسال همهٔ صفحه‌ها به IndexNow</h2>
@@ -74,6 +81,13 @@
       <div class="kv"><span>سقف روزانهٔ محصول تازه</span><strong>{{ fp.limits.daily_products|fa_num }}</strong></div>
       {% if fp.s.last_scan_at %}<div class="kv"><span>آخرین بررسی</span><strong>{{ fp.s.last_scan_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
       <a class="btn btn-light btn-sm mt-2" href="/panel/farshplus/">فهرست محصولات در فرش پلاس</a>
+    </section>{% endif %}
+    {% if rj %}<section class="card-p"><h2>کانال‌های رج‌یار</h2>
+      {% if rj.last_check %}<div class="kv"><span>آخرین بررسی</span><strong>{{ rj.last_check|fa_num }}</strong></div>{% endif %}
+      {% for c in rj.channels_cache %}<div class="kv"><span>{{ c.name }}{% if c.platform %} ({{ c.platform }}){% endif %}</span><strong class="ltr-num">{% if c.id in rj.channel_ids %}<span class="dot on"></span>{% endif %}{{ c.id }}</strong></div>
+      {% empty %}<p class="hint">هنوز بررسی نشده؛ کلید را ذخیره کنید و «بررسی اتصال» را بزنید.</p>{% endfor %}
+      <p class="hint mt-2">شناسهٔ کانال‌هایی که فرش‌ها باید آنجا بروند را در «کانال‌ها» بنویسید. ارسال: «محصولات» ← انتخاب فرش‌ها ← عملیات گروهی «ارسال به کانال‌ها (رج‌یار)».</p>
+      <a class="btn btn-light btn-sm mt-1" href="/panel/rajyar-posts/">ارسال‌ها و وضعیت انتشار</a>
     </section>{% endif %}
     {% if seo %}<section class="card-p"><h2>وضعیت IndexNow</h2>
       <div class="kv"><span>آخرین ارسال</span><strong>{% if seo.indexnow_last_at %}{{ seo.indexnow_last_at|jdate:"%d %B %H:%M" }}{% else %}هنوز ارسالی نبوده{% endif %}</strong></div>

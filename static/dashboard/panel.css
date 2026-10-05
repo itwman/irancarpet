@@ -100,9 +100,9 @@ html,body.panel{overflow-x:clip}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:.4rem;background:#C5C8DC;vertical-align:middle}
 .dot.on{background:var(--pistachio)}.dot.warn{background:var(--saffron)}
 .badge-ic{display:inline-block;border-radius:999px;padding:.05rem .65rem;font-size:.75rem;font-weight:700;background:var(--soft);color:var(--ink);white-space:nowrap}
-.b-publish,.b-paid,.b-ok,.b-instock,.b-create,.b-completed,.b-answered{background:#E6F5E1;color:#2F6B22}
-.b-draft,.b-pending,.b-init,.b-update,.b-closed{background:var(--soft);color:var(--ink-2)}
-.b-deposit_paid,.b-onbackorder,.b-processing,.b-action{background:var(--saffron-t);color:#7a4f00}
+.b-publish,.b-paid,.b-ok,.b-instock,.b-create,.b-completed,.b-answered,.b-published{background:#E6F5E1;color:#2F6B22}
+.b-draft,.b-pending,.b-init,.b-update,.b-closed,.b-sent,.b-scheduled{background:var(--soft);color:var(--ink-2)}
+.b-partial,.b-deposit_paid,.b-onbackorder,.b-processing,.b-action{background:var(--saffron-t);color:#7a4f00}
 .b-shipped{background:var(--teal-t);color:var(--teal-d)}
 .b-cancelled,.b-refunded,.b-failed,.b-outofstock,.b-delete,.b-private,.b-new{background:var(--pink-t);color:var(--pink-d)}
 .bulk{position:sticky;bottom:1rem;z-index:10;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:14px;padding:.6rem .9rem;margin-top:.5rem;box-shadow:0 14px 30px -12px rgba(34,38,90,.6)}

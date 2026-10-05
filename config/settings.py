@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "api",
     "installments",
     "finder",
+    "rajyar",
     "landing",
     "growth",
 ]

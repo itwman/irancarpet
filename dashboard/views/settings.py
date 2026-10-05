@@ -16,6 +16,7 @@ from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
 from api.models import AppSettings
+from rajyar.models import RajyarSettings
 from seo import indexnow
 from seo.models import SeoSettings
 from torob.models import TorobSettings
@@ -24,7 +25,7 @@ from ..auth import clear_site_cache, staff_required
 from ..forms import formfield_for, style_form
 from ..models import log
 
-SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key"}
+SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key"}  # api_key: فرش پلاس و رج‌یار
 
 TABS = [
     ("site", "سایت و تماس"),
@@ -36,6 +37,7 @@ TABS = [
     ("torob", "فید ترب و ایمالز"),
     ("app", "اپلیکیشن"),
     ("seo", "سئو و هوش مصنوعی"),
+    ("rajyar", "رج‌یار (کانال‌ها)"),
 ]
 
 FORMS = {
@@ -56,6 +58,7 @@ FORMS = {
     "torob": (TorobSettings, ["enabled", "emalls_enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
                               "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice"]),
+    "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes", "tags", "footer"]),
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
 }
 
@@ -107,6 +110,12 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do") == "rajyar_ping":
+            from rajyar.client import ping
+
+            ok, msg = ping()
+            (messages.success if ok else messages.error)(request, f"رج‌یار: {msg}")
+            return redirect("/panel/settings/?tab=rajyar")
         if request.POST.get("do") == "indexnow_all":
             urls = indexnow.all_urls()
             ok, msg = indexnow.submit(urls)
@@ -145,7 +154,8 @@ def settings_view(request):
     return render(request, "dashboard/settings.html", {
         "tabs": TABS, "tab": tab, "form": form, "trust": trust, "info": status_info(),
         "fp": farshplus_info() if tab == "farshplus" else None,
-        "seo": SeoSettings.load() if tab == "seo" else None, "SITE_URL": django_settings.SITE_URL,
+        "seo": SeoSettings.load() if tab == "seo" else None,
+        "rj": RajyarSettings.load() if tab == "rajyar" else None, "SITE_URL": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),
     })

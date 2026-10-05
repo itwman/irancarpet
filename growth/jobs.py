@@ -119,6 +119,14 @@ def run_all(out=print):
                 log.exception(name)
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:
+        from rajyar.client import refresh
+
+        n = refresh()
+        if n:
+            done["وضعیت رج‌یار"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("rajyar refresh")
     if cache.add("jobs:landing", 1, 6 * 3600):
         try:
             from landing.build import sync

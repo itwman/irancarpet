@@ -33,6 +33,34 @@ def page_label(page):
     return f"صفحه {fa_num(page)}" if page and page > 1 else ""
 
 
+def auto_description(obj, kind, ctx):
+    """توضیح یکتای خودکار وقتی توضیح سئوی دستی نیست (رفع «توضیح تکراری/کوتاه» در Bing و گوگل)."""
+    from . import autodesc
+
+    try:
+        if kind == "product":
+            return autodesc.product(obj)
+        if kind in ("post", "page"):
+            ex = ctx.get("excerpt") or ""
+            return ex if len(ex) >= autodesc.MIN_LEN else plain(obj.content, 158) or ex
+        if len(ctx.get("term_description") or "") >= autodesc.MIN_LEN:
+            return ctx["term_description"]
+        from catalog.models import Brand, Category, Product, ProductTag
+
+        if isinstance(obj, Category):
+            return autodesc.listing(obj, Product.objects.filter(categories__in=obj.descendant_ids()))
+        if isinstance(obj, (ProductTag, Brand)) or kind.startswith("pa_"):
+            label = obj.attribute.label if kind.startswith("pa_") and hasattr(obj, "attribute") else ""
+            if label == "شانه":
+                return autodesc.listing(obj, obj.products.all(), "", name=f"{obj.name} شانه")
+            return autodesc.listing(obj, obj.products.all(), label if label not in ("برند",) else "")
+    except Exception:  # noqa: BLE001  — توضیح خودکار هیچ‌وقت نباید صفحه را از کار بیندازد
+        import logging
+
+        logging.getLogger(__name__).exception("autodesc")
+    return ""
+
+
 def build(obj=None, kind="", page=1, extra=None, path=""):
     """kind: product, post, page, product_cat, product_tag, product_brand, pa_<attr>, category, post_tag, home, search."""
     s = SiteSettings.load()
@@ -60,14 +88,19 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
     title = render(obj.seo_title, ctx) if obj is not None and obj.seo_title else render(tpl.get(f"{key}_title"), ctx)
     if not title:
         title = render(f"%{'title' if 'title' in ctx else 'term'}% %page% %sep% %sitename%", ctx)
-    if obj is not None and obj.seo_description:
+    desc = ""
+    from .autodesc import manual_ok
+
+    if obj is not None and obj.seo_description and manual_ok(obj):
         desc = render(obj.seo_description, ctx)
-    elif kind == "product" and ctx.get("wc_shortdesc"):
-        desc = ctx["wc_shortdesc"]  # رفتار فعلی سایت: توضیح کوتاه محصول
-    else:
+    elif obj is not None:
+        desc = auto_description(obj, kind, ctx)
+    if not desc:
         desc = render(tpl.get(f"{key}_description"), ctx)
-    if not desc or "%" in desc:
+    if not desc or re.search(r"%[a-z_]+%", desc):  # متغیر ناشناختهٔ Rank Math
         desc = ctx.get("excerpt") or ctx.get("term_description") or ""
+    if page and page > 1 and desc:
+        desc = f"{desc} {ctx['page']}".strip()
     canonical = (obj.canonical_url if obj is not None and obj.canonical_url else "") or (
         settings.SITE_URL + (path or obj.get_absolute_url()) + (f"page/{page}/" if page and page > 1 else "")
     )
