@@ -7,6 +7,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/installment.dart';
 
 Color statusColor(String s) => switch (s) {
       'pending' => C.saffron,
@@ -171,14 +172,24 @@ class _OrderScreenState extends State<OrderScreen> with WidgetsBindingObserver {
                       widget.justPaid ? 'پرداخت انجام شد؛ سفارش شما ثبت شد.' : 'پرداخت این سفارش انجام شده است.'),
                 if (o['status'] == 'pending')
                   _banner(C.saffronTint, const Color(0xFF9A6400), Icons.schedule_rounded,
-                      'سفارش منتظر پرداخت است. اگر پرداخت را انجام داده‌اید، صفحه را پایین بکشید تا به‌روز شود.'),
+                      o['installment'] != null
+                          ? 'پیش‌پرداخت این سفارش هنوز پرداخت نشده است.'
+                          : 'سفارش منتظر پرداخت است. اگر پرداخت را انجام داده‌اید، صفحه را پایین بکشید تا به‌روز شود.'),
+                if (o['status'] == 'on_hold')
+                  _banner(C.saffronTint, const Color(0xFF9A6400), Icons.hourglass_top_rounded,
+                      'درخواست خرید اقساطی ثبت شد و در حال بررسی است؛ نتیجه را با پیامک خبر می‌دهیم.'),
                 const SizedBox(height: 12),
                 _row('وضعیت', o['status_label'] as String, bold: true),
                 _row('جمع کالاها', toman(o['items_total'] as int)),
-                _row('پرداخت‌شده', toman(o['paid_amount'] as int)),
-                if ((o['remaining'] as int) > 0 && o['status'] != 'pending') _row('مانده (موقع تحویل)', toman(o['remaining'] as int)),
+                _row('پرداخت‌شده', amount(o['paid_amount'] as int)),
+                if ((o['remaining'] as int) > 0 && o['status'] != 'pending')
+                  _row(o['installment'] != null ? 'مانده (اقساط)' : 'مانده (موقع تحویل)', toman(o['remaining'] as int)),
                 _row('ارسال', o['shipping_mode'] == 'free' ? 'رایگان' : 'پس‌کرایه (موقع تحویل)'),
                 if ((o['tracking_code'] as String).isNotEmpty) _row('کد رهگیری مرسوله', faDigits(o['tracking_code'])),
+                if (o['installment'] != null) ...[
+                  const SizedBox(height: 12),
+                  InstallmentSummary((o['installment'] as Json)),
+                ],
                 const SizedBox(height: 12),
                 const Text('اقلام', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                 for (final it in (o['items'] as List).cast<Json>())
@@ -205,7 +216,7 @@ class _OrderScreenState extends State<OrderScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                 child: FilledButton(
                   onPressed: _busy ? null : () => _pay(gws.first['key'] as String),
-                  child: Text('پرداخت ${toman(o['online_amount'] as int)}'),
+                  child: Text('${o['installment'] != null ? 'پرداخت پیش‌پرداخت' : 'پرداخت'} ${toman(o['online_amount'] as int)}'),
                 ),
               ),
             )

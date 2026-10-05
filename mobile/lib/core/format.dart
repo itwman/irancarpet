@@ -11,6 +11,9 @@ String sep(num n) {
 
 String toman(num? n) => n == null || n == 0 ? 'استعلام قیمت' : '${sep(n)} تومان';
 
+/// مبلغ پرداختی/مانده (صفر هم معنی دارد)
+String amount(num n) => '${sep(n)} تومان';
+
 const _fa = '۰۱۲۳۴۵۶۷۸۹';
 const _ar = '٠١٢٣٤٥٦٧٨٩';
 

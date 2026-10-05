@@ -14,8 +14,10 @@ import 'screens/cart.dart';
 import 'screens/catalog.dart';
 import 'screens/checkout.dart';
 import 'screens/compare.dart';
+import 'screens/installment.dart';
 import 'screens/login.dart';
 import 'screens/orders.dart';
+import 'screens/pricelist.dart';
 import 'screens/product.dart';
 import 'screens/room.dart';
 import 'screens/shell.dart';
@@ -133,7 +135,7 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
           '/search' => const SearchScreen(),
           '/room' => RoomScreen(args: a as Map<String, dynamic>),
           '/cart' => const CartScreen(standalone: true),
-          '/checkout' => const CheckoutScreen(),
+          '/checkout' => CheckoutScreen(initialMode: a as String?),
           '/login' => LoginScreen(reason: a as String?),
           '/orders' => const OrdersScreen(),
           '/order' => OrderScreen(number: (a as Map)['number'] as int, justPaid: a['just_paid'] as bool? ?? false),
@@ -141,6 +143,8 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
           '/notifications' => const NotificationsScreen(),
           '/profile' => const ProfileScreen(),
           '/track' => const TrackScreen(),
+          '/pricelist' => const PriceListScreen(),
+          '/installment' => InstallmentScreen(amount: a as int?),
           _ => const Shell(),
         };
         return MaterialPageRoute(builder: (_) => page, settings: s);

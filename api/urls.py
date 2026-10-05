@@ -22,4 +22,6 @@ urlpatterns = [
     path("wishlist/", v.wishlist),
     path("notifications/", v.notifications),
     path("pay/<str:token>/", v.pay),
+    path("installments/quote/", v.installment_quote),
+    path("pricelist/", v.price_list),
 ]

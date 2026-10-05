@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/installment.dart';
 import 'shell.dart';
 
 class CartScreen extends StatefulWidget {
@@ -56,6 +57,12 @@ class _CartScreenState extends State<CartScreen> {
               for (final it in cart.items) _line(context, cart, it, lines[it.variation]),
               const SizedBox(height: 8),
               if (q != null) _summary(q),
+              if (q != null && (q['total'] as int) > 0 && q['has_problem'] != true)
+                InstallmentTeaser(
+                    plans: context.watch<AppConfig>().installmentPlans,
+                    amount: q['total'] as int,
+                    margin: const EdgeInsets.only(top: 12),
+                    onTap: () => _goCheckout(context, mode: 'installment')),
             ]),
       bottomNavigationBar: cart.items.isEmpty
           ? null
@@ -65,13 +72,7 @@ class _CartScreenState extends State<CartScreen> {
                 child: FilledButton(
                   onPressed: q == null || q['has_problem'] == true || _busy
                       ? null
-                      : () async {
-                          if (!context.read<Auth>().loggedIn) {
-                            final ok = await Navigator.pushNamed(context, '/login', arguments: 'برای ثبت سفارش وارد شوید') == true;
-                            if (!ok || !context.mounted) return;
-                          }
-                          if (context.mounted) Navigator.pushNamed(context, '/checkout');
-                        },
+                      : () => _goCheckout(context),
                   child: Text(q != null && q['has_problem'] == true ? 'کالاهای ناموجود را حذف کنید' : 'ادامهٔ خرید'),
                 ),
               ),
@@ -122,6 +123,14 @@ class _CartScreenState extends State<CartScreen> {
         ),
       ]),
     );
+  }
+
+  Future<void> _goCheckout(BuildContext context, {String? mode}) async {
+    if (!context.read<Auth>().loggedIn) {
+      final ok = await Navigator.pushNamed(context, '/login', arguments: 'برای ثبت سفارش وارد شوید') == true;
+      if (!ok || !context.mounted) return;
+    }
+    if (context.mounted) Navigator.pushNamed(context, '/checkout', arguments: mode);
   }
 
   Widget _summary(Json q) {

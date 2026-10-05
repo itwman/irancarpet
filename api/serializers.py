@@ -93,7 +93,9 @@ def order_row(o, items=False):
     d = {
         "number": o.number,
         "status": o.status,
-        "status_label": o.get_status_display(),
+        "status_label": o.status_label,
+        "payment_label": o.get_payment_mode_display(),
+        "grand_total": o.grand_total,
         "created_at": o.created_at.isoformat(),
         "items_total": o.items_total,
         "paid_amount": o.paid_amount,
@@ -105,6 +107,14 @@ def order_row(o, items=False):
         "tracking_code": o.tracking_code,
         "items_count": sum(i.quantity for i in o.items.all()),
     }
+    if o.is_installment and o.installment:
+        plan = o.installment_plan
+        state = o.installment_state or "review"
+        note = ""
+        if plan:
+            note = {"review": plan.review_note, "approved": plan.approved_note, "done": plan.approved_note}.get(state, "")
+        d["installment"] = {**o.installment, "state": state, "state_label": o.get_installment_state_display(),
+                            "plan_title": plan.title if plan else o.installment.get("plan_title", ""), "note": note}
     if items:
         d.update({
             "items": [{"title": i.title, "size": i.size_label, "unit_price": i.unit_price, "quantity": i.quantity,

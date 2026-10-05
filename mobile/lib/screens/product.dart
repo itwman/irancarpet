@@ -8,6 +8,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/installment.dart';
 import '../widgets/knots.dart';
 
 class ProductScreen extends StatefulWidget {
@@ -189,6 +190,11 @@ class _ProductScreenState extends State<ProductScreen> {
           ),
         ),
         SliverToBoxAdapter(child: _sizesSection(p)),
+        if (p['purchasable'] == true && ((_size?['price'] as int?) ?? (p['price'] as int? ?? 0)) > 0)
+          SliverToBoxAdapter(
+            child: InstallmentTeaser(
+                plans: context.watch<AppConfig>().installmentPlans, amount: (_size?['price'] as int?) ?? (p['price'] as int)),
+          ),
         SliverToBoxAdapter(child: _roomBanner(p)),
         SliverToBoxAdapter(child: _specs(p)),
         SliverToBoxAdapter(child: _description(p)),

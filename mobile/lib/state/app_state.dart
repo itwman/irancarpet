@@ -209,4 +209,5 @@ class AppConfig extends ChangeNotifier {
   List<String> get provinces => ((data['provinces'] as List?) ?? []).cast<String>();
   Json get shop => (data['shop'] as Json?) ?? {};
   List<Json> get sorts => ((data['sorts'] as List?) ?? []).cast<Json>();
+  List<Json> get installmentPlans => (((data['installment'] as Json?)?['plans'] as List?) ?? []).cast<Json>();
 }

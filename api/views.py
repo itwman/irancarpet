@@ -51,7 +51,14 @@ def payload(request):
             return json.loads(request.body or b"{}")
         except ValueError:
             return {}
-    return request.POST.dict()
+    d = request.POST.dict()
+    # فرم چندبخشی (همراه فایل): فیلدهای پیچیده به‌صورت JSON فرستاده می‌شوند
+    if isinstance(d.get("items"), str):
+        try:
+            d["items"] = json.loads(d["items"])
+        except ValueError:
+            d["items"] = []
+    return d
 
 
 def endpoint(methods=("GET",), login=False):
@@ -111,6 +118,72 @@ def config(request):
         "gateways": [{"key": g.key, "name": gateways.GATEWAY_NAMES.get(g.key, g.key)} for g in gateways.enabled(shop)],
         "sorts": [{"key": k, "label": v[1]} for k, v in SORTS.items()],
         "provinces": PROVINCES,
+        "installment": _installment_config(request),
+    })
+
+
+def _lines(html):
+    """HTML ساده → متن با خط‌های جدا (بندها با «•»)."""
+    import re
+
+    html = re.sub(r"<li[^>]*>", "• ", html or "")
+    html = re.sub(r"</(p|li|h\d)>|<br\s*/?>", "\n", html)
+    return "\n".join(x for x in (S.plain(line) for line in html.split("\n")) if x)
+
+
+def _installment_config(request):
+    from installments.models import InstallmentPlan
+    from installments.services import active_plans, describe, page_url
+
+    plans = []
+    for p in active_plans():
+        c = p.config()
+        c.update(
+            describe=describe(p), description=_lines(p.description), submit_note=p.submit_note,
+            fields=[{"key": k, "label": label, "type": typ} for k, label, typ in p.info_fields],
+            pensioner_choices=InstallmentPlan.PENSIONER_CHOICES,
+        )
+        plans.append(c)
+    url = page_url()
+    return {"plans": plans, "page_url": settings.SITE_URL + url if url else ""}
+
+
+@endpoint()
+def installment_quote(request):
+    from installments.calc import QuoteError, quote
+    from installments.models import InstallmentPlan
+
+    g = request.GET
+    plan = InstallmentPlan.objects.filter(pk=_int(g.get("plan")), is_active=True).first()
+    if not plan:
+        return fail("روش اقساط پیدا نشد.", 404)
+    try:
+        return ok(quote(plan, _int(g.get("total")), _int(g.get("down"), plan.min_down_percent), _int(g.get("months")),
+                        _int(g.get("step"), 1)))
+    except QuoteError as e:
+        return fail(str(e))
+
+
+@endpoint()
+def price_list(request):
+    """لیست قیمت (همان داده‌های صفحهٔ /carpets-price-list/ سایت)."""
+    from core.templatetags.fa import jdate
+    from pricing.pricelist import build
+
+    data = build()
+    return ok({
+        "updated": data["updated"].isoformat() if data["updated"] else None,
+        "updated_label": jdate(data["updated"], "%d %B %Y") if data["updated"] else "",
+        "albums": data["albums"], "products": data["products"],
+        "groups": [{
+            "reeds": g["reeds"], "title": g["title"], "min_base": g["min_base"], "max_base": g["max_base"], "count": g["count"],
+            "sizes": [{"id": s.pk, "label": s.label} for s in g["sizes"]],
+            "albums": [{
+                "id": a["id"], "title": a["title"], "company": a["company"], "count": a["count"], "base_price": a["base_price"],
+                "base_label": a["base_label"], "url": settings.SITE_URL + a["url"],
+                "prices": [{"size_id": s.pk, "label": s.label, "price": a["prices"][s.pk]} for s in g["sizes"] if a["prices"].get(s.pk)],
+            } for a in g["albums"]],
+        } for g in data["groups"]],
     })
 
 
@@ -188,6 +261,8 @@ def filtered_products(g):
         qs = qs.filter(min_price__gte=_int(g["min"]))
     if g.get("max"):
         qs = qs.filter(min_price__lte=_int(g["max"]))
+    if g.get("album"):
+        qs = qs.filter(album__pk=_int(g["album"]))
     if g.get("ids"):
         qs = qs.filter(pk__in=[_int(x) for x in g["ids"].split(",") if x.strip()][:50])
     sort = g.get("sort") if g.get("sort") in SORTS else "new"
@@ -420,15 +495,36 @@ def order_create(request):
     if form["postal_code"] and not (form["postal_code"].isdigit() and len(form["postal_code"]) == 10):
         errors["postal_code"] = "کد پستی باید ۱۰ رقم باشد."
     modes = [m for m in ("full", "deposit") if getattr(shop, f"allow_{m}")]
+    from installments.services import active_plans
+
+    if active_plans(summary["total"]):
+        modes.append("installment")
     if form["payment_mode"] not in modes:
         errors["payment_mode"] = "نوع پرداخت را انتخاب کنید."
-    if not any(g.key == form["gateway"] for g in gateways.enabled(shop)):
+    inst, pay_now = None, True
+    if form["payment_mode"] == "installment":
+        from installments.orders import read_request
+
+        plan, q, info, uploads, inst_errors = read_request(d, request.FILES, summary["total"])
+        errors.update(inst_errors)
+        inst = (plan, q, info, uploads)
+        pay_now = bool(q and q["down"] and plan.down_timing == plan.DownTiming.CHECKOUT)
+    if pay_now and not any(g.key == form["gateway"] for g in gateways.enabled(shop)):
         errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
     if summary["has_problem"]:
         errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
     if errors:
-        return fail("لطفاً خطاها را برطرف کنید.", errors=errors)
-    order = create_order(request.api_user, form, summary, shop)
+        first = next(iter(errors.values()))
+        return fail(first if len(errors) == 1 else "لطفاً خطاها را برطرف کنید.", errors=errors)
+    order = create_order(request.api_user, form, summary, shop, source="app", installment=inst)
+    if not pay_now:
+        from shop import notify
+
+        try:
+            notify.installment_request(order)
+        except Exception:  # noqa: BLE001
+            log.exception("notify failed")
+        return ok({"order": S.order_row(order, items=True), "pay_url": None})
     return ok({"order": S.order_row(order, items=True), "pay_url": _pay_url(request, order, form["gateway"])})
 
 

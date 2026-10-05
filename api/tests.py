@@ -109,3 +109,58 @@ class AppApiTests(TestCase):
         self.assertEqual(self.client.get("/api/app/v1/notifications/", {"since": n[0]["created_at"]}).json(), [])
         self.assertEqual(self.post("/api/app/v1/auth/logout/", {}, tok).status_code, 200)
         self.assertEqual(self.client.get("/api/app/v1/me/", HTTP_AUTHORIZATION=f"Token {tok}").status_code, 401)
+
+
+@override_settings(PAYMENT_FAKE=True, SMSIR_API_KEY="", SMSIR_OTP_TEMPLATE_ID="", STAGING=True)
+class AppInstallmentTests(AppApiTests):
+    def test_config_quote_and_pricelist(self):
+        c = self.client.get("/api/app/v1/config/").json()
+        kinds = [p["kind"] for p in c["installment"]["plans"]]
+        self.assertEqual(kinds, ["cheque", "beta"])
+        cheque = c["installment"]["plans"][0]
+        self.assertIn("cheque_image", [f["key"] for f in cheque["fields"]])
+        q = self.client.get("/api/app/v1/installments/quote/", {"plan": cheque["id"], "total": 100_000_000, "down": 50,
+                                                                 "months": 2, "step": 1}).json()
+        self.assertEqual(q["interest_percent"], 9.0)
+        pl = self.client.get("/api/app/v1/pricelist/").json()
+        self.assertEqual(pl["groups"][0]["albums"][0]["base_price"], 40_750_000)
+        r = self.client.get("/api/app/v1/products/", {"album": self.album.pk}).json()
+        self.assertEqual(r["count"], 1)
+
+    def test_installment_order_multipart(self):
+        import io as _io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        from installments.models import InstallmentPlan
+
+        tok = self.login()
+        plan = InstallmentPlan.objects.get(kind="cheque")
+        buf = _io.BytesIO()
+        Image.new("RGB", (300, 150), (220, 220, 240)).save(buf, "JPEG")
+        data = {
+            "items": json.dumps([{"variation": self.v12.pk, "qty": 1}]), "first_name": "علی", "last_name": "رضایی",
+            "mobile": "09121234567", "province": "تهران", "city": "تهران", "address": "خیابان آزادی",
+            "payment_mode": "installment", "gateway": "fake", "inst_plan": plan.pk, "inst_down": 50, "inst_months": 6,
+            "inst_step": 1, "inst_holder_name": "علی رضایی", "inst_national_code": "0012345679",
+            "inst_cheque_image": SimpleUploadedFile("c.jpg", buf.getvalue(), content_type="image/jpeg"),
+        }
+        with self.settings(PRIVATE_ROOT=__import__("tempfile").mkdtemp()):
+            r = self.client.post("/api/app/v1/orders/create/", data, HTTP_AUTHORIZATION=f"Token {tok}")
+        self.assertEqual(r.status_code, 200, r.content)
+        d = r.json()
+        self.assertTrue(d["pay_url"])
+        inst = d["order"]["installment"]
+        self.assertEqual((inst["count"], inst["state"], inst["interest_percent"]), (6, "review", 21.0))
+        self.assertEqual(d["order"]["payment_mode"], "installment")
+        # بازنشستگان بدون پیش‌پرداخت: بدون درگاه
+        beta = InstallmentPlan.objects.get(kind="beta")
+        r = self.post("/api/app/v1/orders/create/", {
+            "items": [{"variation": self.v12.pk, "qty": 1}], "first_name": "علی", "last_name": "رضایی", "mobile": "09121234567",
+            "province": "تهران", "city": "تهران", "address": "خیابان آزادی", "payment_mode": "installment",
+            "inst_plan": beta.pk, "inst_down": 0, "inst_months": 12, "inst_step": 1, "inst_holder_name": "علی رضایی",
+            "inst_national_code": "0012345679", "inst_pensioner_type": "بازنشسته", "inst_sms_mobile": "09351234567"}, tok)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIsNone(r.json()["pay_url"])
+        self.assertEqual(r.json()["order"]["status"], "on_hold")

@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const kSite = String.fromEnvironment('SITE', defaultValue: 'https://irancarpet.net');
 const kApi = '$kSite/api/app/v1';
-const kAppVersion = '1.0.1';
+const kAppVersion = '1.0.2';
 
 typedef Json = Map<String, dynamic>;
 
@@ -62,6 +62,20 @@ class Api {
   Future<dynamic> post(String path, [Object? body]) async {
     final uri = Uri.parse('$kApi$path');
     return _send(() => _client.post(uri, headers: _headers, body: jsonEncode(body ?? {})));
+  }
+
+  /// فرم چندبخشی (برای فرستادن فایل مثل تصویر چک). files: نام فیلد ← (بایت‌ها، نام فایل)
+  Future<dynamic> postMultipart(String path, Map<String, String> fields, Map<String, (List<int>, String)> files) async {
+    final uri = Uri.parse('$kApi$path');
+    return _send(() async {
+      final req = http.MultipartRequest('POST', uri)
+        ..headers.addAll({..._headers}..remove('Content-Type'))
+        ..fields.addAll(fields);
+      for (final e in files.entries) {
+        req.files.add(http.MultipartFile.fromBytes(e.key, e.value.$1, filename: e.value.$2));
+      }
+      return http.Response.fromStream(await _client.send(req).timeout(const Duration(seconds: 60)));
+    });
   }
 
   Future<dynamic> _send(Future<http.Response> Function() fn) async {

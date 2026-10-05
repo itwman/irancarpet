@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
+import '../state/app_state.dart';
 import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import '../widgets/knots.dart';
@@ -54,6 +56,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 child: CustomScrollView(slivers: [
                   SliverToBoxAdapter(child: _top(context)),
                   SliverToBoxAdapter(child: _hero(context, d)),
+                  SliverToBoxAdapter(child: _quick(context)),
                   if ((d['notice'] as String? ?? '').isNotEmpty) SliverToBoxAdapter(child: _notice(d['notice'] as String)),
                   SliverToBoxAdapter(child: _categories(context, d)),
                   if ((d['reeds'] as List).isNotEmpty) ..._reedsSection(context, d),
@@ -129,6 +132,44 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ]),
         ),
       ),
+    );
+  }
+
+  /// دو میان‌بر: لیست قیمت و خرید اقساطی
+  Widget _quick(BuildContext context) {
+    final hasInst = context.watch<AppConfig>().installmentPlans.isNotEmpty;
+    Widget tile(IconData icon, String t, String sub, Color bg, Color fg, String route) => Expanded(
+          child: Material(
+            color: bg,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => Navigator.pushNamed(context, route),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(children: [
+                  Icon(icon, color: fg, size: 26),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(t, style: TextStyle(fontWeight: FontWeight.w900, color: fg)),
+                      Text(sub, style: const TextStyle(fontSize: 11.5, color: C.ink2), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(children: [
+        tile(Icons.receipt_long_rounded, 'لیست قیمت', 'قیمت روز همهٔ سایزها', C.tealTint, C.tealDark, '/pricelist'),
+        if (hasInst) ...[
+          const SizedBox(width: 10),
+          tile(Icons.calendar_month_rounded, 'خرید اقساطی', 'چک صیادی و بازنشستگان', C.saffronTint, const Color(0xFF8A5A00), '/installment'),
+        ],
+      ]),
     );
   }
 

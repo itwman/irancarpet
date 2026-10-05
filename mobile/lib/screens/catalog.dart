@@ -55,6 +55,7 @@ class _CategoriesTabState extends State<CategoriesTab> with AutomaticKeepAliveCl
               }) : const Loading())
           : ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
               _allTile(),
+              _priceTile(),
               for (final (i, c) in _cats!.indexed) _CatTile(c, index: i, onOpen: _open),
             ]),
     );
@@ -71,6 +72,21 @@ class _CategoriesTabState extends State<CategoriesTab> with AutomaticKeepAliveCl
           title: const Text('همهٔ فرش‌ها', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
           trailing: const Icon(Icons.chevron_right, color: Colors.white),
           onTap: () => Navigator.pushNamed(context, '/products', arguments: {'title': 'همهٔ فرش‌ها', 'query': <String, dynamic>{}}),
+        ),
+      );
+
+  Widget _priceTile() => Card(
+        elevation: 0,
+        color: C.tealTint,
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: const Icon(Icons.receipt_long_rounded, color: C.tealDark, size: 30),
+          title: const Text('لیست قیمت فرش ماشینی', style: TextStyle(color: C.tealDark, fontWeight: FontWeight.w800)),
+          subtitle: const Text('قیمت روز همهٔ لیست‌ها و سایزها'),
+          trailing: const Icon(Icons.chevron_right, color: C.tealDark),
+          onTap: () => Navigator.pushNamed(context, '/pricelist'),
         ),
       );
 }
