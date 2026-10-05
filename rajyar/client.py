@@ -6,7 +6,6 @@ import urllib.request
 
 from django.conf import settings
 from django.utils import timezone
-from django.utils.html import escape
 
 from core.templatetags.fa import fa_num, toman
 
@@ -71,31 +70,59 @@ def _abs(url):
     return url if url.startswith("http") else settings.SITE_URL + url
 
 
-def build_payload(p, s, publish_at=None, force_new=False):
-    reeds, picks, pile, color = _spec(p, "شانه"), _spec(p, "تراکم"), _spec(p, "خاب"), _spec(p, "رنگ")
-    lines = []
-    specs = [(f"{fa_num(reeds)} شانه" if reeds else ""), (f"تراکم {fa_num(picks)}" if picks else ""), fa_num(pile),
-             (f"زمینهٔ {color}" if color else "")]
-    specs = [x for x in specs if x]
-    if specs:
-        lines.append("<p>" + escape(" | ".join(specs)) + "</p>")
-    rows = (p.variations.filter(is_available=True, final_price__gt=0, size__isnull=False)
-            .select_related("size").order_by("-size__area")[:6])
-    prices = []
+def _date_label(dt):
+    import jdatetime
+
+    d = jdatetime.date.fromgregorian(date=timezone.localtime(dt).date())
+    months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
+    return fa_num(f"{d.day} {months[d.month - 1]} {d.year}")
+
+
+def price_lines(p, s, when):
+    """قیمت‌ها با تاریخ روز انتشار؛ بر اساس تنظیم «قیمت در پست»."""
+    if s.price_mode == "none":
+        return []
+    date = _date_label(when)
+    if s.price_mode == "from":
+        return [f"💰 قیمت از {toman(p.min_price)} تومان (قیمت {date})"] if p.min_price else []
+    qs = p.variations.filter(is_available=True, final_price__gt=0, size__isnull=False).select_related("size")
+    chosen = list(s.price_sizes.values_list("pk", flat=True)) if s.pk else []
+    if chosen:
+        rows = sorted(qs.filter(size_id__in=chosen), key=lambda v: chosen.index(v.size_id) if v.size_id in chosen else 99)
+    else:
+        rows = list(qs.order_by("-size__area")[:2])
+    out, seen = [], set()
     for v in rows:
         lbl = (v.size.label or "").split("(")[0].strip()
-        if lbl:
-            prices.append(f"{escape(lbl)}: {toman(v.price)} تومان")
+        if lbl and lbl not in seen:
+            seen.add(lbl)
+            out.append(f"▫️ {fa_num(lbl)}: {toman(v.price)} تومان")
+    if not out:
+        return []
+    return [f"💰 قیمت روز {date}:"] + out
+
+
+def build_payload(p, s, publish_at=None, force_new=False):
+    reeds, picks, pile, color = _spec(p, "شانه"), _spec(p, "تراکم"), _spec(p, "خاب"), _spec(p, "رنگ")
+    if len(pile) > 22:  # «100% آکریلیک هیت ست شده با ضمانت» ← «100% آکریلیک»
+        pile = " ".join(pile.split()[:2])
+    blocks = []
+    if s.show_specs:
+        specs = [(f"{fa_num(reeds)} شانه" if reeds else ""), (f"تراکم {fa_num(picks)}" if picks else ""),
+                 fa_num(pile), (f"زمینهٔ {color}" if color else "")]
+        specs = [x for x in specs if x]
+        if specs:
+            blocks.append(" | ".join(specs))
+    prices = price_lines(p, s, publish_at or timezone.now())
     if prices:
-        lines.append("<p>💰 قیمت:<br>" + "<br>".join(prices) + "</p>")
-    elif p.min_price:
-        lines.append(f"<p>💰 قیمت از {toman(p.min_price)} تومان</p>")
-    if p.short_description:
+        blocks.append("\n".join(prices))
+    if s.show_summary and p.short_description:
         from core.seo import plain
 
-        lines.append(f"<p>{escape(plain(p.short_description, 220))}</p>")
+        blocks.append(fa_num(plain(p.short_description, 220)))
     if s.footer:
-        lines.append(f"<p>{escape(s.footer)}</p>")
+        blocks.append(s.footer)
+    url = settings.SITE_URL + p.get_absolute_url()
     tags = [t.strip() for t in (s.tags or "").replace("،", ",").split(",") if t.strip()]
     if reeds:
         tags.append(f"فرش {reeds} شانه")
@@ -105,13 +132,16 @@ def build_payload(p, s, publish_at=None, force_new=False):
         tags.append(p.primary_category.name)
     body = {
         "title": fa_num(p.title),
-        "content": "\n".join(lines) or f"<p>{escape(fa_num(p.title))}</p>",
-        "url": settings.SITE_URL + p.get_absolute_url(),
+        # متن ساده؛ هر بخش با یک خط خالی جدا می‌شود (برچسب HTML در بعضی پیام‌رسان‌ها شکستن خط را از بین می‌برد)
+        "content": "\n\n".join(blocks) or fa_num(p.title),
+        "url": url,
         "tags": list(dict.fromkeys(tags))[:8],
         "external_id": f"product-{p.pk}",
         "channels": s.channel_ids,
         "language": "fa",
     }
+    if s.button_text:
+        body["buttons"] = [{"text": s.button_text, "url": url}]
     if p.image_id and p.image.file:
         body["image_url"] = _abs(p.image.url)
     if getattr(p, "video_url", "") and p.video_url.lower().split("?")[0].endswith((".mp4", ".mov", ".webm")):

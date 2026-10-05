@@ -58,7 +58,8 @@ FORMS = {
     "torob": (TorobSettings, ["enabled", "emalls_enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
                               "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice"]),
-    "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes", "tags", "footer"]),
+    "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes",
+                                "price_mode", "price_sizes", "show_specs", "show_summary", "button_text", "tags", "footer"]),
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
 }
 

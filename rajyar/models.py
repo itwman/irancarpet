@@ -19,6 +19,15 @@ class RajyarSettings(models.Model):
                             help_text="با ویرگول؛ در کانال‌هایی که هشتگ روشن است، هشتگ می‌شوند.")
     footer = models.CharField("خط پایانی پست", max_length=200, blank=True,
                               default="خرید نقدی و اقساطی، ارسال مستقیم از کاشان")
+    # متن پست
+    PRICE_MODES = [("none", "قیمت نیاید"), ("sizes", "قیمت سایزهای انتخاب‌شده"), ("from", "فقط «قیمت از …»")]
+    price_mode = models.CharField("قیمت در پست", max_length=10, choices=PRICE_MODES, default="sizes")
+    price_sizes = models.ManyToManyField("pricing.Size", blank=True, related_name="+", verbose_name="سایزهای قیمت",
+                                         help_text="خالی = بزرگ‌ترین دو سایز موجود هر فرش. قیمت همیشه با تاریخ روز انتشار می‌آید.")
+    show_specs = models.BooleanField("مشخصات (شانه، تراکم، جنس نخ، رنگ) بیاید", default=True)
+    show_summary = models.BooleanField("توضیح کوتاه محصول هم بیاید", default=False)
+    button_text = models.CharField("متن دکمه/پیوند", max_length=40, blank=True, default="مشاهده و خرید",
+                                   help_text="در پیام‌رسان‌هایی که دکمهٔ شیشه‌ای دارند دکمه می‌شود؛ در بقیه پیوند متنی.")
     channels_cache = models.JSONField("کانال‌های مجاز (از آخرین بررسی)", default=list, blank=True, editable=False)
     last_check = models.CharField("نتیجهٔ آخرین بررسی", max_length=300, blank=True, editable=False)
 

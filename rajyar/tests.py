@@ -45,6 +45,17 @@ class RajyarTests(TestCase):
         self.assertEqual(body["channels"], [2])
         self.assertEqual(body["external_id"], f"product-{self.p.pk}")
         self.assertIn("۱۲ متری", body["content"])
+        self.assertIn("قیمت روز", body["content"])  # قیمت همیشه با تاریخ
+        self.assertNotIn("<", body["content"])
+        self.assertEqual(body["buttons"][0]["text"], "مشاهده و خرید")
+        self.s.price_mode = "none"
+        self.assertNotIn("تومان", build_payload(self.p, self.s)["content"])
+        self.s.price_mode = "sizes"
+        self.s.price_sizes.set(Size.objects.filter(slug="9-meter"))
+        c = build_payload(self.p, self.s)["content"]
+        self.assertIn("۹ متری", c)
+        self.assertNotIn("۱۲ متری", c)
+        self.s.price_sizes.clear()
         self.assertIn("+03:30", body["publish_at"])
         self.assertTrue(body["url"].endswith("/product/afshan/"))
         with mock.patch("urllib.request.urlopen", return_value=Resp({"ok": True, "post": {"id": 12, "publications": []}})) as op:
