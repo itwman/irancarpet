@@ -69,7 +69,6 @@ def send_daily(s, slot=None):
 def weekly_body(s, image_url, data, sizes, when=None):
     from django.conf import settings
 
-    from core.autodesc import short_price
     from core.templatetags.fa import fa_num
     from pricing.pricelist import PRICE_LIST_PATH
 
@@ -77,13 +76,20 @@ def weekly_body(s, image_url, data, sizes, when=None):
     from .client import footer_text
 
     date = P.date_label(when)
-    names = "، ".join(P.short_size(z) for z in sizes)
-    lines = [f"💰 میانگین قیمت روز فرش ماشینی کاشان ({names})", f"📅 {date}"]
-    for name, prices in data[:8]:
-        parts = [f"{P.short_size(z)} {short_price(p)}" for z, p in zip(sizes, prices) if p]
-        if parts:
-            lines.append(f"▫️ {fa_num(name)}: {' | '.join(parts)}")
-    blocks = ["\n".join(lines), "قیمت همهٔ طرح‌ها و سایزها در سایت 👇"]
+    # قیمت‌ها روی تصویر هست؛ متن پست کوتاه می‌ماند (فقط یک خط معرفی، بدون تکرار تاریخ و عددها)
+    import re
+
+    labels = [fa_num(P.short_size(z)) for z in sizes]
+    nums = [re.match(r"([\d۰-۹.]+)\s*متری", x) for x in labels]
+    if all(nums):
+        nums = [m.group(1) for m in nums]
+        size_txt = ("، ".join(nums[:-1]) + " و " + nums[-1] if len(nums) > 1 else nums[0]) + " متری"
+    else:
+        size_txt = "، ".join(labels)
+    groups = "، ".join(fa_num(n).replace("فرش ", "") for n, _ in data[:6])
+    blocks = [f"💰 میانگین قیمت روز فرش ماشینی کاشان در سایزهای {size_txt} 👆"
+              + (f"\n({groups})" if groups and len(groups) < 120 else ""),
+              "قیمت همهٔ طرح‌ها و سایزها در سایت 👇"]
     foot = footer_text(s)
     if foot:
         blocks.append(foot)

@@ -188,8 +188,8 @@ class AutoTests(RajyarTests.__bases__[0]):
         self.assertEqual(len(weekly), 1)
         body = json.loads(next(c[0][0].data for c in op.call_args_list if b"pricelist-" in c[0][0].data))
         self.assertTrue(body["image_url"].endswith(".png"))
-        self.assertIn("میانگین قیمت", body["content"])
-        self.assertIn("۱۲ متری", body["content"])
+        self.assertIn("سایزهای ۱۲، ۹ و ۶ متری", body["content"])
+        self.assertNotIn("میلیون", body["content"])  # عددها فقط روی تصویر
         self.assertTrue(body["url"].endswith("/carpets-price-list/"))
         with self.ok():
             self.assertFalse([p for p in run(self.at(11)) if p.kind == "weekly"])  # همان روز دوباره نه
