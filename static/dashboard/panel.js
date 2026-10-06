@@ -171,6 +171,24 @@
     if (e.ctrlKey || e.metaKey) window.open(tr.dataset.href); else location.href = tr.dataset.href;
   });
 
+  /* --------------------------- برچسب‌های ستون‌ها: کلیک = افزودن/برداشتن از فیلتر */
+  var curQs = new URLSearchParams(location.search);
+  document.querySelectorAll("a[data-chip-filter]").forEach(function (a) {
+    if (curQs.getAll(a.dataset.chipFilter).indexOf(a.dataset.chipValue) >= 0) a.classList.add("chip-on");
+  });
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-chip-filter]");
+    if (!a || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    var q = new URLSearchParams(location.search), k = a.dataset.chipFilter, v = a.dataset.chipValue;
+    var vals = q.getAll(k).filter(function (x) { return x !== ""; });
+    q.delete(k);
+    if (vals.indexOf(v) >= 0) vals = vals.filter(function (x) { return x !== v; }); else vals.push(v);
+    vals.forEach(function (x) { q.append(k, x); });
+    q.delete("page");
+    location.search = q.toString();
+  });
+
   /* ------------------------------------------------------- عملیات گروهی */
   var bulkForm = document.getElementById("bulkForm");
   if (bulkForm) {

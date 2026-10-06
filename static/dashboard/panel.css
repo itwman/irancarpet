@@ -240,7 +240,8 @@ code{color:var(--pink-d);background:var(--pink-t);padding:.05rem .35rem;border-r
   box-shadow:0 12px 30px rgba(34,38,90,.12);padding:.75rem;min-width:220px;display:grid;gap:.35rem}
 .cols-p__menu label{display:flex;align-items:center;gap:.5rem;cursor:pointer}
 .bulk__all{display:flex;align-items:center;gap:.4rem;white-space:nowrap;font-size:.85rem}
-.chips-p{display:flex;flex-wrap:wrap;gap:.25rem}.chips-p span{background:var(--teal-t);color:var(--teal-d);border-radius:99px;padding:0 .55rem;font-size:.78rem;white-space:nowrap}
+.chips-p{display:flex;flex-wrap:wrap;gap:.25rem}.chips-p a{background:var(--teal-t);color:var(--teal-d);border-radius:99px;padding:0 .55rem;font-size:.78rem;white-space:nowrap;text-decoration:none;transition:background .15s}
+.chips-p a:hover{background:var(--teal-d);color:#fff}.chips-p a.chip-on{background:var(--ink);color:#fff;font-weight:700}.chips-p span{background:var(--teal-t);color:var(--teal-d);border-radius:99px;padding:0 .55rem;font-size:.78rem;white-space:nowrap}
 /* خرید اقساطی در صفحهٔ سفارش */
 .b-on_hold,.b-inst-review{background:#EAF3FB;color:#0b5a8a}
 .b-inst-approved{background:var(--teal-t,#E5F7F8);color:#0B7C88}

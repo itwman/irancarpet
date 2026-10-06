@@ -164,3 +164,36 @@ class PanelTests(TestCase):
             self.assertEqual((m.width, m.height), (40, 30))
             r = self.client.post("/panel/media/upload/", {"file": SimpleUploadedFile("bad.exe", b"x")})
             self.assertEqual(r.status_code, 400)
+
+
+class MultiFilterTests(TestCase):
+    def test_specs_or_within_and_across(self):
+        from django.contrib.auth import get_user_model
+
+        from catalog.models import Attribute, AttributeTerm, Product, ProductTag
+
+        color = Attribute.objects.create(slug="color", label="رنگ زمینه")
+        reeds = Attribute.objects.create(slug="reeds", label="شانه")
+        laki = AttributeTerm.objects.create(attribute=color, name="لاکی", slug="laki")
+        red = AttributeTerm.objects.create(attribute=color, name="قرمز", slug="red")
+        cream = AttributeTerm.objects.create(attribute=color, name="کرم", slug="cream")
+        r15 = AttributeTerm.objects.create(attribute=reeds, name="1500", slug="1500")
+        tag = ProductTag.objects.create(name="فرش ۱۲ متری", slug="t12")
+        ps = {}
+        for slug, terms in (("a", [laki, r15]), ("b", [red]), ("c", [cream, r15])):
+            ps[slug] = Product.objects.create(title=slug, slug=slug)
+            ps[slug].specs.set(terms)
+        ps["a"].tags.set([tag])
+        u = get_user_model().objects.create_user("s", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+
+        def titles(qs):
+            r = self.client.get("/panel/products/" + qs)
+            return sorted(row["obj"].title for row in r.context["rows"])
+
+        self.assertEqual(titles(f"?specs={laki.pk}&specs={red.pk}"), ["a", "b"])        # یا
+        self.assertEqual(titles(f"?specs={laki.pk}&specs={red.pk}&specs={r15.pk}"), ["a"])  # و
+        self.assertEqual(titles(f"?tags={tag.pk}"), ["a"])
+        r = self.client.get(f"/panel/products/?cols_set=1&cols=tags&cols=attr_{color.pk}&specs={laki.pk}")
+        self.assertContains(r, f'data-chip-filter="specs" data-chip-value="{laki.pk}"')
+        self.assertContains(r, f'data-chip-filter="tags" data-chip-value="{tag.pk}"')

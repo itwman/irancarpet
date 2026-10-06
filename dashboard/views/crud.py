@@ -62,17 +62,38 @@ def filter_specs(res, request):
 
             key = AC.key_for(f.related_model)
             if key:
-                spec["kind"] = "ac"
-                spec["ac"] = f"/panel/ac/{key}/"
-                if val:
-                    o = f.related_model.objects.filter(pk=val).first()
-                    spec["selected"] = (val, (AC.get(key).label or str)(o)) if o else None
+                # چند مقدار با هم (مثل رنگ زمینهٔ لاکی و قرمز)
+                vals = [v for v in request.GET.getlist(name) if v.isdigit()]
+                label = AC.get(key).label or str
+                spec.update(kind="ac", ac=f"/panel/ac/{key}/", multi=True,
+                            selected_all=[(str(o.pk), label(o)) for o in f.related_model.objects.filter(pk__in=vals)])
+                spec["selected"] = spec["selected_all"][0] if spec["selected_all"] else None
             else:
                 spec["options"] = [(str(o.pk), str(o)) for o in f.related_model.objects.all()[:200]]
         specs.append(spec)
     for name, (label, options, _) in res.custom_filters.items():
         specs.append({"name": name, "label": label, "value": request.GET.get(name, ""), "kind": "select", "options": options})
     return specs
+
+
+def filter_relation(qs, f, name, vals):
+    """چند مقدار: «یا» بین مقدارهای یک گروه؛ برای مشخصات (رنگ، شانه…) «و» بین ویژگی‌های مختلف.
+
+    مثلاً رنگ زمینهٔ لاکی + قرمز ← فرش‌های لاکی یا قرمز؛ لاکی + ۱۵۰۰ شانه ← فرش‌های لاکیِ ۱۵۰۰ شانه.
+    """
+    if not vals:
+        return qs
+    rel = f.related_model
+    if f.many_to_many and any(x.name == "attribute" for x in rel._meta.fields):
+        groups = {}
+        for pk, attr in rel.objects.filter(pk__in=vals).values_list("pk", "attribute_id"):
+            groups.setdefault(attr, []).append(pk)
+        for ids in groups.values():
+            qs = qs.filter(pk__in=qs.model.objects.filter(**{f"{name}__in": ids}).values("pk"))
+        return qs
+    if f.many_to_many:
+        return qs.filter(pk__in=qs.model.objects.filter(**{f"{name}__in": vals}).values("pk"))
+    return qs.filter(**{f"{name}__in": vals})
 
 
 def apply_filters(res, qs, request):
@@ -83,6 +104,8 @@ def apply_filters(res, qs, request):
         f = _field(res.model, name.split("__")[0])
         if isinstance(f, models.BooleanField):
             qs = qs.filter(**{name: val == "1"})
+        elif f is not None and f.is_relation and "__" not in name:
+            qs = filter_relation(qs, f, name, [v for v in request.GET.getlist(name) if v.isdigit()])
         else:
             qs = qs.filter(**{name: val})
     for name, (_, _, fn) in res.custom_filters.items():

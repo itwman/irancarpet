@@ -126,7 +126,7 @@ register(Resource(
     key="products", model=Product, title="محصولات", single="محصول", group="فروشگاه", icon="carpet",
     columns=[Col("image", "", thumb(), cls="w-thumb"),
              Col("title", "عنوان", lambda o: fa_num(o.title), "title"),
-             Col("album", "آلبوم قیمت", lambda o: o.album.name if o.album else "—"),
+             Col("album", "آلبوم قیمت", lambda o: _link_chip(o.album, "album", o.album.name if o.album else "")),
              Col("min_price", "قیمت", money("min_price"), "min_price"),
              Col("stock_status", "موجودی", badge("stock_status"), "stock_status"),
              Col("status", "وضعیت", badge("status"), "status"),
@@ -188,11 +188,22 @@ def _set_album(request, qs):
             f" ({fa_num(st['created'])} سایز تازه، {fa_num(st['deleted'])} سایز خارج از آلبوم حذف شد).")
 
 
-def _chips(items):
-    items = [str(x) for x in items]
+def _chips(items, param=None):
+    """برچسب‌های کوچک ستون؛ اگر param داده شود هر برچسب فیلتر همان مقدار است (کلیک = افزودن/برداشتن از فیلتر)."""
+    items = list(items)
     if not items:
         return "—"
-    return format_html('<span class="chips-p">{}</span>', format_html_join("", "<span>{}</span>", ((fa_num(x),) for x in items)))
+    if param:
+        return format_html('<span class="chips-p">{}</span>', format_html_join(
+            "", '<a href="?{}={}" data-chip-filter="{}" data-chip-value="{}" title="نمایش همهٔ موارد با «{}»">{}</a>',
+            ((param, o.pk, param, o.pk, o.name, fa_num(o.name)) for o in items)))
+    return format_html('<span class="chips-p">{}</span>', format_html_join("", "<span>{}</span>", ((fa_num(str(x)),) for x in items)))
+
+
+def _link_chip(obj, param, text=None):
+    if not obj:
+        return "—"
+    return _chips([type("C", (), {"pk": obj.pk, "name": text or str(obj)})()], param)
 
 
 def _product_extra_columns():
@@ -200,14 +211,14 @@ def _product_extra_columns():
 
     cols = [
         Col("sku", "کد کالا", lambda o: fa_num(o.sku or "—"), "sku"),
-        Col("tags", "برچسب‌ها", lambda o: _chips(t.name for t in o.tags.all())),
-        Col("categories", "دسته‌ها", lambda o: _chips(c.name for c in o.categories.all())),
-        Col("brand", "برند", lambda o: o.brand.name if o.brand else "—"),
+        Col("tags", "برچسب‌ها", lambda o: _chips(o.tags.all(), "tags")),
+        Col("categories", "دسته‌ها", lambda o: _chips(o.categories.all(), "categories")),
+        Col("brand", "برند", lambda o: _link_chip(o.brand, "brand")),
         Col("sale_status", "وضعیت فروش", badge("sale_status"), "sale_status"),
         Col("views", "بازدید", lambda o: fa_num(o.views), "views"),
     ]
     for a in Attribute.objects.order_by("order", "label"):
-        cols.append(Col(f"attr_{a.pk}", a.label, (lambda aid: lambda o: _chips(t.name for t in o.specs.all() if t.attribute_id == aid))(a.pk)))
+        cols.append(Col(f"attr_{a.pk}", a.label, (lambda aid: lambda o: _chips([t for t in o.specs.all() if t.attribute_id == aid], "specs"))(a.pk)))
     return cols
 
 

@@ -22,7 +22,7 @@
   {% for f in filters %}
     <label class="filters-p__f"><span>{{ f.label }}</span>
       {% if f.kind == "ac" %}
-        <select name="{{ f.name }}" data-ac="{{ f.ac }}" class="ac ac-sm" data-placeholder="همه"><option value="">همه</option>{% if f.selected %}<option value="{{ f.selected.0 }}" selected>{{ f.selected.1 }}</option>{% endif %}</select>
+        <select name="{{ f.name }}" data-ac="{{ f.ac }}" class="ac ac-sm" data-placeholder="همه"{% if f.multi %} multiple{% endif %}><option value="">همه</option>{% if f.multi %}{% for v, l in f.selected_all %}<option value="{{ v }}" selected>{{ l }}</option>{% endfor %}{% elif f.selected %}<option value="{{ f.selected.0 }}" selected>{{ f.selected.1 }}</option>{% endif %}</select>
       {% else %}
         <select name="{{ f.name }}" class="form-select form-select-sm" onchange="this.form.submit()"><option value="">همه</option>{% for k, v in f.options %}<option value="{{ k }}"{% if f.value == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
       {% endif %}
