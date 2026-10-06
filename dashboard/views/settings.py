@@ -44,11 +44,11 @@ TABS = [
 
 FORMS = {
     "site": (SiteSettings, ["site_name", "tagline", "title_separator", "home_title", "home_description", "phone", "mobile", "whatsapp",
-                            "telegram", "eitaa", "telegram_channel", "eitaa_channel", "bale_channel", "instagram", "aparat", "youtube", "farshplus",
+                            "telegram", "eitaa", "telegram_channel", "eitaa_channel", "bale_channel", "instagram", "aparat", "youtube", "twitter", "farshplus",
                             "email", "address", "store_name", "store_city", "store_province", "store_postal_code",
                             "store_days", "store_open", "store_close", "store_open2", "store_close2", "store_hours_note",
                             "latitude", "longitude", "map_google", "map_neshan", "map_balad",
-                            "trust_badge", "trust_html", "footer_html"]),
+                            "trust_badge", "trust_html", "home_about", "footer_html"]),
     "shop": (ShopSettings, ["allow_full", "allow_deposit", "deposit_percent", "free_shipping_min", "checkout_note", "admin_mobiles",
                             "referral_enabled", "referral_percent", "referral_max", "referral_min_order", "referral_reward"]),
     "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox"]),

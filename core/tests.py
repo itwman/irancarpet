@@ -110,3 +110,27 @@ class GeoTests(TestCase):
         f = make_form("site", data)
         self.assertTrue(f.is_valid())
         self.assertEqual(str(f.cleaned_data["latitude"]), "33.995609")
+
+
+class HomeAboutTests(TestCase):
+    WP = ('<h4>فرش ۱۲۰۰ شانه</h4><div class="products"><a href="/product/x/"><img src="a.jpg"><h3>فرش کاملیا</h3>'
+          '<span>۶۹٬۰۰۰٬۰۰۰ تومان</span></a><a href="/product-category/1200/">مشاهده همه</a></div>'
+          '<h2>خرید فرش ماشینی از کاشان</h2><p>ایران کارپت فروشگاه آنلاین فرش ماشینی کاشان است که فرش را بی‌واسطه از کارخانه '
+          'به دست مشتری می‌رساند و همهٔ سایزها را با قیمت روز نشان می‌دهد.</p><p>★★★★★</p>'
+          '<p>خرید نقدی و اقساطی با چک صیادی و ارسال مستقیم از کاشان به سراسر کشور؛ مشاوره پیش از خرید رایگان است و ضمانت کیفیت دارد.</p>')
+
+    def test_clean_and_priority(self):
+        from core.about import clean, home_about
+        from core.models import SiteSettings
+
+        out = clean(self.WP)
+        self.assertIn("<h2>خرید فرش ماشینی از کاشان</h2>", out)
+        self.assertNotIn("img", out)
+        self.assertNotIn("تومان", out)
+        self.assertNotIn("کاملیا", out)
+        self.assertNotIn("۱۲۰۰ شانه", out)
+        site = SiteSettings.load()
+        self.assertEqual(home_about(site, type("P", (), {"content": self.WP})()), out)
+        site.home_about = "<p>متن دستی</p>"
+        self.assertEqual(home_about(site, None), "<p>متن دستی</p>")
+        self.assertEqual(self.client.get("/").status_code, 200)

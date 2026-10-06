@@ -145,11 +145,11 @@
 </section>
 {% endif %}{% endwith %}
 
-{% if page.content %}
+{% if about_html %}
 <section class="container">
   <details class="about">
     <summary>دربارهٔ ایران کارپت</summary>
-    <div class="prose">{{ page.content|safe }}</div>
+    <div class="prose">{{ about_html|safe }}</div>
   </details>
 </section>
 {% endif %}

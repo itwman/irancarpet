@@ -109,8 +109,10 @@ def home(request):
         org["contactPoint"] = [{"@type": "ContactPoint", "telephone": p, "contactType": "sales", "areaServed": "IR",
                                 "availableLanguage": "Persian"} for p in phones]
     store = site.local_business()
+    from .about import home_about
+
     return render(request, "home.html", {
-        "meta": seo.build(kind="home"), "page": page, "posts": posts, "categories": cats,
+        "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page), "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
     })
 

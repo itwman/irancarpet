@@ -76,6 +76,7 @@ class SiteSettings(models.Model):
     instagram = models.URLField("اینستاگرام", blank=True)
     aparat = models.URLField("آپارات", blank=True, help_text="مثل https://www.aparat.com/username")
     youtube = models.URLField("یوتیوب", blank=True, help_text="مثل https://www.youtube.com/@username")
+    twitter = models.URLField("ایکس (توییتر)", blank=True, help_text="مثل https://x.com/username")
     farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
@@ -101,6 +102,10 @@ class SiteSettings(models.Model):
         help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
     )
     footer_html = models.TextField("HTML فوتر", blank=True)
+    home_about = models.TextField(
+        "متن «دربارهٔ ایران کارپت» صفحهٔ اول", blank=True,
+        help_text="بالای فوتر صفحهٔ اول، بسته‌شده نمایش داده می‌شود. خالی = تیترها و پاراگراف‌های نوشتاری برگهٔ صفحهٔ اول "
+                  "(بدون جعبه‌های محصول و دسته)، و اگر آن هم نبود «معرفی فروشگاه برای هوش مصنوعی».")
     trust_badge = models.ForeignKey(
         "core.Media", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="تصویر نماد (فوتر)",
         help_text="تصویر سبک از نماد اعتماد که در پایین همهٔ صفحه‌ها می‌آید و به برگهٔ مجوزها لینک می‌شود.",
@@ -193,7 +198,7 @@ class SiteSettings(models.Model):
         """صفحه‌ها و کانال‌های فروشگاه: [(کلید، نام، نشانی)]"""
         out = []
         for key, name in (("telegram_channel", "کانال تلگرام"), ("eitaa_channel", "کانال ایتا"), ("bale_channel", "کانال بله"),
-                          ("instagram", "اینستاگرام"), ("aparat", "آپارات"), ("youtube", "یوتیوب"), ("farshplus", "فرش پلاس")):
+                          ("instagram", "اینستاگرام"), ("aparat", "آپارات"), ("youtube", "یوتیوب"), ("twitter", "ایکس (توییتر)"), ("farshplus", "فرش پلاس")):
             url = getattr(self, key)
             if url:
                 out.append((key, name, url))

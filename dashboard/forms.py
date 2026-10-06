@@ -11,7 +11,7 @@ FA2EN = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "0123456789012
 EN2FA = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 
 # فیلدهایی که ویرایشگر متن کامل (HTML) می‌گیرند
-RICH_FIELDS = {"content", "description", "answer", "footer_html", "short_description", "checkout_note"}
+RICH_FIELDS = {"content", "description", "answer", "footer_html", "home_about", "short_description", "checkout_note"}
 # فیلدهای مبلغ (با جداکنندهٔ هزارگان)
 MONEY_FIELDS = {"base_price", "custom_base_price", "override_price", "manual_price", "sale_price", "shipping_fixed",
                 "free_shipping_min", "min_order_amount", "items_total", "online_amount", "paid_amount", "unit_price", "amount", "waste_value",
