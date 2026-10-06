@@ -77,6 +77,7 @@ class SiteSettings(models.Model):
     aparat = models.URLField("آپارات", blank=True, help_text="مثل https://www.aparat.com/username")
     youtube = models.URLField("یوتیوب", blank=True, help_text="مثل https://www.youtube.com/@username")
     twitter = models.URLField("ایکس (توییتر)", blank=True, help_text="مثل https://x.com/username")
+    facebook = models.URLField("فیس‌بوک", blank=True, help_text="مثل https://www.facebook.com/username")
     farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
@@ -198,7 +199,8 @@ class SiteSettings(models.Model):
         """صفحه‌ها و کانال‌های فروشگاه: [(کلید، نام، نشانی)]"""
         out = []
         for key, name in (("telegram_channel", "کانال تلگرام"), ("eitaa_channel", "کانال ایتا"), ("bale_channel", "کانال بله"),
-                          ("instagram", "اینستاگرام"), ("aparat", "آپارات"), ("youtube", "یوتیوب"), ("twitter", "ایکس (توییتر)"), ("farshplus", "فرش پلاس")):
+                          ("instagram", "اینستاگرام"), ("aparat", "آپارات"), ("youtube", "یوتیوب"), ("twitter", "ایکس (توییتر)"), ("facebook", "فیس‌بوک"),
+                          ("farshplus", "فرش پلاس")):
             url = getattr(self, key)
             if url:
                 out.append((key, name, url))
