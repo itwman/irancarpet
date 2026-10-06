@@ -1,5 +1,6 @@
 """تصویر هفتگی «قیمت روز فرش»: میانگین قیمت فرش‌های هر آلبوم در سایزهای انتخاب‌شده."""
 import io
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -67,13 +68,80 @@ def default_sizes():
     return list(Size.objects.filter(slug__in=["12-meter", "9-meter", "6-meter"]).order_by("sort_order"))
 
 
+def _sizes(s):
+    sizes = list(s.weekly_sizes.order_by("sort_order")) if s.pk else []
+    return (sizes or default_sizes())[:5]
+
+
+def _avg(values):
+    return int(round(sum(values) / len(values), -4)) if values else None
+
+
+def material(name):
+    """«100% آکریلیک هیت ست» ← آکریلیک، «پلی استر» ← پلی‌استر"""
+    n = (name or "").replace("\u200c", " ")
+    if "پلی" in n or "polyester" in n.lower():
+        return "پلی‌استر"
+    if "آکریلیک" in n or "اکریلیک" in n or "acryl" in n.lower():
+        return "آکریلیک"
+    n = re.sub(r"[0-9۰-۹%٪]+", "", n).replace("با ضمانت", "").strip()
+    return " ".join(n.split()[:2])
+
+
+def wanted_reeds(s):
+    raw = (getattr(s, "weekly_reeds", "") or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))
+    return [int(x) for x in re.findall(r"\d+", raw)]
+
+
+def rows_by_reeds(s):
+    """میانگین همهٔ فرش‌های هم‌شانه و هم‌جنس (از همهٔ آلبوم‌ها): «فرش ۷۰۰ شانه پلی‌استر» و…"""
+    from catalog.models import Attribute, Product, Variation
+
+    sizes = _sizes(s)
+    reeds_attr = Attribute.objects.filter(slug="reeds-per-meter").first() or Attribute.objects.filter(label__contains="شانه").first()
+    pile_attr = Attribute.objects.filter(label__contains="خاب").first()
+    if not reeds_attr:
+        return [], sizes
+    vs = (Variation.objects.filter(product__status="publish", size__in=sizes, is_available=True)
+          .exclude(product__sale_status="unavailable").only("product_id", "size_id", "final_price", "sale_price"))
+    albums = list(s.weekly_albums.values_list("pk", flat=True)) if s.pk else []
+    if albums:
+        vs = vs.filter(product__album_id__in=albums)
+    vs = list(vs)
+    pids = {v.product_id for v in vs}
+    spec = {}
+    through = Product.specs.through.objects.filter(product_id__in=pids, attributeterm__attribute__in=[reeds_attr] + ([pile_attr] if pile_attr else []))
+    for pid, name, attr in through.values_list("product_id", "attributeterm__name", "attributeterm__attribute_id"):
+        spec.setdefault(pid, {})["reeds" if attr == reeds_attr.pk else "pile"] = name
+    want = wanted_reeds(s)
+    groups = {}
+    for v in vs:
+        sp = spec.get(v.product_id, {})
+        digits = re.sub(r"\D", "", (sp.get("reeds") or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")))
+        if not digits or not v.price:
+            continue
+        reeds = int(digits)
+        if want and reeds not in want:
+            continue
+        key = (reeds, material(sp.get("pile")))
+        groups.setdefault(key, {}).setdefault(v.size_id, []).append(v.price)
+    order = {"پلی‌استر": 0, "آکریلیک": 1}
+    out = []
+    for (reeds, mat), by in sorted(groups.items(), key=lambda kv: (kv[0][0], order.get(kv[0][1], 2), kv[0][1])):
+        prices = [_avg(by.get(z.pk, [])) for z in sizes]
+        if any(prices):
+            out.append((f"فرش {reeds} شانه {mat}".strip(), prices))
+    return out, sizes
+
+
 def rows(s):
     """[(نام گروه، [میانگین قیمت هر سایز یا None])], سایزها"""
+    if getattr(s, "weekly_group", "reeds") == "reeds":
+        return rows_by_reeds(s)
     from catalog.models import Variation
     from pricing.models import Album
 
-    sizes = list(s.weekly_sizes.order_by("sort_order")) if s.pk else []
-    sizes = (sizes or default_sizes())[:5]
+    sizes = _sizes(s)
     albums = list(s.weekly_albums.order_by("sort_order", "name")) if s.pk else []
     albums = albums or list(Album.objects.filter(is_active=True, in_price_list=True).order_by("sort_order", "name"))
     out = []
@@ -84,7 +152,7 @@ def rows(s):
         for v in vs:
             if v.price:
                 by.setdefault(v.size_id, []).append(v.price)
-        prices = [int(round(sum(by[z.pk]) / len(by[z.pk]), -4)) if by.get(z.pk) else None for z in sizes]
+        prices = [_avg(by.get(z.pk, [])) for z in sizes]
         if any(prices):
             out.append((a.title, prices))
     return out, sizes
@@ -130,14 +198,15 @@ def render(s, when=None):
 
     # توضیح
     y = top_h + 34
-    text(d, (W - PAD, y), "میانگین قیمت طرح‌های هر گروه، به تومان", font(24), MUTED)
+    text(d, (W - PAD, y), "میانگین قیمت همهٔ طرح‌های هر گروه، به تومان", font(24), MUTED)
 
     # جدول
     y += 54
     col_w = {1: 260, 2: 230, 3: 210, 4: 168}.get(len(sizes), 140)
     name_w = W - 2 * PAD - col_w * len(sizes)
     d.rounded_rectangle([PAD, y, W - PAD, y + head_h], radius=18, fill=PINK_T)
-    text(d, (W - PAD - 24, y + 17), "گروه فرش", font(26, "Bold"), INK)
+    text(d, (W - PAD - 24, y + 17), "شانه و جنس نخ" if getattr(s, "weekly_group", "reeds") == "reeds" else "گروه فرش",
+         font(26, "Bold"), INK)
     for i, z in enumerate(sizes):
         cx = W - PAD - name_w - col_w * i - col_w / 2
         text(d, (cx, y + 17), short_size(z), font(26, "Bold"), PINK, anchor="ma")

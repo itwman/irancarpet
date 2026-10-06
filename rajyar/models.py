@@ -42,8 +42,12 @@ class RajyarSettings(models.Model):
     weekly_time = models.TimeField("ساعت ارسال", default=datetime.time(10, 0))
     weekly_sizes = models.ManyToManyField("pricing.Size", blank=True, related_name="+", verbose_name="سایزهای لیست قیمت",
                                           help_text="پیش‌فرض ۱۲، ۹ و ۶ متری. برای هر آلبوم، میانگین قیمت فرش‌های آن در این سایزها می‌آید.")
-    weekly_albums = models.ManyToManyField("pricing.Album", blank=True, related_name="+", verbose_name="آلبوم‌های لیست قیمت",
-                                           help_text="خالی = همهٔ آلبوم‌هایی که در لیست قیمت سایت هستند.")
+    weekly_group = models.CharField("ردیف‌های لیست قیمت", max_length=10, default="reeds", choices=[
+        ("reeds", "بر اساس شانه و جنس نخ (میانگین همهٔ آلبوم‌ها)"), ("album", "هر آلبوم یک ردیف")])
+    weekly_reeds = models.CharField("شانه‌ها", max_length=60, blank=True, default="700, 1000, 1200, 1500",
+                                    help_text="با ویرگول؛ خالی = همهٔ شانه‌ها. هر شانه با جنس نخش جدا می‌آید، مثل «۷۰۰ شانه پلی‌استر» و «۷۰۰ شانه آکریلیک».")
+    weekly_albums = models.ManyToManyField("pricing.Album", blank=True, related_name="+", verbose_name="فقط از آلبوم‌های",
+                                           help_text="خالی = همهٔ آلبوم‌ها (در حالت «هر آلبوم یک ردیف»: آلبوم‌های لیست قیمت سایت).")
     weekly_title = models.CharField("عنوان تصویر", max_length=80, default="قیمت روز فرش ماشینی کاشان")
     # پست روزانهٔ فرش‌ها
     daily_enabled = models.BooleanField("هر روز چند فرش تصادفی فرستاده شود", default=False)

@@ -118,10 +118,19 @@ class AutoTests(RajyarTests.__bases__[0]):
         self.album.sizes.set([s["12-meter"], s["9-meter"], s["6-meter"]])
         from core.models import Media, SiteSettings
 
+        from catalog.models import Attribute, AttributeTerm
+
+        reeds = Attribute.objects.create(slug="reeds-per-meter", label="شانه")
+        pile = Attribute.objects.create(slug="pile", label="جنس نخ خاب")
+        t700 = AttributeTerm.objects.create(attribute=reeds, name="700", slug="700")
+        t1500 = AttributeTerm.objects.create(attribute=reeds, name="1500", slug="1500")
+        acr = AttributeTerm.objects.create(attribute=pile, name="100% آکریلیک هیت ست شده با ضمانت", slug="acr")
+        poly = AttributeTerm.objects.create(attribute=pile, name="پلی استر", slug="poly")
         img = Media.objects.create(file="x.jpg", title="x")
         self.products = []
-        for i in range(3):
+        for i, terms in enumerate(([t1500, acr], [t700, acr], [t700, poly])):
             p = Product.objects.create(title=f"فرش {i}", slug=f"f{i}", album=self.album, status="publish", image=img)
+            p.specs.set(terms)
             sync_album_variations([p], reset=True)
             p.refresh_price_cache()
             self.products.append(p)
@@ -189,6 +198,17 @@ class AutoTests(RajyarTests.__bases__[0]):
         r = self.client.get("/panel/settings/rajyar-pricelist.png")
         self.assertEqual(r["Content-Type"], "image/png")
         self.assertContains(self.client.get("/panel/settings/?tab=rajyar"), "نوبت‌های بعدی")
+
+    def test_groups_by_reeds_and_pile(self):
+        from . import pricelist_image as P
+
+        data, sizes = P.rows(self.s)
+        self.assertEqual([n for n, _ in data], ["فرش 700 شانه پلی‌استر", "فرش 700 شانه آکریلیک", "فرش 1500 شانه آکریلیک"])
+        self.assertEqual(len(sizes), 3)
+        self.s.weekly_reeds = "1500"
+        self.assertEqual([n for n, _ in P.rows(self.s)[0]], ["فرش 1500 شانه آکریلیک"])
+        self.s.weekly_group = "album"
+        self.assertEqual(len(P.rows(self.s)[0]), 1)
 
     def test_fallback_shaping(self):
         from . import pricelist_image as P
