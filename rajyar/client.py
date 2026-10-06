@@ -1,6 +1,7 @@
 """ارتباط با API رج‌یار و ساخت متن پست هر فرش."""
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 
@@ -102,6 +103,26 @@ def price_lines(p, s, when):
     return [f"💰 قیمت روز {date}:"] + out
 
 
+def footer_text(s):
+    """خط‌های پایانی پست با {کانال‌ها}، {تلفن}، {موبایل} و {سایت}؛ خطی که متغیرش خالی است حذف می‌شود."""
+    from core.models import SiteSettings
+
+    site = SiteSettings.load()
+    chans = "\n".join(f"🔸 {name}: {url.split('//', 1)[-1].rstrip('/')}" for key, name, url in site.follows if key != "farshplus")
+    vals = {"کانال‌ها": chans, "کانالها": chans, "تلفن": fa_num(site.phone or ""), "موبایل": fa_num(site.mobile or ""),
+            "سایت": settings.SITE_URL.split("//", 1)[-1].strip("/")}
+    out = []
+    for line in (s.footer or "").replace("\r\n", "\n").split("\n"):
+        names = re.findall(r"\{([^{}]+)\}", line)
+        if any(not vals.get(n.strip().replace(" ", "")) for n in names):
+            continue
+        for n in names:
+            line = line.replace("{" + n + "}", vals[n.strip().replace(" ", "")])
+        if line.strip():
+            out.append(line.rstrip())
+    return "\n".join(out)
+
+
 def build_payload(p, s, publish_at=None, force_new=False):
     reeds, picks, pile, color = _spec(p, "شانه"), _spec(p, "تراکم"), _spec(p, "خاب"), _spec(p, "رنگ")
     if len(pile) > 22:  # «100% آکریلیک هیت ست شده با ضمانت» ← «100% آکریلیک»
@@ -122,8 +143,9 @@ def build_payload(p, s, publish_at=None, force_new=False):
         summary = summary_text(p)
         if summary:
             blocks.append(fa_num(summary[:400]))
-    if s.footer:
-        blocks.append(s.footer)
+    foot = footer_text(s)
+    if foot:
+        blocks.append(foot)
     url = f"{settings.SITE_URL}/p/{p.pk}/"  # پیوند کوتاه؛ نشانی فارسی در پیام‌رسان‌ها خیلی بلند و ناخوانا می‌شود
     tags = [t.strip() for t in (s.tags or "").replace("،", ",").split(",") if t.strip()]
     if reeds:
@@ -155,16 +177,24 @@ def build_payload(p, s, publish_at=None, force_new=False):
     return body
 
 
-def send(p, publish_at=None, force_new=False, s=None):
+def send(p, publish_at=None, force_new=False, s=None, post=None):
     """یک فرش را به رج‌یار می‌فرستد؛ خروجی: RajyarPost"""
+    s = s or RajyarSettings.load()
+    post = post or RajyarPost(kind=RajyarPost.Kind.PRODUCT)
+    post.product, post.publish_at = p, publish_at
+    return send_body(build_payload(p, s, publish_at, force_new), post, s)
+
+
+def send_body(body, post, s=None):
+    """فرستادن یک پست آماده (فرش یا لیست قیمت)."""
     s = s or RajyarSettings.load()
     if not s.enabled:
         raise RajyarError("اتصال رج‌یار غیرفعال است.")
     if not s.channel_ids:
         raise RajyarError("کانال‌ها در تنظیمات رج‌یار انتخاب نشده‌اند.")
-    post = RajyarPost(product=p, publish_at=publish_at)
+    publish_at = post.publish_at
     try:
-        data = _call(s, "POST", "posts/", build_payload(p, s, publish_at, force_new))
+        data = _call(s, "POST", "posts/", body)
         remote = (data or {}).get("post") or {}
         post.remote_id = remote.get("id")
         post.status = RajyarPost.Status.SCHEDULED if publish_at and publish_at > timezone.now() else RajyarPost.Status.SENT

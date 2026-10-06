@@ -286,3 +286,4 @@ code{color:var(--pink-d);background:var(--pink-t);padding:.05rem .35rem;border-r
 .kv:has(.vars-help){display:block}.kv:has(.vars-help) strong{font-weight:400;display:block;margin-top:.4rem}
 .vars-help li{overflow-wrap:anywhere}.vars-help code{white-space:normal}
 textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-height:190px;line-height:2}
+.pl-prev{width:100%;border-radius:12px;box-shadow:0 0 0 1px #ecedf6}

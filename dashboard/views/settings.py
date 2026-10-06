@@ -44,7 +44,7 @@ TABS = [
 
 FORMS = {
     "site": (SiteSettings, ["site_name", "tagline", "title_separator", "home_title", "home_description", "phone", "mobile", "whatsapp",
-                            "telegram", "eitaa", "telegram_channel", "eitaa_channel", "instagram", "farshplus",
+                            "telegram", "eitaa", "telegram_channel", "eitaa_channel", "bale_channel", "instagram", "aparat", "youtube", "farshplus",
                             "email", "address", "store_name", "store_city", "store_province", "store_postal_code",
                             "store_days", "store_open", "store_close", "store_open2", "store_close2", "store_hours_note",
                             "latitude", "longitude", "map_google", "map_neshan", "map_balad",
@@ -61,7 +61,9 @@ FORMS = {
                               "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice"]),
     "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes",
-                                "price_mode", "price_sizes", "show_specs", "show_summary", "button_text", "tags", "footer"]),
+                                "price_mode", "price_sizes", "show_specs", "show_summary", "button_text", "tags", "footer",
+                                "daily_enabled", "daily_times", "daily_albums",
+                                "weekly_enabled", "weekly_day", "weekly_time", "weekly_sizes", "weekly_albums", "weekly_title"]),
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
@@ -141,6 +143,19 @@ def status_info():
 
 
 @staff_required
+def rajyar_pricelist_png(request):
+    """پیش‌نمایش تصویر لیست قیمت هفتگی (بدون ارسال)."""
+    from django.http import HttpResponse
+
+    from rajyar.pricelist_image import render as render_png
+
+    png, _d, _s = render_png(RajyarSettings.load())
+    resp = HttpResponse(png, content_type="image/png")
+    resp["Cache-Control"] = "no-store"
+    return resp
+
+
+@staff_required
 def settings_view(request):
     tab = request.GET.get("tab") or request.POST.get("tab") or "site"
     if tab not in FORMS:
@@ -163,6 +178,22 @@ def settings_view(request):
 
             ok, msg = ping()
             (messages.success if ok else messages.error)(request, f"رج‌یار: {msg}")
+            return redirect("/panel/settings/?tab=rajyar")
+        if request.POST.get("do") in ("rajyar_weekly_now", "rajyar_daily_now"):
+            from rajyar import auto
+            from rajyar.client import RajyarError
+
+            rs = RajyarSettings.load()
+            try:
+                post = auto.send_weekly(rs) if request.POST["do"] == "rajyar_weekly_now" else auto.send_daily(rs)
+            except RajyarError as e:
+                messages.error(request, f"رج‌یار: {e}")
+            else:
+                ok = post.status != "failed"
+                what = "لیست قیمت" if post.kind == "weekly" else f"«{post.product}»" if post.product_id else "فرش"
+                (messages.success if ok else messages.error)(
+                    request, f"{what} به رج‌یار فرستاده شد." if ok else f"ارسال نشد: {post.error}")
+            log(request, "action", "رج‌یار", None, request.POST["do"])
             return redirect("/panel/settings/?tab=rajyar")
         if request.POST.get("do") == "indexnow_all":
             urls = indexnow.all_urls()
@@ -203,7 +234,8 @@ def settings_view(request):
         "tabs": TABS, "tab": tab, "form": form, "trust": trust, "info": status_info(),
         "fp": farshplus_info() if tab == "farshplus" else None,
         "seo": SeoSettings.load() if tab == "seo" else None,
-        "rj": RajyarSettings.load() if tab == "rajyar" else None, "SITE_URL": django_settings.SITE_URL,
+        "rj": RajyarSettings.load() if tab == "rajyar" else None,
+        "rj_next": __import__("rajyar.auto", fromlist=["next_runs"]).next_runs(RajyarSettings.load()) if tab == "rajyar" else [], "SITE_URL": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),
     })

@@ -125,6 +125,11 @@ def run_all(out=print):
         n = refresh()
         if n:
             done["وضعیت رج‌یار"] = n
+        from rajyar.auto import run as rajyar_auto
+
+        sent = rajyar_auto()
+        if sent:
+            done["پست خودکار کانال‌ها"] = len(sent)
     except Exception:  # noqa: BLE001
         log.exception("rajyar refresh")
     if cache.add("jobs:landing", 1, 6 * 3600):

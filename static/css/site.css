@@ -679,7 +679,7 @@ h1,h2,h3,h4{font-weight:900;line-height:1.4;letter-spacing:-.01em}
 .msg-menu__head{font-size:.78rem;color:var(--muted);padding:.25rem .7rem .4rem}
 .msg-menu .dropdown-item{display:flex;align-items:center;gap:.6rem;border-radius:12px;padding:.55rem .7rem;font-weight:700;color:var(--ink)}
 .msg-menu .dropdown-item:hover,.msg-menu .dropdown-item:focus{background:var(--soft);color:var(--ink)}
-.soc--whatsapp svg{color:#1f9d55}.soc--telegram svg,.soc--telegram_channel svg{color:#1d8fd1}.soc--eitaa svg,.soc--eitaa_channel svg{color:#e08a00}.soc--instagram svg{color:#c1356b}.soc--farshplus svg{color:var(--pink-d)}.soc--phone svg{color:var(--teal-d)}
+.soc--whatsapp svg{color:#1f9d55}.soc--telegram svg,.soc--telegram_channel svg{color:#1d8fd1}.soc--eitaa svg,.soc--eitaa_channel svg{color:#e08a00}.soc--instagram svg{color:#c1356b}.soc--bale_channel svg{color:#2e9e7f}.soc--aparat svg{color:#df0f50}.soc--youtube svg{color:#e02a2a}.soc--farshplus svg{color:var(--pink-d)}.soc--phone svg{color:var(--teal-d)}
 .socials{display:flex;flex-wrap:wrap;gap:.45rem}
 .soc{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;border-radius:999px;font-size:.85rem;font-weight:700;background:rgba(255,255,255,.08);color:#fff;transition:background .2s}
 .soc:hover{background:rgba(255,255,255,.16);color:#fff}

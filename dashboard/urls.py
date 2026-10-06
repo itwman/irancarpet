@@ -10,6 +10,7 @@ urlpatterns = [
     path("", home.home, name="panel"),
     path("search/", home.search),
     path("settings/", settings.settings_view),
+    path("settings/rajyar-pricelist.png", settings.rajyar_pricelist_png),
     path("ac/<str:key>/", autocomplete),
     path("media/upload/", media.upload),
     path("products/add/", products.product_edit),

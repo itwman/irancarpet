@@ -107,3 +107,97 @@ class RajyarTests(TestCase):
         self.assertTrue(all(b["force_new"] for b in bodies))
         self.assertEqual(RajyarPost.objects.count(), 2)
         self.assertEqual(self.client.get("/panel/rajyar-posts/").status_code, 200)
+
+
+class AutoTests(RajyarTests.__bases__[0]):
+    def setUp(self):
+        seed_sizes()
+        s = {x.slug: x for x in Size.objects.all()}
+        self.album = Album.objects.create(name="1500 شانه", code="A", base_size=s["12-meter"], base_price=Decimal("50000000"),
+                                          in_price_list=True)
+        self.album.sizes.set([s["12-meter"], s["9-meter"], s["6-meter"]])
+        from core.models import Media, SiteSettings
+
+        img = Media.objects.create(file="x.jpg", title="x")
+        self.products = []
+        for i in range(3):
+            p = Product.objects.create(title=f"فرش {i}", slug=f"f{i}", album=self.album, status="publish", image=img)
+            sync_album_variations([p], reset=True)
+            p.refresh_price_cache()
+            self.products.append(p)
+        self.s = RajyarSettings.load()
+        self.s.enabled, self.s.api_key, self.s.channels = True, "k", "2"
+        self.s.daily_enabled, self.s.daily_times = True, "10:00, ۱۷:۰۰, 21:00"
+        self.s.weekly_enabled, self.s.weekly_day = True, 1  # سه‌شنبه
+        self.s.save()
+        site = SiteSettings.load()
+        site.phone, site.telegram_channel, site.bale_channel, site.youtube = "031-55340038", "https://t.me/irancarpet", "https://ble.ir/irancarpet", ""
+        site.save()
+
+    def ok(self):
+        return mock.patch("urllib.request.urlopen", return_value=Resp({"post": {"id": 9}}))
+
+    def at(self, h, m=5, day=6):  # ۲۰۲۶/۱۰/۰۶ سه‌شنبه
+        import zoneinfo
+
+        return timezone.datetime(2026, 10, day, h, m, tzinfo=zoneinfo.ZoneInfo("Asia/Tehran"))
+
+    def test_footer(self):
+        from .client import footer_text
+
+        f = footer_text(self.s)
+        self.assertIn("۰۳۱-۵۵۳۴۰۰۳۸", f)
+        self.assertIn("کانال بله: ble.ir/irancarpet", f)
+        self.assertNotIn("یوتیوب", f)
+        self.assertIn("ble.ir", build_payload(self.products[0], self.s)["content"])
+
+    def test_daily_no_repeat(self):
+        from .auto import run
+
+        self.assertEqual(self.s.daily_slots()[1].hour, 17)
+        self.s.weekly_enabled = False
+        self.s.save()
+        with self.ok() as op:
+            self.assertEqual(len(run(self.at(9))), 0)
+            self.assertEqual(len(run(self.at(10))), 1)
+            self.assertEqual(len(run(self.at(10, 30))), 0)       # هر نوبت یک بار
+            run(self.at(17))
+            run(self.at(21))
+        self.assertEqual(op.call_count, 3)
+        daily = RajyarPost.objects.filter(kind="daily")
+        self.assertEqual(len({p.product_id for p in daily}), 3)  # سه فرش متفاوت
+        with self.ok():
+            post = run(self.at(10, day=7))[0]                   # دور تازه: باز هم فرش بفرستد
+        self.assertIsNotNone(post.product_id)
+
+    def test_weekly_image(self):
+        from .auto import run
+
+        with self.ok() as op:
+            posts = run(self.at(10, 20))
+        weekly = [p for p in posts if p.kind == "weekly"]
+        self.assertEqual(len(weekly), 1)
+        body = json.loads(next(c[0][0].data for c in op.call_args_list if b"pricelist-" in c[0][0].data))
+        self.assertTrue(body["image_url"].endswith(".png"))
+        self.assertIn("میانگین قیمت", body["content"])
+        self.assertIn("۱۲ متری", body["content"])
+        self.assertTrue(body["url"].endswith("/carpets-price-list/"))
+        with self.ok():
+            self.assertFalse([p for p in run(self.at(11)) if p.kind == "weekly"])  # همان روز دوباره نه
+        u = get_user_model().objects.create_user("st", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+        r = self.client.get("/panel/settings/rajyar-pricelist.png")
+        self.assertEqual(r["Content-Type"], "image/png")
+        self.assertContains(self.client.get("/panel/settings/?tab=rajyar"), "نوبت‌های بعدی")
+
+    def test_fallback_shaping(self):
+        from . import pricelist_image as P
+        from .fa_text import visual
+
+        self.assertEqual(visual("لا"), "ﻻ")
+        self.assertEqual(visual("فرش ۱۲"), "۱۲ " + "ﻕﺮﻓ"[::-1][::-1].replace("ﻕ", "ﺵ"))
+        old, P.RAQM = P.RAQM, False
+        try:
+            self.assertTrue(P.render(self.s)[0].startswith(b"\x89PNG"))
+        finally:
+            P.RAQM = old

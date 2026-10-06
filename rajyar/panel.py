@@ -70,13 +70,16 @@ def _links(o):
 
 register(Resource(
     key="rajyar-posts", model=RajyarPost, title="ارسال به کانال‌ها", single="ارسال", group="فروشگاه", icon="send",
-    columns=[Col("product", "فرش", lambda o: format_html('<a href="/panel/products/{}/edit/">{}</a>', o.product_id, fa_num(o.product.title))),
+    columns=[Col("product", "پست", lambda o: format_html('<a href="/panel/products/{}/edit/">{}</a>', o.product_id, fa_num(o.product.title))
+                 if o.product_id else (format_html('<a href="{}" target="_blank" rel="noopener">تصویر لیست قیمت</a>', o.image) if o.image
+                                       else o.get_kind_display())),
+             Col("kind", "نوع", lambda o: o.get_kind_display(), "kind"),
              Col("status", "وضعیت", badge("status"), "status"),
              Col("publish_at", "زمان انتشار", lambda o: jdate(o.publish_at, "%Y/%m/%d %H:%M") if o.publish_at else "فوری", "publish_at"),
              Col("links", "پیام‌ها", _links),
              Col("error", "خطا", lambda o: o.error or ""),
              Col("created_at", "ارسال", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M"), "created_at")],
-    search=["product__title"], filters=["status"], date_filter="created_at", ordering=("-created_at",),
+    search=["product__title"], filters=["status", "kind"], date_filter="created_at", ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("product"), can_add=False,
     fieldsets=[("ارسال", ["status"], "side")],
     help="برای فرستادن فرش‌ها به کانال‌ها: «محصولات» ← انتخاب فرش‌ها ← عملیات گروهی «ارسال به کانال‌ها (رج‌یار)». "

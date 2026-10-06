@@ -47,6 +47,15 @@
       <p class="hint">کلید را بررسی می‌کند و فهرست کانال‌هایی که این کلید به آن‌ها دسترسی دارد را کنار صفحه نشان می‌دهد.</p>
       <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="rajyar"><button class="btn btn-ink" name="do" value="rajyar_ping">بررسی اتصال و دریافت کانال‌ها</button></form>
     </section>
+    <section class="card-p">
+      <h2>پست‌های خودکار</h2>
+      <p class="hint">«فرش روزانه» هر روز در ساعت‌های تعیین‌شده یک فرش تصادفی می‌فرستد؛ تا همهٔ فرش‌ها یک بار نرفته‌اند، فرشی تکرار نمی‌شود.
+        «لیست قیمت هفتگی» یک تصویر از میانگین قیمت هر آلبوم در سایزهای انتخاب‌شده می‌سازد و با پیوند لیست قیمت سایت می‌فرستد. اول تنظیمات بالا را ذخیره کنید.</p>
+      <a href="/panel/settings/rajyar-pricelist.png" target="_blank" rel="noopener"><img src="/panel/settings/rajyar-pricelist.png" alt="پیش‌نمایش تصویر لیست قیمت" class="pl-prev"></a>
+      <form method="post" class="d-flex flex-wrap gap-2 mt-3" data-confirm="همین حالا به کانال‌ها فرستاده شود؟">{% csrf_token %}<input type="hidden" name="tab" value="rajyar">
+        <button class="btn btn-ink btn-sm" name="do" value="rajyar_weekly_now">ارسال لیست قیمت همین حالا</button>
+        <button class="btn btn-light btn-sm" name="do" value="rajyar_daily_now">ارسال یک فرش تصادفی همین حالا</button></form>
+    </section>
     {% endif %}
     {% if tab == "content" %}
     <section class="card-p">
@@ -95,6 +104,11 @@
       {% empty %}<p class="hint">هنوز بررسی نشده؛ کلید را ذخیره کنید و «بررسی اتصال» را بزنید.</p>{% endfor %}
       <p class="hint mt-2">شناسهٔ کانال‌هایی که فرش‌ها باید آنجا بروند را در «کانال‌ها» بنویسید. ارسال: «محصولات» ← انتخاب فرش‌ها ← عملیات گروهی «ارسال به کانال‌ها (رج‌یار)».</p>
       <a class="btn btn-light btn-sm mt-1" href="/panel/rajyar-posts/">ارسال‌ها و وضعیت انتشار</a>
+    </section>
+    <section class="card-p"><h2>نوبت‌های بعدی</h2>
+      {% for name, at in rj_next %}<div class="kv"><span>{{ name }}</span><strong>{{ at|jdate:"%A %d %B، %H:%M" }}</strong></div>
+      {% empty %}<p class="hint">ارسال خودکار روشن نیست.</p>{% endfor %}
+      {% if rj_next and not rj.enabled %}<p class="hint">اتصال رج‌یار خاموش است؛ چیزی فرستاده نمی‌شود.</p>{% endif %}
     </section>{% endif %}
     {% if seo %}<section class="card-p"><h2>وضعیت IndexNow</h2>
       <div class="kv"><span>آخرین ارسال</span><strong>{% if seo.indexnow_last_at %}{{ seo.indexnow_last_at|jdate:"%d %B %H:%M" }}{% else %}هنوز ارسالی نبوده{% endif %}</strong></div>
