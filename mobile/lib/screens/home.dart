@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import '../widgets/knots.dart';
+import '../widgets/offers.dart';
 import 'shell.dart';
 
 class HomeTab extends StatefulWidget {
@@ -58,6 +59,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   SliverToBoxAdapter(child: _hero(context, d)),
                   SliverToBoxAdapter(child: _quick(context)),
                   if ((d['notice'] as String? ?? '').isNotEmpty) SliverToBoxAdapter(child: _notice(d['notice'] as String)),
+                  if (((d['offers'] as List?) ?? []).isNotEmpty)
+                    SliverToBoxAdapter(child: OffersStrip((d['offers'] as List).cast<Json>())),
                   SliverToBoxAdapter(child: _categories(context, d)),
                   if ((d['reeds'] as List).isNotEmpty) ..._reedsSection(context, d),
                   SliverToBoxAdapter(

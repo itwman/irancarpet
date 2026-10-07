@@ -213,6 +213,7 @@ def home(request):
         "newest": [S.card(p) for p in base.order_by("-published_at")[:10]],
         "popular": [S.card(p) for p in base.order_by("-views")[:10]],
         "rating": {"count": n, "avg": round(sum(x["rating"] for x in stats) / n, 1) if n else 0},
+        "offers": [S.offer_json(o, True) for o in __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:10]],
     })
 
 
@@ -317,8 +318,10 @@ def filters(request):
 
 @endpoint()
 def product(request, pk):
-    p = (Product.objects.published().select_related("image", "brand", "album", "primary_category")
-         .prefetch_related("categories", "tags").filter(pk=pk).first())
+    from shop.offers import live_offers
+
+    qs = Product.objects.select_related("image", "brand", "album", "primary_category").prefetch_related("categories", "tags")
+    p = qs.published().filter(pk=pk).first() or (qs.filter(pk=pk).first() if any(o.product_id == pk for o in live_offers()) else None)
     if not p:
         return fail("این محصول پیدا نشد.", 404)
     gallery = [pi.media for pi in ProductImage.objects.filter(product=p).select_related("media").order_by("order")]
@@ -692,8 +695,10 @@ def thumb(request, w, path):
             raise Http404
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
+            from PIL import ImageOps
+
             with Image.open(src) as im:
-                im = im.convert("RGB")
+                im = ImageOps.exif_transpose(im).convert("RGB")
                 im.thumbnail((w, w * 2))
                 tmp = out.with_suffix(".tmp")
                 im.save(tmp, "WEBP", quality=82, method=4)

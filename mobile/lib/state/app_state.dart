@@ -114,6 +114,14 @@ class Cart extends ChangeNotifier {
     await _save();
   }
 
+  /// فرصت ویژه: دقیقاً یک تخته از این سایز (حتی اگر سایز «فقط جفت» باشد)
+  Future<void> putSingle(CartItem it) async {
+    items.removeWhere((e) => e.variation == it.variation);
+    it.qty = 1;
+    items.add(it);
+    await _save();
+  }
+
   Future<void> setQty(int variation, int q) async {
     final it = items.where((e) => e.variation == variation).firstOrNull;
     if (it == null) return;

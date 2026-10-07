@@ -97,12 +97,14 @@ def _offer_state(o):
     now = _tz.now()
     if not o.is_active:
         return format_html('<span class="badge-ic b-draft">خاموش</span>')
-    if o.ends_at <= now:
+    if o.ends_at and o.ends_at <= now:
         return format_html('<span class="badge-ic b-cancelled">تمام شد</span>')
     if o.starts_at > now:
         return format_html('<span class="badge-ic b-pending">هنوز شروع نشده</span>')
     if o.remaining <= 0:
         return format_html('<span class="badge-ic b-completed">فروخته شد</span>')
+    if not o.ends_at:
+        return format_html('<span class="badge-ic b-publish">فعال</span> <small class="muted">تا فروش</small>')
     left = o.ends_at - now
     h, m = divmod(int(left.total_seconds()) // 60, 60)
     return format_html('<span class="badge-ic b-publish">فعال</span> <small class="muted">{} ساعت و {} دقیقه مانده</small>', fa_num(h), fa_num(m))
@@ -111,7 +113,7 @@ def _offer_state(o):
 def _renew(request, qs):
     n = 0
     for o in qs:
-        o.ends_at = max(o.ends_at, _tz.now()) + _tz.timedelta(hours=24)
+        o.ends_at = max(o.ends_at or _tz.now(), _tz.now()) + _tz.timedelta(hours=24)
         o.is_active = True
         o.save()
         n += 1
@@ -134,7 +136,7 @@ register(Resource(
              Col("off", "تخفیف", lambda o: f"{fa_num(o.off_percent)}٪"),
              Col("left", "مانده", lambda o: f"{fa_num(o.remaining)} از {fa_num(o.quantity)}"),
              Col("state", "وضعیت", _offer_state),
-             Col("ends_at", "پایان", lambda o: jdate(o.ends_at, "%Y/%m/%d %H:%M"), "ends_at")],
+             Col("ends_at", "پایان", lambda o: jdate(o.ends_at, "%Y/%m/%d %H:%M") if o.ends_at else "تا فروش", "ends_at")],
     search=["product__title", "note"], filters=["is_active"], ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("product", "size"),
     fieldsets=[("فرصت", ["product", "size", "percent", "fixed_price", "quantity"], "main"),
@@ -143,9 +145,9 @@ register(Resource(
               ("قیمت ویژه", lambda o: f"{toman(o.price)} تومان" if o.pk and o.price else "—"),
               ("فروخته‌شده", lambda o: fa_num(o.sold) if o.pk else "—")],
     view_url=lambda o: o.product.get_absolute_url(),
-    actions={"renew": ("تمدید ۲۴ ساعت", _renew), "end": ("پایان همین حالا", _end)},
+    actions={"end": ("پایان همین حالا", _end), "renew": ("تمدید ۲۴ ساعت (برای فرصت‌های زمان‌دار)", _renew)},
     help="تک‌تخته‌های انبار با تخفیف: فرش و سایز را انتخاب کنید (حتی اگر فرش یا آن سایز در سایت «ناموجود» باشد). "
          "قیمت ویژه فقط وقتی است که مشتری یک تخته بخرد؛ با دو تخته یا بیشتر قیمت معمول حساب می‌شود و کد تخفیف روی آن اعمال نمی‌شود. "
-         "شمارندهٔ معکوس واقعی است: در زمان «پایان» قیمت ویژه تمام می‌شود؛ برای ادامه، «تمدید ۲۴ ساعت» را بزنید. "
+         "بدون «پایان»، فرصت تا فروش تخته‌ها (یا صفر کردن «تعداد») می‌ماند. اگر «پایان» بگذارید، شمارندهٔ معکوس تا همان زمان نشان داده می‌شود و فرصت واقعاً تمام می‌شود. "
          "قیمت روز از آلبوم می‌آید؛ اگر قیمت آلبوم را به‌روز کنید، قیمت ویژه هم به همان نسبت به‌روز می‌شود.",
 ))

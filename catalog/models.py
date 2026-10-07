@@ -449,6 +449,13 @@ class ReviewPhoto(models.Model):
         verbose_name = "عکس نظر"
         verbose_name_plural = "عکس‌های نظر"
 
+    def save(self, *a, **kw):
+        if self.image and not self.pk and not getattr(self.image, "_committed", True):
+            from core.images import optimize_upload
+
+            self.image, _w, _h = optimize_upload(self.image.file) if hasattr(self.image, "file") else (self.image, 0, 0)
+        super().save(*a, **kw)
+
     @property
     def url(self):
         return self.image.url if self.image else ""

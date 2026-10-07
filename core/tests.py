@@ -134,3 +134,32 @@ class HomeAboutTests(TestCase):
         site.home_about = "<p>متن دستی</p>"
         self.assertEqual(home_about(site, None), "<p>متن دستی</p>")
         self.assertEqual(self.client.get("/").status_code, 200)
+
+
+class ImageOptimizeTests(TestCase):
+    def test_big_photo_shrinks_without_distortion(self):
+        import io
+        import random
+
+        from PIL import Image
+
+        from core.images import MAX_BYTES, optimize_bytes
+
+        random.seed(1)
+        im = Image.new("RGB", (4000, 3000))
+        px = im.load()
+        for x in range(0, 4000, 4):  # نویز تا حجم واقعاً بزرگ شود
+            for y in range(0, 3000, 4):
+                px[x, y] = (random.randrange(256), random.randrange(256), random.randrange(256))
+        buf = io.BytesIO()
+        im.save(buf, "PNG")
+        data = buf.getvalue()
+        self.assertGreater(len(data), MAX_BYTES)
+        out, name, w, h, changed = optimize_bytes(data, "rug.png")
+        self.assertTrue(changed)
+        self.assertTrue(name.endswith(".jpg"))
+        self.assertLessEqual(max(w, h), 2400)
+        self.assertAlmostEqual(w / h, 4000 / 3000, places=2)  # نسبت ابعاد ثابت
+        small = io.BytesIO()
+        Image.new("RGB", (800, 600), (200, 30, 60)).save(small, "JPEG", quality=85)
+        self.assertFalse(optimize_bytes(small.getvalue(), "x.jpg")[4])  # تصویر کوچک دست نمی‌خورد

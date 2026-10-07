@@ -75,7 +75,7 @@ class OfferTests(TestCase):
     def test_pages_and_add(self):
         r = self.client.get("/product/old/")
         self.assertContains(r, "خرید همین یک تخته")
-        self.assertContains(r, "data-offer-end")
+        self.assertContains(r, "آخرین تخته")
         self.assertContains(self.client.get("/"), "فرصت‌های ویژهٔ خرید")
         r = self.client.post("/cart/add/", {"variation": self.v9.pk, "qty": 1, "offer": 1})
         self.assertRedirects(r, "/cart/", fetch_redirect_response=False)

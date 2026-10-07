@@ -28,13 +28,13 @@ def live_offers():
     ids = cache.get(CACHE_KEY)
     if ids is None:
         now = timezone.now()
-        qs = (SpecialOffer.objects.filter(is_active=True, starts_at__lte=now, ends_at__gt=now)
+        qs = (SpecialOffer.objects.filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now), is_active=True, starts_at__lte=now)
               .annotate(_sold=Count("items", filter=taken_q("items__")))
               .filter(_sold__lt=F("quantity")))
         ids = list(qs.values_list("pk", flat=True))
         cache.set(CACHE_KEY, ids, 60)
     out = []
-    for o in SpecialOffer.objects.filter(pk__in=ids).select_related("product__image", "product__album", "size").order_by("ends_at"):
+    for o in SpecialOffer.objects.filter(pk__in=ids).select_related("product__image", "product__album", "size").order_by("-created_at"):
         if o.is_live:
             out.append(o)
     return out

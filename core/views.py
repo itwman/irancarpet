@@ -48,7 +48,7 @@ def _home_data():
                     prices[v.size.slug] = price
             if len(prices) == len(size_slugs):
                 showcase.append({
-                    "name": p.title, "url": p.get_absolute_url(), "img": p.image.url, "reeds": reeds,
+                    "name": p.title, "url": p.get_absolute_url(), "img": __import__("core.templatetags.fa", fromlist=["thumb"]).thumb(p.image, 960), "reeds": reeds,
                     "prices": [prices[s] for s in size_slugs],
                 })
                 break

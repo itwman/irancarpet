@@ -11,6 +11,7 @@ import '../widgets/contact.dart';
 import '../widgets/growth.dart';
 import '../widgets/installment.dart';
 import '../widgets/knots.dart';
+import '../widgets/offers.dart';
 
 class ProductScreen extends StatefulWidget {
   const ProductScreen({super.key, required this.id});
@@ -190,6 +191,8 @@ class _ProductScreenState extends State<ProductScreen> {
             ]),
           ),
         ),
+        if (((p['colors'] as List?) ?? []).length > 1) SliverToBoxAdapter(child: _colors(p)),
+        for (final o in ((p['special_offers'] as List?) ?? []).cast<Json>()) SliverToBoxAdapter(child: OfferBox(offer: o, product: p)),
         SliverToBoxAdapter(child: _sizesSection(p)),
         if (p['purchasable'] == true && ((_size?['price'] as int?) ?? (p['price'] as int? ?? 0)) > 0)
           SliverToBoxAdapter(
@@ -236,6 +239,48 @@ class _ProductScreenState extends State<ProductScreen> {
         ),
       ),
     ));
+  }
+
+  /// رنگ‌های دیگر همین نقشه
+  Widget _colors(Json p) {
+    final cs = (p['colors'] as List).cast<Json>();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Padding(
+        padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Text('رنگ‌های دیگر این نقشه', style: TextStyle(color: C.ink2, fontSize: 13, fontWeight: FontWeight.w700)),
+      ),
+      SizedBox(
+        height: 96,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: cs.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final c = cs[i], on = c['current'] == true;
+            return GestureDetector(
+              onTap: on ? null : () => Navigator.pushReplacementNamed(context, '/product', arguments: c['id']),
+              child: SizedBox(
+                width: 66,
+                child: Column(children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16), border: Border.all(color: on ? C.pink : C.line, width: on ? 2.5 : 1)),
+                    child: NetImage(c['image'] as String? ?? '', radius: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(c['color'] as String? ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, fontWeight: on ? FontWeight.w900 : FontWeight.w500, color: on ? C.pinkDark : C.ink)),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    ]);
   }
 
   Widget _sizesSection(Json p) {

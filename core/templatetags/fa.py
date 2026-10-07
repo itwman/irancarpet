@@ -127,3 +127,16 @@ def wa_link(number):
     if n.startswith("0"):
         n = "98" + n[1:]
     return f"https://wa.me/{n}" if n else ""
+
+
+@register.filter
+def thumb(media, w=480):
+    """نشانی نسخهٔ کوچک webp یک تصویر (۲۴۰، ۴۸۰ یا ۹۶۰ پیکسل) برای کارت‌ها؛ تصویر اصلی فقط در صفحهٔ فرش."""
+    from urllib.parse import quote
+
+    f = getattr(media, "file", None)
+    if not f:
+        return getattr(media, "url", "") or ""
+    sizes = (240, 480, 960)
+    w = min(sizes, key=lambda x: abs(x - int(w or 480)))
+    return f"/app-img/{w}/{quote(f.name)}"

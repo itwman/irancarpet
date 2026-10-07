@@ -11,7 +11,7 @@ from ..auth import staff_required
 from ..models import log
 
 ALLOWED = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".pdf", ".mp4"}
-MAX_SIZE = 15 * 1024 * 1024
+MAX_SIZE = 19 * 1024 * 1024  # محدودیت nginx ۲۰ مگابایت؛ بعد از آپلود کم‌حجم می‌شود
 
 
 @staff_required
@@ -25,9 +25,11 @@ def upload(request):
             errors.append(f"{f.name}: این نوع فایل مجاز نیست.")
             continue
         if f.size > MAX_SIZE:
-            errors.append(f"{f.name}: حجم بیش از ۱۵ مگابایت است.")
+            errors.append(f"{f.name}: حجم بیش از ۱۹ مگابایت است.")
             continue
         w = h = None
+        title = os.path.splitext(f.name)[0][:500]
+        mime = (f.content_type or "")[:100]
         if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
             try:
                 with Image.open(f) as im:
@@ -37,10 +39,15 @@ def upload(request):
                 errors.append(f"{f.name}: تصویر خراب است.")
                 continue
             f.seek(0)
-        title = os.path.splitext(f.name)[0][:500]
+            from core.images import optimize_upload
+
+            f, w2, h2 = optimize_upload(f)  # کم‌حجم: ضلع حداکثر ۲۴۰۰، زیر ۷۰۰ کیلوبایت، بدون دفرمه شدن
+            w, h = w2 or w, h2 or h
+            if f.name.lower().endswith(".jpg"):
+                mime = "image/jpeg"
         try:
             m = Media.objects.create(file=f, title=title, alt=request.POST.get("alt", "")[:500], width=w, height=h,
-                                     mime_type=(f.content_type or "")[:100])
+                                     mime_type=mime)
         except OSError as e:
             errors.append(f"{f.name}: ذخیرهٔ فایل روی سرور ممکن نشد ({e.strerror}). دسترسی پوشهٔ uploads را بررسی کنید.")
             continue

@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/offers.dart';
 import '../widgets/installment.dart';
 import 'shell.dart';
 
@@ -99,6 +100,18 @@ class _CartScreenState extends State<CartScreen> {
             Text(it.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             Text(it.size + (it.pairOnly ? ' · فقط جفت' : ''), style: const TextStyle(color: C.muted, fontSize: 12.5)),
             if (problem.isNotEmpty) Text(problem, style: const TextStyle(color: C.pinkDark, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            if (l?['special_offer'] == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(children: [
+                  const OfferTag(text: 'فرصت ویژه'),
+                  const SizedBox(width: 6),
+                  Text(sep(l!['regular_price'] as int),
+                      style: const TextStyle(color: C.muted, decoration: TextDecoration.lineThrough, fontSize: 12)),
+                ]),
+              ),
+            if ((l?['offer_hint'] as String? ?? '').isNotEmpty)
+              Text(l!['offer_hint'] as String, style: const TextStyle(color: C.pinkDark, fontSize: 12)),
             const SizedBox(height: 6),
             Row(children: [
               Expanded(child: Price(price * it.qty, size: 14)),

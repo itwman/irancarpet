@@ -8,13 +8,13 @@
       <div class="gallery">
         <div class="gallery__stage">
           <div class="gallery__main" id="gMain"{% if gallery|length > 1 %} tabindex="0" role="region" aria-label="تصاویر محصول؛ برای دیدن بقیه بکشید"{% endif %}>
-            {% for m in gallery %}<figure class="gallery__slide"><img src="{{ m.url }}" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %}{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}></figure>{% empty %}<span class="noimg"></span>{% endfor %}
+            {% for m in gallery %}<figure class="gallery__slide"><img src="{{ m|thumb:960 }}" srcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" sizes="(max-width: 992px) 100vw, 600px" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %}{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}></figure>{% empty %}<span class="noimg"></span>{% endfor %}
           </div>
           {% if gallery|length > 1 %}<div class="gallery__dots" aria-hidden="true">{% for m in gallery %}<i{% if forloop.first %} class="on"{% endif %}></i>{% endfor %}</div>
           <span class="gallery__count" aria-hidden="true"><b id="gIdx">۱</b> / {{ gallery|length|fa_num }}</span>{% endif %}
         </div>
         {% if gallery|length > 1 %}
-        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-i="{{ forloop.counter0 }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
+        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-i="{{ forloop.counter0 }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m|thumb:240 }}" alt="" loading="lazy"></button>{% endfor %}</div>
         {% endif %}
         <div class="p-tools">
           {% if product.image %}<button type="button" class="p-tool" id="roomBtn" data-img="{{ product.image.url }}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 10l9-6 9 6v10H3z M8 20v-5h8v5"/></svg>ببین در اتاق خودت</button>{% endif %}
@@ -51,7 +51,7 @@
 
       {% for o in offers %}
       <div class="offer-box">
-        <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span><span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span></div>
+        <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span>{% if o.ends_at %}<span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span>{% elif o.remaining == 1 %}<span class="offer-box__clock">آخرین تخته</span>{% endif %}</div>
         <p class="offer-box__what"><strong>{{ o.size.label|fa_num }}</strong> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
         <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
         <form method="post" action="/cart/add/">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="qty" value="1"><input type="hidden" name="offer" value="1">

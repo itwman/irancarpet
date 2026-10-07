@@ -313,7 +313,9 @@ class SpecialOffer(models.Model):
                                                  help_text="اگر پر شود به‌جای درصد تخفیف همین قیمت گرفته می‌شود.")
     quantity = models.PositiveSmallIntegerField("تعداد موجود در انبار", default=1)
     starts_at = models.DateTimeField("شروع", default=timezone.now)
-    ends_at = models.DateTimeField("پایان", default=_in_24h, help_text="شمارندهٔ معکوس تا همین زمان؛ بعدش قیمت ویژه تمام می‌شود.")
+    ends_at = models.DateTimeField("پایان (اختیاری)", null=True, blank=True,
+                                   help_text="خالی = تا وقتی تخته‌ها فروخته شوند یا «تعداد» را صفر کنید. اگر پر شود، "
+                                             "شمارندهٔ معکوس تا همین زمان نشان داده می‌شود و بعدش قیمت ویژه تمام می‌شود.")
     is_active = models.BooleanField("فعال", default=True)
     note = models.CharField("یادداشت داخلی", max_length=200, blank=True, help_text="به مشتری نشان داده نمی‌شود؛ مثلاً محل فرش در انبار")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -321,7 +323,7 @@ class SpecialOffer(models.Model):
     class Meta:
         verbose_name = "فرصت ویژهٔ خرید"
         verbose_name_plural = "فرصت‌های ویژهٔ خرید"
-        ordering = ["ends_at"]
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.product} — {self.size}"
@@ -381,5 +383,5 @@ class SpecialOffer(models.Model):
     def is_live(self):
         now = timezone.now()
         # فرش یا سایز می‌تواند در سایت «ناموجود» باشد؛ همان تختهٔ انبار با فرصت ویژه فروخته می‌شود
-        return bool(self.is_active and self.starts_at <= now < self.ends_at and self.remaining > 0
+        return bool(self.is_active and self.starts_at <= now and (self.ends_at is None or now < self.ends_at) and self.remaining > 0
                     and self.variation is not None and self.price)
