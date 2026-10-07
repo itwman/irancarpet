@@ -164,11 +164,40 @@
     }
   }, true);
 
-  /* ---------------------------------------- کلیک روی ردیف جدول = باز کردن */
+  /* -------- کلیک روی ردیف: در فهرست‌های قابل انتخاب = انتخاب (Shift برای بازه)، وگرنه باز کردن.
+     برای ویرایش: دکمهٔ مداد ته ردیف یا دوبار کلیک. */
+  var lastBox = null;
   document.addEventListener("click", function (e) {
     var tr = e.target.closest("tr[data-href]");
-    if (!tr || e.target.closest("a,button,input,label,select,.ts-wrapper")) return;
-    if (e.ctrlKey || e.metaKey) window.open(tr.dataset.href); else location.href = tr.dataset.href;
+    if (!tr || e.target.closest("a,button,input,label,select,textarea,.ts-wrapper")) return;
+    var box = tr.querySelector("input[name=ids]");
+    if (!box) {
+      if (e.ctrlKey || e.metaKey) window.open(tr.dataset.href); else location.href = tr.dataset.href;
+      return;
+    }
+    if (e.shiftKey) {
+      if (window.getSelection) window.getSelection().removeAllRanges();
+    } else {
+      var sel = window.getSelection && String(window.getSelection());
+      if (sel && sel.trim()) return;  // کاربر متن را برای کپی انتخاب کرده
+    }
+    var boxes = Array.prototype.slice.call(document.querySelectorAll("input[name=ids]"));
+    var target = !box.checked;
+    if (e.shiftKey && lastBox && boxes.indexOf(lastBox) >= 0) {
+      var a = boxes.indexOf(lastBox), b = boxes.indexOf(box);
+      boxes.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(function (x) { x.checked = target; });
+    } else {
+      box.checked = target;
+    }
+    lastBox = box;
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  document.addEventListener("change", function (e) { if (e.target.matches && e.target.matches("input[name=ids]")) lastBox = e.target; });
+  document.addEventListener("dblclick", function (e) {
+    var tr = e.target.closest("tr[data-href]");
+    if (!tr || !tr.querySelector("input[name=ids]") || e.target.closest("a,button,input,label,select")) return;
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    location.href = tr.dataset.href;
   });
 
   /* --------------------------- برچسب‌های ستون‌ها: کلیک = افزودن/برداشتن از فیلتر */

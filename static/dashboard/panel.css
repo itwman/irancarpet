@@ -288,3 +288,10 @@ code{color:var(--pink-d);background:var(--pink-t);padding:.05rem .35rem;border-r
 .vars-help li{overflow-wrap:anywhere}.vars-help code{white-space:normal}
 textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-height:190px;line-height:2}
 .pl-prev{width:100%;border-radius:12px;box-shadow:0 0 0 1px #ecedf6}
+
+/* ردیف‌های قابل انتخاب: کلیک = انتخاب؛ ویرایش با دکمه */
+.tbl tr[data-href]:has(input[name=ids]){cursor:default}
+.row-actions{white-space:nowrap}
+.row-edit{display:inline-flex;align-items:center;gap:.3rem;border:1px solid var(--line,#ecedf6);border-radius:9px;padding:.25rem .6rem;font-size:.8rem;font-weight:700;color:var(--ink);background:#fff;margin-inline-end:.35rem;text-decoration:none}
+.row-edit:hover{border-color:var(--pink);color:var(--pink-d)}
+.row-edit .ic{width:15px;height:15px}

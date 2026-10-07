@@ -18,7 +18,7 @@ from ..models import log
 
 MAIN = ["title", "slug", "english_name", "short_description", "content"]
 SIDE_PUBLISH = ["status", "published_at", "menu_order"]
-SIDE_PRICE = ["album", "custom_base_price", "sale_status"]
+SIDE_PRICE = ["album", "only_sizes", "single_sizes", "custom_base_price", "sale_status"]
 SIDE_TAX = ["primary_category", "categories", "brand", "tags", "specs"]
 SIDE_IMAGE = ["image", "video_url"]
 SIDE_TEXT = ["use_template", "design_name", "color_count", "custom_note"]
@@ -137,6 +137,7 @@ def product_duplicate(request, pk):
     src = get_object_or_404(Product, pk=pk)
     with transaction.atomic():
         cats, tags, specs = list(src.categories.all()), list(src.tags.all()), list(src.specs.all())
+        only, single = list(src.only_sizes.all()), list(src.single_sizes.all())
         imgs = list(ProductImage.objects.filter(product=src))
         vars_ = list(src.variations.all())
         src.pk = None
@@ -151,6 +152,8 @@ def product_duplicate(request, pk):
         src.categories.set(cats)
         src.tags.set(tags)
         src.specs.set(specs)
+        src.only_sizes.set(only)
+        src.single_sizes.set(single)
         ProductImage.objects.bulk_create([ProductImage(product=src, media_id=i.media_id, order=i.order) for i in imgs])
         for v in vars_:
             attrs = list(v.attributes.all())

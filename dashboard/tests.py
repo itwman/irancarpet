@@ -197,3 +197,56 @@ class MultiFilterTests(TestCase):
         r = self.client.get(f"/panel/products/?cols_set=1&cols=tags&cols=attr_{color.pk}&specs={laki.pk}")
         self.assertContains(r, f'data-chip-filter="specs" data-chip-value="{laki.pk}"')
         self.assertContains(r, f'data-chip-filter="tags" data-chip-value="{tag.pk}"')
+
+
+class AlbumAmountAndSizesTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        from pricing.models import Album, Size, seed_sizes
+
+        seed_sizes()
+        s = {x.slug: x for x in Size.objects.all()}
+        self.s = s
+        self.album = Album.objects.create(name="هالیدی ۷۰۰", code="H7", base_size=s["12-meter"], base_price=Decimal("30000000"))
+        self.album.sizes.set([s["12-meter"], s["9-meter-square"], s["round-d150"]])
+        self.album.even_sizes.set([s["round-d150"], s["9-meter-square"]])
+        u = get_user_model().objects.create_user("a", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+
+    def test_parse_amount(self):
+        from dashboard.resources import parse_amount
+
+        self.assertEqual(parse_amount("۵ میلیون"), 5_000_000)
+        self.assertEqual(parse_amount("-۲٫۵ میلیون"), -2_500_000)
+        self.assertEqual(parse_amount("5,000,000"), 5_000_000)
+        self.assertEqual(parse_amount("۵۰۰ هزار"), 500_000)
+        self.assertIsNone(parse_amount("زیاد"))
+
+    def test_bulk_amount(self):
+        r = self.client.post("/panel/albums/", {"action": "amount", "ids": [self.album.pk], "action_value": "۵ میلیون"})
+        self.assertEqual(r.status_code, 302)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.base_price, Decimal("35000000"))
+        self.client.post("/panel/albums/", {"action": "amount", "ids": [self.album.pk], "action_value": "-40000000"})
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.base_price, Decimal("35000000"))  # منفی نمی‌شود
+
+    def test_only_sizes_and_single(self):
+        from catalog.models import Product
+        from pricing.albums import sync_album_variations
+
+        main = Product.objects.create(title="هالیدی", slug="h", album=self.album)
+        sync_album_variations([main])
+        self.assertEqual(main.variations.count(), 3)
+        rnd = Product.objects.create(title="هالیدی گرد قطر ۱٫۵", slug="hr", album=self.album)
+        rnd.only_sizes.set([self.s["round-d150"]])
+        rnd.single_sizes.set([self.s["round-d150"]])
+        sync_album_variations([rnd])
+        vs = list(rnd.variations.all())
+        self.assertEqual([v.size.slug for v in vs], ["round-d150"])
+        self.assertFalse(vs[0].is_pair_only)                       # در این محصول تکی
+        self.assertTrue(main.variations.get(size__slug="round-d150").is_pair_only)  # در فرش اصلی همچنان جفتی
+        self.assertEqual(vs[0].final_price, main.variations.get(size__slug="round-d150").final_price)
+        r = self.client.get("/panel/products/")
+        self.assertContains(r, 'class="row-edit"')

@@ -1,4 +1,5 @@
 """همهٔ بخش‌های پنل در اینجا تعریف می‌شوند."""
+import re
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -372,7 +373,9 @@ register(Resource(
               ("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],
     after_save=lambda r, o, c, f: _album_saved(r, o, c, f),
     initial=lambda: _album_initial(),
-    actions={"percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
+    actions={"amount": ("افزایش یا کاهش مبلغی قیمت پایه (خرید ۱۲ متری)", lambda r, qs: _album_amount(r, qs),
+                        "مبلغ به تومان؛ مثلاً ۵ میلیون یا -۲۵۰۰۰۰۰"),
+             "percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
              "follow": ("پیروی کامل همهٔ محصولات این آلبوم‌ها از قیمت آلبوم", lambda r, qs: _album_follow(qs))},
     help="قیمت فروش ۱۲ متری = قیمت خرید × (۱ + درصد سود) + هزینهٔ ارسال؛ بقیهٔ سایزها به نسبت متراژ، رو به بالا گرد می‌شوند. "
          "مشتری برای محصولات آلبوم همهٔ «سایزهای آلبوم» را می‌بیند و با هر تغییر، قیمت‌ها خودکار به‌روز می‌شوند.",
@@ -439,6 +442,44 @@ def _album_follow(qs):
 
     n = follow_album(list(Product.objects.filter(album__in=qs)))
     return f"{fa_num(n)} محصول حالا دقیقاً از قیمت آلبومشان پیروی می‌کنند."
+
+
+def parse_amount(text):
+    """«۵ میلیون»، «-۲٫۵ میلیون»، «۵۰۰ هزار»، «5,000,000» ← عدد صحیح تومان (یا None)"""
+    from .forms import to_en
+
+    t = to_en(text or "").replace("٫", ".").replace("٬", "").replace(",", "").replace("تومان", "").strip()
+    t = t.replace("−", "-").replace("–", "-")
+    sign = -1 if t.startswith("-") or t.startswith("منفی") or t.startswith("کاهش") else 1
+    t = re.sub(r"^(?:-|\+|منفی|کاهش|افزایش)\s*", "", t)
+    mult = 1
+    for word, m in (("میلیارد", 10**9), ("میلیون", 10**6), ("هزار", 10**3)):
+        if word in t:
+            t, mult = t.replace(word, "").strip(), m
+            break
+    try:
+        return int(Decimal(t) * mult) * sign
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _album_amount(request, qs):
+    delta = parse_amount(request.POST.get("action_value", ""))
+    if not delta:
+        return "مبلغ نامعتبر بود؛ چیزی تغییر نکرد. مثل «۵ میلیون» یا «-۲۵۰۰۰۰۰» بنویسید."
+    n, skipped = 0, []
+    for album in qs:
+        new = album.base_price + delta
+        if new <= 0:
+            skipped.append(album.name)
+            continue
+        album.set_base_price(new, request.user, "bulk_amount")
+        n += 1
+    word = "افزایش" if delta > 0 else "کاهش"
+    msg = f"قیمت پایهٔ {fa_num(n)} آلبوم {toman(abs(delta))} تومان {word} یافت و قیمت محصولاتشان دوباره محاسبه شد."
+    if skipped:
+        msg += f" {fa_num(len(skipped))} آلبوم تغییر نکرد چون قیمتش صفر یا منفی می‌شد: {'، '.join(skipped[:5])}"
+    return msg
 
 
 def _album_percent(request, qs):

@@ -51,7 +51,7 @@
         <tr data-href="{{ r.url }}">
           <td class="w-check"><input type="checkbox" class="form-check-input" name="ids" value="{{ r.obj.pk }}" aria-label="انتخاب"></td>
           {% for v, cls in r.cells %}<td class="{{ cls }}">{{ v }}</td>{% endfor %}
-          <td class="row-actions">{% if r.public %}<a href="{{ r.public }}" target="_blank" rel="noopener" title="دیدن در سایت" aria-label="دیدن در سایت"><svg class="ic"><use href="#i-ext"/></svg></a>{% endif %}</td>
+          <td class="row-actions"><a href="{{ r.url }}" class="row-edit" title="ویرایش" aria-label="ویرایش"><svg class="ic"><use href="#i-pen"/></svg><span>ویرایش</span></a>{% if r.public %}<a href="{{ r.public }}" target="_blank" rel="noopener" title="دیدن در سایت" aria-label="دیدن در سایت"><svg class="ic"><use href="#i-ext"/></svg></a>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>

@@ -24,6 +24,10 @@ def sync_album_variations(products, reset=False):
             sizes_cache[album.pk] = list(album.sizes.filter(is_active=True).order_by("sort_order", "pk"))
             even_cache[album.pk] = set(album.even_sizes.values_list("pk", flat=True))
         sizes = sizes_cache[album.pk]
+        only = set(p.only_sizes.values_list("pk", flat=True)) if p.pk else set()
+        if only:  # محصول جدا برای یک یا چند سایز خاص آلبوم (مثل گرد قطر ۱٫۵)
+            sizes = [s for s in sizes if s.pk in only] or sizes
+        single = set(p.single_sizes.values_list("pk", flat=True)) if p.pk else set()
         if not sizes:
             continue
         wanted = {s.pk for s in sizes}
@@ -44,7 +48,7 @@ def sync_album_variations(products, reset=False):
             else:
                 upd.append(v)
             v.menu_order = i
-            v.pair_only = s.pk in even_cache[album.pk]
+            v.pair_only = s.pk in even_cache[album.pk] and s.pk not in single
             if reset:
                 v.is_available, v.sale_price, v.override_price = True, None, None
         Variation.objects.bulk_create(new, batch_size=500)

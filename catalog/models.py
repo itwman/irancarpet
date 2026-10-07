@@ -206,6 +206,13 @@ class Product(SeoFields):
         "قیمت پایهٔ اختصاصی", max_digits=20, decimal_places=2, null=True, blank=True,
         help_text="اگر پر شود به‌جای قیمت پایهٔ آلبوم استفاده می‌شود",
     )
+    only_sizes = models.ManyToManyField(
+        Size, blank=True, related_name="+", verbose_name="فقط این سایزهای آلبوم",
+        help_text="خالی = همهٔ سایزهای آلبوم. مثلاً برای محصول جدای «فرش گرد قطر ۱٫۵» فقط همان سایز را انتخاب کنید؛ "
+                  "قیمتش از همان آلبوم می‌آید و فرش اصلی هم همهٔ سایزهایش را نگه می‌دارد.")
+    single_sizes = models.ManyToManyField(
+        Size, blank=True, related_name="+", verbose_name="این سایزها تکی هم فروخته شوند",
+        help_text="سایزهایی که در آلبوم «فقط جفت» هستند ولی در این محصول یک‌تخته هم سفارش گرفته می‌شوند.")
     sale_status = models.CharField("وضعیت فروش", max_length=20, choices=SALE_STATUS_CHOICES, default="available", db_index=True)
 
     # کش برای فهرست و مرتب‌سازی
