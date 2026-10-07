@@ -1,0 +1,83 @@
+"""فرصت‌های ویژهٔ خرید: پیدا کردن فرصت فعال هر سایز و اعمال قیمت ویژه روی سطر سبد.
+
+قیمت ویژه فقط وقتی است که از آن سایز دقیقاً یک تخته در سبد باشد؛ با دو تخته یا بیشتر همه با قیمت معمول حساب می‌شوند.
+"""
+from django.core.cache import cache
+from django.db.models import Count, F, Q
+from django.utils import timezone
+
+CACHE_KEY = "offers:live"
+
+
+RESERVE_MINUTES = 30  # سفارشی که در حال پرداخت است تا ۳۰ دقیقه همان تخته را نگه می‌دارد
+
+
+def taken_q(prefix=""):
+    """قلم‌هایی که تخته را گرفته‌اند: سفارش پرداخت‌شده، یا در انتظار پرداختِ کمتر از ۳۰ دقیقه."""
+    from .coupons import PLACED
+
+    recent = timezone.now() - timezone.timedelta(minutes=RESERVE_MINUTES)
+    return (Q(**{f"{prefix}order__status__in": PLACED})
+            | Q(**{f"{prefix}order__status": "pending", f"{prefix}order__created_at__gte": recent}))
+
+
+def live_offers():
+    """فرصت‌های فعال (با تعداد باقی‌مانده)؛ ۶۰ ثانیه کش."""
+    from .models import SpecialOffer
+
+    ids = cache.get(CACHE_KEY)
+    if ids is None:
+        now = timezone.now()
+        qs = (SpecialOffer.objects.filter(is_active=True, starts_at__lte=now, ends_at__gt=now)
+              .annotate(_sold=Count("items", filter=taken_q("items__")))
+              .filter(_sold__lt=F("quantity")))
+        ids = list(qs.values_list("pk", flat=True))
+        cache.set(CACHE_KEY, ids, 60)
+    out = []
+    for o in SpecialOffer.objects.filter(pk__in=ids).select_related("product__image", "product__album", "size").order_by("ends_at"):
+        if o.is_live:
+            out.append(o)
+    return out
+
+
+def clear():
+    cache.delete(CACHE_KEY)
+
+
+def for_variation(v):
+    if not v or not v.size_id:
+        return None
+    for o in live_offers():
+        if o.product_id == v.product_id and o.size_id == v.size_id:
+            return o
+    return None
+
+
+def for_product(p):
+    return [o for o in live_offers() if o.product_id == p.pk]
+
+
+def apply_to_line(line):
+    """روی سطر سبد (shop.cart.Line یا api._Line): قیمت ویژه برای تک‌تخته."""
+    line.offer, line.regular_price, line.offer_hint = None, line.unit_price, ""
+    o = for_variation(line.variation)
+    if not o:
+        return
+    v = line.variation
+    in_stock = line.product.is_purchasable and v.is_available
+    if line.qty == 1:
+        # حتی اگر فرش یا این سایز در سایت ناموجود باشد، همان یک تختهٔ انبار فروخته می‌شود
+        line.offer, line.unit_price, line.regular_price, line.problem = o, o.price, o.regular_price, ""
+    elif not in_stock:
+        line.problem = "از این سایز فقط یک تخته موجود است؛ تعداد را یک کنید."
+    else:
+        line.offer_hint = "قیمت ویژه فقط برای خرید یک تخته از این سایز است."
+
+
+def offer_total(lines):
+    return sum(x.total for x in lines if getattr(x, "offer", None) and not x.problem)
+
+
+def allows_single(variation):
+    """سایزی که «فقط جفت» است، اگر فرصت ویژه دارد تک‌تخته هم مجاز است."""
+    return for_variation(variation) is not None

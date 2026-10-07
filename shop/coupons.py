@@ -62,7 +62,8 @@ def apply(summary, code, user, source="web"):
     out = {**summary, "subtotal": summary["total"], "discount": 0, "coupon": None, "coupon_error": ""}
     if not code:
         return out
-    c, d, err = check(code, user, summary["total"], source)
+    base = summary["total"] - summary.get("offer_total", 0)  # کد تخفیف روی فرصت ویژه (که خودش تخفیف دارد) اعمال نمی‌شود
+    c, d, err = check(code, user, base, source)
     if err:
         out["coupon_error"] = err
         return out

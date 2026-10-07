@@ -16,6 +16,9 @@ class Line:
             self.problem = "این سایز الان موجود نیست."
         elif not self.unit_price:
             self.problem = "قیمت این سایز استعلامی است."
+        from .offers import apply_to_line
+
+        apply_to_line(self)
 
     @property
     def total(self):
@@ -42,7 +45,10 @@ class Cart:
     def fix_qty(variation, qty):
         qty = max(1, min(int(qty or 1), MAX_QTY))
         if variation.is_pair_only and qty % 2:
-            qty += 1
+            from .offers import allows_single
+
+            if not (qty == 1 and allows_single(variation)):  # فرصت ویژه: یک تختهٔ انبار
+                qty += 1
         return qty
 
     def add(self, variation, qty=1):
@@ -88,4 +94,7 @@ class Cart:
     def summary(self):
         lines = self.lines()
         ok = [line for line in lines if not line.problem]
-        return {"lines": lines, "total": sum(line.total for line in ok), "has_problem": any(line.problem for line in lines)}
+        from .offers import offer_total
+
+        return {"lines": lines, "total": sum(line.total for line in ok), "has_problem": any(line.problem for line in lines),
+                "offer_total": offer_total(ok)}

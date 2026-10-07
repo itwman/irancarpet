@@ -85,3 +85,67 @@ register(Resource(
     fieldsets=[("جستجو", ["query"], "main")],
     help="جستجوهای بی‌نتیجه یعنی مشتری چیزی خواسته که نداریم یا پیدایش نکرده: برای خرید از کارخانه، نوشتن مقاله یا اضافه کردن کلمه به «نیازهای مشتری» فرش‌یاب.",
 ))
+
+
+# ------------------------------------------------------------------ فرصت ویژهٔ خرید
+from django.utils import timezone as _tz  # noqa: E402
+
+from shop.models import SpecialOffer  # noqa: E402
+
+
+def _offer_state(o):
+    now = _tz.now()
+    if not o.is_active:
+        return format_html('<span class="badge-ic b-draft">خاموش</span>')
+    if o.ends_at <= now:
+        return format_html('<span class="badge-ic b-cancelled">تمام شد</span>')
+    if o.starts_at > now:
+        return format_html('<span class="badge-ic b-pending">هنوز شروع نشده</span>')
+    if o.remaining <= 0:
+        return format_html('<span class="badge-ic b-completed">فروخته شد</span>')
+    left = o.ends_at - now
+    h, m = divmod(int(left.total_seconds()) // 60, 60)
+    return format_html('<span class="badge-ic b-publish">فعال</span> <small class="muted">{} ساعت و {} دقیقه مانده</small>', fa_num(h), fa_num(m))
+
+
+def _renew(request, qs):
+    n = 0
+    for o in qs:
+        o.ends_at = max(o.ends_at, _tz.now()) + _tz.timedelta(hours=24)
+        o.is_active = True
+        o.save()
+        n += 1
+    return f"{fa_num(n)} فرصت ۲۴ ساعت تمدید شد."
+
+
+def _end(request, qs):
+    n = qs.update(ends_at=_tz.now())
+    from shop.offers import clear
+
+    clear()
+    return f"{fa_num(n)} فرصت تمام شد."
+
+
+register(Resource(
+    key="special-offers", model=SpecialOffer, title="فرصت‌های ویژهٔ خرید", single="فرصت ویژه", group="فروشگاه", icon="tag",
+    columns=[Col("product", "فرش", lambda o: format_html('<a href="/panel/products/{}/edit/">{}</a>', o.product_id, fa_num(o.product.title))),
+             Col("size", "سایز", lambda o: fa_num(o.size.label)),
+             Col("price", "قیمت ویژه", lambda o: format_html('<del class="muted">{}</del><br><strong>{}</strong>', toman(o.regular_price), toman(o.price))),
+             Col("off", "تخفیف", lambda o: f"{fa_num(o.off_percent)}٪"),
+             Col("left", "مانده", lambda o: f"{fa_num(o.remaining)} از {fa_num(o.quantity)}"),
+             Col("state", "وضعیت", _offer_state),
+             Col("ends_at", "پایان", lambda o: jdate(o.ends_at, "%Y/%m/%d %H:%M"), "ends_at")],
+    search=["product__title", "note"], filters=["is_active"], ordering=("-created_at",),
+    queryset=lambda qs: qs.select_related("product", "size"),
+    fieldsets=[("فرصت", ["product", "size", "percent", "fixed_price", "quantity"], "main"),
+               ("زمان", ["starts_at", "ends_at", "is_active"], "side"), ("انبار", ["note"], "side")],
+    readonly=[("قیمت روز این سایز", lambda o: f"{toman(o.regular_price)} تومان" if o.pk and o.regular_price else "—"),
+              ("قیمت ویژه", lambda o: f"{toman(o.price)} تومان" if o.pk and o.price else "—"),
+              ("فروخته‌شده", lambda o: fa_num(o.sold) if o.pk else "—")],
+    view_url=lambda o: o.product.get_absolute_url(),
+    actions={"renew": ("تمدید ۲۴ ساعت", _renew), "end": ("پایان همین حالا", _end)},
+    help="تک‌تخته‌های انبار با تخفیف: فرش و سایز را انتخاب کنید (حتی اگر فرش یا آن سایز در سایت «ناموجود» باشد). "
+         "قیمت ویژه فقط وقتی است که مشتری یک تخته بخرد؛ با دو تخته یا بیشتر قیمت معمول حساب می‌شود و کد تخفیف روی آن اعمال نمی‌شود. "
+         "شمارندهٔ معکوس واقعی است: در زمان «پایان» قیمت ویژه تمام می‌شود؛ برای ادامه، «تمدید ۲۴ ساعت» را بزنید. "
+         "قیمت روز از آلبوم می‌آید؛ اگر قیمت آلبوم را به‌روز کنید، قیمت ویژه هم به همان نسبت به‌روز می‌شود.",
+))

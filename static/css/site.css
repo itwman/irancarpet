@@ -801,3 +801,27 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .fy-app{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;background:var(--saffron-t);border-radius:var(--r-lg);padding:1.2rem 1.4rem;margin:2rem 0}
 .ref-code{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.ref-code code{font-size:1.3rem;font-weight:900;background:var(--saffron-t);color:var(--ink);padding:.3rem .8rem;border-radius:10px}
 .myroom__ctl input{accent-color:var(--saffron)}
+
+/* --- فرصت ویژهٔ خرید --- */
+.offer-tag{display:inline-block;background:var(--pink);color:#fff;border-radius:999px;padding:.12rem .7rem;font-size:.75rem;font-weight:800}
+.tag.offer-tag{font-size:.7rem;padding:.05rem .55rem}
+.offer-box{border:2px solid var(--pink);border-radius:var(--r-lg);padding:1rem 1.15rem 1.1rem;margin:1.2rem 0;background:linear-gradient(180deg,var(--pink-t),#fff 70%)}
+.offer-box__head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.offer-box__clock,.offer-card__clock{font-weight:800;color:var(--pink-d);font-variant-numeric:tabular-nums;font-size:.92rem}
+.offer-box__clock.is-over,.offer-card__clock.is-over{color:var(--muted)}
+.offer-box__what{margin:.7rem 0 .3rem;font-size:.95rem}
+.offer-box__price{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem}
+.offer-box__price del{color:var(--muted)}.offer-box__price strong{font-size:1.45rem;color:var(--ink)}.offer-box__price small{font-size:.8rem;font-weight:600}
+.offer-box__price .off{background:var(--saffron-t);color:#8a5a00;border-radius:999px;padding:.05rem .6rem;font-weight:800;font-size:.8rem}
+.offer-box__note{margin:.55rem 0 0;font-size:.78rem;color:var(--muted)}
+.offer-hint{color:var(--pink-d)}
+.badge-offer{position:absolute;bottom:12px;right:12px;background:var(--pink);color:#fff;font-size:.75rem;font-weight:800;padding:.15rem .7rem;border-radius:999px}
+.offers-sec{background:linear-gradient(180deg,#fff,var(--pink-t))}
+.offer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
+.offer-card{display:flex;flex-direction:column;background:#fff;border-radius:var(--r-lg);overflow:hidden;box-shadow:0 0 0 1px var(--line);color:var(--ink);transition:box-shadow .2s}
+.offer-card:hover{box-shadow:0 0 0 2px var(--pink)}
+.offer-card__img{position:relative;aspect-ratio:4/5;background:var(--soft)}.offer-card__img img{width:100%;height:100%;object-fit:cover}
+.offer-card__img .off{position:absolute;top:12px;left:12px;background:var(--pink);color:#fff;font-weight:900;border-radius:12px;padding:.25rem .6rem}
+.offer-card__body{display:flex;flex-direction:column;gap:.3rem;padding:.85rem 1rem 1rem}
+.offer-card__title{font-size:.95rem;line-height:1.8}.offer-card__size{font-size:.82rem;color:var(--ink-2)}
+.offer-card__price del{color:var(--muted);font-size:.85rem}.offer-card__price b{font-size:1.1rem}

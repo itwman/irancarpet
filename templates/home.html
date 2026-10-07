@@ -43,6 +43,27 @@
 </section>
 {% endif %}
 
+{% if offers %}
+<section class="sec offers-sec" aria-labelledby="offersTitle">
+  <div class="container">
+    <div class="section-head"><h2 class="sec-title" id="offersTitle">فرصت‌های ویژهٔ خرید</h2><span class="muted small">تک‌تخته‌های آمادهٔ ارسال با تخفیف</span></div>
+    <div class="offer-grid">
+      {% for o in offers %}
+      <a class="offer-card" href="{{ o.product.get_absolute_url }}">
+        <span class="offer-card__img">{% if o.product.image %}<img src="{{ o.product.image.url }}" alt="{{ o.product.title }}" loading="lazy">{% endif %}{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }}</span>{% endif %}</span>
+        <span class="offer-card__body">
+          <strong class="offer-card__title">{{ o.product.title|fa_num }}</strong>
+          <span class="offer-card__size">{{ o.size.label|fa_num }} · {% if o.remaining == 1 %}یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %}</span>
+          <span class="offer-card__price"><del>{{ o.regular_price|toman }}</del> <b>{{ o.price|toman }}</b> <small>تومان</small></span>
+          <span class="offer-card__clock" data-offer-end="{{ o.ends_at|date:'c' }}"></span>
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% if showcase %}
 <section id="room" class="sec sec--pink">
   <div class="container room">
@@ -155,4 +176,4 @@
 {% endif %}
 {{ room|json_script:"room-data" }}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/home.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/home.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}

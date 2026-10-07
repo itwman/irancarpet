@@ -49,6 +49,17 @@
         <div class="status-note status-note--{{ product.sale_status }}">{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این محصول فقط با استعلام قیمت قابل سفارش است.{% endif %}</div>
       {% endif %}
 
+      {% for o in offers %}
+      <div class="offer-box">
+        <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span><span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span></div>
+        <p class="offer-box__what"><strong>{{ o.size.label|fa_num }}</strong> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
+        <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
+        <form method="post" action="/cart/add/">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="qty" value="1"><input type="hidden" name="offer" value="1">
+          <button class="btn-ic btn-ic--pink w-100" type="submit">خرید همین یک تخته</button></form>
+        <p class="offer-box__note">قیمت ویژه برای خرید یک تخته است.</p>
+      </div>
+      {% endfor %}
+
       {% if variations and pricing.show_size_table %}
       <form class="size-table" method="post" action="/cart/add/" id="buyForm">
         {% csrf_token %}
@@ -62,7 +73,7 @@
               <td><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
               <td>{{ v.size.label|default:"—" }}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
                 {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
-                {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}</td>
+                {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}{% if v.pk in offer_vids %}<span class="tag offer-tag">فرصت ویژه</span>{% endif %}</td>
               <td class="muted">{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} <small>(شامل پرتی)</small>{% endif %}</td>
               <td class="num">
                 {% if not ok %}<span class="muted">ناموجود</span>
@@ -155,7 +166,7 @@
   {% endif %}
 </div>
 {% endblock %}
-{% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script><script>
+{% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}<script>
 (function () {
   var t = document.getElementById("instTeaser"), f = document.getElementById("buyForm");
   if (!t || !f || !t.dataset.base) return;

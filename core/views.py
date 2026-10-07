@@ -112,7 +112,8 @@ def home(request):
     from .about import home_about
 
     return render(request, "home.html", {
-        "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page), "posts": posts, "categories": cats,
+        "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page),
+        "offers": __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:8], "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
     })
 

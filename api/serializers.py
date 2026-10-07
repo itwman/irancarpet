@@ -93,6 +93,10 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "content_html": (doc["html"] or "") + blocks_html,
         "content_text": full_text(doc)[:6000],
         "info_blocks": [{"title": b["title"], "text": to_text(b["html"]), "html": b["html"]} for b in doc["blocks"]],
+        "special_offers": [{"variation": o.variation.pk, "size": o.size.label, "price": o.price, "regular_price": o.regular_price,
+                            "percent": o.off_percent, "remaining": o.remaining, "ends_at": o.ends_at.isoformat(),
+                            "note": "قیمت ویژه برای خرید یک تخته است."}
+                           for o in __import__("shop.offers", fromlist=["for_product"]).for_product(p)],
         "colors": [{"id": x["product"].pk, "title": x["product"].title, "color": x["color"], "current": x["current"],
                     "image": thumb_url(x["product"].image, 240) if x["product"].image_id else ""} for x in color_siblings(p)],
         "sizes": [size_row(v) for v in variations],

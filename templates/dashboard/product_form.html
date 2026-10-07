@@ -86,7 +86,8 @@
         <p class="hint">{% if tpl %}قالب این فرش: <a href="/panel/content-templates/{{ tpl.pk }}/">{{ tpl.name }}</a>.{% else %}هنوز قالبی برای این فرش نیست؛ <a href="/panel/content-templates/">قالب‌های متن</a>.{% endif %}
           بخش‌های مشترک (ارسال، پرداخت، ضمانت…) در <a href="/panel/info-blocks/">بخش‌های مشترک</a> نوشته می‌شوند و زیر متن همهٔ فرش‌ها می‌آیند.</p>
       </section>
-      <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+      <section class="card-p"><h2>قیمت‌گذاری</h2>{% for name in groups.price %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}
+        {% if obj %}<a class="btn btn-light btn-sm w-100 mt-1" href="/panel/special-offers/add/?product={{ obj.pk }}">فرصت ویژهٔ خرید برای یک سایز این فرش</a>{% endif %}</section>
       <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>ویدیو</h2>{% with f=form.video_url %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>دسته، برند و مشخصات</h2>{% for name in groups.tax %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>

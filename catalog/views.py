@@ -204,7 +204,10 @@ def product_detail(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("image", "brand", "primary_category", "album__base_size"), slug=slug
     )
-    if product.status != Product.Status.PUBLISH and not request.user.is_staff:
+    from shop.offers import for_product
+
+    offers = for_product(product)
+    if product.status != Product.Status.PUBLISH and not request.user.is_staff and not offers:
         raise Http404
     variations = list(product.variations.select_related("size").prefetch_related("attributes__attribute").order_by("size__sort_order", "menu_order"))
     specs = product.specs.select_related("attribute").order_by("attribute__order", "order")
@@ -218,10 +221,9 @@ def product_detail(request, slug):
     reviews = product.reviews.filter(is_approved=True, parent=None).prefetch_related(
         Prefetch("replies", queryset=Review.objects.filter(is_approved=True)), "photos"
     ).order_by("-created_at")[:30]
-    related = card_queryset(
-        Product.objects.published().filter(categories=cat).exclude(pk=product.pk).exclude(stock_status="outofstock")
-        .order_by("-views")
-    )[:8] if cat else []
+    from .related import related_products
+
+    related = related_products(product, cat)
     Product.objects.filter(pk=product.pk).update(views=F("views") + 1)
 
     from content.render import build as build_doc, color_siblings, design_of
@@ -243,7 +245,7 @@ def product_detail(request, slug):
         "crumbs": crumbs, "reviews": reviews, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
         "landing_links": _landing_links(product),
-        "doc": doc, "siblings": siblings, "design": design_of(product) if siblings else "",
+        "doc": doc, "siblings": siblings, "offers": offers, "offer_vids": {o.variation.pk for o in offers}, "design": design_of(product) if siblings else "",
         "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
                              ensure_ascii=False),
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",

@@ -202,6 +202,8 @@ class OrderItem(models.Model):
     size_label = models.CharField("سایز", max_length=150, blank=True)
     unit_price = models.PositiveBigIntegerField("قیمت واحد")
     quantity = models.PositiveIntegerField("تعداد", default=1)
+    offer = models.ForeignKey("shop.SpecialOffer", null=True, blank=True, on_delete=models.SET_NULL, related_name="items",
+                              verbose_name="فرصت ویژه")
 
     class Meta:
         verbose_name = "قلم سفارش"
@@ -295,3 +297,89 @@ class Coupon(models.Model):
         if self.kind == self.Kind.PERCENT:
             return f"{self.value}٪ تخفیف"
         return f"{self.value:,} تومان تخفیف"
+
+
+def _in_24h():
+    return timezone.now() + timezone.timedelta(hours=24)
+
+
+class SpecialOffer(models.Model):
+    """فرصت ویژهٔ خرید: چند تختهٔ موجود در انبار از یک سایز، با تخفیف و فقط برای خرید تک‌تخته."""
+
+    product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE, related_name="special_offers", verbose_name="فرش")
+    size = models.ForeignKey("pricing.Size", on_delete=models.PROTECT, related_name="+", verbose_name="سایز")
+    percent = models.PositiveSmallIntegerField("درصد تخفیف", default=10, help_text="روی قیمت روز همان سایز")
+    fixed_price = models.PositiveBigIntegerField("یا قیمت ثابت (تومان)", null=True, blank=True,
+                                                 help_text="اگر پر شود به‌جای درصد تخفیف همین قیمت گرفته می‌شود.")
+    quantity = models.PositiveSmallIntegerField("تعداد موجود در انبار", default=1)
+    starts_at = models.DateTimeField("شروع", default=timezone.now)
+    ends_at = models.DateTimeField("پایان", default=_in_24h, help_text="شمارندهٔ معکوس تا همین زمان؛ بعدش قیمت ویژه تمام می‌شود.")
+    is_active = models.BooleanField("فعال", default=True)
+    note = models.CharField("یادداشت داخلی", max_length=200, blank=True, help_text="به مشتری نشان داده نمی‌شود؛ مثلاً محل فرش در انبار")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "فرصت ویژهٔ خرید"
+        verbose_name_plural = "فرصت‌های ویژهٔ خرید"
+        ordering = ["ends_at"]
+
+    def __str__(self):
+        return f"{self.product} — {self.size}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.product_id and self.size_id and not self.product.variations.filter(size_id=self.size_id).exists():
+            raise ValidationError({"size": "این فرش چنین سایزی ندارد. سایزهای فرش در صفحهٔ خودش (یا آلبومش) تعریف می‌شوند."})
+        if self.ends_at and self.starts_at and self.ends_at <= self.starts_at:
+            raise ValidationError({"ends_at": "پایان باید بعد از شروع باشد."})
+        if not self.fixed_price and not (0 < self.percent < 90):
+            raise ValidationError({"percent": "درصد تخفیف بین ۱ و ۸۹ باشد (یا قیمت ثابت بنویسید)."})
+
+    def save(self, *a, **kw):
+        super().save(*a, **kw)
+        from .offers import clear
+
+        clear()
+
+    @property
+    def variation(self):
+        if not hasattr(self, "_variation"):
+            self._variation = self.product.variations.filter(size=self.size).first()
+        return self._variation
+
+    @property
+    def regular_price(self):
+        v = self.variation
+        return (v.price or 0) if v else 0
+
+    @property
+    def price(self):
+        if self.fixed_price:
+            return self.fixed_price
+        reg = self.regular_price
+        if not reg:
+            return 0
+        return int(math.floor(reg * (100 - min(self.percent, 90)) / 100 / 10_000) * 10_000)
+
+    @property
+    def off_percent(self):
+        reg = self.regular_price
+        return round((1 - self.price / reg) * 100) if reg and self.price else 0
+
+    @property
+    def sold(self):
+        from shop.offers import taken_q
+
+        return OrderItem.objects.filter(taken_q(), offer=self).count()
+
+    @property
+    def remaining(self):
+        return max(self.quantity - self.sold, 0)
+
+    @property
+    def is_live(self):
+        now = timezone.now()
+        # فرش یا سایز می‌تواند در سایت «ناموجود» باشد؛ همان تختهٔ انبار با فرصت ویژه فروخته می‌شود
+        return bool(self.is_active and self.starts_at <= now < self.ends_at and self.remaining > 0
+                    and self.variation is not None and self.price)

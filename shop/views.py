@@ -58,7 +58,10 @@ def cart_add(request):
     if not v:
         messages.error(request, "لطفاً یک سایز انتخاب کنید.")
         return redirect(back)
-    if not (v.product.is_purchasable and v.is_available and v.price):
+    from .offers import for_variation
+
+    offer = for_variation(v)
+    if not offer and not (v.product.is_purchasable and v.is_available and v.price):
         messages.error(request, "این سایز الان قابل خرید نیست.")
         return redirect(v.product.get_absolute_url())
     try:
@@ -66,7 +69,12 @@ def cart_add(request):
     except ValueError:
         qty = 1
     cart = Cart(request)
-    total = cart.add(v, qty)
+    if offer and request.POST.get("offer"):  # «خرید همین یک تخته»
+        total = cart.set(v, 1)
+    else:
+        total = cart.add(v, qty)
+    if offer and total > 1:
+        messages.info(request, "قیمت ویژه فقط برای خرید یک تخته از این سایز است؛ با تعداد بیشتر، قیمت معمول حساب می‌شود.")
     if v.is_pair_only and total % 2 == 0 and qty % 2:
         messages.info(request, "این سایز فقط به‌صورت جفت فروخته می‌شود؛ تعداد زوج شد.")
     messages.success(request, f"«{v.product.title}» به سبد اضافه شد.")
@@ -93,7 +101,8 @@ def cart_update(request):
 
         code = (request.POST.get("coupon") or "").strip().upper()
         user = request.user if request.user.is_authenticated else None
-        c, d, err = check(code, user, cart.summary()["total"])
+        sm = cart.summary()
+        c, d, err = check(code, user, sm["total"] - sm.get("offer_total", 0))
         if err:
             messages.error(request, err)
         else:
@@ -228,9 +237,14 @@ def create_order(user, form, summary, shop, source="web", installment=None):
         order.save()
     OrderItem.objects.bulk_create([
         OrderItem(order=order, product=line.product, variation=line.variation, title=line.product.title[:300],
-                  size_label=line.size_label[:150], unit_price=line.unit_price, quantity=line.qty)
+                  size_label=line.size_label[:150], unit_price=line.unit_price, quantity=line.qty,
+                  offer=getattr(line, "offer", None))
         for line in summary["lines"] if not line.problem
     ])
+    if any(getattr(line, "offer", None) for line in summary["lines"]):
+        from .offers import clear
+
+        clear()
     u = user
     u.first_name = u.first_name or form["first_name"][:150]
     u.last_name = u.last_name or form["last_name"][:150]

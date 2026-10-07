@@ -11,7 +11,8 @@
         <div>
           <h3><a href="{{ line.product.get_absolute_url }}">{{ line.product.title|fa_num }}</a></h3>
           <div class="meta">{{ line.size_label|fa_num }}{% if line.variation.is_pair_only %} · فقط جفت{% endif %}</div>
-          {% if line.problem %}<div class="problem">{{ line.problem }}</div>{% else %}<div class="meta">قیمت واحد: {{ line.unit_price|toman }} تومان</div>{% endif %}
+          {% if line.problem %}<div class="problem">{{ line.problem }}</div>{% elif line.offer %}<div class="meta"><span class="offer-tag">فرصت ویژه</span> <del class="muted">{{ line.regular_price|toman }}</del> <strong>{{ line.unit_price|toman }}</strong> تومان</div>{% else %}<div class="meta">قیمت واحد: {{ line.unit_price|toman }} تومان</div>{% endif %}
+          {% if line.offer_hint %}<div class="meta offer-hint">{{ line.offer_hint }}</div>{% endif %}
         </div>
         <div class="end">
           <div class="qty-box" data-step="{% if line.variation.is_pair_only %}2{% else %}1{% endif %}">

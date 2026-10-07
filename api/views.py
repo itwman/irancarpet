@@ -442,6 +442,9 @@ class _Line:
             self.problem = "این سایز الان موجود نیست."
         elif not self.unit_price:
             self.problem = "قیمت این سایز استعلامی است."
+        from shop.offers import apply_to_line
+
+        apply_to_line(self)
 
     @property
     def total(self):
@@ -465,7 +468,10 @@ def _summary(items):
           .prefetch_related("attributes")}
     lines = [_Line(vs[k], q) for k, q in qty.items() if k in vs]
     good = [x for x in lines if not x.problem]
-    return {"lines": lines, "total": sum(x.total for x in good), "has_problem": any(x.problem for x in lines)}
+    from shop.offers import offer_total
+
+    return {"lines": lines, "total": sum(x.total for x in good), "has_problem": any(x.problem for x in lines),
+            "offer_total": offer_total(good)}
 
 
 def _summary_json(summary, shop, mode="full"):
@@ -473,7 +479,9 @@ def _summary_json(summary, shop, mode="full"):
     return {
         "lines": [{"variation": x.variation.pk, "product_id": x.product.pk, "title": x.product.title, "size": x.size_label,
                    "image": S.thumb_url(x.product.image, 240), "unit_price": x.unit_price, "qty": x.qty, "total": x.total,
-                   "pair_only": x.variation.is_pair_only, "problem": x.problem} for x in summary["lines"]],
+                   "pair_only": x.variation.is_pair_only, "problem": x.problem,
+                   "regular_price": getattr(x, "regular_price", x.unit_price), "special_offer": bool(getattr(x, "offer", None)),
+                   "offer_hint": getattr(x, "offer_hint", "")} for x in summary["lines"]],
         "total": total, "has_problem": summary["has_problem"],
         "subtotal": summary.get("subtotal", total), "discount": summary.get("discount", 0),
         "coupon": ({"code": summary["coupon"].code, "label": summary["coupon"].title or summary["coupon"].label}
