@@ -76,12 +76,16 @@ class OfferBox extends StatelessWidget {
   const OfferBox({super.key, required this.offer, required this.product});
   final Json offer, product;
 
-  Future<void> _buy(BuildContext context) async {
-    await context.read<Cart>().putSingle(CartItem(
-        variation: offer['variation'] as int, qty: 1, productId: product['id'] as int, title: product['title'] as String,
-        size: offer['size'] as String, image: product['image'] as String? ?? '', price: offer['price'] as int, pairOnly: false));
+  Future<void> _buy(BuildContext context, int qty) async {
+    await context.read<Cart>().putExact(
+        CartItem(
+            variation: offer['variation'] as int, qty: qty, productId: product['id'] as int, title: product['title'] as String,
+            size: offer['size'] as String, image: product['image'] as String? ?? '', price: offer['price'] as int, pairOnly: false),
+        qty);
     if (context.mounted) Navigator.pushNamed(context, '/cart');
   }
+
+  String _label(int q) => q == 1 ? 'خرید یک تخته' : (q == 2 ? 'خرید جفت (۲ تخته)' : 'خرید ${faDigits(q)} تخته');
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +107,8 @@ class OfferBox extends StatelessWidget {
         Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
           Text(sep(offer['regular_price'] as int),
               style: const TextStyle(color: C.muted, decoration: TextDecoration.lineThrough, fontSize: 13)),
-          Text('${sep(offer['price'] as int)} تومان', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+          Text('${sep(offer['price'] as int)} تومان${remaining > 1 ? ' هر تخته' : ''}',
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
           if ((offer['percent'] as int? ?? 0) > 0)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -113,12 +118,18 @@ class OfferBox extends StatelessWidget {
             ),
         ]),
         const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(onPressed: () => _buy(context), child: const Text('خرید همین یک تخته')),
-        ),
+        Row(children: [
+          for (final (i, q) in (((offer['allowed'] as List?) ?? [1]).cast<int>()).indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: i == 0
+                  ? FilledButton(onPressed: () => _buy(context, q), child: Text(_label(q)))
+                  : OutlinedButton(onPressed: () => _buy(context, q), child: Text(_label(q))),
+            ),
+          ],
+        ]),
         const SizedBox(height: 4),
-        Text(offer['note'] as String? ?? 'قیمت ویژه برای خرید یک تخته است.', style: const TextStyle(color: C.muted, fontSize: 11.5)),
+        Text(offer['note'] as String? ?? '', style: const TextStyle(color: C.muted, fontSize: 11.5)),
       ]),
     );
   }

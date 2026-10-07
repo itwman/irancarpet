@@ -74,7 +74,7 @@ class OfferTests(TestCase):
 
     def test_pages_and_add(self):
         r = self.client.get("/product/old/")
-        self.assertContains(r, "خرید همین یک تخته")
+        self.assertContains(r, "خرید یک تخته")
         self.assertContains(r, "آخرین تخته")
         self.assertContains(self.client.get("/"), "فرصت‌های ویژهٔ خرید")
         r = self.client.post("/cart/add/", {"variation": self.v9.pk, "qty": 1, "offer": 1})
@@ -125,3 +125,28 @@ class RelatedTests(TestCase):
         self.assertEqual(got[:5], ["offer-1500", "same-album", "same-reeds", "r1000", "r700"])
         self.assertEqual(got[5], "cream")  # پرکردن با هم‌آلبوم وقتی هم‌رنگ کم است
         self.assertTrue(related_products(me)[0].offer)
+
+
+class OfferQtyTests(OfferTests):
+    test_single_gets_offer_even_when_unavailable = test_two_pieces_full_price_when_in_stock = None
+    test_sold_and_expiry = test_pages_and_add = test_pair_only_single = None
+
+    def test_allowed_counts(self):
+        for qty, allowed in ((1, [1]), (2, [2]), (3, [1, 3]), (4, [2, 4]), (5, [1, 3, 5])):
+            SpecialOffer.objects.filter(pk=self.o.pk).update(quantity=qty)
+            self.o.refresh_from_db()
+            self.assertEqual(self.o.allowed, allowed, qty)
+
+    def test_partial_sale_leaves_pair(self):
+        SpecialOffer.objects.filter(pk=self.o.pk).update(quantity=3)
+        clear()
+        self.assertEqual(self.summary(1)["lines"][0].unit_price, self.o.price)
+        self.assertTrue(self.summary(2)["lines"][0].problem)  # ۲ از ۳ یک تخته تک می‌گذارد
+        u = get_user_model().objects.create_user("c2")
+        o = Order.objects.create(user=u, first_name="a", last_name="b", mobile="09120000001", items_total=1, status="paid")
+        OrderItem.objects.create(order=o, product=self.p, variation=self.v9, title="x", unit_price=1, quantity=1, offer=self.o)
+        clear()
+        self.o.refresh_from_db()
+        self.assertEqual((self.o.remaining, self.o.allowed), (2, [2]))
+        self.assertTrue(self.summary(1)["lines"][0].problem)
+        self.assertEqual(self.summary(2)["lines"][0].unit_price, self.o.price)

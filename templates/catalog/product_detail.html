@@ -53,10 +53,10 @@
       <div class="offer-box">
         <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span>{% if o.ends_at %}<span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span>{% elif o.remaining == 1 %}<span class="offer-box__clock">آخرین تخته</span>{% endif %}</div>
         <p class="offer-box__what"><strong>{{ o.size.label|fa_num }}</strong> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
-        <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
-        <form method="post" action="/cart/add/">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="qty" value="1"><input type="hidden" name="offer" value="1">
-          <button class="btn-ic btn-ic--pink w-100" type="submit">خرید همین یک تخته</button></form>
-        <p class="offer-box__note">قیمت ویژه برای خرید یک تخته است.</p>
+        <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان{% if o.remaining > 1 %} هر تخته{% endif %}</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
+        <form method="post" action="/cart/add/" class="offer-box__buy">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="offer" value="1">
+          {% for q in o.allowed %}<button class="btn-ic {% if forloop.first %}btn-ic--pink{% else %}btn-ic--ink{% endif %}" type="submit" name="qty" value="{{ q }}">{% if q == 1 %}خرید یک تخته{% elif q == 2 %}خرید جفت (۲ تخته){% else %}خرید {{ q|fa_num }} تخته{% endif %}</button>{% endfor %}</form>
+        <p class="offer-box__note">{% if o.allowed|length == 1 and o.allowed.0 == 2 %}این دو تخته فقط با هم فروخته می‌شوند.{% else %}قیمت ویژه برای خرید {{ o.allowed_label }} تخته است.{% endif %}</p>
       </div>
       {% endfor %}
 

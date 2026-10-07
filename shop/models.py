@@ -373,11 +373,33 @@ class SpecialOffer(models.Model):
     def sold(self):
         from shop.offers import taken_q
 
-        return OrderItem.objects.filter(taken_q(), offer=self).count()
+        from django.db.models import Sum
+
+        return OrderItem.objects.filter(taken_q(), offer=self).aggregate(n=Sum("quantity"))["n"] or 0
 
     @property
     def remaining(self):
         return max(self.quantity - self.sold, 0)
+
+    @property
+    def allowed(self):
+        """تعدادهایی که با قیمت ویژه فروخته می‌شوند: بعد از خرید، باقی‌مانده صفر یا زوج بماند (تخته تک نماند).
+        ۱←[۱]، ۲←[۲]، ۳←[۱، ۳]، ۴←[۲، ۴]، ۵←[۱، ۳، ۵]"""
+        r = self.remaining
+        return [q for q in range(1, r + 1) if (r - q) % 2 == 0]
+
+    @property
+    def allowed_label(self):
+        from core.templatetags.fa import fa_num
+
+        a = self.allowed
+        if not a:
+            return ""
+        if a == [1]:
+            return "یک"
+        if len(a) == 1:
+            return fa_num(a[0])
+        return fa_num("، ".join(str(x) for x in a[:-1]) + " یا " + str(a[-1]))
 
     @property
     def is_live(self):

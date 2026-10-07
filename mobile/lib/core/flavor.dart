@@ -6,4 +6,4 @@ const _app = String.fromEnvironment('APP');
 final bool kIsFinder = _app == 'finder' || appFlavor == 'finder';
 final String kAppName = kIsFinder ? 'فرش‌یاب' : 'ایران کارپت';
 final String kScheme = kIsFinder ? 'farshyab' : 'irancarpet';
-final String kAppVersion = kIsFinder ? '1.0.2' : '1.0.7';
+final String kAppVersion = kIsFinder ? '1.0.3' : '1.0.8';

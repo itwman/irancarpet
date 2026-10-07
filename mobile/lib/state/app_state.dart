@@ -114,10 +114,10 @@ class Cart extends ChangeNotifier {
     await _save();
   }
 
-  /// فرصت ویژه: دقیقاً یک تخته از این سایز (حتی اگر سایز «فقط جفت» باشد)
-  Future<void> putSingle(CartItem it) async {
+  /// فرصت ویژه: دقیقاً همین تعداد از این سایز (حتی اگر سایز «فقط جفت» باشد)
+  Future<void> putExact(CartItem it, int qty) async {
     items.removeWhere((e) => e.variation == it.variation);
-    it.qty = 1;
+    it.qty = qty.clamp(1, 20);
     items.add(it);
     await _save();
   }

@@ -77,7 +77,7 @@ def _video(p):
 def offer_json(o, with_product=False):
     d = {"id": o.pk, "variation": o.variation.pk, "size": o.size.label, "price": o.price, "regular_price": o.regular_price,
          "percent": o.off_percent, "remaining": o.remaining, "ends_at": o.ends_at.isoformat() if o.ends_at else None,
-         "note": "قیمت ویژه برای خرید یک تخته است."}
+         "allowed": o.allowed, "note": f"قیمت ویژهٔ هر تخته؛ برای خرید {o.allowed_label} تخته."}
     if with_product:
         d.update(product_id=o.product_id, title=o.product.title, image=thumb_url(o.product.image, 480) if o.product.image_id else "")
     return d

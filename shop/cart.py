@@ -45,9 +45,9 @@ class Cart:
     def fix_qty(variation, qty):
         qty = max(1, min(int(qty or 1), MAX_QTY))
         if variation.is_pair_only and qty % 2:
-            from .offers import allows_single
+            from .offers import allows_qty
 
-            if not (qty == 1 and allows_single(variation)):  # فرصت ویژه: یک تختهٔ انبار
+            if not allows_qty(variation, qty):  # فرصت ویژه: تعدادهای مجاز تخته‌های انبار
                 qty += 1
         return qty
 

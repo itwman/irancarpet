@@ -3,7 +3,7 @@
 قیمت ویژه فقط وقتی است که از آن سایز دقیقاً یک تخته در سبد باشد؛ با دو تخته یا بیشتر همه با قیمت معمول حساب می‌شوند.
 """
 from django.core.cache import cache
-from django.db.models import Count, F, Q
+from django.db.models import F, Q, Sum
 from django.utils import timezone
 
 CACHE_KEY = "offers:live"
@@ -29,8 +29,8 @@ def live_offers():
     if ids is None:
         now = timezone.now()
         qs = (SpecialOffer.objects.filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now), is_active=True, starts_at__lte=now)
-              .annotate(_sold=Count("items", filter=taken_q("items__")))
-              .filter(_sold__lt=F("quantity")))
+              .annotate(_sold=Sum("items__quantity", filter=taken_q("items__")))
+              .filter(Q(_sold__isnull=True) | Q(_sold__lt=F("quantity"))))
         ids = list(qs.values_list("pk", flat=True))
         cache.set(CACHE_KEY, ids, 60)
     out = []
@@ -58,26 +58,27 @@ def for_product(p):
 
 
 def apply_to_line(line):
-    """روی سطر سبد (shop.cart.Line یا api._Line): قیمت ویژه برای تک‌تخته."""
+    """روی سطر سبد (shop.cart.Line یا api._Line): قیمت ویژه فقط برای تعدادهای مجاز (تختهٔ تک در انبار نماند)."""
     line.offer, line.regular_price, line.offer_hint = None, line.unit_price, ""
     o = for_variation(line.variation)
     if not o:
         return
     v = line.variation
     in_stock = line.product.is_purchasable and v.is_available
-    if line.qty == 1:
-        # حتی اگر فرش یا این سایز در سایت ناموجود باشد، همان یک تختهٔ انبار فروخته می‌شود
+    if line.qty in o.allowed:
+        # حتی اگر فرش یا این سایز در سایت ناموجود باشد، تخته‌های انبار فروخته می‌شوند
         line.offer, line.unit_price, line.regular_price, line.problem = o, o.price, o.regular_price, ""
     elif not in_stock:
-        line.problem = "از این سایز فقط یک تخته موجود است؛ تعداد را یک کنید."
+        line.problem = f"از این سایز فقط {o.allowed_label} تخته با هم فروخته می‌شود؛ تعداد را درست کنید."
     else:
-        line.offer_hint = "قیمت ویژه فقط برای خرید یک تخته از این سایز است."
+        line.offer_hint = f"قیمت ویژه برای خرید {o.allowed_label} تخته از این سایز است؛ با این تعداد قیمت معمول حساب شد."
 
 
 def offer_total(lines):
     return sum(x.total for x in lines if getattr(x, "offer", None) and not x.problem)
 
 
-def allows_single(variation):
-    """سایزی که «فقط جفت» است، اگر فرصت ویژه دارد تک‌تخته هم مجاز است."""
-    return for_variation(variation) is not None
+def allows_qty(variation, qty):
+    """این تعداد از سایز «فقط جفت» به خاطر فرصت ویژه مجاز است؟"""
+    o = for_variation(variation)
+    return bool(o and qty in o.allowed)

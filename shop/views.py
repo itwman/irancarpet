@@ -69,12 +69,12 @@ def cart_add(request):
     except ValueError:
         qty = 1
     cart = Cart(request)
-    if offer and request.POST.get("offer"):  # «خرید همین یک تخته»
-        total = cart.set(v, 1)
+    if offer and request.POST.get("offer"):  # دکمه‌های فرصت ویژه: دقیقاً همین تعداد
+        total = cart.set(v, qty if qty in offer.allowed else offer.allowed[0])
     else:
         total = cart.add(v, qty)
-    if offer and total > 1:
-        messages.info(request, "قیمت ویژه فقط برای خرید یک تخته از این سایز است؛ با تعداد بیشتر، قیمت معمول حساب می‌شود.")
+    if offer and total not in offer.allowed:
+        messages.info(request, f"قیمت ویژه برای خرید {offer.allowed_label} تخته از این سایز است؛ با این تعداد قیمت معمول حساب می‌شود.")
     if v.is_pair_only and total % 2 == 0 and qty % 2:
         messages.info(request, "این سایز فقط به‌صورت جفت فروخته می‌شود؛ تعداد زوج شد.")
     messages.success(request, f"«{v.product.title}» به سبد اضافه شد.")
