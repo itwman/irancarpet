@@ -59,3 +59,40 @@ class LicensePageTests(TestCase):
         self.assertNotContains(home, "trustseal.enamad.ir")
         self.assertContains(home, 'href="/license/" class="trust-badge"')
         self.assertIn("license_url", self.client.get("/api/app/v1/config/").json())
+
+
+class PersianSearchTests(TestCase):
+    def setUp(self):
+        from catalog.models import Attribute, AttributeTerm
+
+        color = Attribute.objects.create(slug="c", label="رنگ زمینه")
+        self.laki = AttributeTerm.objects.create(attribute=color, name="لاكي", slug="laki")  # ک و ی عربی
+        self.p = Product.objects.create(title="فرش ۷۰۰ شانه نقشه افشان گلریز زمینه لاکی", slug="golriz", status="publish")
+        self.p.specs.set([self.laki])
+        self.p2 = Product.objects.create(title="فرش 1200 شانه نقشه گلریز زمینه سرمه‌ای", slug="golriz2", status="publish", views=5)
+        self.p3 = Product.objects.create(title="فرش 1500 شانه نقشه پائیز زمینه کرم", slug="paeiz", status="publish", sku="155103")
+
+    def titles(self, q):
+        from catalog.search import search
+
+        qs, exact = search(Product.objects.all(), q)
+        return [p.slug for p in qs.order_by("-_rank", "-views")], exact
+
+    def test_variants(self):
+        self.assertEqual(self.titles("گلریز لاکی")[0], ["golriz"])
+        self.assertEqual(self.titles("لاكي گلريز")[0], ["golriz"])          # عربی و ترتیب برعکس
+        self.assertEqual(self.titles("سرمه ای")[0], ["golriz2"])             # نیم‌فاصله و فاصله
+        self.assertEqual(self.titles("سرمهای ۱۲۰۰")[0], ["golriz2"])
+        self.assertEqual(self.titles("پاییز")[0], ["paeiz"])                 # ئ و ی
+        self.assertEqual(self.titles("۱۵۵۱۰۳")[0], ["paeiz"])               # کد کالا با ارقام فارسی
+        got, exact = self.titles("گلریز آبی")
+        self.assertFalse(exact)
+        self.assertEqual(set(got), {"golriz", "golriz2"})                    # نزدیک‌ترین‌ها
+
+    def test_pages(self):
+        r = self.client.get("/search/", {"q": "گلریز لاکی"})
+        self.assertContains(r, "/product/golriz/")
+        self.assertNotContains(r, "/product/golriz2/")
+        api = self.client.get("/api/app/v1/products/", {"q": "لاکی گلریز"}).json()
+        data = api.get("data", api)
+        self.assertEqual([x["id"] for x in data["results"]], [self.p.pk])

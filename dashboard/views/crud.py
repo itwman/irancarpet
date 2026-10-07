@@ -130,6 +130,11 @@ def apply_filters(res, qs, request):
                 except Exception:  # noqa: BLE001
                     pass
     q = (request.GET.get("q") or "").strip()
+    if q and res.key == "products":  # جستجوی فارسی مقاوم (ی/ک عربی، فاصله، ترتیب کلمه‌ها)
+        from catalog.search import search as text_search
+
+        found, _exact = text_search(qs, q)
+        return found
     if q and res.search:
         q_en = to_en(q)
         cond = Q()

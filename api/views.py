@@ -244,7 +244,9 @@ def filtered_products(g):
     qs = Product.objects.published()
     q = (g.get("q") or "").strip()[:100]
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(sku__iexact=latin_digits(q)) | Q(english_name__icontains=q))
+        from catalog.search import search as text_search
+
+        qs, _exact = text_search(qs, q)
     if g.get("category"):
         cat = Category.objects.filter(pk=_int(g["category"])).first()
         qs = qs.filter(categories__in=cat.descendant_ids()) if cat else qs.none()
@@ -272,6 +274,8 @@ def filtered_products(g):
         qs = qs.filter(album__pk=_int(g["album"]))
     if g.get("ids"):
         qs = qs.filter(pk__in=[_int(x) for x in g["ids"].split(",") if x.strip()][:50])
+    if q and g.get("sort") not in SORTS:  # جستجو: نزدیک‌ترین نتیجه اول
+        return qs.distinct().order_by("stock_status", "-_rank", "-views")
     sort = g.get("sort") if g.get("sort") in SORTS else "new"
     return qs.distinct().order_by("stock_status", SORTS[sort][0])
 

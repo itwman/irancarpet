@@ -60,7 +60,7 @@ def paged_url(base, page, query):
 
 
 def product_listing(request, base_qs, *, page, path, meta, heading, intro="", crumbs=(), archive=None, template="catalog/product_list.html",
-                    extra=None):
+                    extra=None, relevance=False):
     page = int(page or 1)
     base_qs = base_qs.published()
     qs = base_qs
@@ -89,7 +89,11 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
     sort = g.get("sort") if g.get("sort") in SORTS else "new"
     order = SORTS[sort][0]
     # کالاهای موجود همیشه بالاتر (instock < onbackorder < outofstock)
-    qs = qs.distinct().order_by("stock_status", order)
+    if relevance and not g.get("sort"):  # جستجو: نزدیک‌ترین نتیجه اول
+        qs = qs.distinct().order_by("stock_status", "-_rank", "-views")
+        sort = ""
+    else:
+        qs = qs.distinct().order_by("stock_status", order)
 
     paginator = Paginator(card_queryset(qs), settings.PRODUCTS_PER_PAGE)
     try:
@@ -178,11 +182,14 @@ def attribute_term_detail(request, term, page=1):
 
 
 def search(request, page=1):
+    from .search import search as text_search
+
     q = (request.GET.get("q") or "").strip()[:100]
-    qs = Product.objects.filter(Q(title__icontains=q) | Q(sku__iexact=q) | Q(english_name__icontains=q)) if q else Product.objects.none()
+    qs, exact = text_search(Product.objects.all(), q) if q else (Product.objects.none(), True)
+    intro = "" if exact or not q else "<p>فرشی با همهٔ این کلمه‌ها پیدا نشد؛ نزدیک‌ترین نتیجه‌ها:</p>"
     resp = product_listing(
         request, qs, page=request.GET.get("p", 1), path="/search/", meta={"kind": "home"},
-        heading=f"نتیجهٔ جستجو برای «{q}»" if q else "جستجو", crumbs=[("جستجو", "/search/")],
+        heading=f"نتیجهٔ جستجو برای «{q}»" if q else "جستجو", crumbs=[("جستجو", "/search/")], intro=intro, relevance=bool(q),
     )
     if q and not request.GET.get("p"):
         from growth.search_log import log as log_search

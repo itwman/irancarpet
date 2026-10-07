@@ -227,6 +227,9 @@ class Product(SeoFields):
 
     published_at = models.DateTimeField("تاریخ انتشار", default=timezone.now, db_index=True)
     modified_at = models.DateTimeField("آخرین ویرایش", default=timezone.now)
+    # نمایهٔ جستجو (catalog/search.py): متن نرمال‌شده بدون فاصله
+    search_title = models.CharField(max_length=600, blank=True, editable=False)
+    search_text = models.TextField(blank=True, editable=False)
 
     objects = ProductQuerySet.as_manager()
 
@@ -283,6 +286,9 @@ class Product(SeoFields):
         if self.pk:
             old = Product.objects.filter(pk=self.pk).values("album_id", "custom_base_price", "sale_status").first()
             reprice = old != {"album_id": self.album_id, "custom_base_price": self.custom_base_price, "sale_status": self.sale_status}
+        from .search import index_values
+
+        self.search_title, self.search_text = index_values(self)
         super().save(*args, **kwargs)
         if reprice:
             Variation.reprice_queryset(self.variations.all())

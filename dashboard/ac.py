@@ -112,6 +112,13 @@ def autocomplete(request, key):
     qs = spec.model.objects.all()
     if spec.extra:
         qs = spec.extra(qs)
+    if q and key == "product":
+        from catalog.search import search as text_search
+
+        qs = text_search(qs, q)[0].order_by("-_rank", "-views")
+        q, ranked = "", True
+    else:
+        ranked = False
     if q:
         en = q.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))
         fa = en.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
@@ -122,7 +129,7 @@ def autocomplete(request, key):
         if en.isdigit():
             cond |= Q(pk=int(en))
         qs = qs.filter(cond)
-    if spec.order:
+    if spec.order and not ranked:
         qs = qs.order_by(spec.order)
     out = []
     for o in qs.distinct()[:20]:
