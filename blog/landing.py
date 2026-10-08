@@ -395,7 +395,7 @@ def block_price_table(request, title=""):
 
     return render_to_string("blog/blocks/price_table.html", {
         "rows": rows, "updated": last_price_update(), "quotes": quotes, "cheapest": cheapest,
-        "ship": shipping_lines(), "prep_days": plans[0].first_due_days if plans else None,
+        "ship": shipping_lines(),
         "inst_url": page_url(),
     }, request=request)
 

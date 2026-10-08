@@ -16,7 +16,9 @@
     <li>قیمت‌ها همان قیمت فروش امروز سایت است و با تغییر قیمت کارخانه خودکار عوض می‌شود. قیمت هر نقشه و هر سایز در صفحهٔ همان فرش آمده است.</li>
     {% for p, q in quotes %}<li><strong>{{ p.title }}:</strong> برای فرش {{ cheapest|toman }} تومانی، {% if q.down %}{{ q.down|toman }} تومان پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ q.count|fa_num }} قسط {% if q.step == 2 %}دوماهه{% else %}ماهانه{% endif %} {{ q.installment|toman }} تومانی.</li>{% endfor %}
     {% for t, d in ship %}{% if forloop.first %}<li><strong>ارسال:</strong> {{ d }}</li>{% endif %}{% endfor %}
-    {% if prep_days %}<li><strong>آماده‌شدن سفارش:</strong> حدود {{ prep_days|fa_num }} روز پس از ثبت، و بعد ارسال از کاشان.</li>{% endif %}
+    <li><strong>زمان آماده‌شدن:</strong> فرش‌های این لیست از قبل موجود نیستند و بعد از ثبت سفارش بافته می‌شوند (به‌جز تک‌تخته‌های آمادهٔ ارسال)؛ بافت و آماده‌سازی حدود ۱۴ روز کاری است و پنجشنبه، جمعه و تعطیلات جزو روزهای کاری نیست.</li>
+    <li><strong>قیمت نهایی:</strong> اگر کل مبلغ هنگام سفارش پرداخت نشود، قیمت نهایی بر اساس نرخ روزِ ارسال حساب می‌شود.</li>
+    <li><strong>لغو سفارش:</strong> در صورت لغو، ۵٪ مبلغ کل بابت جبران خسارت از بیعانه کم می‌شود.</li>
   </ul>
   <div class="lb-cta"><a class="btn-ic btn-ic--ink btn-ic--sm" href="/carpets-price-list/">لیست قیمت همهٔ سایزها و آلبوم‌ها</a>{% if inst_url %}<a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ inst_url }}">محاسبهٔ اقساط</a>{% endif %}</div>
 </section>

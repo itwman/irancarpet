@@ -141,7 +141,8 @@ class ImageSwapTests(TestCase):
         self.assertNotIn("at-city-min.jpg", html)
         self.assertNotIn("price-list-20-10-1403.jpg", html)
         self.assertIn("در اندیمشک شعبه", html)
-        self.assertIn("آقای فرش", html)
+        self.assertIn("فروشگاه‌های فرش دیگر در اندیمشک", html)
+        self.assertNotIn("آقای فرش", html)
         self.assertNotIn("[price_table]", html)
 
     def test_price_image_dropped_when_page_has_live_prices(self):
