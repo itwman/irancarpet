@@ -202,3 +202,49 @@ class ReedsBannerAndSelfLinkTests(TestCase):
         self.assertIn("متن با خرید فرش در بروجرد و", html)
         self.assertIn('href="/guarantee/"', html)
         self.assertIn("/product-category/carpet-1200-reeds/", html)
+
+
+class BlogSearchAndRecsTests(TestCase):
+    def setUp(self):
+        from decimal import Decimal
+
+        from catalog.models import Attribute, AttributeTerm, Product
+        from pricing.albums import sync_album_variations
+        from pricing.models import Album, Size, seed_sizes
+        from core.models import Media
+
+        seed_sizes()
+        s = {x.slug: x for x in Size.objects.all()}
+        album = Album.objects.create(name="ورژن 1200 شانه", code="V", base_size=s["12-meter"], base_price=Decimal("30000000"),
+                                     slug="v1200", in_price_list=True)
+        album.sizes.set([s["12-meter"], s["6-meter"]])
+        reeds = Attribute.objects.get_or_create(slug="reeds-per-meter", defaults={"label": "شانه"})[0]
+        term = AttributeTerm.objects.create(attribute=reeds, name="1200", slug="1200")
+        img = Media.objects.create(file="x.jpg")
+        for i in range(5):
+            p = Product.objects.create(title=f"فرش 1200 شانه نقشه {i}", slug=f"p{i}", album=album, status="publish", image=img, views=i)
+            p.specs.add(term)
+        sync_album_variations(list(Product.objects.all()), reset=True)
+        Post.objects.create(title="تاریخچه فرش 1200 شانه", slug="history", status="publish",
+                            content="<p>تراکم فرش و شانه</p>" + "<h2>بخش</h2><p>" + "متن " * 900 + "</p>" * 1)
+        Post.objects.create(title="شستن فرش در خانه", slug="wash", status="publish", content="<p>با آب سرد بشویید.</p>")
+
+    def test_blog_search(self):
+        r = self.client.get("/blog/search/", {"q": "شستن فرش"})
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        self.assertIn("شستن فرش در خانه", html)
+        self.assertNotIn("تاریخچه فرش", html.split("post-grid", 1)[1])
+        self.assertIn("noindex", html)
+        self.assertIn("در فرش‌ها", html)
+
+    def test_post_has_sidebar_recs_and_affiliate_for_learning_posts(self):
+        html = self.client.get("/history/").content.decode()
+        self.assertIn('action="/blog/search/"', html)
+        self.assertIn("فرش 1200 شانه نقشه", html)
+        self.assertIn("/product-category/carpet-1200-reeds/", html)
+
+    def test_product_search_shows_article_hits(self):
+        html = self.client.get("/search/", {"q": "تراکم"}).content.decode()
+        self.assertIn("مقاله‌های مرتبط", html)
+        self.assertIn("/history/", html)

@@ -223,8 +223,17 @@ def search(request, page=1):
     q = (request.GET.get("q") or "").strip()[:100]
     qs, exact = text_search(Product.objects.all(), q) if q else (Product.objects.none(), True)
     intro = "" if exact or not q else "<p>فرشی با همهٔ این کلمه‌ها پیدا نشد؛ نزدیک‌ترین نتیجه‌ها:</p>"
+    article_hits = []
+    if q and not request.GET.get("p"):
+        try:
+            from blog import recommend
+
+            article_hits = recommend.posts_by_ids(recommend.search_posts(q, limit=3))
+        except Exception:  # noqa: BLE001
+            pass
     resp = product_listing(
         request, qs, page=request.GET.get("p", 1), path="/search/", meta={"kind": "search", "extra": {"q": q}},
+        extra={"article_hits": article_hits, "q": q},
         heading=f"نتیجهٔ جستجو برای «{q}»" if q else "جستجو", crumbs=[("جستجو", "/search/")], intro=intro, relevance=bool(q),
     )
     if q and not request.GET.get("p"):

@@ -1,0 +1,4 @@
+<form class="blog-search" action="/blog/search/" method="get" role="search" aria-label="جستجو در مقاله‌ها">
+  <label class="blog-search__l" for="bq{{ uid|default:'' }}">جستجو در مقاله‌های مجله</label>
+  <div class="blog-search__row"><input id="bq{{ uid|default:'' }}" type="search" name="q" value="{{ q|default:'' }}" placeholder="مثلاً تراکم، شستن فرش، نقشه افشان" autocomplete="off"><button type="submit">جستجو</button></div>
+</form>

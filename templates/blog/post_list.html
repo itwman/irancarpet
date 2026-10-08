@@ -2,8 +2,12 @@
 {% block content %}
 <div class="container">
   {% include "partials/breadcrumbs.html" %}
-  <header class="archive-head"><h1>{{ heading|fa_num }}</h1>{% if intro %}<div class="prose">{{ intro|safe }}</div>{% endif %}</header>
-  <div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  <header class="archive-head blog-head">
+    <div><h1>{{ heading|fa_num }}</h1>{% if is_search and q %}<p class="muted">{{ count|fa_num }} مقاله پیدا شد · <a href="/search/?q={{ q|urlencode }}">جستجوی «{{ q }}» در فرش‌ها</a></p>{% endif %}{% if intro %}<div class="prose">{{ intro|safe }}</div>{% endif %}</div>
+    {% include "blog/_search_form.html" with uid="h" %}
+  </header>
+  {% if posts %}<div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  {% elif is_search %}<div class="empty">{% if q %}مقاله‌ای با «{{ q }}» پیدا نشد. کلمهٔ کوتاه‌تر یا مترادف را امتحان کنید، یا <a href="/search/?q={{ q|urlencode }}">در فرش‌ها جستجو کنید</a>.{% else %}کلمه‌ای بنویسید تا مقاله‌های مرتبط را پیدا کنیم.{% endif %}</div>{% endif %}
   {% include "partials/pagination.html" %}
 </div>
 {% endblock %}

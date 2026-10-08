@@ -56,6 +56,7 @@ urlpatterns = [
     path("", include("affiliate.urls")),
     path("", include("market.urls")),
     path("", include("shop.urls")),
+    path("blog/search/", blog_views.blog_search, name="blog_search"),
     path("blog/", blog_views.blog_index, name="blog"),
     re_path(rf"^blog/{P}$", blog_views.blog_index),
     path("product/<str:slug>/", catalog_views.product_detail, name="product"),

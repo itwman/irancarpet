@@ -172,6 +172,28 @@ def _unlink_self(html, self_path):
     return re.sub(r'<a\b[^>]*\shref="([^"]*)"[^>]*>((?:(?!</?a\b).)*?)</a>', fix, html, flags=re.S | re.I)
 
 
+def _balance_divs(html):
+    """تگ‌های بلوکی باز یا بستهٔ اضافه در متن وارداتی (div، article، section…) ستون‌بندی صفحه را به هم می‌ریزد:
+    بسته‌شدن‌های بی‌جفت حذف و بازهای بی‌جفت در پایان بسته می‌شوند."""
+    tags = "div|article|section|aside|main|nav|header|footer"
+    out, stack, last = [], [], 0
+    for m in re.finditer(rf"<(/?)({tags})\b[^>]*>", html, re.I):
+        tag = m.group(2).lower()
+        if not m.group(1):
+            stack.append(tag)
+            continue
+        if tag in stack:
+            while stack and stack[-1] != tag:  # بسته‌نشده‌های داخلی همین‌جا بسته می‌شوند
+                out.append(html[last:m.start()] + f"</{stack.pop()}>")
+                last = m.start()
+            stack.pop()
+        else:
+            out.append(html[last:m.start()])
+            last = m.end()
+    out.append(html[last:])
+    return "".join(out) + "".join(f"</{t}>" for t in reversed(stack))
+
+
 def tidy(html, title="", phone="", self_path=""):
     if not html:
         return html
@@ -190,6 +212,7 @@ def tidy(html, title="", phone="", self_path=""):
     html = _drop_empty_sections(html)
     html = _shift_headings(html)
     html = IMG.sub(_img(title), html)
+    html = _balance_divs(html)
     # برچسب‌های <p> سرگردان دور بخش‌های زنده (بعد از جایگزینی عکس‌ها)
     html = re.sub(BLOCK_SC + r"\s*</p>", r"\1", html)
     html = re.sub(r"<p\b[^>]*>\s*" + BLOCK_SC, r"\1", html)

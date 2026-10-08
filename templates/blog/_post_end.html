@@ -1,0 +1,11 @@
+{% load fa %}{% if rec_kind != "buy" and aff_box %}<section class="post-aff" aria-labelledby="postAff">
+  <div>
+    <h2 id="postAff">این مطلب به کارتان آمد؟ با معرفی فرش درآمد داشته باشید</h2>
+    <p>در همکاری در فروش ایران کارپت، پیوند یا کد تخفیف اختصاصی می‌گیرید. هر خریدی که تا {{ aff_box.days|fa_num }} روز با پیوند شما انجام شود{% if aff_box.top %} تا {{ aff_box.top }}٪{% endif %} پورسانت دارد؛ ثبت‌نام رایگان است و به مغازه یا سرمایه نیاز ندارد.</p>
+  </div>
+  <a class="btn-ic btn-ic--pink" href="/affiliate/">آشنایی و ثبت‌نام</a>
+</section>{% endif %}
+{% if rec_products %}<section class="post-recs" aria-labelledby="postRecs">
+  <div class="section-head"><h2 id="postRecs">{% if rec_kind == "buy" %}فرش‌های مرتبط با این مطلب{% else %}اگر دنبال فرش هستید{% endif %}</h2>{% if rec_reeds %}<a href="/product-category/carpet-{{ rec_reeds }}-reeds/">همهٔ فرش‌های {{ rec_reeds|fa_num }} شانه</a>{% else %}<a href="/store/">همهٔ فرش‌ها</a>{% endif %}</div>
+  <div class="p-grid">{% for p in rec_products %}{% include "partials/product_card.html" %}{% endfor %}</div>
+</section>{% endif %}

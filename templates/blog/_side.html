@@ -1,0 +1,14 @@
+{% load fa %}<div class="post-side__in">
+  {% include "blog/_search_form.html" with uid="s" %}
+  {% if rec_side %}<section class="side-box side-recs" aria-labelledby="sideRecs">
+    <p class="side-box__t" id="sideRecs">{% if rec_kind == "buy" %}فرش‌های پیشنهادی این مطلب{% else %}فرش‌هایی که شاید بپسندید{% endif %}</p>
+    <ul>{% for p in rec_side %}<li><a href="{{ p.get_absolute_url }}">{% if p.image %}<img src="{{ p.image|thumb:240 }}" alt="" loading="lazy" width="64" height="64">{% endif %}<span><b>{{ p.title|fa_num }}</b>{% if p.min_price %}<small>از {{ p.min_price|toman }} تومان</small>{% endif %}</span></a></li>{% endfor %}</ul>
+  </section>{% endif %}
+  <nav class="side-box side-links" aria-label="دسترسی سریع">
+    <a href="/carpets-price-list/">لیست قیمت امروز فرش</a>
+    <a href="/خرید-فرش-قسطی-از-کارخانه-فرش-کاشان/">خرید قسطی و محاسبهٔ اقساط</a>
+    <a href="/farsh-yab/">فرش‌یاب: پیشنهاد فرش با چند سؤال</a>
+    <a href="/محاسبه-سایز-فرش/">سایز فرش مناسب اتاق</a>
+  </nav>
+  {% if aff_box and rec_kind != "buy" %}<a class="side-box side-aff" href="/affiliate/"><b>همکار فروش ایران کارپت شوید</b><span>با معرفی فرش به دوستان و مخاطبانتان{% if aff_box.top %} تا {{ aff_box.top }}٪{% endif %} پورسانت بگیرید.</span></a>{% endif %}
+</div>

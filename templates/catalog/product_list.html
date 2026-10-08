@@ -32,7 +32,10 @@
       {% include "partials/pagination.html" %}
     </div>
   </div>
-  {% block below_list %}{% if ainfo %}
+  {% block below_list %}{% if article_hits %}<section class="article-hits" aria-labelledby="aHits">
+    <div class="section-head"><h2 id="aHits">مقاله‌های مرتبط با «{{ q }}»</h2><a href="/blog/search/?q={{ q|urlencode }}">همهٔ مقاله‌ها</a></div>
+    <div class="post-grid post-grid--3">{% for post in article_hits %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  </section>{% endif %}{% if ainfo %}
   {% if ainfo.size_rows %}<section class="archive-sizes" aria-labelledby="aSizes">
     <h2 id="aSizes">قیمت {{ ainfo.title }} بر اساس سایز</h2>
     <div class="lp-sizes" role="table" aria-label="قیمت {{ ainfo.title }} بر اساس سایز">{% for r in ainfo.size_rows %}<div class="lp-size"><span>{{ r.label|fa_num }}</span><strong>{% if r.lo != r.hi %}<small>از</small> {% endif %}{{ r.lo|toman }}</strong><small>{% if r.lo != r.hi %}تا {{ r.hi|toman }} · {% endif %}{{ r.n|fa_num }} طرح</small></div>{% endfor %}</div>

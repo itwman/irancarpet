@@ -88,11 +88,83 @@ def post_detail(request, post):
     meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())
     if meta.get("description"):
         (jsonld["@graph"][0] if "@graph" in jsonld else jsonld)["description"] = meta["description"]
+    side = _side(post, live)
+    if side["inline"]:
+        content = _insert_inline(content, side["inline"])
     return render(request, "blog/post_detail.html", {
-        "meta": meta, "post": post, "crumbs": crumbs, "related": related,
+        "meta": meta, "post": post, "crumbs": crumbs, "related": related, **side,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
         "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
         "price_updated": landing.last_price_update() if live else None,
+    })
+
+
+def _affiliate_box():
+    try:
+        from affiliate.models import AffiliateSettings
+        from affiliate.views import top_percent
+
+        a = AffiliateSettings.load()
+        return {"top": top_percent(), "days": a.attribution_days} if a.enabled else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _side(post, live):
+    """فرش‌های پیشنهادی، نوع مقاله و کادر همکاری در فروش برای ستون کناری، وسط و پایان مقاله."""
+    from django.template.loader import render_to_string
+
+    from . import recommend
+
+    try:
+        products = recommend.products_for(post, 11)
+    except Exception:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).exception("recommend")
+        products = []
+    kind = recommend.intent(post)
+    reeds = recommend.reeds_of(post)
+    inline = ""
+    # ردیف فرش وسط مقاله فقط در مقاله‌های بلند و بدون جدول قیمت زنده (که خودش پیشنهاد خرید دارد)
+    if products[4:7] and not live and len(post.content or "") > 6000:
+        inline = render_to_string("blog/_inline_products.html", {"products": products[4:7], "reeds": reeds})
+    end = products[7:11] if len(products) >= 9 else products[:4]
+    return {"rec_side": products[:4], "rec_products": end, "rec_kind": kind, "rec_reeds": reeds, "aff_box": _affiliate_box(), "inline": inline}
+
+
+def _insert_inline(content, block):
+    """ردیف فرش پیش از تیترِ h2 نزدیک به وسط مقاله؛ اگر h2 کافی نبود، اضافه نمی‌شود."""
+    import re
+
+    heads = [m.start() for m in re.finditer(r"<h2\b", content)]
+    if len(heads) < 4:
+        return content
+    mid = len(content) // 2
+    at = min(heads[1:-1], key=lambda x: abs(x - mid))
+    return content[:at] + block + content[at:]
+
+
+def blog_search(request):
+    from . import recommend
+
+    q = (request.GET.get("q") or "").strip()[:100]
+    ids = recommend.search_posts(q) if q else []
+    paginator = Paginator(ids, settings.POSTS_PER_PAGE)
+    try:
+        page_obj = paginator.page(int(request.GET.get("p") or 1))
+    except (EmptyPage, ValueError):
+        page_obj = paginator.page(1) if ids else None
+    posts = recommend.posts_by_ids(list(page_obj.object_list)) if page_obj else []
+    from urllib.parse import urlencode
+
+    return render(request, "blog/post_list.html", {
+        "meta": {"title": f"جستجوی «{q}» در مقاله‌ها - ایران کارپت" if q else "جستجو در مقاله‌ها - ایران کارپت",
+                 "description": "", "robots": "noindex, follow", "canonical": settings.SITE_URL + "/blog/search/"},
+        "heading": f"مقاله‌های «{q}»" if q else "جستجو در مقاله‌ها", "q": q, "is_search": True,
+        "count": len(ids), "posts": posts, "page_obj": page_obj,
+        "crumbs": [("مجله", "/blog/"), ("جستجو", "/blog/search/")],
+        "page_links": [(n, "?" + urlencode({"q": q, "p": n})) for n in paginator.page_range] if page_obj and paginator.num_pages > 1 else [],
     })
 
 
