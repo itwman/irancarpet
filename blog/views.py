@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, render
 from core import seo
 
 from .models import BlogCategory, BlogTag, Post
+from .tidy import _swap_phones
 
 
 def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
@@ -73,7 +74,7 @@ def post_detail(request, post):
     from . import landing
     from .tidy import tidy
 
-    content = tidy(post.content, post.title)
+    content = tidy(post.content, post.title, phone=_site_mobile())
     live = landing.has_blocks(content)
     content = landing.render(content, request, title=post.title) if live else content
     if live:
@@ -84,6 +85,7 @@ def post_detail(request, post):
         if faq:
             jsonld = {"@context": "https://schema.org", "@graph": [{k: v for k, v in jsonld.items() if k != "@context"}, faq]}
     meta = seo.build(post, "post")
+    meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())
     if meta.get("description"):
         (jsonld["@graph"][0] if "@graph" in jsonld else jsonld)["description"] = meta["description"]
     return render(request, "blog/post_detail.html", {
@@ -100,13 +102,22 @@ def page_detail(request, page):
     from . import landing
     from .tidy import tidy
 
-    content = tidy(page.content, page.title)
+    content = tidy(page.content, page.title, phone=_site_mobile())
     live = landing.has_blocks(content)
+    meta = seo.build(page, "page")
+    meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())
     return render(request, "blog/page_detail.html", {
-        "meta": seo.build(page, "page"), "page": page, "live": live,
+        "meta": meta, "page": page, "live": live,
         "content": landing.render(content, request, title=page.title) if live else content,
         "crumbs": [(p.title, p.get_absolute_url()) for p in _ancestors(page)] + [(page.title, page.get_absolute_url())],
     })
+
+
+def _site_mobile():
+    from core.models import SiteSettings
+
+    s = SiteSettings.load()
+    return s.mobile or s.phone or ""
 
 
 def _ancestors(page):

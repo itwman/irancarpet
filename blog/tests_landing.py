@@ -159,3 +159,27 @@ class PaginationTests(TestCase):
         self.assertEqual(r["Location"], "/blog/")
         self.assertEqual(self.client.get("/rss").status_code, 301)
         self.assertEqual(self.client.get("/rss/")["Location"], "/feed/")
+
+
+class NeutralTitleAndPhoneTests(TestCase):
+    def test_city_title_neutral_and_old_phone_swapped(self):
+        import importlib
+
+        from core.models import SiteSettings
+
+        s = SiteSettings.load()
+        s.mobile = "09125347596"
+        s.save()
+        Post.objects.create(title="خرید فرش در گرگان ☀️ فروشگاه شهر فرش ماشینی در گرگان", slug="خرید-فرش-در-گرگان", status="publish",
+                            content="<h2>شهر فرش گرگان</h2><p>با 09371982000 تماس بگیرید.</p>",
+                            seo_description="فروش فرش در گرگان 🌎 شهر فرش گرگان")
+        mig = importlib.import_module("blog.migrations.0009_neutral_competitor_titles")
+        from django.apps import apps
+
+        mig.forward(apps, None)
+        p = Post.objects.get(slug="خرید-فرش-در-گرگان")
+        self.assertEqual(p.title, "خرید فرش در گرگان؛ فرش ماشینی کاشان با ارسال به گرگان")
+        self.assertNotIn("شهر فرش", p.content + p.seo_description)
+        html = self.client.get(p.get_absolute_url()).content.decode()
+        self.assertNotIn("09371982000", html)
+        self.assertIn("09125347596", html)

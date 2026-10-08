@@ -98,10 +98,37 @@ def _swap_images(html):
     return html
 
 
-def tidy(html, title=""):
+# شماره‌های قدیمی که در متن مقاله‌ها مانده‌اند ← شمارهٔ فعلی «موبایل پاسخگو» در تنظیمات سایت
+OLD_PHONES = ("09133616132", "09371982000")
+_D = "[0-9۰-۹]"
+_FA = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
+
+
+def _phone_re(num):
+    digits = num[1:]  # بدون صفر اول؛ با ۰ یا +98 یا 0098
+    body = r"[-\s‌]?".join(f"[{d}{d.translate(_FA)}]" for d in digits)
+    return re.compile(r"(?:\+98|0098|[0۰])[-\s]?" + body)
+
+
+PHONE_RES = [_phone_re(n) for n in OLD_PHONES]
+
+
+def _swap_phones(html, phone):
+    digits = re.sub(r"\D", "", (phone or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")))
+    if len(digits) != 11:
+        return html
+    for rx in PHONE_RES:
+        html = rx.sub(lambda m: digits.translate(_FA) if re.search("[۰-۹]", m.group(0)) else
+                      ("+98" + digits[1:] if m.group(0).startswith("+98") else digits), html)
+    return html
+
+
+def tidy(html, title="", phone=""):
     if not html:
         return html
     html = SHORTCODE.sub("", html)
+    if phone:
+        html = _swap_phones(html, phone)
     html = _swap_images(html)
     html = IMG_HEAD.sub(lambda m: f'<p class="wp-img">{m.group(2).strip()}</p>', html)
     html = H1.sub(lambda m: f"<{m.group(1)}h2", html)
