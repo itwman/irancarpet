@@ -59,7 +59,8 @@ def _best_quote(plan, price):
 
 def price_rows():
     """[(گروه، نشانی صفحهٔ گروه، {اسلاگ سایز: کمترین قیمت روز})] برای فرش‌های خود ایران کارپت."""
-    key = f"landing:prices:{last_price_update()}"
+    stamp = last_price_update()
+    key = f"landing:prices:{int(stamp.timestamp()) if stamp else 0}"
     hit = cache.get(key)
     if hit is not None:
         return hit

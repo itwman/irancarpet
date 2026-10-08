@@ -1,4 +1,6 @@
+import copy
 import re
+from urllib.parse import unquote, urlsplit
 
 from django.db.models import F
 from django.http import HttpResponseGone, HttpResponsePermanentRedirect, HttpResponseRedirect
@@ -75,8 +77,62 @@ class RedirectFallbackMiddleware:
                 target += "?" + request.META["QUERY_STRING"]
             cls = HttpResponsePermanentRedirect if redirect.status_code == 301 else HttpResponseRedirect
             return cls(target)
+        if request.method in ("GET", "HEAD"):
+            target = self.legacy_target(request, source)
+            if target:
+                return HttpResponsePermanentRedirect(target)
         self.log(request, source)
         return response
+
+    # نشانی‌های فرعی وردپرس که گوگل هنوز دارد: صفحهٔ دیدگاه، فید، صفحهٔ چندم، پیوند پیوست، ساختار قدیمی post=123
+    LEGACY = [
+        (re.compile(r"^/post=tag/(.+)$"), r"/tag/\1"),
+        (re.compile(r"^/post=\d+/(.+)$"), r"/\1"),
+        (re.compile(r"^/product_brand/(.+)$"), r"/brand/\1"),
+        (re.compile(r"^/key/(.+)$"), r"/tag/\1"),
+        (re.compile(r"^(/.+?)/(?:comment-page-\d+|feed|amp|embed|jpe?g|png|webp|attachment/[^/]+)/?$"), r"\1/"),
+        (re.compile(r"^(/.+?)/page/\d+/?$"), r"\1/"),
+        # /slug/چیز-اضافه/ ← /slug/ (فقط اگر /slug/ یک نوشته باشد؛ پایین بررسی می‌شود)
+        (re.compile(r"^(/[^/]+)/[^/]+/?$"), r"\1/"),
+    ]
+
+    def legacy_target(self, request, source):
+        """اولین نشانی جایگزینی که واقعاً صفحه دارد (۲۰۰) یا به صفحه‌ای ریدایرکت می‌شود."""
+        path = unquote(request.path)
+        tried = set()
+        for rx, repl in self.LEGACY:
+            if not rx.search(path):
+                continue
+            cand = rx.sub(repl, path, count=1)
+            if not cand.endswith("/"):
+                cand += "/"
+            if cand in tried or cand == path or cand == "/":
+                continue
+            tried.add(cand)
+            if rx is self.LEGACY[-1][0] and not self._is_post(cand):
+                continue
+            hit = self.find(Redirect.normalize(cand))
+            if hit and hit.status_code in (301, 302) and hit.match != Redirect.Match.REGEX:
+                return hit.target
+            sub = copy.copy(request)
+            sub.path = sub.path_info = cand
+            sub.GET = request.GET.copy()
+            try:
+                resp = self.get_response(sub)
+            except Exception:  # noqa: BLE001
+                continue
+            if resp.status_code == 200:
+                return cand
+            if resp.status_code in (301, 302) and resp.get("Location"):
+                loc = resp["Location"]
+                return loc if urlsplit(loc).netloc in ("", request.get_host()) else None
+        return None
+
+    @staticmethod
+    def _is_post(path):
+        from blog.models import Post
+
+        return Post.objects.filter(slug=path.strip("/")).exists()
 
     @staticmethod
     def find(source):

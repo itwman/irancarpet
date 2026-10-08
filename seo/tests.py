@@ -104,3 +104,42 @@ class GeoTests(TestCase):
             self.p.title = "فرش تازه"
             self.p.save()
         self.assertIn("/product/version/", q.call_args[0])
+
+
+class LegacyUrlTests(TestCase):
+    """نشانی‌های فرعی وردپرس که در سرچ کنسول هنوز هستند باید به صفحهٔ اصلی خودشان بروند، نه ۴۰۴."""
+
+    def setUp(self):
+        from blog.models import Post
+
+        Post.objects.create(title="خرید فرش در بهبهان", slug="خرید-فرش-در-بهبهان", content="<p>متن</p>", status="publish")
+        self.p = Product.objects.create(title="فرش ۷۰۰ شانه نقشه تلناز", slug="فرش-700-شانه-نقشه-تلناز", status="publish")
+
+    def test_redirects(self):
+        from urllib.parse import unquote
+
+        cases = {
+            "/post=29908/خرید-فرش-در-بهبهان/": "/خرید-فرش-در-بهبهان/",
+            "/خرید-فرش-در-بهبهان/comment-page-1/": "/خرید-فرش-در-بهبهان/",
+            "/خرید-فرش-در-بهبهان/feed/": "/خرید-فرش-در-بهبهان/",
+            "/خرید-فرش-در-بهبهان/jpg/": "/خرید-فرش-در-بهبهان/",
+            "/product/فرش-700-شانه-نقشه-تلناز/comment-page-1/": "/product/فرش-700-شانه-نقشه-تلناز/",
+        }
+        for src, dst in cases.items():
+            r = self.client.get(src)
+            self.assertEqual(r.status_code, 301, src)
+            self.assertEqual(unquote(r["Location"]), dst, src)
+
+    def test_unknown_stays_404(self):
+        self.assertEqual(self.client.get("/post=1/چیزی-که-نیست/").status_code, 404)
+        self.assertEqual(self.client.get("/product/نیست/comment-page-1/").status_code, 404)
+
+
+class HomeDirectTests(TestCase):
+    def test_home_has_direct_section_and_faq(self):
+        r = self.client.get("/")
+        self.assertEqual(r.status_code, 200)
+        t = r.content.decode()
+        self.assertIn("خرید مستقیم فرش از کارخانه کاشان", t)
+        self.assertIn('"FAQPage"', t)
+        self.assertIn("ایران کارپت خود کارخانه است یا واسطه؟", t)

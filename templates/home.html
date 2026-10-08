@@ -5,7 +5,7 @@
 <section class="hero">
   <div class="container hero__grid">
     <div>
-      <h1><span class="w">فرش</span> <span class="w">خانه‌ات</span> <span class="w">را</span> <span class="w">گره‌به‌گره</span> <span class="w">انتخاب</span> <span class="w">کن</span></h1>
+      <h1><small class="hero__kicker">خرید مستقیم فرش از کارخانه کاشان</small> <span class="w">فرش</span> <span class="w">خانه‌ات</span> <span class="w">را</span> <span class="w">گره‌به‌گره</span> <span class="w">انتخاب</span> <span class="w">کن</span></h1>
       <p class="hero__lead">بیش از چهار هزار و هشتصد نقشهٔ فرش ماشینی، مستقیم از کارخانه‌های کاشان. قیمت هر سایز را همین‌جا می‌بینی و درِ خانه تحویل می‌گیری.</p>
       <div class="hero__cta">
         <a href="/store/" class="btn-ic btn-ic--pink">دیدن همهٔ فرش‌ها</a>
@@ -117,6 +117,39 @@
       {% for g in groups %}<a href="{{ g.term.get_absolute_url }}" class="btn-ic btn-ic--teal" data-more="{{ g.term.slug }}" hidden>همهٔ فرش‌های {{ g.term.name|fa_num }} شانه</a>{% endfor %}
     </div>
   </div>
+</section>
+{% endif %}
+
+{% if direct %}
+<section class="sec direct" aria-labelledby="directTitle">
+  <div class="container direct__grid">
+    <div class="direct__text">
+      <h2 class="sec-title" id="directTitle">خرید مستقیم فرش از کارخانه کاشان</h2>
+      <p class="sec-lead">{% if direct.count %}{{ direct.count|toman }} فرش ماشینی{% else %}فرش‌های ماشینی{% endif %} از کارخانه‌های کاشان، بی‌واسطهٔ عمده‌فروش و مغازه. قیمت هر سایز روی صفحهٔ همان فرش ثبت است و با تغییر قیمت کارخانه همین‌جا عوض می‌شود.</p>
+      <ol class="direct__steps">
+        <li><strong>نقشه و سایز را انتخاب کنید</strong><span>قیمت هر سایز جداست؛ اگر مطمئن نیستید، <a href="#room">سایز مناسب اتاق</a> را ببینید.</span></li>
+        <li><strong>نقدی یا قسطی بپردازید</strong><span>پرداخت آنلاین{% if direct.plans %}، یا {% if direct.inst_url %}<a href="{{ direct.inst_url }}">خرید قسطی</a>{% else %}خرید قسطی{% endif %} با {{ direct.plans|join:" یا " }}{% endif %}.</span></li>
+        <li><strong>از کاشان ارسال می‌شود</strong><span>بسته‌بندی‌شده به همهٔ شهرها{% if direct.free_min %}؛ بالای {{ direct.free_min|toman }} تومان با پرداخت کامل، رایگان{% endif %}.</span></li>
+        <li><strong>تحویل با ضمانت</strong><span>فرش با <a href="/guarantee/">ضمانت‌نامهٔ ۵ ساله</a> به دستتان می‌رسد.</span></li>
+      </ol>
+    </div>
+    {% if direct.rows %}
+    <aside class="direct__prices" aria-labelledby="directPrices">
+      <h3 id="directPrices">قیمت امروز فرش ۱۲ متری</h3>
+      {% if direct.updated %}<p class="direct__stamp">آخرین تغییر قیمت کارخانه: <time datetime="{{ direct.updated|date:'c' }}">{{ direct.updated|jdate:"%d %B" }}</time></p>{% endif %}
+      <ul>{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
+      <a class="btn-ic btn-ic--ink btn-ic--sm" href="/carpets-price-list/">لیست قیمت همهٔ سایزها</a>
+    </aside>
+    {% endif %}
+  </div>
+  {% if direct.faq %}
+  <div class="container">
+    <div class="faq direct__faq">
+      <h2>پرسش‌های خرید فرش از کارخانه</h2>
+      {% for q, a in direct.faq %}<details><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </section>
 {% endif %}
 

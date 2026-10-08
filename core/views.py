@@ -110,11 +110,22 @@ def home(request):
                                 "availableLanguage": "Persian"} for p in phones]
     store = site.local_business()
     from .about import home_about
+    from . import direct as _direct
+
+    try:
+        direct = _direct.data()
+    except Exception:  # noqa: BLE001  — این بخش نباید صفحهٔ اول را از کار بیندازد
+        import logging
+
+        logging.getLogger(__name__).exception("home direct")
+        direct = None
+    graph = [org] + ([store] if store else []) + ([_direct.faq_jsonld(direct)] if direct and direct.get("faq") else [])
 
     return render(request, "home.html", {
         "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page),
         "offers": __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:8], "posts": posts, "categories": cats,
-        "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
+        "room": room, "jsonld": json.dumps(graph if len(graph) > 1 else org, ensure_ascii=False), **data,
+        "direct": direct,
         "aff": _aff_home(), "mk": _market_home(),
     })
 
