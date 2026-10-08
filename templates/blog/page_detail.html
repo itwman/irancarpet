@@ -2,6 +2,7 @@
 {% block content %}
 <div class="container container--narrow">
   {% include "partials/breadcrumbs.html" %}
-  <article class="article"><header><h1>{{ page.title }}</h1></header><div class="prose">{{ page.content|safe }}</div></article>
+  <article class="article"><header><h1>{{ page.title }}</h1></header><div class="prose{% if live %} prose--live{% endif %}">{{ content|safe }}</div></article>
 </div>
 {% endblock %}
+{% block scripts %}{% if live %}{% load static %}<script src="{% static 'js/installments.js' %}?v={{ ASSET_V }}" defer></script><script src="{% static 'js/live-blocks.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}

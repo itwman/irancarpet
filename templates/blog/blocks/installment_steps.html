@@ -1,0 +1,7 @@
+{% load fa %}<ol class="lb-steps">
+  <li><b>فرش را انتخاب کنید</b><span>از <a href="/carpets-price-list/">لیست قیمت</a> یا <a href="/store/">فروشگاه</a>؛ سایز را بزنید و به سبد خرید اضافه کنید.</span></li>
+  <li><b>«خرید اقساطی» را بزنید</b><span>در صفحهٔ تسویه حساب، روش اقساط، پیش‌پرداخت و مدت را انتخاب کنید؛ جدول قسط‌ها همان‌جا دیده می‌شود.</span></li>
+  <li><b>مدارک را آنلاین بفرستید</b><span>{% for p in plans %}{% if p.kind == "cheque" %}برای چک صیادی، تصویر یک برگ چک{% elif p.kind == "beta" %}برای بازنشستگان، مشخصات بازنشستگی و کد ملی{% else %}{{ p.title }}{% endif %}{% if not forloop.last %}؛ {% endif %}{% endfor %}. نیازی به تماس یا مراجعه نیست.</span></li>
+  <li><b>تأیید با پیامک</b><span>نتیجهٔ بررسی را پیامک می‌کنیم و در «سفارش‌های من» هم می‌بینید؛ بعد از تأیید فرش آماده و ارسال می‌شود.</span></li>
+</ol>
+<div class="lb-cta"><a class="btn-ic btn-ic--pink" href="/carpets-price-list/">شروع خرید اقساطی</a>{% if inst_url %}<a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ inst_url }}">جزئیات روش‌های اقساط</a>{% endif %}</div>

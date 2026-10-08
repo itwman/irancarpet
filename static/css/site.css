@@ -1158,3 +1158,37 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .home-sell li::before{content:"";display:inline-block;width:7px;height:7px;background:var(--pink);transform:rotate(45deg);margin-inline-end:.45rem;vertical-align:middle}
 .home-sell__btns{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:auto}
 @media (max-width:991px){.home-partners{grid-template-columns:1fr}}
+
+/* --- بخش‌های زندهٔ مقاله (لیست قیمت اقساطی، ماشین‌حساب، شرایط) --- */
+.prose--live .live-block{margin:1.25rem 0 2rem}
+.lb-quick{background:var(--teal-t);border-radius:var(--r-lg);padding:1.1rem 1.4rem;margin:1.25rem 0}
+.lb-quick p{margin:0 0 .4rem}.lb-quick ul{margin:0}
+.lb-calc__lead{color:var(--ink-2);margin:0 0 1rem}
+.lb-cta{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
+.lb-cta a{text-decoration:none}
+.lb-prices__head{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem}
+.lb-tabs{display:flex;gap:.35rem;flex-wrap:wrap}
+.lb-tabs button{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;padding:.35rem 1rem;font:inherit;font-weight:700;cursor:pointer}
+.lb-tabs button[aria-selected=true]{background:var(--ink);color:#fff}
+.lb-table{width:100%;border-collapse:collapse;font-size:.95rem;min-width:520px}
+.prose .lb-table th,.prose .lb-table td{padding:.7rem .6rem;border-bottom:1px solid var(--line);text-align:start;vertical-align:top;border-inline:0}
+.lb-table thead th{background:var(--soft);font-size:.82rem;color:var(--ink-2)}
+.lb-table tbody th a{font-weight:800;color:var(--ink);text-decoration:none}
+.lb-table tbody th a:hover{color:var(--pink-d)}
+.lb-plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1rem 0}
+.lb-plan{border-radius:var(--r-lg);padding:1.2rem 1.3rem;background:#fff;box-shadow:0 0 0 1px var(--line);border-top:5px solid var(--teal)}
+.lb-plan--cheque{border-top-color:var(--pink)}
+.prose .lb-plan h3{margin:0 0 .35rem;font-size:1.15rem}
+.lb-plan__sum{color:var(--ink-2);margin:0 0 .6rem}
+.lb-plan dl{margin:0;display:grid;gap:.15rem}
+.lb-plan dl div{display:flex;justify-content:space-between;gap:1rem;padding:.35rem 0;border-bottom:1px dashed var(--line)}
+.lb-plan dt{color:var(--muted);font-weight:500}.lb-plan dd{margin:0;font-weight:700;text-align:end}
+.lb-plan__docs{margin:.7rem 0 0;font-size:.92rem}
+.lb-plan__desc{font-size:.92rem;color:var(--ink-2);margin-top:.5rem}
+.lb-steps{list-style:none;padding:0;margin:1rem 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem;counter-reset:s}
+.lb-steps li{counter-increment:s;background:var(--soft);border-radius:var(--r-lg);padding:1rem;display:flex;flex-direction:column;gap:.3rem;margin:0}
+.lb-steps li::before{content:counter(s,persian);font-weight:900;color:var(--pink);font-size:1.3rem}
+.lb-steps span{font-size:.92rem;color:var(--ink-2)}
+@media (max-width:767px){.lb-steps{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.lb-steps{grid-template-columns:1fr}}
+.prose .lb-table{display:table;margin:0}

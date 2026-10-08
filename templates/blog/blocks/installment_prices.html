@@ -1,0 +1,21 @@
+{% load fa %}<section class="lb-prices" aria-label="لیست قیمت فرش اقساطی">
+  <div class="lb-prices__head">
+    <p class="muted mb-0">کمترین قیمت روز هر گروه و کمترین قسط ماهانهٔ هر روش{% if updated %} · قیمت‌ها به‌روز در <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</p>
+    <div class="lb-tabs" role="tablist" aria-label="سایز">{% for t in tabs %}<button type="button" role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-lb-tab="{{ forloop.counter }}">{{ t.label|fa_num }}</button>{% endfor %}</div>
+  </div>
+  {% for t in tabs %}
+  <div class="table-wrap lb-tab" data-lb-panel="{{ forloop.counter }}"{% if not forloop.first %} hidden{% endif %}>
+    <table class="lb-table">
+      <caption class="sr-only">قیمت نقد و اقساط فرش {{ t.label|fa_num }}</caption>
+      <thead><tr><th>گروه فرش</th><th>نقد، از</th>{% for p in plans %}<th>{{ p.title }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for r in t.lines %}
+        <tr><th scope="row"><a href="{{ r.url }}">{{ r.name|fa_num }}</a></th>
+          <td><strong>{{ r.price|toman }}</strong></td>
+          {% for q in r.quotes %}<td>{% if q %}<strong>{{ q.installment|toman }}</strong> <small>× {{ q.count|fa_num }} {% if q.step == 2 %}قسط دوماهه{% else %}ماه{% endif %}</small><br><small class="muted">{% if q.down %}پیش‌پرداخت {{ q.down|toman }}{% else %}بدون پیش‌پرداخت{% endif %}</small>{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+        </tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  {% endfor %}
+  <p class="small muted mt-2">اعداد به تومان است؛ قسط با کمترین پیش‌پرداخت و بیشترین مدت هر روش حساب شده. برای مبلغ دقیق فرش دلخواهتان از ماشین‌حساب بالا استفاده کنید. <a href="/carpets-price-list/">لیست قیمت کامل همهٔ آلبوم‌ها و سایزها</a></p>
+</section>

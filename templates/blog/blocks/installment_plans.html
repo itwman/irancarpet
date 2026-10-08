@@ -1,0 +1,16 @@
+{% load fa %}<div class="lb-plans">{% for c in cards %}
+  <article class="lb-plan lb-plan--{{ c.p.kind }}">
+    <h3>{{ c.p.title }}</h3>
+    {% if c.p.summary %}<p class="lb-plan__sum">{{ c.p.summary|fa_num }}</p>{% endif %}
+    <dl>
+      <div><dt>پیش‌پرداخت</dt><dd>{% if c.p.min_down_percent == 0 %}دلخواه، حتی صفر{% else %}دست‌کم {{ c.p.min_down_percent|fa_num }}٪{% endif %}</dd></div>
+      <div><dt>مدت</dt><dd>{{ c.p.min_months|fa_num }} تا {{ c.p.max_months|fa_num }} ماه</dd></div>
+      <div><dt>قسط‌ها</dt><dd>{% if c.p.allow_monthly and c.p.allow_bimonthly %}ماهانه یا دوماهه{% elif c.p.allow_bimonthly %}دوماهه{% else %}ماهانه{% endif %}</dd></div>
+      <div><dt>سود</dt><dd>ماهی {{ c.p.monthly_rate|floatformat:"-2"|fa_num }}٪ با راس‌گیری</dd></div>
+      {% if c.p.min_order_amount %}<div><dt>حداقل خرید</dt><dd>{{ c.p.min_order_amount|toman }} تومان</dd></div>{% endif %}
+      {% if c.p.min_down_percent %}<div><dt>پرداخت پیش‌پرداخت</dt><dd>{{ c.pay_at }}</dd></div>{% endif %}
+    </dl>
+    {% if c.docs %}<p class="lb-plan__docs"><b>آنچه موقع سفارش وارد می‌کنید:</b> {{ c.docs|join:"، " }}</p>{% endif %}
+    {% if c.p.description %}<div class="lb-plan__desc">{{ c.p.description|safe }}</div>{% endif %}
+  </article>
+{% endfor %}</div>

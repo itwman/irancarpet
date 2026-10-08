@@ -64,18 +64,34 @@ def post_detail(request, post):
         "author": {"@type": "Organization", "name": "ایران کارپت"},
         "publisher": {"@type": "Organization", "name": "ایران کارپت"},
     }
+    from . import landing
+
+    live = landing.has_blocks(post.content)
+    content = landing.render(post.content, request) if live else post.content
+    if live:
+        upd = landing.last_price_update()
+        if upd and upd > post.modified_at:  # قیمت‌های زندهٔ صفحه به‌روز شده‌اند
+            jsonld["dateModified"] = upd.isoformat()
+        faq = landing.faq_jsonld(post.content)
+        if faq:
+            jsonld = {"@context": "https://schema.org", "@graph": [{k: v for k, v in jsonld.items() if k != "@context"}, faq]}
     return render(request, "blog/post_detail.html", {
         "meta": seo.build(post, "post"), "post": post, "crumbs": crumbs, "related": related,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
-        "jsonld": json.dumps(jsonld, ensure_ascii=False),
+        "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
+        "price_updated": landing.last_price_update() if live else None,
     })
 
 
 def page_detail(request, page):
     if page.status != "publish" and not request.user.is_staff:
         raise Http404
+    from . import landing
+
+    live = landing.has_blocks(page.content)
     return render(request, "blog/page_detail.html", {
-        "meta": seo.build(page, "page"), "page": page,
+        "meta": seo.build(page, "page"), "page": page, "live": live,
+        "content": landing.render(page.content, request) if live else page.content,
         "crumbs": [(p.title, p.get_absolute_url()) for p in _ancestors(page)] + [(page.title, page.get_absolute_url())],
     })
 
