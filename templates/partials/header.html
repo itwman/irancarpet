@@ -60,6 +60,7 @@
         {% if c.children.all %}<ul>{% for ch in c.children.all %}<li><a href="{{ ch.get_absolute_url }}">{{ ch.name|fa_num }}</a></li>{% endfor %}</ul>{% endif %}</li>{% endfor %}
       {% for c in menu_more %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a></li>{% endfor %}
       <li><a href="/blog/">مجله</a></li>
+      <li><a href="/affiliate/">همکاری در فروش</a></li>
       {% if site_settings.phone %}<li><a href="tel:{{ site_settings.phone|cut:'-' }}">تماس: {{ site_settings.phone|fa_num }}</a></li>{% endif %}
       {% if site_settings.mobile %}<li><a href="tel:{{ site_settings.mobile }}">موبایل: {{ site_settings.mobile|fa_num }}</a></li>{% endif %}
     </ul>

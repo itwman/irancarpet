@@ -191,3 +191,24 @@ class AffiliateTests(TestCase):
     def test_tiers_seeded(self):
         self.assertEqual(list(CommissionTier.objects.values_list("percent", flat=True))[:4],
                          [Decimal("1.5"), Decimal("2"), Decimal("2.5"), Decimal("3")])
+
+
+class LandingTests(TestCase):
+    def test_states_and_home_link(self):
+        r = self.client.get("/affiliate/")
+        self.assertContains(r, 'name="mobile"')
+        self.assertContains(r, "/my-account/login/?next=/my-account/affiliate/")
+        self.assertContains(r, "FAQPage")
+        self.assertContains(self.client.get("/"), 'href="/affiliate/"')
+        u = User.objects.create_user("09120001111")
+        Affiliate.objects.create(user=u, code="ali", name="علی", mobile="09120001111", status="active")
+        self.client.force_login(u)
+        r = self.client.get("/affiliate/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "ورود به پنل همکاری")
+        self.assertNotContains(r, 'name="terms"')
+
+    def test_disabled_hides(self):
+        AffiliateSettings.objects.update_or_create(pk=1, defaults={"enabled": False})
+        self.assertEqual(self.client.get("/affiliate/").status_code, 404)
+        self.assertNotContains(self.client.get("/"), "همکار فروش ایران کارپت شوید")

@@ -1,50 +1,127 @@
 {% extends "base.html" %}{% load fa static %}
 {% block content %}
-<div class="container aff">
-  <section class="aff-hero">
-    <div class="aff-hero__text">
-      <h1>فرش معرفی کنید،<br>از هر فروش پورسانت بگیرید</h1>
-      <p>پیوند فرش‌های ایران کارپت را برای دوستان، مشتری‌ها یا دنبال‌کننده‌هایتان بفرستید. هر کس تا {{ s.attribution_days|fa_num }} روز بعد از باز کردن پیوند شما خرید کند، پورسانتش به حساب شما می‌آید؛ هرچه فروش {% if s.tier_period == "month" %}ماهانهٔ{% else %}{% endif %} شما بیشتر شود، درصدتان بالاتر می‌رود.</p>
-      <div class="aff-hero__cta">
-        <a class="btn-ic btn-ic--pink" href="#join">ثبت‌نام همکاری</a>
-        <a class="btn-ic btn-ic--teal" href="#calc">پورسانتم چقدر می‌شود؟</a>
+<div class="aff">
+  <section class="aff-top" id="top">
+    <div class="container aff-hero">
+      <div class="aff-hero__text">
+        <h1>فرش معرفی کنید،<br>از هر فروش پورسانت بگیرید</h1>
+        <p>پیوند فرش‌ها را برای دوستان، مشتری‌ها یا دنبال‌کننده‌هایتان بفرستید. هر کس تا {{ s.attribution_days|fa_num }} روز بعد خرید کند، پورسانتش برای شماست؛ پرداخت، ارسال، ضمانت و پشتیبانی با ما.</p>
+        <ul class="aff-hero__facts">
+          {% if top %}<li><b>تا {{ top }}٪</b> پورسانت پله‌ای</li>{% endif %}
+          <li><b>{{ s.attribution_days|fa_num }} روز</b> ماندگاری پیوند</li>
+          <li><b>رایگان</b> و بدون سرمایه</li>
+        </ul>
+      </div>
+
+      <aside class="aff-access" aria-label="ثبت‌نام و ورود">
+        {% if a %}
+          {% if a.status == "active" %}
+            <h2>سلام {{ a.name }}</h2>
+            <p>حساب همکاری شما فعال است. پیوندها، کد تخفیف و پورسانت‌هایتان در پنل آماده است.</p>
+            <a class="btn-ic btn-ic--pink aff-access__go" href="/my-account/affiliate/">ورود به پنل همکاری</a>
+          {% elif a.status == "pending" %}
+            <h2>درخواستتان ثبت شده</h2>
+            <p>در حال بررسی است؛ بعد از تأیید پیامک می‌گیرید و پیوندهایتان در پنل آماده می‌شود.</p>
+            <a class="btn-ic btn-ic--ink aff-access__go" href="/my-account/affiliate/">دیدن وضعیت درخواست</a>
+          {% else %}
+            <h2>حساب همکاری {{ a.get_status_display }}</h2>
+            <p>برای پیگیری با ایران کارپت تماس بگیرید{% if site_settings.phone %}: <span dir="ltr">{{ site_settings.phone|fa_num }}</span>{% endif %}.</p>
+          {% endif %}
+        {% elif user.is_authenticated %}
+          <h2>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
+          <p>یک فرم کوتاه مانده: نام، شهر و جایی که فرش‌ها را معرفی می‌کنید.</p>
+          <a class="btn-ic btn-ic--pink aff-access__go" href="#join">تکمیل فرم ثبت‌نام</a>
+        {% else %}
+          <h2>شروع همکاری</h2>
+          <p>شمارهٔ موبایلتان را بنویسید؛ کد ورود پیامک می‌شود و بعد فرم ثبت‌نام باز می‌شود.</p>
+          <form method="post" action="/my-account/login/" novalidate>{% csrf_token %}
+            <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/affiliate/#join">
+            <label class="auth2__label" for="affMobile">شمارهٔ موبایل</label>
+            <input id="affMobile" name="mobile" class="auth2__big" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required>
+            <button class="btn-ic btn-ic--pink aff-access__go" type="submit">دریافت کد و ثبت‌نام</button>
+          </form>
+          <p class="aff-access__alt">همکار هستید؟ <a href="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
+        {% endif %}
+      </aside>
+    </div>
+  </section>
+
+  <section class="container aff-tier" aria-labelledby="tierH">
+    <div class="aff-tier__head">
+      <h2 id="tierH">هرچه بیشتر بفروشید، درصدتان بالاتر</h2>
+      <p class="muted">پورسانت بر اساس جمع فروش {% if s.tier_period == "month" %}هر ماه شمسی{% else %}شما از ابتدای همکاری{% endif %}؛ با رسیدن به پلهٔ بالاتر، درصد همهٔ سفارش‌های تسویه‌نشدهٔ همان دوره هم بالا می‌رود.</p>
+    </div>
+    <div class="aff-tier__body">
+      <figure class="aff-stairs" aria-label="پله‌های پورسانت">
+        {% for t in tiers %}
+        <div class="aff-step" style="--h:{{ t.height }}%">
+          <strong>{{ t.pct }}٪</strong>
+          <span>{% if t.max %}{% if forloop.first %}تا {{ t.max_label }}{% else %}{{ t.min_label }} تا {{ t.max_label }}{% endif %}{% else %}بالای {{ t.min_label }}{% endif %}</span>
+        </div>
+        {% endfor %}
+        <figcaption>فروش به تومان</figcaption>
+      </figure>
+      <div class="aff-calc card-ic" id="calc">
+        <h3>پورسانت خودتان را حساب کنید</h3>
+        <label for="calcIn">اگر {% if s.tier_period == "month" %}در یک ماه{% else %}در کل{% endif %} <output id="calcSales">۲۰۰ میلیون</output> تومان فرش با پیوند شما فروخته شود:</label>
+        <input id="calcIn" type="range" min="10000000" max="3000000000" step="10000000" value="200000000">
+        <p class="aff-calc__out"><strong id="calcOut">—</strong> تومان پورسانت <small class="muted" id="calcRate"></small></p>
+        {{ calc|json_script:"calcData" }}
       </div>
     </div>
-    <figure class="aff-stairs" aria-label="پله‌های پورسانت">
-      {% for t in tiers %}
-      <div class="aff-step" style="--h:{{ t.height }}%">
-        <strong>{{ t.pct }}٪</strong>
-        <span>{% if t.max %}{% if forloop.first %}تا {{ t.max_label }}{% else %}{{ t.min_label }} تا {{ t.max_label }}{% endif %}{% else %}بالای {{ t.min_label }}{% endif %}</span>
-      </div>
-      {% endfor %}
-      <figcaption>پورسانت بر اساس جمع فروش {% if s.tier_period == "month" %}هر ماه{% else %}از ابتدای همکاری{% endif %} (تومان)</figcaption>
-    </figure>
   </section>
 
-  <section class="aff-how" aria-labelledby="how">
-    <h2 id="how">چطور کار می‌کند</h2>
+  <section class="aff-band" aria-labelledby="whyH">
+    <div class="container">
+      <h2 id="whyH">چرا فرش ایران کارپت راحت فروخته می‌شود</h2>
+      <ul class="aff-facts">{% for t, d in facts %}<li><b>{{ t|fa_num }}</b><span>{{ d|fa_num }}</span></li>{% endfor %}</ul>
+    </div>
+  </section>
+
+  <section class="container aff-who" aria-labelledby="whoH">
+    <h2 id="whoH">مناسب چه کسانی است</h2>
+    <ul class="aff-who__list">
+      <li>صفحه‌های اینستاگرام خانه و دکوراسیون</li><li>طراحان داخلی و معماران</li><li>فروشگاه‌های جهیزیه و لوازم خانگی</li>
+      <li>مشاوران املاک و سازنده‌ها</li><li>کانال‌های تلگرام، ایتا و بله</li><li>هر کسی که دوست و آشنا دارد</li>
+    </ul>
+  </section>
+
+  <section class="container aff-how" aria-labelledby="how">
+    <h2 id="how">سه قدم تا اولین پورسانت</h2>
     <ol>
-      <li><strong>ثبت‌نام کنید</strong><span>با شمارهٔ موبایلتان وارد شوید و فرم پایین را پر کنید. بعد از تأیید، پنل همکاری‌تان باز می‌شود.</span></li>
-      <li><strong>پیوند یا کدتان را بفرستید</strong><span>پیوند کوتاه هر فرش (مثل <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/نام‌شما</span>) را در واتس‌اپ، تلگرام یا بیو اینستاگرام بگذارید.{% if s.coupon_enabled %} برای پست و استوری اینستاگرام هم یک کد تخفیف اختصاصی می‌گیرید که مشتری با آن {{ s.coupon_percent|fa_num }}٪ تخفیف می‌گیرد.{% endif %}</span></li>
-      <li><strong>پورسانت بگیرید</strong><span>بعد از تحویل فرش به مشتری، پورسانت قابل تسویه می‌شود و به شماره شبای خودتان واریز می‌شود.</span></li>
+      <li><strong>ثبت‌نام کنید</strong><span>با موبایل وارد شوید و فرم کوتاه را پر کنید. بعد از تأیید، پیامک می‌گیرید و پنل همکاری‌تان باز می‌شود.</span></li>
+      <li><strong>پیوند یا کدتان را بفرستید</strong><span>پیوند کوتاه هر فرش (مثل <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/نام‌شما</span>) را در واتس‌اپ، تلگرام یا بیو اینستاگرام بگذارید{% if s.coupon_enabled %}؛ برای پست و استوری، کد تخفیف اختصاصی‌تان را بنویسید{% endif %}.</span></li>
+      <li><strong>پورسانت بگیرید</strong><span>بعد از تحویل فرش، پورسانت قابل تسویه می‌شود و از {{ s.min_payout|toman }} تومان به بالا به شبای خودتان واریز می‌شود.</span></li>
     </ol>
+    <div class="aff-tools">
+      <h3>در پنل همکاری چه دارید</h3>
+      <ul>
+        <li>پیوند کوتاه و خوش‌ظاهر برای هر فرش و هر صفحه، با پیش‌نمایش عکس در تلگرام و واتس‌اپ</li>
+        {% if s.coupon_enabled %}<li>کد تخفیف اختصاصی برای مشتری‌های شما ({{ s.coupon_percent|fa_num }}٪)</li>{% endif %}
+        <li>متن آمادهٔ معرفی هر فرش با قیمت روز، برای کپی یا فرستادن در واتس‌اپ</li>
+        <li>آمار بازدید، سفارش‌ها و پورسانت هر خرید، و فاصلهٔ شما تا پلهٔ بعد</li>
+        <li>پیامک برای تحویل هر سفارش و هر واریز</li>
+      </ul>
+    </div>
   </section>
 
-  <section class="aff-calc card-ic" id="calc" aria-labelledby="calcH">
-    <h2 id="calcH">پورسانت خودتان را حساب کنید</h2>
-    <label for="calcIn">فروش {% if s.tier_period == "month" %}در یک ماه{% else %}کل{% endif %}: <output id="calcSales">۲۰۰ میلیون</output> تومان</label>
-    <input id="calcIn" type="range" min="10000000" max="3000000000" step="10000000" value="200000000">
-    <p class="aff-calc__out">پورسانت شما: <strong id="calcOut">—</strong> تومان <small class="muted" id="calcRate"></small></p>
-    {{ calc|json_script:"calcData" }}
-  </section>
-
-  <section class="aff-join" id="join" aria-labelledby="joinH">
+  <section class="container aff-join" id="join" aria-labelledby="joinH">
     <div class="card-ic">
-      <h2 id="joinH">ثبت‌نام همکاری در فروش</h2>
-      {% if not user.is_authenticated %}
-        <p>برای ثبت‌نام اول با شمارهٔ موبایلتان وارد شوید؛ کد ورود پیامک می‌شود.</p>
-        <a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/login/?next=/affiliate/%23join">ورود و ادامهٔ ثبت‌نام</a>
+      {% if a %}
+        <h2 id="joinH">حساب همکاری شما</h2>
+        <p>وضعیت: <b>{{ a.get_status_display }}</b> · کد پیوند <span dir="ltr">{{ a.code }}</span></p>
+        <a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/affiliate/">ورود به پنل همکاری</a>
+      {% elif not user.is_authenticated %}
+        <h2 id="joinH">ثبت‌نام همکاری در فروش</h2>
+        <p>اول با شمارهٔ موبایلتان وارد شوید؛ بعد از واردکردن کد پیامکی، فرم ثبت‌نام همین‌جا باز می‌شود.</p>
+        <form class="aff-inline-login" method="post" action="/my-account/login/" novalidate>{% csrf_token %}
+          <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/affiliate/#join">
+          <input name="mobile" inputmode="tel" autocomplete="tel" placeholder="شمارهٔ موبایل" dir="ltr" required aria-label="شمارهٔ موبایل">
+          <button class="btn-ic btn-ic--pink btn-ic--sm" type="submit">دریافت کد ورود</button>
+        </form>
+        <p class="aff-access__alt mb-0">قبلاً ثبت‌نام کرده‌اید؟ <a href="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
       {% else %}
+      <h2 id="joinH">ثبت‌نام همکاری در فروش</h2>
       <form method="post" novalidate>{% csrf_token %}
         <div class="grid-2">
           <div class="field{% if errors.name %} has-err{% endif %}"><label for="an">نام و نام خانوادگی</label>
@@ -63,7 +140,7 @@
             {% if errors.sheba %}<span class="err">{{ errors.sheba }}</span>{% endif %}</div>
         </div>
         <div class="field{% if errors.terms %} has-err{% endif %}">
-          <label class="aff-check"><input type="checkbox" name="terms" value="1"{% if data and not errors.terms %} checked{% endif %}> قوانین همکاری (پایین صفحه) را خواندم و می‌پذیرم.</label>
+          <label class="aff-check"><input type="checkbox" name="terms" value="1"{% if data and not errors.terms %} checked{% endif %}> <span>قوانین همکاری (کنار این فرم) را خواندم و می‌پذیرم.</span></label>
           {% if errors.terms %}<span class="err">{{ errors.terms }}</span>{% endif %}
         </div>
         <button class="btn-ic btn-ic--pink" type="submit">ثبت درخواست همکاری</button>
@@ -75,6 +152,20 @@
       <ul>{% for t in terms %}<li>{{ t|fa_num }}</li>{% endfor %}</ul>
     </div>
   </section>
+
+  <section class="container container--narrow faq aff-faq" aria-labelledby="faqH">
+    <h2 id="faqH">پرسش‌های رایج</h2>
+    {% for q, ans in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ ans }}</p></details>{% endfor %}
+  </section>
+
+  {% if not a %}
+  <section class="container pb-5">
+    <div class="cta aff-cta">
+      <div><h2>اولین پیوندتان را امروز بفرستید</h2><p>ثبت‌نام چند دقیقه طول می‌کشد و هزینه‌ای ندارد.</p></div>
+      <a class="btn-ic btn-ic--ink" href="{% if user.is_authenticated %}#join{% else %}#top{% endif %}" data-focus="{% if not user.is_authenticated %}affMobile{% endif %}">شروع همکاری</a>
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/affiliate.js' %}" defer></script>{% endblock %}

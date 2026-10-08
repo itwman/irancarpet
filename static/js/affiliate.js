@@ -23,6 +23,13 @@
     if (b && b.getAttribute("data-copy")) { e.preventDefault(); copy(b.getAttribute("data-copy"), b); }
   });
 
+  // دکمهٔ «شروع همکاری» پایین صفحه: رفتن به فرم موبایل بالای صفحه
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-focus]"), id = b && b.getAttribute("data-focus");
+    var el = id && document.getElementById(id);
+    if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(function () { el.focus({ preventScroll: true }); }, 400); }
+  });
+
   // ماشین‌حساب صفحهٔ معرفی
   var data = document.getElementById("calcData"), inp = document.getElementById("calcIn");
   if (data && inp) {

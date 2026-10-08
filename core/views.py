@@ -115,7 +115,20 @@ def home(request):
         "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page),
         "offers": __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:8], "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
+        "aff": _aff_home(),
     })
+
+
+def _aff_home():
+    """بخش «همکار فروش شوید» صفحهٔ اول (اگر همکاری در فروش روشن است)."""
+    try:
+        from affiliate.models import AffiliateSettings
+        from affiliate.views import top_percent
+
+        s = AffiliateSettings.load()
+        return {"top": top_percent(), "days": s.attribution_days} if s.enabled else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def resolve(request, path):

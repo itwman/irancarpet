@@ -95,7 +95,7 @@ def landing(request):
     if not s.enabled:
         raise Http404
     a = getattr(request.user, "affiliate", None) if request.user.is_authenticated else None
-    if a is not None:
+    if a is not None and request.method == "POST":
         return redirect("/my-account/affiliate/")
     errors, data = {}, {}
     if request.method == "POST":
@@ -137,7 +137,68 @@ def landing(request):
                  "با معرفی فرش‌های ایران کارپت به دوستان و مخاطبانتان، از هر خرید پورسانت پله‌ای بگیرید."},
         "s": s, "tiers": _tiers_view(s), "terms": s.terms_list(), "errors": errors, "data": data,
         "calc": {"tiers": [[int(mn), float(p)] for mn, p, _ in C.tiers()], "mode": s.tier_mode},
+        "a": a, "top": top_percent(), "faq": faq(s), "facts": _facts(),
+        "jsonld": _faq_jsonld(faq(s)),
     })
+
+
+def top_percent():
+    rows = C.tiers()
+    return _pct(max((p for _, p, _ in rows), default=0)) if rows else ""
+
+
+def _facts():
+    """دلیل‌هایی که بازاریاب با آن‌ها فرش ایران کارپت را راحت‌تر می‌فروشد (از تنظیمات خود سایت)."""
+    out = [("مستقیم از کاشان", "فرش ماشینی ۷۰۰ تا ۱۵۰۰ شانه، بی‌واسطه و با قیمت روشن برای هر سایز.")]
+    try:
+        from installments.models import InstallmentPlan
+
+        if InstallmentPlan.objects.filter(is_active=True).exists():
+            out.append(("خرید اقساطی", "مشتری‌ای که نقد نمی‌تواند بخرد، اقساطی می‌خرد؛ پورسانت شما روی قیمت فرش است."))
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from content.models import ContentSettings
+
+        w = ContentSettings.load().warranty
+        if w:
+            out.append((w, "ضمانت کتبی؛ خیال مشتری‌ای که به شما اعتماد کرده راحت است."))
+    except Exception:  # noqa: BLE001
+        pass
+    out.append(("ارسال به سراسر ایران", "سفارش از هر شهری ثبت می‌شود؛ مخاطبان شما لازم نیست کاشانی باشند."))
+    return out
+
+
+def faq(s):
+    from core.templatetags.fa import fa_num, toman
+
+    days = fa_num(s.attribution_days)
+    items = [
+        ("برای همکاری باید فروشنده یا مغازه‌دار باشم؟",
+         "نه. هر کسی که مخاطب دارد می‌تواند همکار شود: صفحهٔ اینستاگرام، کانال تلگرام، طراح داخلی، فروشگاه جهیزیه یا حتی معرفی به دوستان و فامیل. هزینه‌ای هم ندارد."),
+        ("اگر مشتری همان روز خرید نکند چه؟",
+         f"تا {days} روز بعد از باز کردن پیوند شما، هر خریدی که از سایت کند به نام شما ثبت می‌شود؛ حتی اگر چند روز بعد و از گوشی دیگری خرید کند، به شرط اینکه یک بار با همان شماره وارد سایت شده باشد."),
+        ("پورسانت کی واریز می‌شود؟",
+         f"بعد از تحویل فرش به مشتری، پورسانت «قابل تسویه» می‌شود. وقتی جمعش به {toman(s.min_payout)} تومان رسید، به شماره شبای خودتان واریز و پیامکش برایتان فرستاده می‌شود."),
+        ("درصد پورسانت چطور بالا می‌رود؟",
+         ("هرچه جمع فروش " + ("همان ماه" if s.tier_period == "month" else "شما از ابتدای همکاری") +
+          " بیشتر شود، به پلهٔ بالاتر می‌رسید و درصد همهٔ پورسانت‌های تسویه‌نشدهٔ آن دوره هم خودکار بالا می‌رود.")),
+        ("در اینستاگرام که پیوند پست کلیک نمی‌شود، چه کنم؟",
+         (f"پیوند کوتاه عمومی را در بیو بگذارید و در پست و استوری کد تخفیف اختصاصی‌تان را بنویسید؛ مشتری با کد شما {fa_num(s.coupon_percent)}٪ تخفیف می‌گیرد و خریدش به نام شما ثبت می‌شود."
+          if s.coupon_enabled else "پیوند کوتاه عمومی را در بیو بگذارید و در استوری از برچسب «لینک» استفاده کنید.")),
+        ("قیمت را خودم تعیین می‌کنم؟",
+         "نه؛ مشتری با همان قیمت سایت می‌خرد و پرداخت، ارسال، ضمانت و پشتیبانی با ایران کارپت است. شما فقط معرفی می‌کنید."),
+        ("از کجا بفهمم چه کسی با پیوند من خرید کرده؟",
+         "در پنل همکاری، تعداد بازدید، سفارش‌ها، مبلغ هر خرید و پورسانتش را می‌بینید. نام و نشانی مشتری‌ها برای حفظ حریم خصوصی نمایش داده نمی‌شود."),
+    ]
+    return items
+
+
+def _faq_jsonld(items):
+    import json
+
+    return json.dumps({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+        {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in items]}, ensure_ascii=False)
 
 
 def _affiliate_or_redirect(request):
