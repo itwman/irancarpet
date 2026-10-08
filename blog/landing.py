@@ -11,6 +11,8 @@
   [size_prices 6-meter]       کمترین و بیشترین قیمت روز یک سایز در هر شانه (با پیوند)
   [size_prices 6-meter 700]   قیمت روز همان سایز در تک‌تک لیست‌های قیمت یک شانه
   [size_faq 6-meter 700]      پرسش‌های رایج قیمت آن سایز (و شانه) با پاسخ زنده (+ FAQPage)
+  [shipping_info گرگان]       شیوه‌های پرداخت و ارسال امروز (سقف ارسال رایگان، بیعانه، اقساط) برای یک شهر
+  [city_faq گرگان]            پرسش‌های رایج خرید فرش از آن شهر با پاسخ زنده (+ FAQPage)
 
 متن ثابت مقاله (برای گوگل) دست‌نخورده می‌ماند؛ فقط عددها و جدول‌ها هر روز از قیمت و تنظیمات واقعی ساخته می‌شوند.
 """
@@ -30,9 +32,12 @@ SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
+CITY_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(shipping_info|city_faq)(?:\s+([^\]\[<>]{1,40}))?\](?:\s*</p>)?")
+
+
 def has_blocks(content):
     c = content or ""
-    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c))
+    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c) or CITY_RE.search(c))
 
 
 def last_price_update():
@@ -301,6 +306,67 @@ def block_size_faq(request, size_slug, reeds=None):
     return render_to_string("blog/blocks/faq.html", {"items": items}, request=request) if items else ""
 
 
+def _shop():
+    from shop.models import ShopSettings
+
+    return ShopSettings.load()
+
+
+def shipping_lines(city=""):
+    sh = _shop()
+    where = f"به {city}" if city else "به سراسر ایران"
+    out = []
+    if sh.allow_full:
+        out.append(("پرداخت کامل آنلاین",
+                    f"سفارش‌های بالای {toman(sh.free_shipping_min)} تومان ارسال رایگان {where} دارند؛ کمتر از آن، هزینهٔ حمل موقع تحویل پرداخت می‌شود."
+                    if sh.free_shipping_min else f"ارسال {where}."))
+    if sh.allow_deposit:
+        out.append(("پرداخت بیعانه",
+                    f"{fa_num(sh.deposit_percent)}٪ مبلغ هنگام سفارش و بقیه موقع تحویل؛ هزینهٔ حمل با خریدار است (پس‌کرایه)."))
+    plans = _plans()
+    if plans:
+        out.append(("خرید اقساطی", " یا ".join(p.title for p in plans) + "؛ هزینهٔ حمل موقع تحویل پرداخت می‌شود."))
+    return out
+
+
+def block_shipping(request, city=""):
+    return render_to_string("blog/blocks/shipping_info.html", {"lines": shipping_lines(city), "city": city}, request=request)
+
+
+def city_faq_items(city):
+    city = (city or "").strip()
+    if not city:
+        return []
+    out = []
+    d = size_prices("12-meter")
+    if d and d["lines"]:
+        lo = min(d["lines"], key=lambda r: r["min"])
+        hi = max(d["lines"], key=lambda r: r["max"])
+        out.append((f"قیمت فرش ماشینی در {city} چقدر است؟",
+                    f"قیمت فرش برای خریداران {city} همان قیمت سایت است: فرش ۱۲ متری امروز از {toman(lo['min'])} تومان "
+                    f"({fa_num(lo['title'])}) تا {toman(hi['max'])} تومان ({fa_num(hi['title'])}). قیمت هر سایز روی صفحهٔ همان فرش آمده است."))
+    sh = _shop()
+    out.append((f"ارسال فرش به {city} چطور است؟",
+                f"فرش از کاشان بسته‌بندی و به {city} فرستاده می‌شود."
+                + (f" سفارش‌های بالای {toman(sh.free_shipping_min)} تومان با پرداخت کامل آنلاین ارسال رایگان دارند؛ بقیه پس‌کرایه است."
+                   if sh.free_shipping_min else "")))
+    out.append((f"ایران کارپت در {city} نمایندگی دارد؟",
+                "نه؛ ایران کارپت شعبه و نمایندگی در شهرها ندارد. سفارش آنلاین ثبت می‌شود و فرش مستقیم از کاشان به نشانی شما می‌رسد."))
+    plans = _plans()
+    if plans:
+        out.append((f"در {city} می‌توانم فرش را قسطی بخرم؟",
+                    "بله، از هر شهری با " + " یا ".join(p.title for p in plans) + " می‌توانید قسطی بخرید؛ مدارک را آنلاین می‌فرستید."))
+    out.append(("چطور فرش مناسب را انتخاب کنم؟",
+                "اول سایز را از روی اندازهٔ اتاق انتخاب کنید (صفحهٔ محاسبهٔ سایز فرش)، بعد شانه و رنگ زمینه را. "
+                "اگر بین چند نقشه مانده‌اید، فرش‌یاب با چند سؤال ساده فرش‌های مناسب را پیشنهاد می‌دهد."))
+    return out
+
+
+def block_city_faq(request, city=""):
+    items = city_faq_items(city)
+    return render_to_string("blog/blocks/faq.html", {"items": items}, request=request) if items else ""
+
+
 BLOCKS = {"installment_calc": block_calc, "installment_prices": block_prices, "installment_plans": block_plans,
           "installment_steps": block_steps, "installment_faq": block_faq}
 
@@ -335,13 +401,32 @@ def render(content, request):
             html = ""
         return '<div class="live-block">' + html + "</div>" if html else ""
 
-    return SIZE_RE.sub(size_block, content)
+    content = SIZE_RE.sub(size_block, content)
+
+    def city_block(m):
+        try:
+            fn = block_shipping if m.group(1) == "shipping_info" else block_city_faq
+            html = fn(request, (m.group(2) or "").strip())
+        except Exception:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).exception("city block %s", m.group(0))
+            html = ""
+        return '<div class="live-block">' + html + "</div>" if html else ""
+
+    return CITY_RE.sub(city_block, content)
 
 
 def faq_jsonld(content):
     items = []
     if "[installment_faq]" in (content or ""):
         items += faq_items()
+    for m in CITY_RE.finditer(content or ""):
+        if m.group(1) == "city_faq":
+            try:
+                items += city_faq_items(m.group(2))
+            except Exception:  # noqa: BLE001
+                pass
     for m in SIZE_RE.finditer(content or ""):
         if m.group(1) == "size_faq":
             try:

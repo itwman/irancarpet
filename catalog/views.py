@@ -188,7 +188,7 @@ def search(request, page=1):
     qs, exact = text_search(Product.objects.all(), q) if q else (Product.objects.none(), True)
     intro = "" if exact or not q else "<p>فرشی با همهٔ این کلمه‌ها پیدا نشد؛ نزدیک‌ترین نتیجه‌ها:</p>"
     resp = product_listing(
-        request, qs, page=request.GET.get("p", 1), path="/search/", meta={"kind": "home"},
+        request, qs, page=request.GET.get("p", 1), path="/search/", meta={"kind": "search", "extra": {"q": q}},
         heading=f"نتیجهٔ جستجو برای «{q}»" if q else "جستجو", crumbs=[("جستجو", "/search/")], intro=intro, relevance=bool(q),
     )
     if q and not request.GET.get("p"):

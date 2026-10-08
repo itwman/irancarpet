@@ -90,8 +90,8 @@ def _token_q(t):
 def search(qs, query):
     """(queryset مرتب‌شده بر اساس نزدیکی، دقیق بود؟)"""
     toks = tokens(query)
-    if not toks:
-        return qs.none(), True
+    if not toks:  # فقط یک حرف یا نشانه: چیزی برای جستجو نیست
+        return qs.none().annotate(_rank=Value(0)), True
     whole = compact(query)
     sku = (query or "").translate(TRANS).strip()
     cond = Q()

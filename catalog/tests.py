@@ -96,3 +96,9 @@ class PersianSearchTests(TestCase):
         api = self.client.get("/api/app/v1/products/", {"q": "لاکی گلریز"}).json()
         data = api.get("data", api)
         self.assertEqual([x["id"] for x in data["results"]], [self.p.pk])
+
+
+class SearchEdgeTests(TestCase):
+    def test_one_letter_query_is_not_a_server_error(self):
+        for q in ("x", "؟", "a"):
+            self.assertEqual(self.client.get("/search/", {"q": q}).status_code, 200)

@@ -68,3 +68,42 @@ class SizePriceTests(TestCase):
         self.assertIn("FAQPage", html)
         self.assertIn("ابعاد فرش ۶ متری", html)
         self.assertRegex(html, r"<title>قیمت فرش ماشینی ۶ متری ۷۰۰ شانه [^<%]+</title>")
+
+
+class TidyAndCityTests(TestCase):
+    def test_tidy(self):
+        from blog.tidy import tidy
+
+        html = ('<h1>تیتر اضافه</h1><p>&nbsp;</p><h4>بخش</h4><p>متن [bt_cc]</p><h4></h4>'
+                '<h4>سوالات متداول</h4><h5><img src="/a.jpg"></h5><p>آخر</p>')
+        out = tidy(html, "عنوان")
+        self.assertNotIn("<h1", out)
+        self.assertNotIn("[bt_cc]", out)
+        self.assertNotIn("&nbsp;", out)
+        self.assertIn('alt="عنوان"', out)
+        self.assertIn('loading="lazy"', out)
+        self.assertIn("<h2>بخش</h2>", tidy("<h4>بخش</h4><p>متن</p>"))  # h4 ← h2 چون h2 نداشت
+
+    def test_city_post_migration_and_render(self):
+        import importlib
+        import types
+
+        mig = importlib.import_module("blog.migrations.0006_city_posts")
+        city = mig.city_of(types.SimpleNamespace(title="خرید فرش در گرگان ☀️ فروشگاه", slug="x"))
+        self.assertEqual(city, "گرگان")
+        old = ("<h2>قیمت فرش ماشینی در گرگان</h2><p>ما در ایران کارپت کلیه قیمت های فرش ها را ضمانت می کنیم که کمترین قیمت ممکن در بازار فرش گرگان باشد.</p>"
+               "<p>قیمت فرش در شهر شما با ارسال رایگان درب منزل به شرح زیر است:</p>"
+               "<h2>تحویل فرش درب منزل در گرگان</h2><p>هر تخته فرش 12 متری 160 هزار تومان</p><h2>سوالات متداول</h2>"
+               "<h2>دانستنی های جالب در مورد گرگان</h2><p>متن</p>")
+        new = mig.transform(old, city)
+        self.assertNotIn("کمترین قیمت ممکن", new)
+        self.assertNotIn("160 هزار", new)
+        self.assertIn("[size_prices 12-meter]", new)
+        self.assertIn("[shipping_info گرگان]", new)
+        self.assertIn("[city_faq گرگان]", new)
+        Post.objects.create(title="خرید فرش در گرگان", slug="gorgan", status="publish", content=new)
+        html = self.client.get("/gorgan/").content.decode()
+        self.assertNotIn("[city_faq", html)
+        self.assertIn("ایران کارپت در گرگان نمایندگی دارد؟", html)
+        self.assertIn("پرداخت کامل آنلاین", html)
+        self.assertIn("FAQPage", html)

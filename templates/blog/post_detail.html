@@ -8,7 +8,7 @@
       <h1>{{ post.title }}</h1>
       <p class="muted">{% if price_updated %}قیمت‌ها و شرایط به‌روز در <time datetime="{{ price_updated|date:'c' }}">{{ price_updated|jdate }}</time>{% else %}<time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|jdate }}</time>{% endif %}{% if post.author_name %} · {{ post.author_name }}{% endif %}</p>
     </header>
-    {% if post.image %}<img class="article__cover" src="{{ post.image.url }}" alt="{{ post.image.alt|default:post.title }}"{% if post.image.width %} width="{{ post.image.width }}" height="{{ post.image.height }}"{% endif %}>{% endif %}
+    {% if post.image %}<img class="article__cover" src="{{ post.image.url }}" alt="{{ post.image.alt|default:post.title }}"{% if post.image.width %} width="{{ post.image.width }}" height="{{ post.image.height }}"{% endif %} fetchpriority="high" decoding="async">{% endif %}
     <div class="prose{% if live %} prose--live{% endif %}">{{ content|safe }}</div>
     {% if post.tags.all %}<p class="tags">{% for t in post.tags.all %}<a href="{{ t.get_absolute_url }}">#{{ t.name }}</a>{% endfor %}</p>{% endif %}
   </article>

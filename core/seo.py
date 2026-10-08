@@ -13,7 +13,7 @@ VAR_RE = re.compile(r"%\s*([a-z_]+)%")
 def plain(html, limit=None):
     import html as _html
 
-    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|size_(?:prices|faq)[^\]]*)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
+    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|size_(?:prices|faq)[^\]]*|shipping_info[^\]]*|city_faq[^\]]*)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
     text = re.sub(r"\s+", " ", _html.unescape(text).replace("\xa0", " ")).strip()
     if limit and len(text) > limit:
         text = text[:limit].rsplit(" ", 1)[0] + "…"
@@ -80,6 +80,19 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
         canonical = settings.SITE_URL + "/"
         return dict(title=title or s.site_name, description=desc, robots="", canonical=canonical)
 
+    if kind == "search":
+        q = (extra or {}).get("q", "")
+        return dict(title=f"جستجوی «{q}» {ctx['sep']} {s.site_name}" if q else f"جستجو {ctx['sep']} {s.site_name}",
+                    description="", robots="noindex, follow", canonical=settings.SITE_URL + "/search/")
+
+    if kind == "blog":
+        sep = ctx["sep"]
+        title = f"مجلهٔ ایران کارپت؛ راهنمای خرید، شناخت و نگهداری فرش {ctx['page']} {sep} {s.site_name}"
+        desc = ("مقاله‌های ایران کارپت دربارهٔ قیمت و خرید فرش ماشینی، تفاوت شانه‌ها و جنس نخ، شست‌وشو و نگهداری، "
+                "طرح‌های فرش کاشان و خرید اقساطی.") + (f" {ctx['page']}" if page and page > 1 else "")
+        return dict(title=re.sub(r"\s+", " ", title).strip(), description=desc, robots="",
+                    canonical=settings.SITE_URL + "/blog/" + (f"page/{page}/" if page and page > 1 else ""))
+
     if kind in ("product", "post", "page"):
         ctx["title"] = obj.title
         ctx["excerpt"] = plain(getattr(obj, "excerpt", "") or getattr(obj, "short_description", "") or obj.content, 155)
@@ -96,6 +109,13 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
     title = render(obj.seo_title, ctx) if obj is not None and obj.seo_title else render(tpl.get(f"{key}_title"), ctx)
     if not title:
         title = render(f"%{'title' if 'title' in ctx else 'term'}% %page% %sep% %sitename%", ctx)
+    if re.match(r"^بایگانی", title):  # عنوان پیش‌فرض بایگانی وردپرس («بایگانی‌های …»، «بایگانی»)
+        if ctx.get("term"):
+            title = render("%term% | قیمت و خرید آنلاین %page% %sep% %sitename%", ctx)
+        elif path == "/store/":
+            title = render("فروشگاه فرش ماشینی کاشان؛ خرید آنلاین با قیمت هر سایز %page% %sep% %sitename%", ctx)
+    if page and page > 1 and ctx["page"] not in title:
+        title = f"{title} {ctx['sep']} {ctx['page']}"
     desc = ""
     from .autodesc import manual_ok
 

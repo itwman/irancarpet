@@ -29,7 +29,7 @@ def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
 
 
 def blog_index(request, page=1):
-    return _paged(request, Post.objects.published(), page, "/blog/", {"kind": "home"}, "مجله ایران کارپت",
+    return _paged(request, Post.objects.published(), page, "/blog/", {"kind": "blog"}, "مجله ایران کارپت",
                   crumbs=[("مجله", "/blog/")])
 
 
@@ -65,9 +65,11 @@ def post_detail(request, post):
         "publisher": {"@type": "Organization", "name": "ایران کارپت"},
     }
     from . import landing
+    from .tidy import tidy
 
     live = landing.has_blocks(post.content)
-    content = landing.render(post.content, request) if live else post.content
+    content = tidy(post.content, post.title)
+    content = landing.render(content, request) if live else content
     if live:
         upd = landing.last_price_update()
         if upd and upd > post.modified_at:  # قیمت‌های زندهٔ صفحه به‌روز شده‌اند
@@ -87,11 +89,13 @@ def page_detail(request, page):
     if page.status != "publish" and not request.user.is_staff:
         raise Http404
     from . import landing
+    from .tidy import tidy
 
     live = landing.has_blocks(page.content)
+    content = tidy(page.content, page.title)
     return render(request, "blog/page_detail.html", {
         "meta": seo.build(page, "page"), "page": page, "live": live,
-        "content": landing.render(page.content, request) if live else page.content,
+        "content": landing.render(content, request) if live else content,
         "crumbs": [(p.title, p.get_absolute_url()) for p in _ancestors(page)] + [(page.title, page.get_absolute_url())],
     })
 
