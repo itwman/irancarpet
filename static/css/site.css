@@ -1246,3 +1246,7 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .direct__faq{margin:3.2rem auto 0}
 .direct__faq h2{font-size:1.35rem;margin-bottom:1rem}
 @media (max-width:860px){.direct__grid{grid-template-columns:1fr;gap:2rem}.direct{padding:3.5rem 0}}
+.lb-size{margin:1.2rem 0 1.6rem}
+.lb-size__t{min-width:0}
+.prose .lb-size__t caption{caption-side:top;text-align:start;font-size:.88rem;color:var(--muted);padding-bottom:.5rem}
+.lb-size__t tbody th small{font-weight:500}

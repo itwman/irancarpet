@@ -1,0 +1,21 @@
+{% load fa %}<section class="lb-size" aria-label="قیمت روز فرش {{ label|fa_num }}{% if group %} {{ group.title|fa_num }}{% endif %}">
+  <div class="table-wrap">
+    <table class="lb-table lb-size__t">
+      <caption>{% if group %}قیمت فرش {{ label|fa_num }} {{ group.reeds|fa_num }} شانه در هر لیست قیمت{% else %}قیمت فرش ماشینی {{ label|fa_num }} امروز{% endif %}، به تومان{% if updated %} · به‌روز در <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</caption>
+      {% if group %}
+      <thead><tr><th scope="col">لیست قیمت (آلبوم)</th><th scope="col">قیمت {{ label|fa_num }}</th></tr></thead>
+      <tbody>{% for r in lines %}
+        <tr><th scope="row">{% for a in r.albums %}<a href="{{ a.url }}">{{ a.title|fa_num }}</a>{% if not forloop.last %}، {% endif %}{% endfor %} <small class="muted">{{ r.count|fa_num }} فرش</small></th>
+          <td><strong>{{ r.price|toman }}</strong></td></tr>
+      {% endfor %}</tbody>
+      {% else %}
+      <thead><tr><th scope="col">شانه</th><th scope="col">ارزان‌ترین</th><th scope="col">گران‌ترین</th></tr></thead>
+      <tbody>{% for r in lines %}
+        <tr><th scope="row"><a href="{{ r.url }}">{{ r.title|fa_num }}</a> <small class="muted">{{ r.lists|fa_num }} لیست</small></th>
+          <td><strong>{{ r.min|toman }}</strong></td><td>{% if r.max != r.min %}{{ r.max|toman }}{% else %}<span class="muted">—</span>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+      {% endif %}
+    </table>
+  </div>
+  <p class="small muted mt-2">قیمت‌ها برای یک تخته و همان قیمت فروش امروز سایت است؛ همهٔ نقشه‌ها و رنگ‌های یک لیست هم‌قیمت‌اند. <a href="/carpets-price-list/{% if group %}#{{ group.anchor }}{% endif %}">لیست قیمت همهٔ سایزها</a></p>
+</section>

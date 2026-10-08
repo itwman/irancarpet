@@ -8,6 +8,9 @@
   [installment_steps]    مراحل سفارش اقساطی آنلاین (بدون تماس)
   [installment_faq]      پرسش‌های رایج اقساط با پاسخ از تنظیمات (+ نشانه‌گذاری FAQ برای گوگل)
   [price_updated]        تاریخ آخرین تغییر قیمت‌ها (درون جمله)
+  [size_prices 6-meter]       کمترین و بیشترین قیمت روز یک سایز در هر شانه (با پیوند)
+  [size_prices 6-meter 700]   قیمت روز همان سایز در تک‌تک لیست‌های قیمت یک شانه
+  [size_faq 6-meter 700]      پرسش‌های رایج قیمت آن سایز (و شانه) با پاسخ زنده (+ FAQPage)
 
 متن ثابت مقاله (برای گوگل) دست‌نخورده می‌ماند؛ فقط عددها و جدول‌ها هر روز از قیمت و تنظیمات واقعی ساخته می‌شوند.
 """
@@ -18,16 +21,18 @@ from django.db.models import Max
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
-from core.templatetags.fa import fa_num, jdate
+from core.templatetags.fa import fa_num, jdate, toman
 
 CODES = ("installment_calc", "installment_prices", "installment_plans", "installment_steps", "installment_faq")
 BLOCK_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(%s)\](?:\s*</p>)?" % "|".join(CODES))
 INLINE_RE = re.compile(r"\[price_updated\]")
+SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+(\d+))?\s*\](?:\s*</p>)?")
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
 def has_blocks(content):
-    return bool(BLOCK_RE.search(content or "") or INLINE_RE.search(content or ""))
+    c = content or ""
+    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c))
 
 
 def last_price_update():
@@ -197,6 +202,105 @@ def block_faq(request):
     return render_to_string("blog/blocks/faq.html", {"items": faq_items()}, request=request)
 
 
+def size_prices(size_slug, reeds=None):
+    """داده‌های جدول قیمت روز یک سایز (از همان لیست قیمت عمومی)."""
+    from pricing.models import Size
+    from pricing.pricelist import build
+
+    z = Size.objects.filter(slug=size_slug).first()
+    if not z:
+        return None
+    label = (z.label or "").split("(")[0].strip()
+    data = build()
+    groups = [g for g in data["groups"] if g["reeds"]]
+    if reeds:
+        g = next((g for g in groups if g["reeds"] == str(reeds)), None)
+        if not g:
+            return None
+        rows = {}
+        for al in g["albums"]:
+            price = al["prices"].get(z.pk)
+            if price:
+                rows.setdefault(price, []).append(al)
+        lines = [{"price": p, "albums": als, "count": sum(a["count"] for a in als)} for p, als in sorted(rows.items())]
+        return {"size": z, "label": label, "group": g, "lines": lines, "updated": data["updated"]} if lines else None
+    links = {}
+    try:
+        from landing.build import live
+
+        for lp in live().filter(size=z, color=None, style=None).exclude(reeds=None).select_related("reeds"):
+            links[lp.reeds.slug] = lp.get_absolute_url()
+    except Exception:  # noqa: BLE001
+        pass
+    lines = []
+    for g in groups:
+        vals = [al["prices"][z.pk] for al in g["albums"] if al["prices"].get(z.pk)]
+        if vals:
+            lines.append({"title": g["title"], "min": min(vals), "max": max(vals), "lists": len(vals),
+                          "url": links.get(g["reeds"]) or g["reeds_url"], "anchor": g["anchor"]})
+    return {"size": z, "label": label, "lines": lines, "updated": data["updated"]} if lines else None
+
+
+def block_size(request, size_slug, reeds=None):
+    d = size_prices(size_slug, reeds)
+    if not d:
+        return ""
+    return render_to_string("blog/blocks/size_prices.html", d, request=request)
+
+
+def size_faq_items(size_slug, reeds=None):
+    """پرسش و پاسخ‌های قیمت یک سایز، با عددهای امروز."""
+    from shop.models import ShopSettings
+
+    d = size_prices(size_slug, reeds)
+    if not d:
+        return []
+    z, label = d["size"], fa_num(d["label"])
+    name = f"فرش ماشینی {label}" + (f" {fa_num(reeds)} شانه" if reeds else "")
+    out = []
+    if reeds:
+        lines = d["lines"]
+        lo, hi = lines[0], lines[-1]
+        out.append((f"قیمت {name} امروز چند است؟",
+                    f"قیمت {name} در ایران کارپت امروز از {toman(lo['price'])} تومان"
+                    + (f" تا {toman(hi['price'])} تومان است" if hi["price"] != lo["price"] else " است")
+                    + f"؛ در {fa_num(sum(len(x['albums']) for x in lines))} لیست قیمت و {fa_num(sum(x['count'] for x in lines))} نقشه."))
+        out.append((f"ارزان‌ترین {name} کدام است؟",
+                    f"ارزان‌ترین لیست امروز «{fa_num(lo['albums'][0]['title'])}» با قیمت {toman(lo['price'])} تومان برای یک تخته است. "
+                    "همهٔ نقشه‌ها و رنگ‌های یک لیست هم‌قیمت‌اند."))
+    else:
+        lines = d["lines"]
+        lo = min(lines, key=lambda r: r["min"])
+        hi = max(lines, key=lambda r: r["max"])
+        out.append((f"قیمت {name} امروز چند است؟",
+                    f"ارزان‌ترین {name} امروز {fa_num(lo['title'])} از {toman(lo['min'])} تومان است و گران‌ترین، "
+                    f"{fa_num(hi['title'])}، تا {toman(hi['max'])} تومان. قیمت هر شانه در جدول همین صفحه آمده است."))
+        if len(lines) > 1:
+            out.append((f"فرق قیمت {name} در شانه‌های مختلف چقدر است؟",
+                        "، ".join(f"{fa_num(r['title'])} از {toman(r['min'])}" for r in lines) + " تومان. "
+                        "هرچه شانه و تراکم بیشتر باشد، نقش ظریف‌تر و قیمت بالاتر است."))
+    if z.width and z.length:
+        dims = f"{fa_num(f'{z.width:g}')} در {fa_num(f'{z.length:g}')} متر"
+        out.append((f"ابعاد فرش {label} چقدر است؟",
+                    f"فرش {label} استاندارد {dims} است (مساحت {fa_num(f'{z.area:g}')} متر مربع)."
+                    + (" این سایز از عرض ۳ متری دستگاه بریده می‌شود و هزینهٔ پرتی در قیمتش هست." if z.needs_waste else "")))
+    free = ShopSettings.load().free_shipping_min
+    if free:
+        out.append(("هزینهٔ ارسال چقدر است؟",
+                    f"ارسال به سراسر ایران است؛ سفارش‌های بالای {toman(free)} تومان با پرداخت کامل آنلاین ارسال رایگان دارند "
+                    "و بقیه پس‌کرایه (هزینهٔ حمل موقع تحویل) فرستاده می‌شوند."))
+    plans = _plans()
+    if plans:
+        out.append((f"می‌توانم {name} را قسطی بخرم؟",
+                    "بله، با " + " یا ".join(p.title for p in plans) + ". قیمت پایه همان قیمت نقدی روز است و جدول قسط‌ها را پیش از سفارش می‌بینید."))
+    return out
+
+
+def block_size_faq(request, size_slug, reeds=None):
+    items = size_faq_items(size_slug, reeds)
+    return render_to_string("blog/blocks/faq.html", {"items": items}, request=request) if items else ""
+
+
 BLOCKS = {"installment_calc": block_calc, "installment_prices": block_prices, "installment_plans": block_plans,
           "installment_steps": block_steps, "installment_faq": block_faq}
 
@@ -218,12 +322,34 @@ def render(content, request):
             logging.getLogger(__name__).exception("landing block %s", m.group(1))
             return ""
 
-    return BLOCK_RE.sub(block, content)
+    content = BLOCK_RE.sub(block, content)
+
+    def size_block(m):
+        try:
+            fn = block_size if m.group(1) == "size_prices" else block_size_faq
+            html = fn(request, m.group(2), m.group(3))
+        except Exception:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).exception("size block %s", m.group(0))
+            html = ""
+        return '<div class="live-block">' + html + "</div>" if html else ""
+
+    return SIZE_RE.sub(size_block, content)
 
 
 def faq_jsonld(content):
-    if "[installment_faq]" not in (content or ""):
+    items = []
+    if "[installment_faq]" in (content or ""):
+        items += faq_items()
+    for m in SIZE_RE.finditer(content or ""):
+        if m.group(1) == "size_faq":
+            try:
+                items += size_faq_items(m.group(2), m.group(3))
+            except Exception:  # noqa: BLE001
+                pass
+    if not items:
         return None
     return {"@type": "FAQPage", "mainEntity": [
-        {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faq_items()]}
+        {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in items]}
 

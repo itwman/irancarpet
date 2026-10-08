@@ -13,7 +13,7 @@ VAR_RE = re.compile(r"%\s*([a-z_]+)%")
 def plain(html, limit=None):
     import html as _html
 
-    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|installment_plans)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
+    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|size_(?:prices|faq)[^\]]*)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
     text = re.sub(r"\s+", " ", _html.unescape(text).replace("\xa0", " ")).strip()
     if limit and len(text) > limit:
         text = text[:limit].rsplit(" ", 1)[0] + "…"
@@ -67,6 +67,13 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
     s = SiteSettings.load()
     tpl = s.title_templates or {}
     ctx = {"sitename": s.site_name, "sep": s.title_separator or "-", "page": page_label(page)}
+    try:
+        from pricing.pricelist import month_year
+
+        m, y = month_year()
+        ctx.update(currentmonth=m, currentyear=y, currentdate=f"{m} {y}")
+    except Exception:  # noqa: BLE001
+        pass
     ctx.update(extra or {})
     if kind == "home":
         title, desc = s.home_title, s.home_description
