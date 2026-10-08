@@ -1067,3 +1067,94 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
   .mk-search{width:100%}
 }
 .so-box{border-top:1px dashed var(--line);margin-top:.9rem;padding-top:.9rem}
+
+/* --- صفحهٔ «در ایران کارپت بفروشید»: قاب فرش --- */
+.sell{--knot:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M14 2 26 14 14 26 2 14z' fill='%23FFB21E'/%3E%3Cpath d='M14 8.5 19.5 14 14 19.5 8.5 14z' fill='%23E5395B'/%3E%3Cpath d='M0 0h3L0 3zM28 0v3l-3-3zM0 28v-3l3 3zM28 28h-3l3-3z' fill='%23E5395B'/%3E%3C/svg%3E")}
+.sell-hero{padding:1.75rem 0 1rem}
+.sell-rug{position:relative;background:var(--ink) var(--knot) repeat;background-size:28px 28px;border-radius:34px;padding:22px;margin-inline:14px}
+.sell-rug::before,.sell-rug::after{content:"";position:absolute;top:34px;bottom:34px;width:14px;background:repeating-linear-gradient(to bottom,#efe4c8 0 3px,transparent 3px 8px)}
+.sell-rug::before{right:-14px}.sell-rug::after{left:-14px}
+.sell-rug__field{position:relative;overflow:hidden;background:radial-gradient(ellipse at 70% 30%,#2e3372 0,var(--ink) 65%);border-radius:20px;box-shadow:0 0 0 3px var(--saffron),0 0 0 7px var(--ink),0 0 0 9px var(--pink);
+  display:grid;grid-template-columns:1.3fr .9fr;gap:2.5rem;align-items:center;padding:3rem 3rem 3rem}
+.sell-rug__field::before{content:"";position:absolute;width:520px;height:520px;top:50%;right:18%;transform:translate(50%,-50%) rotate(45deg);
+  border:1px solid rgba(255,178,30,.14);box-shadow:0 0 0 40px rgba(255,255,255,.018),0 0 0 41px rgba(229,57,91,.1);pointer-events:none}
+.sell-rug__text{position:relative;color:#fff}
+.sell-rug__text h1{font-size:clamp(2rem,4.6vw,3.4rem);line-height:1.3;margin:0 0 1rem;color:#fff}
+.sell-rug__text p{color:#d4d6f2;font-size:1.08rem;line-height:2.05;max-width:34em;margin:0}
+.sell-rug__facts{list-style:none;padding:0;margin:1.75rem 0 0;display:flex;flex-wrap:wrap;gap:1rem 2rem}
+.sell-rug__facts li{display:flex;flex-direction:column;border-inline-start:3px solid var(--saffron);padding-inline-start:.8rem}
+.sell-rug__facts b{font-size:1.5rem;font-weight:900;color:var(--saffron);line-height:1.3}
+.sell-rug__facts span{font-size:.85rem;color:#cfd2f0}
+.sell-card{position:relative;background:#fff;border-radius:24px;padding:1.75rem;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.sell-card h2{font-size:1.35rem;margin:0 0 .35rem}
+.sell-card>p{color:var(--ink-2);font-size:.95rem}
+.sell-card__go{width:100%}
+.sell-card__alt{margin:1rem 0 0;text-align:center;font-size:.92rem;color:var(--muted)}
+.sell-card__alt a{font-weight:700}
+.sell-goods{padding:2.5rem 0 1rem}
+.sell-goods h2,.sell-why h2,.sell-money h2{font-size:clamp(1.4rem,2.8vw,2rem);margin:0 0 1rem}
+.sell-goods ul{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:.6rem}
+.sell-goods li{padding:.6rem 1.2rem;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);font-weight:700;color:var(--ink);position:relative;padding-inline-start:2.1rem}
+.sell-goods li::before{content:"";position:absolute;inset-inline-start:.95rem;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--pink)}
+.sell-goods li:nth-child(3n+2)::before{background:var(--saffron)}.sell-goods li:nth-child(3n)::before{background:var(--teal)}
+.sell-money{background:var(--teal-t);padding:3.5rem 0;margin:2.5rem 0}
+.sell-money__lead{color:var(--ink-2);max-width:44rem;margin:0 0 2rem}
+.sell-flow{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.75rem;counter-reset:f}
+.sell-flow li{position:relative;background:#fff;border-radius:var(--r-lg);padding:1.25rem 1.2rem;display:flex;flex-direction:column;gap:.3rem;box-shadow:0 14px 30px -24px rgba(11,124,136,.6)}
+.sell-flow li:not(:last-child)::after{content:"";position:absolute;top:50%;inset-inline-end:-1.45rem;width:1.15rem;height:1.15rem;transform:translateY(-50%);
+  background:var(--teal);clip-path:polygon(100% 0,0 50%,100% 100%,70% 50%)}
+.sell-flow__who{font-size:.8rem;font-weight:700;color:var(--teal-d)}
+.sell-flow b{font-size:1.02rem;line-height:1.7}
+.sell-flow small{color:var(--muted)}
+.sell-flow li.is-you{background:var(--teal);color:#fff}
+.sell-flow li.is-you .sell-flow__who,.sell-flow li.is-you small{color:#d8f6f8}
+.sell-calc{padding:1rem 0 2rem}
+.sell-calc__box{display:grid;grid-template-columns:1.3fr 1fr;gap:2rem;align-items:center;background:#fff;border-radius:28px;box-shadow:0 0 0 1px var(--line);padding:2rem}
+.sell-calc__box h2{font-size:clamp(1.3rem,2.6vw,1.8rem);margin:0 0 .4rem}
+.sell-calc__box label{display:block;font-weight:700;margin-top:1.1rem}
+.sell-calc__box input[type=range]{width:100%;accent-color:var(--pink)}
+.sell-calc__out{background:var(--saffron-t);border-radius:22px;padding:1.75rem;text-align:center;display:flex;flex-direction:column;gap:.35rem}
+.sell-calc__out span{font-weight:700;color:#7a4f00}
+.sell-calc__out strong{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:var(--ink);line-height:1.2}
+.sell-calc__out small{color:var(--ink-2)}
+.sell-why{padding:1.5rem 0 2rem}
+.sell-why__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.sell-why article{background:var(--soft);border-radius:var(--r-lg);padding:1.3rem;border-top:4px solid var(--pink)}
+.sell-why article:nth-child(2){border-color:var(--saffron)}.sell-why article:nth-child(3){border-color:var(--teal)}.sell-why article:nth-child(4){border-color:var(--ink)}
+.sell-why h3{font-size:1.08rem;margin:0 0 .4rem}
+.sell-why p{margin:0;color:var(--ink-2);font-size:.93rem;line-height:1.95}
+.sell-end{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:30px;padding:2.5rem 3rem;
+  border-top:14px solid transparent;background-image:linear-gradient(var(--ink),var(--ink)),var(--knot);background-origin:border-box;background-clip:padding-box,border-box}
+.sell-end h2{color:#fff;margin:0;font-size:clamp(1.4rem,3vw,2.1rem)}
+.sell-end p{margin:.5rem 0 0;color:#d4d6f2}
+@media (max-width:991px){
+  .sell-rug__field{grid-template-columns:1fr;padding:2rem 1.5rem}
+  .sell-flow{grid-template-columns:1fr 1fr}
+  .sell-flow li:nth-child(2)::after{display:none}
+  .sell-calc__box{grid-template-columns:1fr}
+  .sell-why__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  .sell-rug{padding:12px;border-radius:24px;margin-inline:10px}
+  .sell-rug::before,.sell-rug::after{width:10px}.sell-rug::before{right:-10px}.sell-rug::after{left:-10px}
+  .sell-rug__field{padding:1.6rem 1.1rem;border-radius:16px}
+  .sell-flow{grid-template-columns:1fr;gap:1.4rem}
+  .sell-flow li:not(:last-child)::after{display:block;top:auto;bottom:-1.3rem;inset-inline-end:auto;right:50%;transform:translateX(50%) rotate(-90deg)}
+  .sell-flow li:nth-child(2)::after{display:block}
+  .sell-why__grid{grid-template-columns:1fr}
+  .sell-end{padding:2rem 1.4rem}
+  .sell-calc__box{padding:1.3rem}
+}
+
+/* --- صفحهٔ اول: کادرهای همکاری و فروش --- */
+.home-partners{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.home-partners .home-aff{grid-template-columns:1fr;padding:2.25rem}
+.home-partners .home-aff__btns{flex-direction:row;flex-wrap:wrap}
+.home-sell{position:relative;border-radius:30px;padding:16px;background:var(--saffron) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M14 2 26 14 14 26 2 14z' fill='%2322265A' fill-opacity='.85'/%3E%3Cpath d='M14 8.5 19.5 14 14 19.5 8.5 14z' fill='%23E5395B'/%3E%3C/svg%3E") repeat;background-size:28px}
+.home-sell__in{background:#fff;border-radius:18px;padding:1.9rem;height:100%;display:flex;flex-direction:column;gap:.6rem}
+.home-sell h2{margin:0;font-size:clamp(1.4rem,2.6vw,2rem)}
+.home-sell p{margin:0;color:var(--ink-2);line-height:2}
+.home-sell ul{list-style:none;padding:0;margin:.25rem 0 .5rem;display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.9rem;font-weight:700}
+.home-sell li::before{content:"";display:inline-block;width:7px;height:7px;background:var(--pink);transform:rotate(45deg);margin-inline-end:.45rem;vertical-align:middle}
+.home-sell__btns{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:auto}
+@media (max-width:991px){.home-partners{grid-template-columns:1fr}}

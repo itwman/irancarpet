@@ -153,18 +153,35 @@
   </div>
 </section>
 
-{% if aff %}
-<section class="container pb-5" aria-labelledby="affHome">
-  <div class="home-aff">
-    <div>
-      <h2 id="affHome">همکار فروش ایران کارپت شوید</h2>
-      <p>فرش‌ها را به دوستان و مخاطبانتان معرفی کنید و از هر خریدی که تا {{ aff.days|fa_num }} روز با پیوند شما انجام شود{% if aff.top %} تا {{ aff.top }}٪{% endif %} پورسانت بگیرید؛ بی‌هزینه و بدون نیاز به مغازه.</p>
-      <div class="home-aff__steps" aria-hidden="true"><i style="height:35%"></i><i style="height:52%"></i><i style="height:68%"></i><i style="height:84%"></i><i style="height:100%"></i></div>
+{% if aff or mk %}
+<section class="container pb-5" aria-label="همکاری با ایران کارپت">
+  <div class="{% if aff and mk %}home-partners{% endif %}">
+    {% if mk %}
+    <div class="home-sell">
+      <div class="home-sell__in">
+        <h2 id="sellHome">فرش‌تان را در ایران کارپت بفروشید</h2>
+        <p>کارخانه، تولیدی یا فرش‌فروشی هستید؟ کالایتان را با قیمت خودتان به خریداران سراسر ایران عرضه کنید؛ پرداخت امن با ما، ارسال با شما.</p>
+        <ul><li>ثبت‌نام رایگان</li><li>{{ mk.commission|floatformat:"-2"|fa_num }}٪ کمیسیون فقط از فروش</li><li>تسویه {{ mk.hold|fa_num }} روز پس از تحویل</li></ul>
+        <div class="home-sell__btns">
+          <a class="btn-ic btn-ic--pink" href="/sell/">فروشنده شوید</a>
+          <a class="btn-ic btn-ic--teal btn-ic--sm" href="{% if user.is_authenticated %}/seller/{% else %}/my-account/login/?next=/seller/{% endif %}">ورود به پنل فروشنده</a>
+        </div>
+      </div>
     </div>
-    <div class="home-aff__btns">
-      <a class="btn-ic btn-ic--pink" href="/affiliate/">آشنایی و ثبت‌نام</a>
-      <a class="btn-ic btn-ic--teal btn-ic--sm" href="{% if user.is_authenticated %}/my-account/affiliate/{% else %}/my-account/login/?next=/my-account/affiliate/{% endif %}">ورود به پنل همکاری</a>
+    {% endif %}
+    {% if aff %}
+    <div class="home-aff">
+      <div>
+        <h2 id="affHome">همکار فروش ایران کارپت شوید</h2>
+        <p>فرش‌ها را به دوستان و مخاطبانتان معرفی کنید و از هر خریدی که تا {{ aff.days|fa_num }} روز با پیوند شما انجام شود{% if aff.top %} تا {{ aff.top }}٪{% endif %} پورسانت بگیرید؛ بی‌هزینه و بدون نیاز به مغازه.</p>
+        <div class="home-aff__steps" aria-hidden="true"><i style="height:35%"></i><i style="height:52%"></i><i style="height:68%"></i><i style="height:84%"></i><i style="height:100%"></i></div>
+      </div>
+      <div class="home-aff__btns">
+        <a class="btn-ic btn-ic--pink" href="/affiliate/">آشنایی و ثبت‌نام</a>
+        <a class="btn-ic btn-ic--teal btn-ic--sm" href="{% if user.is_authenticated %}/my-account/affiliate/{% else %}/my-account/login/?next=/my-account/affiliate/{% endif %}">ورود به پنل همکاری</a>
+      </div>
     </div>
+    {% endif %}
   </div>
 </section>
 {% endif %}

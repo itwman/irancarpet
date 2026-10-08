@@ -1,63 +1,94 @@
-{% extends "base.html" %}{% load fa %}
+{% extends "base.html" %}{% load fa static %}
 {% block content %}
-<div class="aff mk-land">
-  <section class="aff-top" id="top">
-    <div class="container aff-hero">
-      <div class="aff-hero__text">
-        <h1>فرش‌تان را در ایران کارپت بفروشید</h1>
-        <p>کارخانه، تولیدی یا فرش‌فروشی هستید؟ فرش، تابلوفرش، گلیم، کوسن و کالاهای مرتبط را با قیمت خودتان در ایران کارپت عرضه کنید. پرداخت امن با ماست، ارسال با شما، و سهم‌تان بعد از تحویل به شبایتان واریز می‌شود.</p>
-        <ul class="aff-hero__facts">
-          <li><b>بدون هزینهٔ ثبت‌نام</b> و بدون اجارهٔ ماهانه</li>
-          <li><b>{{ commission|floatformat:"-2"|fa_num }}٪</b> کمیسیون، فقط از فروش انجام‌شده</li>
-          <li><b>تسویه</b> {{ ms.hold_days|fa_num }} روز پس از تحویل</li>
-        </ul>
+<div class="sell">
+  <section class="container sell-hero" id="top">
+    <div class="sell-rug">
+      <div class="sell-rug__field">
+        <div class="sell-rug__text">
+          <h1>فرش‌تان را<br>در ایران کارپت بفروشید</h1>
+          <p>کارخانه، تولیدی یا فرش‌فروشی هستید؟ فرش، تابلوفرش، گلیم و کالاهای مرتبط را با قیمت خودتان به خریداران سراسر ایران عرضه کنید. پرداخت امن با ما، ارسال با شما.</p>
+          <ul class="sell-rug__facts">
+            <li><b>رایگان</b><span>ثبت‌نام و پنل فروشنده</span></li>
+            <li><b>{{ commission|floatformat:"-2"|fa_num }}٪</b><span>کمیسیون، فقط از فروش انجام‌شده</span></li>
+            <li><b>{{ ms.hold_days|fa_num }} روز</b><span>پس از تحویل، واریز به شبای شما</span></li>
+          </ul>
+        </div>
+        <aside class="sell-card" aria-label="ثبت‌نام و ورود فروشنده">
+          {% if s %}
+            <h2>{{ s.name }}</h2>
+            <p>وضعیت فروشگاه: <b>{{ s.get_status_display }}</b></p>
+            <a class="btn-ic btn-ic--pink sell-card__go" href="/seller/">ورود به پنل فروشنده</a>
+          {% elif user.is_authenticated %}
+            <h2>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
+            <p>یک فرم کوتاه مانده؛ بعد از بررسی و تماس کارشناس، فروشگاه‌تان باز می‌شود.</p>
+            <a class="btn-ic btn-ic--pink sell-card__go" href="#join">تکمیل فرم فروشندگی</a>
+          {% else %}
+            <h2>شروع فروش</h2>
+            <p>شمارهٔ موبایلتان را بنویسید؛ کد ورود پیامک می‌شود و فرم فروشندگی باز می‌شود.</p>
+            <form method="post" action="/my-account/login/" novalidate>{% csrf_token %}
+              <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/sell/#join">
+              <label class="auth2__label" for="mkMobile">شمارهٔ موبایل</label>
+              <input id="mkMobile" name="mobile" class="auth2__big" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required>
+              <button class="btn-ic btn-ic--pink sell-card__go" type="submit">دریافت کد و ثبت‌نام</button>
+            </form>
+            <p class="sell-card__alt">فروشنده هستید؟ <a href="/my-account/login/?next=/seller/">ورود به پنل فروشنده</a></p>
+          {% endif %}
+        </aside>
       </div>
-      <aside class="aff-access" aria-label="ثبت‌نام و ورود">
-        {% if s %}
-          <h2>{{ s.name }}</h2>
-          <p>وضعیت فروشگاه: <b>{{ s.get_status_display }}</b></p>
-          <a class="btn-ic btn-ic--pink aff-access__go" href="/seller/">ورود به پنل فروشنده</a>
-        {% elif user.is_authenticated %}
-          <h2>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
-          <p>فرم کوتاه پایین صفحه را پر کنید تا فروشگاه‌تان بررسی و فعال شود.</p>
-          <a class="btn-ic btn-ic--pink aff-access__go" href="#join">تکمیل فرم فروشندگی</a>
-        {% else %}
-          <h2>ثبت‌نام فروشنده</h2>
-          <p>شمارهٔ موبایلتان را بنویسید؛ کد ورود پیامک می‌شود و بعد فرم فروشندگی باز می‌شود.</p>
-          <form method="post" action="/my-account/login/" novalidate>{% csrf_token %}
-            <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/sell/#join">
-            <label class="auth2__label" for="mkMobile">شمارهٔ موبایل</label>
-            <input id="mkMobile" name="mobile" class="auth2__big" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required>
-            <button class="btn-ic btn-ic--pink aff-access__go" type="submit">دریافت کد و ثبت‌نام</button>
-          </form>
-          <p class="aff-access__alt">فروشنده هستید؟ <a href="/my-account/login/?next=/seller/">ورود به پنل فروشنده</a></p>
-        {% endif %}
-      </aside>
     </div>
   </section>
 
-  <section class="aff-band" aria-labelledby="whyH">
+  <section class="container sell-goods" aria-labelledby="goodsH">
+    <h2 id="goodsH">چه چیزهایی می‌توانید بفروشید</h2>
+    <ul>
+      <li>فرش ماشینی</li><li>فرش دستباف</li><li>تابلوفرش</li><li>گلیم و گبه</li><li>کناره و پادری</li>
+      <li>کوسن و پشتی</li><li>روفرشی و زیرفرشی</li><li>فرش کودک و اتاق‌خواب</li>
+    </ul>
+  </section>
+
+  <section class="sell-money" aria-labelledby="moneyH">
     <div class="container">
-      <h2 id="whyH">چرا در ایران کارپت بفروشید</h2>
-      <ul class="aff-facts">
-        <li><b>خریدار آماده</b><span>هر روز خریدارانی از سراسر ایران دنبال فرش ماشینی، قیمت روز و سایز مناسب به ایران کارپت می‌آیند.</span></li>
-        <li><b>پرداخت امن</b><span>مشتری به درگاه ایران کارپت پول می‌دهد؛ دیگر دغدغهٔ وصول و چک برگشتی ندارید.</span></li>
-        <li><b>قیمت با خودتان</b><span>قیمت و تخفیف هر سایز را خودتان تعیین و هر وقت بخواهید عوض می‌کنید.</span></li>
-        <li><b>بازاریاب‌ها و کانال‌ها</b><span>کالای شما در جستجو، فرش‌یاب، صفحه‌های فرود و پیوند همکاران فروش ایران کارپت دیده می‌شود.</span></li>
-      </ul>
+      <h2 id="moneyH">پول هر سفارش کجا می‌رود</h2>
+      <p class="sell-money__lead">نه نگران وصول باشید، نه چک برگشتی. پول مشتری تا تحویل سالم کالا نزد ایران کارپت امانت می‌ماند و بعد به حساب شما می‌آید.</p>
+      <ol class="sell-flow">
+        <li><span class="sell-flow__who">مشتری</span><b>کامل و آنلاین می‌پردازد</b><small>به درگاه امن ایران کارپت</small></li>
+        <li><span class="sell-flow__who">شما</span><b>ظرف {{ ms.accept_hours|fa_num }} ساعت می‌پذیرید و ارسال می‌کنید</b><small>کد رهگیری برای مشتری پیامک می‌شود</small></li>
+        <li><span class="sell-flow__who">مشتری</span><b>کالا را تحویل می‌گیرد</b><small>{{ ms.hold_days|fa_num }} روز مهلت مرجوعی</small></li>
+        <li class="is-you"><span class="sell-flow__who">حساب شما</span><b>مبلغ کالا منهای کمیسیون</b><small>واریز به شبا، با پیامک و کد پیگیری</small></li>
+      </ol>
     </div>
   </section>
 
-  <section class="container aff-how" aria-labelledby="how">
-    <h2 id="how">از ثبت‌نام تا اولین فروش</h2>
-    <ol>
-      <li><strong>ثبت‌نام و تأیید</strong><span>مشخصات فروشگاه و شبا را ثبت کنید؛ بعد از بررسی و تماس کارشناس، پنل‌تان فعال می‌شود.</span></li>
-      <li><strong>ثبت کالا</strong><span>عکس واقعی، مشخصات و قیمت هر سایز را وارد کنید؛ بعد از تأیید در سایت منتشر می‌شود.</span></li>
-      <li><strong>ارسال و تسویه</strong><span>سفارش را تا {{ ms.accept_hours|fa_num }} ساعت بپذیرید، ارسال کنید و کد رهگیری بزنید؛ سهم‌تان {{ ms.hold_days|fa_num }} روز پس از تحویل واریز می‌شود.</span></li>
-    </ol>
+  <section class="container sell-calc" aria-labelledby="calcH">
+    <div class="sell-calc__box">
+      <div>
+        <h2 id="calcH">از هر فروش چقدر به شما می‌رسد</h2>
+        <p class="muted">قیمت فروش و تعداد فروش ماهانه را تغییر دهید. کمیسیون فقط وقتی کم می‌شود که چیزی فروخته باشید.</p>
+        <label for="sPrice">قیمت هر فرش: <output id="sPriceOut">۲۰ میلیون</output> تومان</label>
+        <input id="sPrice" type="range" min="1000000" max="150000000" step="1000000" value="20000000">
+        <label for="sQty">فروش در ماه: <output id="sQtyOut">۱۰</output> فرش</label>
+        <input id="sQty" type="range" min="1" max="100" step="1" value="10">
+      </div>
+      <div class="sell-calc__out" aria-live="polite">
+        <span>سهم شما در ماه</span>
+        <strong id="sNet">—</strong>
+        <small>تومان، پس از کسر <span id="sFee">—</span> تومان کمیسیون ({{ commission|floatformat:"-2"|fa_num }}٪)</small>
+      </div>
+      {{ calc|json_script:"sellCalc" }}
+    </div>
   </section>
 
-  <section class="container aff-join" id="join" aria-labelledby="joinH">
+  <section class="container sell-why" aria-labelledby="whyH">
+    <h2 id="whyH">چرا ایران کارپت</h2>
+    <div class="sell-why__grid">
+      <article><h3>خریدار آماده</h3><p>کسانی که دنبال فرش ماشینی، قیمت روز و سایز مناسب‌اند هر روز به ایران کارپت می‌آیند؛ کالای شما کنار همین جستجوها دیده می‌شود.</p></article>
+      <article><h3>قیمت با خودتان</h3><p>قیمت و تخفیف هر سایز را خودتان می‌گذارید و هر وقت بخواهید عوض می‌کنید؛ تغییر قیمت و موجودی نیاز به تأیید ندارد.</p></article>
+      <article><h3>دیده شدن بیشتر</h3><p>جستجوی فارسی، فیلترها، فرش‌یاب، صفحه‌های فرود و پیوند همکاران فروش ایران کارپت، کالای شما را به خریدار می‌رسانند.</p></article>
+      <article><h3>پنل ساده</h3><p>ثبت کالا با عکس و سایز، پذیرش و ارسال سفارش، و دیدن مانده و واریزها، همه در یک صفحه و روی گوشی.</p></article>
+    </div>
+  </section>
+
+  <section class="container aff-join sell-join" id="join" aria-labelledby="joinH">
     <div class="card-ic">
       {% if s %}
         <h2 id="joinH">فروشگاه شما</h2>
@@ -109,8 +140,40 @@
     <div class="aff-terms">
       <h2>قوانین فروشندگان</h2>
       <ul>{% for t in terms %}<li>{{ t|fa_num }}</li>{% endfor %}</ul>
-      <p class="muted small">کمیسیون پایه {{ commission|floatformat:"-2"|fa_num }}٪ از مبلغ کالاست و برای بعضی دسته‌ها متفاوت است؛ هزینهٔ ارسال با خود شما یا مشتری (پس‌کرایه) است.</p>
     </div>
   </section>
+
+  <section class="container container--narrow faq aff-faq" aria-labelledby="faqH">
+    <h2 id="faqH">پرسش‌های فروشندگان</h2>
+    {% for q, ans in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ ans }}</p></details>{% endfor %}
+  </section>
+
+  {% if not s %}
+  <section class="container pb-5">
+    <div class="sell-end">
+      <div><h2>ویترین بعدی ایران کارپت، مال شما</h2><p>ثبت‌نام چند دقیقه طول می‌کشد؛ کارشناس ما برای راه‌اندازی فروشگاه با شما تماس می‌گیرد.</p></div>
+      <a class="btn-ic btn-ic--pink" href="{% if user.is_authenticated %}#join{% else %}#top{% endif %}" data-focus="{% if not user.is_authenticated %}mkMobile{% endif %}">شروع فروش</a>
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/affiliate.js' %}" defer></script>
+<script>
+(function () {
+  var d = document.getElementById("sellCalc"); if (!d) return;
+  var pct = JSON.parse(d.textContent).commission, FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(s) { return String(s).replace(/\d/g, function (x) { return FA[x]; }); }
+  function sep(n) { return fa(Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬")); }
+  function mil(v) { return v >= 1e9 ? fa((v / 1e9).toFixed(1).replace(/\.0$/, "").replace(".", "٫")) + " میلیارد" : fa(Math.round(v / 1e6)) + " میلیون"; }
+  var p = document.getElementById("sPrice"), q = document.getElementById("sQty");
+  function upd() {
+    var gross = +p.value * +q.value, fee = gross * pct / 100;
+    document.getElementById("sPriceOut").textContent = mil(+p.value);
+    document.getElementById("sQtyOut").textContent = fa(q.value);
+    document.getElementById("sNet").textContent = sep(gross - fee);
+    document.getElementById("sFee").textContent = sep(fee);
+  }
+  p.addEventListener("input", upd); q.addEventListener("input", upd); upd();
+})();
+</script>{% endblock %}

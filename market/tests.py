@@ -257,3 +257,14 @@ class MarketTests(TestCase):
         self.assertEqual(O.commission_percent(p, self.s), Decimal("6"))
         MarketSettings.objects.update(enabled=False)
         self.assertEqual(self.client.get("/sell/").status_code, 404)
+
+
+class SellLandingTests(TestCase):
+    def test_landing_and_home_box(self):
+        r = self.client.get("/sell/")
+        self.assertContains(r, "پول هر سفارش کجا می‌رود")
+        self.assertContains(r, "FAQPage")
+        self.assertContains(r, 'name="mobile"')
+        self.assertContains(self.client.get("/"), "فرش‌تان را در ایران کارپت بفروشید")
+        MarketSettings.objects.update_or_create(pk=1, defaults={"signup_open": False})
+        self.assertNotContains(self.client.get("/"), "فروشنده شوید")

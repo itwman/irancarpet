@@ -115,8 +115,19 @@ def home(request):
         "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page),
         "offers": __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:8], "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps([org, store] if store else org, ensure_ascii=False), **data,
-        "aff": _aff_home(),
+        "aff": _aff_home(), "mk": _market_home(),
     })
+
+
+def _market_home():
+    """کادر «در ایران کارپت بفروشید» صفحهٔ اول (اگر مارکت‌پلیس و ثبت‌نام باز است)."""
+    try:
+        from market.models import MarketSettings
+
+        s = MarketSettings.load()
+        return {"commission": s.default_commission, "hold": s.hold_days} if s.enabled and s.signup_open else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _aff_home():
