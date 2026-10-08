@@ -133,6 +133,14 @@ def run_all(out=print):
     except Exception:  # noqa: BLE001
         log.exception("rajyar refresh")
     try:
+        from market.orders import run_jobs as market_jobs
+
+        n = market_jobs()
+        if n:
+            done["سفارش فروشندگان"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("market jobs")
+    try:
         from affiliate.commission import resync_all
 
         n = resync_all()

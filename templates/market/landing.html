@@ -1,0 +1,116 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="aff mk-land">
+  <section class="aff-top" id="top">
+    <div class="container aff-hero">
+      <div class="aff-hero__text">
+        <h1>فرش‌تان را در ایران کارپت بفروشید</h1>
+        <p>کارخانه، تولیدی یا فرش‌فروشی هستید؟ فرش، تابلوفرش، گلیم، کوسن و کالاهای مرتبط را با قیمت خودتان در ایران کارپت عرضه کنید. پرداخت امن با ماست، ارسال با شما، و سهم‌تان بعد از تحویل به شبایتان واریز می‌شود.</p>
+        <ul class="aff-hero__facts">
+          <li><b>بدون هزینهٔ ثبت‌نام</b> و بدون اجارهٔ ماهانه</li>
+          <li><b>{{ commission|floatformat:"-2"|fa_num }}٪</b> کمیسیون، فقط از فروش انجام‌شده</li>
+          <li><b>تسویه</b> {{ ms.hold_days|fa_num }} روز پس از تحویل</li>
+        </ul>
+      </div>
+      <aside class="aff-access" aria-label="ثبت‌نام و ورود">
+        {% if s %}
+          <h2>{{ s.name }}</h2>
+          <p>وضعیت فروشگاه: <b>{{ s.get_status_display }}</b></p>
+          <a class="btn-ic btn-ic--pink aff-access__go" href="/seller/">ورود به پنل فروشنده</a>
+        {% elif user.is_authenticated %}
+          <h2>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
+          <p>فرم کوتاه پایین صفحه را پر کنید تا فروشگاه‌تان بررسی و فعال شود.</p>
+          <a class="btn-ic btn-ic--pink aff-access__go" href="#join">تکمیل فرم فروشندگی</a>
+        {% else %}
+          <h2>ثبت‌نام فروشنده</h2>
+          <p>شمارهٔ موبایلتان را بنویسید؛ کد ورود پیامک می‌شود و بعد فرم فروشندگی باز می‌شود.</p>
+          <form method="post" action="/my-account/login/" novalidate>{% csrf_token %}
+            <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/sell/#join">
+            <label class="auth2__label" for="mkMobile">شمارهٔ موبایل</label>
+            <input id="mkMobile" name="mobile" class="auth2__big" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required>
+            <button class="btn-ic btn-ic--pink aff-access__go" type="submit">دریافت کد و ثبت‌نام</button>
+          </form>
+          <p class="aff-access__alt">فروشنده هستید؟ <a href="/my-account/login/?next=/seller/">ورود به پنل فروشنده</a></p>
+        {% endif %}
+      </aside>
+    </div>
+  </section>
+
+  <section class="aff-band" aria-labelledby="whyH">
+    <div class="container">
+      <h2 id="whyH">چرا در ایران کارپت بفروشید</h2>
+      <ul class="aff-facts">
+        <li><b>خریدار آماده</b><span>هر روز خریدارانی از سراسر ایران دنبال فرش ماشینی، قیمت روز و سایز مناسب به ایران کارپت می‌آیند.</span></li>
+        <li><b>پرداخت امن</b><span>مشتری به درگاه ایران کارپت پول می‌دهد؛ دیگر دغدغهٔ وصول و چک برگشتی ندارید.</span></li>
+        <li><b>قیمت با خودتان</b><span>قیمت و تخفیف هر سایز را خودتان تعیین و هر وقت بخواهید عوض می‌کنید.</span></li>
+        <li><b>بازاریاب‌ها و کانال‌ها</b><span>کالای شما در جستجو، فرش‌یاب، صفحه‌های فرود و پیوند همکاران فروش ایران کارپت دیده می‌شود.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="container aff-how" aria-labelledby="how">
+    <h2 id="how">از ثبت‌نام تا اولین فروش</h2>
+    <ol>
+      <li><strong>ثبت‌نام و تأیید</strong><span>مشخصات فروشگاه و شبا را ثبت کنید؛ بعد از بررسی و تماس کارشناس، پنل‌تان فعال می‌شود.</span></li>
+      <li><strong>ثبت کالا</strong><span>عکس واقعی، مشخصات و قیمت هر سایز را وارد کنید؛ بعد از تأیید در سایت منتشر می‌شود.</span></li>
+      <li><strong>ارسال و تسویه</strong><span>سفارش را تا {{ ms.accept_hours|fa_num }} ساعت بپذیرید، ارسال کنید و کد رهگیری بزنید؛ سهم‌تان {{ ms.hold_days|fa_num }} روز پس از تحویل واریز می‌شود.</span></li>
+    </ol>
+  </section>
+
+  <section class="container aff-join" id="join" aria-labelledby="joinH">
+    <div class="card-ic">
+      {% if s %}
+        <h2 id="joinH">فروشگاه شما</h2>
+        <p>{{ s.name }} · {{ s.get_status_display }}</p>
+        <a class="btn-ic btn-ic--pink btn-ic--sm" href="/seller/">ورود به پنل فروشنده</a>
+      {% elif not ms.signup_open %}
+        <h2 id="joinH">ثبت‌نام فروشنده</h2><p class="mb-0">ثبت‌نام فروشندهٔ تازه فعلاً بسته است.</p>
+      {% elif not user.is_authenticated %}
+        <h2 id="joinH">ثبت‌نام فروشنده</h2>
+        <p>اول با شمارهٔ موبایلتان وارد شوید؛ بعد از کد پیامکی، فرم فروشندگی همین‌جا باز می‌شود.</p>
+        <form class="aff-inline-login" method="post" action="/my-account/login/" novalidate>{% csrf_token %}
+          <input type="hidden" name="action" value="otp"><input type="hidden" name="next" value="/sell/#join">
+          <input name="mobile" inputmode="tel" autocomplete="tel" placeholder="شمارهٔ موبایل" dir="ltr" required aria-label="شمارهٔ موبایل">
+          <button class="btn-ic btn-ic--pink btn-ic--sm" type="submit">دریافت کد ورود</button>
+        </form>
+      {% else %}
+      <h2 id="joinH">فرم فروشندگی</h2>
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="grid-2">
+          <div class="field{% if errors.name %} has-err{% endif %}"><label for="sn">نام فروشگاه</label><input id="sn" name="name" value="{{ data.name|default:'' }}" required>{% if errors.name %}<span class="err">{{ errors.name }}</span>{% endif %}</div>
+          <div class="field{% if errors.slug %} has-err{% endif %}"><label for="ss">نشانی فروشگاه (انگلیسی، اختیاری)</label><input id="ss" name="slug" value="{{ data.slug|default:'' }}" dir="ltr" placeholder="kashan-carpet"><small dir="ltr">irancarpet.net/vendor/…</small>{% if errors.slug %}<span class="err">{{ errors.slug }}</span>{% endif %}</div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label for="sk">نوع</label><select id="sk" name="kind"><option value="person"{% if data.kind != "company" %} selected{% endif %}>حقیقی</option><option value="company"{% if data.kind == "company" %} selected{% endif %}>حقوقی (شرکت)</option></select></div>
+          <div class="field{% if errors.national_id %} has-err{% endif %}"><label for="sni">کد ملی / شناسهٔ ملی شرکت</label><input id="sni" name="national_id" value="{{ data.national_id|default:'' }}" inputmode="numeric" dir="ltr">{% if errors.national_id %}<span class="err">{{ errors.national_id }}</span>{% endif %}</div>
+        </div>
+        <div class="grid-2">
+          <div class="field{% if errors.owner_name %} has-err{% endif %}"><label for="so">نام صاحب فروشگاه / مدیرعامل</label><input id="so" name="owner_name" value="{{ data.owner_name|default:user.get_full_name }}">{% if errors.owner_name %}<span class="err">{{ errors.owner_name }}</span>{% endif %}</div>
+          <div class="field"><label for="sp">تلفن ثابت</label><input id="sp" name="phone" value="{{ data.phone|default:'' }}" dir="ltr"></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label for="spv">استان</label><select id="spv" name="province"><option value="">—</option>{% for p in provinces %}<option{% if data.province == p %} selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+          <div class="field{% if errors.city %} has-err{% endif %}"><label for="sc">شهر ارسال</label><input id="sc" name="city" value="{{ data.city|default:'' }}">{% if errors.city %}<span class="err">{{ errors.city }}</span>{% endif %}</div>
+        </div>
+        <div class="field"><label for="sa">نشانی فروشگاه یا انبار</label><textarea id="sa" name="address" rows="2">{{ data.address|default:'' }}</textarea></div>
+        <div class="field"><label for="sab">چه کالاهایی می‌فروشید؟</label><textarea id="sab" name="about" rows="2" placeholder="مثلاً فرش ۱۰۰۰ و ۱۲۰۰ شانهٔ تولید خودمان، تابلوفرش…">{{ data.about|default:'' }}</textarea></div>
+        <div class="grid-2">
+          <div class="field{% if errors.sheba %} has-err{% endif %}"><label for="ssh">شماره شبا (برای تسویه)</label><input id="ssh" name="sheba" value="{{ data.sheba|default:'' }}" dir="ltr" placeholder="IR…">{% if errors.sheba %}<span class="err">{{ errors.sheba }}</span>{% endif %}</div>
+          <div class="field"><label for="sah">به نام</label><input id="sah" name="account_holder" value="{{ data.account_holder|default:'' }}"></div>
+        </div>
+        <div class="field{% if errors.terms %} has-err{% endif %}">
+          <label class="aff-check"><input type="checkbox" name="terms" value="1"{% if data and not errors.terms %} checked{% endif %}> <span>قوانین فروشندگان (کنار این فرم) را خواندم و می‌پذیرم.</span></label>
+          {% if errors.terms %}<span class="err">{{ errors.terms }}</span>{% endif %}
+        </div>
+        <button class="btn-ic btn-ic--pink" type="submit">ثبت درخواست فروشندگی</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="aff-terms">
+      <h2>قوانین فروشندگان</h2>
+      <ul>{% for t in terms %}<li>{{ t|fa_num }}</li>{% endfor %}</ul>
+      <p class="muted small">کمیسیون پایه {{ commission|floatformat:"-2"|fa_num }}٪ از مبلغ کالاست و برای بعضی دسته‌ها متفاوت است؛ هزینهٔ ارسال با خود شما یا مشتری (پس‌کرایه) است.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

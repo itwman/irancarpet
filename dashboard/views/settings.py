@@ -17,6 +17,7 @@ from shop import config, gateways
 from shop.models import ShopSettings
 from api.models import AppSettings
 from affiliate.models import AffiliateSettings
+from market.models import MarketSettings
 from content.models import ContentSettings
 from rajyar.models import RajyarSettings
 from seo import indexnow
@@ -42,6 +43,7 @@ TABS = [
     ("rajyar", "رج‌یار (کانال‌ها)"),
     ("content", "متن محصولات"),
     ("affiliate", "همکاری در فروش"),
+    ("market", "مارکت‌پلیس"),
 ]
 
 FORMS = {
@@ -70,6 +72,8 @@ FORMS = {
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
     "affiliate": (AffiliateSettings, ["enabled", "auto_approve", "attribution_days", "tier_period", "tier_mode", "new_customers_only",
                                       "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
+    "market": (MarketSettings, ["enabled", "signup_open", "default_commission", "accept_hours", "auto_deliver_days", "hold_days",
+                                "min_payout", "terms"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 

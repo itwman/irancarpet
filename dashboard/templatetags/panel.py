@@ -10,9 +10,10 @@ EXTRA_NAV = {
     "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
     "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
     "همکاری در فروش": [("تنظیمات همکاری در فروش", "/panel/settings/?tab=affiliate", "settings")],
+    "مارکت‌پلیس": [("صف بررسی کالاها", "/panel/seller-products/?queue=1", "search"), ("تنظیمات مارکت‌پلیس", "/panel/settings/?tab=market", "settings")],
 }
 GROUP_ICONS = {"فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
-               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users"}
+               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users", "مارکت‌پلیس": "box"}
 
 
 @register.simple_tag(takes_context=True)

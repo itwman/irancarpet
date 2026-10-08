@@ -157,6 +157,12 @@ def checkout(request):
     plans = active_plans(summary["total"])
     if plans:
         modes.append("installment")
+    from market.cart import groups as seller_groups, own_total, restrict_modes, seller_lines
+
+    has_sellers = bool(seller_lines(summary["lines"]))
+    modes = restrict_modes(modes, summary["lines"])
+    if has_sellers:
+        plans = []
     form = _initial(request.user)
     if request.GET.get("mode") in modes:
         form["payment_mode"] = request.GET["mode"]
@@ -212,7 +218,10 @@ def checkout(request):
         "meta": {**META, "title": "تسویه حساب"}, **summary, "shop": shop, "form": form, "errors": errors,
         "gateways": gws, "modes": modes, "provinces": PROVINCES, "plans": [(p, describe(p)) for p in plans],
         "plans_json": plans_payload(plans),
-        "deposit": shop.deposit_amount(total), "remaining": total - shop.deposit_amount(total), "free_shipping": total >= shop.free_shipping_min,
+        "deposit": shop.deposit_amount(total), "remaining": total - shop.deposit_amount(total),
+        "free_shipping": own_total(summary["lines"]) >= shop.free_shipping_min, "has_sellers": has_sellers,
+        "own_total": own_total(summary["lines"]),
+        "seller_groups": seller_groups(summary["lines"]) if has_sellers else [],
     })
 
 
@@ -222,11 +231,14 @@ def create_order(user, form, summary, shop, source="web", installment=None, ref=
 
     total = summary["total"]
     mode = form["payment_mode"]
+    from market.cart import own_total
+
+    ship_total = own_total(summary["lines"])
     order = Order.objects.create(
         user=user, first_name=form["first_name"][:100], last_name=form["last_name"][:100],
         mobile=normalize_mobile(form["mobile"]), email=form["email"][:254], province=form["province"][:60],
         city=form["city"][:80], address=form["address"], postal_code=form["postal_code"][:10], note=form["note"],
-        payment_mode=mode, shipping_mode=shop.shipping_for(mode, total), items_total=total,
+        payment_mode=mode, shipping_mode=shop.shipping_for(mode, ship_total), items_total=total,
         coupon_code=summary["coupon"].code if summary.get("coupon") else "", discount=summary.get("discount") or 0,
         deposit_percent=shop.deposit_percent if mode == "deposit" else 0,
         online_amount=shop.deposit_amount(total) if mode == "deposit" else total,
@@ -254,6 +266,12 @@ def create_order(user, form, summary, shop, source="web", installment=None, ref=
     p = profile_of(u)
     p.province, p.city, p.address, p.postal_code = order.province, order.city, order.address, order.postal_code
     p.save()
+    try:  # مارکت‌پلیس: اقلام هر فروشنده یک سفارش فروشنده
+        from market.orders import split
+
+        split(order)
+    except Exception:  # noqa: BLE001
+        log.exception("market split")
     try:  # همکاری در فروش: پیوند یا کد تخفیف همکار
         from affiliate.track import attach
 
@@ -380,6 +398,7 @@ def order_detail(request, number):
         "meta": {**META, "title": f"سفارش {order.number}"}, "order": order,
         "just_paid": bool(request.GET.get("paid") or request.GET.get("placed")),
         "gateways": gateways.enabled(ShopSettings.load()) if order.can_pay else [], "shop": ShopSettings.load(),
+        "seller_orders": order.seller_orders.select_related("seller").prefetch_related("items"),
     })
 
 

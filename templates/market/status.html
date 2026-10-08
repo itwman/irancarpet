@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container mk" style="max-width:760px">
+  <div class="page-head"><h1>پنل فروشنده</h1><p>{{ seller.name }}</p></div>
+  <div class="card-ic">
+    {% if seller.status == "pending" %}
+      <h2>درخواستتان ثبت شد</h2>
+      <p>کارشناسان ایران کارپت مشخصات فروشگاه را بررسی می‌کنند و برای هماهنگی با شمارهٔ {{ seller.mobile|fa_num }} تماس می‌گیرند. بعد از تأیید، پیامک می‌گیرید و از همین صفحه کالاهایتان را اضافه می‌کنید.</p>
+      <p class="muted mb-0">برای سرعت کار، از حالا عکس‌های واقعی و قیمت هر سایز کالاهایتان را آماده کنید.</p>
+    {% else %}
+      <h2>حساب فروشنده {{ seller.get_status_display }}</h2>
+      <p class="mb-0">برای پیگیری با ایران کارپت تماس بگیرید{% if site_settings.phone %}: <span dir="ltr">{{ site_settings.phone|fa_num }}</span>{% endif %}.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

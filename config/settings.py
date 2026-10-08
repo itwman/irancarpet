@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "growth",
     "content",
     "affiliate",
+    "market",
 ]
 
 MIDDLEWARE = [

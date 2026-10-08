@@ -102,7 +102,7 @@ def rows_by_reeds(s):
     pile_attr = Attribute.objects.filter(label__contains="خاب").first()
     if not reeds_attr:
         return [], sizes
-    vs = (Variation.objects.filter(product__status="publish", size__in=sizes, is_available=True)
+    vs = (Variation.objects.filter(product__status="publish", product__seller__isnull=True, size__in=sizes, is_available=True)
           .exclude(product__sale_status="unavailable").only("product_id", "size_id", "final_price", "sale_price"))
     albums = list(s.weekly_albums.values_list("pk", flat=True)) if s.pk else []
     if albums:
@@ -146,7 +146,7 @@ def rows(s):
     albums = albums or list(Album.objects.filter(is_active=True, in_price_list=True).order_by("sort_order", "name"))
     out = []
     for a in albums:
-        vs = (Variation.objects.filter(product__album=a, product__status="publish", size__in=sizes, is_available=True)
+        vs = (Variation.objects.filter(product__album=a, product__status="publish", product__seller__isnull=True, size__in=sizes, is_available=True)
               .exclude(product__sale_status="unavailable").only("size_id", "final_price", "sale_price"))
         by = {}
         for v in vs:

@@ -213,6 +213,12 @@ class Product(SeoFields):
     single_sizes = models.ManyToManyField(
         Size, blank=True, related_name="+", verbose_name="این سایزها تکی هم فروخته شوند",
         help_text="سایزهایی که در آلبوم «فقط جفت» هستند ولی در این محصول یک‌تخته هم سفارش گرفته می‌شوند.")
+    # مارکت‌پلیس: کالای فروشندهٔ دیگر (خالی = کالای خود ایران کارپت)
+    seller = models.ForeignKey("market.Seller", null=True, blank=True, on_delete=models.SET_NULL, related_name="products",
+                               verbose_name="فروشنده", help_text="خالی یعنی کالای خود ایران کارپت")
+    review_status = models.CharField("بررسی", max_length=10, blank=True, db_index=True, choices=[
+        ("pending", "در انتظار بررسی"), ("approved", "تأیید شد"), ("rejected", "رد شد")])
+    review_note = models.CharField("پیام بررسی به فروشنده", max_length=300, blank=True)
     sale_status = models.CharField("وضعیت فروش", max_length=20, choices=SALE_STATUS_CHOICES, default="available", db_index=True)
 
     # کش برای فهرست و مرتب‌سازی
@@ -328,6 +334,8 @@ class Variation(models.Model):
     sale_price = models.PositiveBigIntegerField("قیمت حراج (نهایی)", null=True, blank=True)
     pair_only = models.BooleanField("فقط زوج", null=True, blank=True, help_text="خالی = پیش‌فرض سایز")
     is_available = models.BooleanField("موجود", default=True)
+    stock_qty = models.PositiveIntegerField("تعداد موجودی", null=True, blank=True,
+                                            help_text="خالی = بی‌شمار. با هر سفارش پرداخت‌شده کم می‌شود و در صفر ناموجود می‌شود.")
 
     final_price = models.PositiveBigIntegerField("قیمت نهایی", null=True, blank=True, editable=False, db_index=True)
     purchase_price = models.PositiveBigIntegerField("قیمت خرید", null=True, blank=True, editable=False)

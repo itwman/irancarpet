@@ -51,6 +51,16 @@
       {% if order.is_paid and order.remaining %}<div class="sum-row"><span>{% if order.is_installment %}مانده (اقساط){% else %}موقع تحویل{% endif %}</span><strong>{{ order.remaining|toman }} تومان</strong></div>{% endif %}
       <div class="ship-note {{ order.shipping_mode }}">{{ order.get_shipping_mode_display }}</div>
       {% if order.tracking_code %}<div class="sum-row mt-2"><span>کد رهگیری مرسوله</span><strong>{{ order.tracking_code|fa_num }}</strong></div>{% endif %}
+      {% for so in seller_orders %}
+      <div class="so-box">
+        <p class="mb-1"><b>ارسال توسط «<a href="{{ so.seller.get_absolute_url }}">{{ so.seller.name }}</a>»</b> از {{ so.seller.city }}</p>
+        <p class="mb-1 small"><span class="mk-st mk-st--{{ so.status }}">{% if so.status == "waiting" %}منتظر پرداخت{% else %}{{ so.get_status_display }}{% endif %}</span>
+          {% if so.tracking_code %} {{ so.carrier }} · کد رهگیری <b dir="ltr">{{ so.tracking_code|fa_num }}</b>{% endif %}</p>
+        {% for it in so.items.all %}<p class="small muted mb-0">{{ it.title|fa_num }} · {{ it.size_label|fa_num }}</p>{% endfor %}
+        {% if so.status == "shipped" %}<form method="post" action="{{ order.get_absolute_url }}received/{{ so.pk }}/" class="mt-2">{% csrf_token %}<button class="pill" type="submit">این بسته را تحویل گرفتم</button></form>{% endif %}
+        {% if so.status == "cancelled" %}<p class="small mb-0 text-danger">این بخش لغو شد؛ مبلغش به شما برگردانده می‌شود.</p>{% endif %}
+      </div>
+      {% endfor %}
       {% if order.can_pay %}
         {% if gateways %}
         <form method="post" action="{{ order.get_absolute_url }}pay/" class="mt-3">{% csrf_token %}

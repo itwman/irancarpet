@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load fa static %}
+{% block body_class %}seller-page{% endblock %}
+{% block content %}
+<div class="container mk">
+  <header class="mk-head">
+    <div class="mk-head__id">
+      {% if seller.logo %}<img src="{{ seller.logo.url }}" alt="" width="52" height="52">{% else %}<span class="mk-head__mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
+      <div><h1>{{ seller.name }}</h1>
+        <p>{% if seller.status == "paused" %}<span class="mk-dot mk-dot--off"></span>تعطیل موقت{% elif seller.status == "active" %}<span class="mk-dot"></span>فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}
+          · <a href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener">صفحهٔ فروشگاه در سایت</a></p></div>
+    </div>
+    <a class="btn-ic btn-ic--pink btn-ic--sm" href="/seller/products/add/">+ افزودن کالا</a>
+  </header>
+  <nav class="mk-tabs" aria-label="پنل فروشنده">
+    <a href="/seller/"{% if tab == "home" %} aria-current="page"{% endif %}>خلاصه</a>
+    <a href="/seller/orders/"{% if tab == "orders" %} aria-current="page"{% endif %}>سفارش‌ها{% if pending_orders %} <b>{{ pending_orders|fa_num }}</b>{% endif %}</a>
+    <a href="/seller/products/"{% if tab == "products" %} aria-current="page"{% endif %}>کالاها</a>
+    <a href="/seller/finance/"{% if tab == "finance" %} aria-current="page"{% endif %}>مالی و تسویه</a>
+    <a href="/seller/settings/"{% if tab == "settings" %} aria-current="page"{% endif %}>تنظیمات فروشگاه</a>
+  </nav>
+  {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}" role="status">{{ m }}</div>{% endfor %}
+  {% block panel %}{% endblock %}
+</div>
+{% endblock %}

@@ -3,7 +3,7 @@
 <div class="container">
   <div class="page-head"><h1>تسویه حساب</h1><p>اطلاعات ارسال را وارد کنید و روش پرداخت را انتخاب کنید.</p></div>
   {% if errors.cart %}<div class="alert-ic">{{ errors.cart }} <a href="/cart/">رفتن به سبد</a></div>{% endif %}
-  <form method="post" enctype="multipart/form-data" class="checkout-layout" id="checkoutForm" data-total="{{ total }}" data-deposit="{{ deposit }}" data-free-min="{{ shop.free_shipping_min }}">{% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="checkout-layout" id="checkoutForm" data-total="{{ total }}" data-deposit="{{ deposit }}" data-free-min="{{ shop.free_shipping_min }}" data-own-total="{{ own_total }}">{% csrf_token %}
     <div class="checkout-main">
     <section class="card-ic">
       <h2>اطلاعات گیرنده</h2>
@@ -60,7 +60,7 @@
     <aside class="card-ic sum">
       <h2>سفارش شما</h2>
       {% for line in lines %}{% if not line.problem %}
-      <div class="sum-row"><span>{{ line.product.title|fa_num }} <small class="muted">· {{ line.size_label|fa_num }} · {{ line.qty|fa_num }} عدد</small></span><span class="text-nowrap">{{ line.total|toman }}</span></div>
+      <div class="sum-row"><span>{{ line.product.title|fa_num }} <small class="muted">· {{ line.size_label|fa_num }} · {{ line.qty|fa_num }} عدد</small>{% if line.product.seller_id %}<br><small class="cart-seller">فروشنده: {{ line.product.seller.name }}</small>{% endif %}</span><span class="text-nowrap">{{ line.total|toman }}</span></div>
       {% endif %}{% endfor %}
       {% if discount %}<div class="sum-row sum-discount"><span>تخفیف ({{ coupon.code }})</span><strong>−{{ discount|toman }}</strong></div>{% endif %}
       {% if errors.coupon %}<div class="alert-ic">{{ errors.coupon }}</div>{% endif %}
@@ -73,9 +73,11 @@
         {% if "installment" in modes %}<label><input type="radio" name="payment_mode" value="installment"{% if form.payment_mode == "installment" %} checked{% endif %}><span><strong>خرید اقساطی</strong><small>{% for p, d in plans %}{{ p.title }}{% if not forloop.last %}، {% endif %}{% endfor %}</small></span></label>{% endif %}
       </div>
       {% if errors.payment_mode %}<div class="alert-ic">{{ errors.payment_mode }}</div>{% endif %}
+      {% if has_sellers %}<p class="muted small">سبد شما کالای فروشندگان مارکت‌پلیس دارد؛ این سفارش فقط با پرداخت کامل آنلاین ثبت می‌شود.</p>{% endif %}
       <div class="sum-row"><span>پرداخت الان</span><strong id="payNow">{{ total|toman }} تومان</strong></div>
       <div class="sum-row" id="laterRow" hidden><span id="laterLabel">موقع تحویل</span><strong id="payLater"></strong></div>
-      <div class="ship-note {% if free_shipping %}free{% else %}cod{% endif %}" id="shipNote">{% if free_shipping %}ارسال رایگان است.{% else %}هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).{% endif %}</div>
+      <div class="ship-note {% if free_shipping %}free{% else %}cod{% endif %}" id="shipNote"{% if has_sellers and not own_total %} hidden{% endif %}>{% if free_shipping %}ارسال رایگان است.{% else %}هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).{% endif %}</div>
+      {% for sl, group in seller_groups %}{% if sl %}<div class="ship-note {% if sl.shipping == 'free' %}free{% else %}cod{% endif %}">«{{ sl.name }}» کالاهایش را خودش از {{ sl.city }} می‌فرستد؛ {% if sl.shipping == "free" %}ارسال رایگان{% else %}پس‌کرایه{% endif %}، آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری.</div>{% endif %}{% endfor %}
 
       <div id="gwBlock">
       <h2 class="mt-4">درگاه پرداخت</h2>
@@ -118,7 +120,9 @@
     document.getElementById("payNow").textContent = fa(now);
     lr.hidden = !later; document.getElementById("payLater").textContent = fa(later);
     document.getElementById("laterLabel").textContent = label;
-    var free = m === "full" && total >= freeMin, n = document.getElementById("shipNote");
+    var own = f.dataset.ownTotal === "" ? total : +f.dataset.ownTotal;
+    var free = m === "full" && own >= freeMin, n = document.getElementById("shipNote");
+    n.hidden = own === 0;
     n.className = "ship-note " + (free ? "free" : "cod");
     n.textContent = free ? "ارسال رایگان است." : "هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).";
     var needGw = !(m === "installment" && now === 0);

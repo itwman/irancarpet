@@ -1,0 +1,6 @@
+{% load fa %}{% if page.paginator.num_pages > 1 %}
+<nav class="mk-pager" aria-label="صفحه‌ها">
+  {% if page.has_previous %}<a class="pill" href="?{% if f %}f={{ f }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page.previous_page_number }}">قبلی</a>{% endif %}
+  <span>صفحهٔ {{ page.number|fa_num }} از {{ page.paginator.num_pages|fa_num }}</span>
+  {% if page.has_next %}<a class="pill" href="?{% if f %}f={{ f }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page.next_page_number }}">بعدی</a>{% endif %}
+</nav>{% endif %}

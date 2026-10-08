@@ -1,0 +1,44 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+{% if seller.status == "paused" %}<div class="alert-ic alert-ic--warn">فروشگاه تعطیل موقت است و کالاهایتان در سایت دیده نمی‌شوند.</div>{% endif %}
+<section class="mk-stats" aria-label="خلاصه">
+  <div class="mk-stat mk-stat--ink"><span>فروش ۳۰ روز اخیر</span><strong>{{ month_total|toman }} <small>تومان</small></strong><small>{{ month_count|fa_num }} سفارش</small></div>
+  <div class="mk-stat"><span>قابل تسویه</span><strong>{{ bal.payable.amount|toman }} <small>تومان</small></strong><small>واریز از {{ ms.min_payout|toman }} تومان</small></div>
+  <div class="mk-stat"><span>در مهلت مرجوعی</span><strong>{{ bal.hold.amount|toman }} <small>تومان</small></strong><small>{{ ms.hold_days|fa_num }} روز پس از تحویل قابل تسویه می‌شود</small></div>
+  <div class="mk-stat"><span>در جریان ارسال</span><strong>{{ bal.waiting.amount|toman }} <small>تومان</small></strong><small>{{ bal.waiting.count|fa_num }} سفارش</small></div>
+</section>
+
+<div class="mk-two">
+  <section class="card-ic">
+    <h2>سفارش‌هایی که منتظر شماست</h2>
+    {% if new_orders %}
+    <ul class="mk-list">{% for so in new_orders %}
+      <li><a href="/seller/orders/{{ so.pk }}/"><b>سفارش {{ so.order.number|fa_num }}</b><span>{{ so.items_total|toman }} تومان · {{ so.paid_at|jdate:"%d %B، %H:%M" }}</span></a>
+        <span class="mk-st mk-st--{{ so.status }}">{{ so.get_status_display }}</span></li>
+    {% endfor %}</ul>
+    {% else %}<p class="muted mb-0">سفارش بازی ندارید. سفارش تازه که برسد، پیامک می‌گیرید.</p>{% endif %}
+  </section>
+  <section class="card-ic">
+    <h2>کالاها</h2>
+    <ul class="mk-counts">
+      <li><a href="/seller/products/"><b>{{ counts.live|fa_num }}</b> در سایت</a></li>
+      <li><a href="/seller/products/?f=pending"><b>{{ counts.pending|fa_num }}</b> در انتظار بررسی</a></li>
+      <li><a href="/seller/products/?f=rejected"{% if counts.rejected %} class="is-warn"{% endif %}><b>{{ counts.rejected|fa_num }}</b> نیاز به اصلاح</a></li>
+      <li><a href="/seller/products/?f=out"><b>{{ counts.out|fa_num }}</b> ناموجود</a></li>
+    </ul>
+    <form method="post" action="/seller/pause/" class="mt-3">{% csrf_token %}
+      <button class="pill" type="submit">{% if seller.status == "paused" %}باز کردن دوبارهٔ فروشگاه{% else %}تعطیل موقت فروشگاه (مثلاً سفر){% endif %}</button>
+    </form>
+  </section>
+</div>
+
+<section class="card-ic mk-how">
+  <h2>روند هر سفارش</h2>
+  <ol>
+    <li><b>پرداخت مشتری</b><span>مشتری مبلغ را به درگاه ایران کارپت می‌پردازد و شما پیامک می‌گیرید.</span></li>
+    <li><b>پذیرش</b><span>تا {{ ms.accept_hours|fa_num }} ساعت سفارش را بپذیرید؛ اگر کالا تمام شده، لغو کنید.</span></li>
+    <li><b>ارسال</b><span>کالا را بفرستید و کد رهگیری را ثبت کنید؛ برای مشتری پیامک می‌شود.</span></li>
+    <li><b>تسویه</b><span>{{ ms.hold_days|fa_num }} روز پس از تحویل، سهم شما (منهای کمیسیون) به شبایتان واریز می‌شود.</span></li>
+  </ol>
+</section>
+{% endblock %}

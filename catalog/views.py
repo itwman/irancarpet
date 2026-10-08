@@ -209,7 +209,7 @@ def _landing_links(product):
 
 def product_detail(request, slug):
     product = get_object_or_404(
-        Product.objects.select_related("image", "brand", "primary_category", "album__base_size"), slug=slug
+        Product.objects.select_related("image", "brand", "primary_category", "album__base_size", "seller"), slug=slug
     )
     from shop.offers import for_product
 
@@ -258,7 +258,7 @@ def product_detail(request, slug):
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
         "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
     }
-    if product.is_purchasable and product.min_price:
+    if product.is_purchasable and product.min_price and not product.seller_id:  # کالای فروشندگان اقساطی فروخته نمی‌شود
         from installments.services import teaser
 
         ctx["inst_teaser"] = teaser(product.min_price)
@@ -300,6 +300,8 @@ def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
         # قیمت‌ها به ریال (IRR) برای سازگاری با گوگل
         prices = [v.price * 10 for v in priced]
         seller = {"@type": "Organization", "name": "ایران کارپت", "url": site + "/"}
+        if product.seller_id:
+            seller = {"@type": "Organization", "name": product.seller.name, "url": site + product.seller.get_absolute_url()}
         stock = "https://schema.org/InStock" if product.in_stock else "https://schema.org/OutOfStock"
         data["offers"] = {
             "@type": "AggregateOffer", "priceCurrency": "IRR",

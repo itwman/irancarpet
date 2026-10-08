@@ -81,6 +81,10 @@ def product(p):
     spec_sets.append(spec_sets[0][:2])                        # فقط شانه و تراکم
     spec_sets.append([])
     tail = ["خرید نقدی و اقساطی با ارسال مستقیم از کاشان.", "خرید نقدی و اقساطی از کاشان.", "ارسال به سراسر ایران."]
+    if getattr(p, "seller_id", None):  # کالای فروشندهٔ مارکت‌پلیس: ارسال از شهر خود فروشنده، بدون اقساط
+        city = p.seller.city
+        tail = [f"فروشنده: {p.seller.name}، ارسال از {city}، پرداخت امن در ایران کارپت.", f"ارسال از {city}، پرداخت امن.",
+                "ارسال به سراسر ایران."]
     desc = ""
     for specs in spec_sets:
         sp = "، ".join(x for x in specs if x)

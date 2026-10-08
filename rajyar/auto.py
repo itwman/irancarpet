@@ -31,7 +31,7 @@ def _claim(slot, kind):
 def candidates(s):
     from catalog.models import Product
 
-    qs = (Product.objects.published().filter(image__isnull=False, sale_status="available")
+    qs = (Product.objects.published().filter(image__isnull=False, sale_status="available", seller__isnull=True)
           .exclude(stock_status="outofstock").exclude(min_price=None))
     albums = list(s.daily_albums.values_list("pk", flat=True)) if s.pk else []
     if albums:

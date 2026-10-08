@@ -1,0 +1,32 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<section class="mk-stats">
+  <div class="mk-stat mk-stat--ink"><span>قابل تسویه</span><strong>{{ bal.payable.amount|toman }} <small>تومان</small></strong><small>{{ bal.payable.count|fa_num }} سفارش</small></div>
+  <div class="mk-stat"><span>در مهلت مرجوعی</span><strong>{{ bal.hold.amount|toman }} <small>تومان</small></strong><small>{{ bal.hold.count|fa_num }} سفارش</small></div>
+  <div class="mk-stat"><span>در جریان ارسال</span><strong>{{ bal.waiting.amount|toman }} <small>تومان</small></strong><small>{{ bal.waiting.count|fa_num }} سفارش</small></div>
+  <div class="mk-stat"><span>واریز شده</span><strong>{{ bal.paid.amount|toman }} <small>تومان</small></strong><small>تا امروز</small></div>
+</section>
+{% if not seller.sheba %}<div class="alert-ic alert-ic--warn">برای دریافت تسویه، شماره شبای به نام خودتان را در <a href="/seller/settings/">تنظیمات فروشگاه</a> ثبت کنید.</div>{% endif %}
+<div class="mk-two mk-two--wide">
+  <section class="card-ic">
+    <h3>سفارش‌ها</h3>
+    {% if page.object_list %}
+    <div class="table-wrap"><table class="orders">
+      <thead><tr><th>سفارش</th><th>مبلغ</th><th class="hide-sm">کمیسیون</th><th>سهم شما</th><th>وضعیت</th></tr></thead>
+      <tbody>{% for so in page.object_list %}
+        <tr><td><a href="/seller/orders/{{ so.pk }}/">{{ so.order.number|fa_num }}</a></td><td>{{ so.items_total|toman }}</td><td class="hide-sm">{{ so.commission|toman }}</td>
+          <td><b>{{ so.seller_amount|toman }}</b></td>
+          <td>{% if so.status == "cancelled" %}<span class="mk-st mk-st--cancelled">لغو</span>{% elif so.settle == "paid" %}<span class="mk-st mk-st--delivered">واریز شد</span>{% elif so.settle == "payable" %}<span class="mk-st mk-st--accepted">قابل تسویه</span>{% elif so.status == "delivered" %}<span class="mk-st mk-st--new">تا {{ so.payable_at|jdate:"%d %B" }}</span>{% else %}<span class="mk-st mk-st--waiting">{{ so.get_status_display }}</span>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% include "market/_pager.html" %}
+    {% else %}<p class="muted mb-0">هنوز سفارشی نیست.</p>{% endif %}
+  </section>
+  <section class="card-ic">
+    <h3>واریزها</h3>
+    {% if payouts %}<ul class="mk-list">{% for p in payouts %}<li><span><b>{{ p.amount|toman }} تومان</b><span>{{ p.paid_at|jdate }}{% if p.reference %} · پیگیری {{ p.reference|fa_num }}{% endif %}</span></span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">هنوز واریزی نبوده.</p>{% endif %}
+    <p class="muted small mb-0">واریز به شبای {{ seller.sheba|default:"ثبت‌نشده" }} انجام می‌شود، وقتی مانده به {{ ms.min_payout|toman }} تومان برسد.</p>
+  </section>
+</div>
+{% endblock %}

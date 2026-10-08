@@ -103,6 +103,8 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "content_text": full_text(doc)[:6000],
         "info_blocks": [{"title": b["title"], "text": to_text(b["html"]), "html": b["html"]} for b in doc["blocks"]],
         "special_offers": [offer_json(o) for o in __import__("shop.offers", fromlist=["for_product"]).for_product(p)],
+        "seller": ({"name": p.seller.name, "city": p.seller.city, "shipping": p.seller.shipping_label, "prep_days": p.seller.prep_days,
+                    "url": settings.SITE_URL + p.seller.get_absolute_url()} if p.seller_id else None),
         "colors": [{"id": x["product"].pk, "title": x["product"].title, "color": x["color"], "current": x["current"],
                     "image": thumb_url(x["product"].image, 240) if x["product"].image_id else ""} for x in color_siblings(p)],
         "sizes": [size_row(v) for v in variations],

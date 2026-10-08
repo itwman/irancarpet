@@ -51,6 +51,7 @@ urlpatterns = [
     path("feed/", LatestPostsFeed()),
     path("search/", catalog_views.search, name="search"),
     path("", include("affiliate.urls")),
+    path("", include("market.urls")),
     path("", include("shop.urls")),
     path("blog/", blog_views.blog_index, name="blog"),
     re_path(rf"^blog/{P}$", blog_views.blog_index),

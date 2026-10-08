@@ -449,6 +449,8 @@ class _Line:
             self.problem = "این سایز الان موجود نیست."
         elif not self.unit_price:
             self.problem = "قیمت این سایز استعلامی است."
+        elif self.product.seller_id and self.product.status != "publish":
+            self.problem = "این کالا الان فروخته نمی‌شود."
         from shop.offers import apply_to_line
 
         apply_to_line(self)
@@ -471,7 +473,7 @@ def _summary(items):
         vid, q = _int(it.get("variation")), _int(it.get("qty"), 1)
         if vid and q > 0:
             qty[vid] = qty.get(vid, 0) + q
-    vs = {v.pk: v for v in Variation.objects.filter(pk__in=list(qty)[:50]).select_related("product__image", "product__album", "size")
+    vs = {v.pk: v for v in Variation.objects.filter(pk__in=list(qty)[:50]).select_related("product__image", "product__album", "product__seller", "size")
           .prefetch_related("attributes")}
     lines = [_Line(vs[k], q) for k, q in qty.items() if k in vs]
     good = [x for x in lines if not x.problem]
@@ -488,7 +490,8 @@ def _summary_json(summary, shop, mode="full"):
                    "image": S.thumb_url(x.product.image, 240), "unit_price": x.unit_price, "qty": x.qty, "total": x.total,
                    "pair_only": x.variation.is_pair_only, "problem": x.problem,
                    "regular_price": getattr(x, "regular_price", x.unit_price), "special_offer": bool(getattr(x, "offer", None)),
-                   "offer_hint": getattr(x, "offer_hint", "")} for x in summary["lines"]],
+                   "offer_hint": getattr(x, "offer_hint", ""),
+                   "seller": x.product.seller.name if x.product.seller_id else ""} for x in summary["lines"]],
         "total": total, "has_problem": summary["has_problem"],
         "subtotal": summary.get("subtotal", total), "discount": summary.get("discount", 0),
         "coupon": ({"code": summary["coupon"].code, "label": summary["coupon"].title or summary["coupon"].label}
@@ -541,8 +544,14 @@ def order_create(request):
 
     if active_plans(summary["total"]):
         modes.append("installment")
-    if form["payment_mode"] not in modes:
+    from market.cart import ONLY_FULL, restrict_modes
+
+    limited = restrict_modes(modes, summary["lines"])
+    if form["payment_mode"] in modes and form["payment_mode"] not in limited:
+        errors["payment_mode"] = ONLY_FULL
+    elif form["payment_mode"] not in modes:
         errors["payment_mode"] = "نوع پرداخت را انتخاب کنید."
+    modes = limited
     inst, pay_now = None, True
     if form["payment_mode"] == "installment":
         from installments.orders import read_request

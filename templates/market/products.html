@@ -1,0 +1,51 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<div class="mk-bar">
+  <nav class="mk-filter">
+    <a href="?"{% if not f %} aria-current="true"{% endif %}>همه</a><a href="?f=pending"{% if f == "pending" %} aria-current="true"{% endif %}>در انتظار بررسی</a>
+    <a href="?f=rejected"{% if f == "rejected" %} aria-current="true"{% endif %}>نیاز به اصلاح</a><a href="?f=out"{% if f == "out" %} aria-current="true"{% endif %}>ناموجود</a>
+  </nav>
+  <form class="mk-search"><input type="search" name="q" value="{{ q }}" placeholder="جستجوی کالا" aria-label="جستجوی کالا">{% if f %}<input type="hidden" name="f" value="{{ f }}">{% endif %}</form>
+</div>
+{% if page.object_list %}
+<form method="post">{% csrf_token %}
+  <p class="muted small">قیمت و موجودی را همین‌جا عوض کنید و «ذخیره» بزنید؛ این تغییرها نیاز به بررسی ندارند. برای عکس و متن، روی نام کالا بزنید.</p>
+  {% for p in page.object_list %}
+  <article class="mk-prod">
+    <div class="mk-prod__head">
+      {% if p.image %}<img src="{{ p.image|thumb:240 }}" alt="" width="72" height="72" loading="lazy">{% else %}<span class="mk-prod__noimg"></span>{% endif %}
+      <div class="mk-prod__t">
+        <a href="/seller/products/{{ p.pk }}/"><b>{{ p.title|fa_num }}</b></a>
+        <span>
+          {% if p.review_status == "pending" %}<span class="mk-st mk-st--new">در انتظار بررسی</span>
+          {% elif p.review_status == "rejected" %}<span class="mk-st mk-st--cancelled">نیاز به اصلاح</span> <small class="muted">{{ p.review_note }}</small>
+          {% elif p.status == "publish" %}<span class="mk-st mk-st--delivered">در سایت</span> <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="small">دیدن</a>
+          {% else %}<span class="mk-st mk-st--waiting">پنهان</span>{% endif %}
+        </span>
+      </div>
+      {% if p.review_status == "approved" %}<button class="pill mk-prod__hide" type="submit" form="tg{{ p.pk }}">{% if p.status == "publish" %}برداشتن از سایت{% else %}نمایش در سایت{% endif %}</button>{% endif %}
+    </div>
+    <div class="mk-vars">
+      {% for v in p.variations.all %}
+      <div class="mk-var">
+        <span class="mk-var__n">{% if v.size %}{{ v.size.label|fa_num }}{% else %}{{ v.sku|default:"—"|fa_num }}{% endif %}</span>
+        <label>قیمت<input name="q_price_{{ v.pk }}" value="{% if v.manual_price %}{{ v.manual_price|toman }}{% endif %}" inputmode="numeric" dir="ltr"></label>
+        <label>با تخفیف<input name="q_sale_{{ v.pk }}" value="{% if v.sale_price %}{{ v.sale_price|toman }}{% endif %}" inputmode="numeric" dir="ltr" placeholder="—"></label>
+        <label>موجودی<input name="q_qty_{{ v.pk }}" value="{{ v.stock_qty|default_if_none:'' }}" inputmode="numeric" dir="ltr" placeholder="∞"></label>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+  <div class="mk-save"><button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ذخیرهٔ قیمت و موجودی</button></div>
+</form>
+{% for p in page.object_list %}{% if p.review_status == "approved" %}<form id="tg{{ p.pk }}" method="post" action="/seller/products/{{ p.pk }}/toggle/" hidden>{% csrf_token %}</form>{% endif %}{% endfor %}
+{% include "market/_pager.html" %}
+{% else %}
+<div class="card-ic mk-empty">
+  <h2>{% if f or q %}کالایی با این فیلتر نیست{% else %}هنوز کالایی ثبت نکرده‌اید{% endif %}</h2>
+  <p>هر کالا با عکس واقعی، مشخصات و قیمت هر سایز ثبت می‌شود و بعد از بررسی در سایت منتشر می‌شود.</p>
+  <a class="btn-ic btn-ic--pink btn-ic--sm" href="/seller/products/add/">افزودن اولین کالا</a>
+</div>
+{% endif %}
+{% endblock %}

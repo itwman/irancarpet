@@ -1,0 +1,60 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<div class="mk-title"><h2>سفارش {{ o.number|fa_num }}</h2><p><span class="mk-st mk-st--{{ so.status }}">{{ so.get_status_display }}</span> · پرداخت {{ so.paid_at|jdate:"%d %B %Y، %H:%M" }}</p></div>
+<div class="mk-two mk-two--wide">
+  <div>
+    <section class="card-ic">
+      <h3>اقلام</h3>
+      <div class="table-wrap"><table class="orders">
+        <thead><tr><th>کالا</th><th>سایز</th><th>تعداد</th><th>مبلغ</th></tr></thead>
+        <tbody>{% for it in items %}<tr><td>{{ it.title|fa_num }}</td><td>{{ it.size_label|fa_num }}</td><td>{{ it.quantity|fa_num }}</td><td>{{ it.line_total|toman }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <dl class="mk-dl">
+        <div><dt>جمع کالاها</dt><dd>{{ so.items_total|toman }} تومان</dd></div>
+        <div><dt>کمیسیون ایران کارپت</dt><dd>{{ so.commission|toman }} تومان</dd></div>
+        <div><dt>سهم شما</dt><dd><b>{{ so.seller_amount|toman }} تومان</b></dd></div>
+        <div><dt>هزینهٔ ارسال</dt><dd>{{ seller.shipping_label }}</dd></div>
+      </dl>
+    </section>
+    {% if so.status == "shipped" or so.status == "delivered" %}
+    <section class="card-ic"><h3>ارسال</h3><p class="mb-0">{{ so.carrier|default:"—" }} · کد رهگیری <b dir="ltr">{{ so.tracking_code|fa_num }}</b> · {{ so.shipped_at|jdate:"%d %B" }}{% if so.delivered_at %} · تحویل {{ so.delivered_at|jdate:"%d %B" }}{% endif %}</p></section>
+    {% endif %}
+    {% if so.status == "cancelled" %}<div class="alert-ic">لغو شد: {{ so.cancel_reason }}</div>{% endif %}
+  </div>
+  <aside>
+    <section class="card-ic">
+      <h3>گیرنده</h3>
+      <p class="mb-1"><b>{{ o.full_name }}</b></p>
+      <p class="mb-1">{{ o.province }}، {{ o.city }}</p>
+      <p class="mb-1">{{ o.address }}</p>
+      {% if o.postal_code %}<p class="mb-1">کد پستی <span dir="ltr">{{ o.postal_code|fa_num }}</span></p>{% endif %}
+      <p class="mb-0">موبایل <a href="tel:{{ o.mobile }}" dir="ltr">{{ o.mobile|fa_num }}</a></p>
+      {% if o.note %}<p class="muted mt-2 mb-0">توضیح مشتری: {{ o.note }}</p>{% endif %}
+      <p class="muted small mt-2 mb-0">این اطلاعات فقط برای ارسال همین سفارش است؛ استفادهٔ دیگر از آن ممنوع است.</p>
+    </section>
+    {% if so.status == "new" %}
+    <section class="card-ic"><form method="post">{% csrf_token %}<input type="hidden" name="act" value="accept">
+      <button class="btn-ic btn-ic--teal btn-ic--sm w-100" type="submit">پذیرش و شروع آماده‌سازی</button></form></section>
+    {% endif %}
+    {% if so.status == "new" or so.status == "accepted" or so.status == "shipped" %}
+    <section class="card-ic">
+      <h3>{% if so.status == "shipped" %}اصلاح اطلاعات ارسال{% else %}ثبت ارسال{% endif %}</h3>
+      <form method="post">{% csrf_token %}<input type="hidden" name="act" value="ship">
+        <div class="field"><label for="cr">شرکت حمل</label><input id="cr" name="carrier" list="carriers" value="{{ so.carrier }}"><datalist id="carriers">{% for c in carriers %}<option value="{{ c }}">{% endfor %}</datalist></div>
+        <div class="field"><label for="tc">کد رهگیری / شمارهٔ بارنامه</label><input id="tc" name="tracking_code" dir="ltr" value="{{ so.tracking_code }}" required></div>
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ثبت ارسال</button>
+      </form>
+    </section>
+    {% endif %}
+    {% if so.status == "new" or so.status == "accepted" %}
+    <details class="card-ic mk-cancel"><summary>کالا موجود نیست؟ لغو سفارش</summary>
+      <form method="post">{% csrf_token %}<input type="hidden" name="act" value="cancel">
+        <div class="field"><label for="rs">دلیل</label><input id="rs" name="reason" required placeholder="مثلاً این سایز تمام شده"></div>
+        <button class="btn-ic btn-ic--pink btn-ic--sm" type="submit">لغو این سفارش</button>
+      </form>
+      <p class="muted small mb-0">لغو در امتیاز فروشگاه اثر دارد؛ اگر موجودی تمام شده، در فهرست کالاها صفرش کنید.</p>
+    </details>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

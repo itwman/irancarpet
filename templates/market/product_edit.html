@@ -1,0 +1,99 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<div class="mk-title">
+  <h2>{% if product %}ویرایش «{{ product.title|fa_num }}»{% else %}افزودن کالای تازه{% endif %}</h2>
+  {% if product %}<p>
+    {% if product.review_status == "pending" %}<span class="mk-st mk-st--new">در انتظار بررسی</span>
+    {% elif product.review_status == "rejected" %}<span class="mk-st mk-st--cancelled">نیاز به اصلاح</span> {{ product.review_note }}
+    {% elif product.status == "publish" %}<span class="mk-st mk-st--delivered">در سایت</span> <a href="{{ product.get_absolute_url }}" target="_blank" rel="noopener">دیدن در سایت</a>{% endif %}
+  </p>{% endif %}
+</div>
+{% if errors %}<div class="alert-ic" role="alert">چند مورد باید اصلاح شود؛ خانه‌های قرمز را ببینید.</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="mk-form" novalidate>{% csrf_token %}
+  <section class="card-ic">
+    <h3>معرفی کالا</h3>
+    <div class="field{% if errors.title %} has-err{% endif %}"><label for="t">عنوان</label>
+      <input id="t" name="title" value="{{ form.title|default:'' }}" maxlength="300" placeholder="مثل «فرش ۱۰۰۰ شانه طرح افشان زمینه کرم»" required>
+      {% if errors.title %}<span class="err">{{ errors.title }}</span>{% endif %}</div>
+    <div class="field{% if errors.category %} has-err{% endif %}"><label for="c">دسته</label>
+      <select id="c" name="category" required><option value="">انتخاب کنید</option>
+        {% for c in cats %}<option value="{{ c.pk }}"{% if form.category == c.pk|stringformat:"s" %} selected{% endif %}>{% if c.parent_id %}— {% endif %}{{ c.name|fa_num }}</option>{% endfor %}
+      </select>{% if errors.category %}<span class="err">{{ errors.category }}</span>{% endif %}</div>
+    <div class="field"><label for="sh">خلاصه (یک تا سه خط)</label><textarea id="sh" name="short" rows="2" maxlength="1000">{{ form.short|default:'' }}</textarea></div>
+    <div class="field"><label for="d">توضیحات کامل</label><textarea id="d" name="description" rows="7" placeholder="جنس، تراکم، نوع بافت، شستشو، ضمانت شما…">{{ form.description|default:'' }}</textarea>
+      <small>متن ساده بنویسید؛ پیوند و شمارهٔ تماس مجاز نیست.</small></div>
+  </section>
+
+  {% if attrs %}
+  <section class="card-ic">
+    <h3>مشخصات</h3>
+    <div class="mk-specs">{% for a in attrs %}
+      <div class="field"><label for="sp{{ a.pk }}">{{ a.label }}</label>
+        <select id="sp{{ a.pk }}" name="spec_{{ a.pk }}"><option value="">—</option>
+          {% for t in a.terms.all %}<option value="{{ t.pk }}"{% for k, v in form.specs.items %}{% if k == a.pk|stringformat:"s" and v == t.pk|stringformat:"s" %} selected{% endif %}{% endfor %}>{{ t.name|fa_num }}</option>{% endfor %}
+        </select></div>
+    {% endfor %}</div>
+    <small class="muted">مشخصات درست باعث می‌شود کالا در فیلترها و «فرش‌یاب» پیدا شود.</small>
+  </section>
+  {% endif %}
+
+  <section class="card-ic">
+    <h3>عکس‌ها</h3>
+    {% if form.images %}<div class="mk-imgs">{% for pi in form.images %}
+      <label class="mk-img"><img src="{{ pi.media|thumb:240 }}" alt="" width="110" height="110"><span><input type="checkbox" name="remove_image" value="{{ pi.media_id }}"> حذف</span></label>
+    {% endfor %}</div>{% endif %}
+    <div class="field{% if errors.images %} has-err{% endif %}">
+      <label for="im">افزودن عکس (حداکثر {{ max_images|fa_num }} عکس؛ اولی عکس اصلی است)</label>
+      <input id="im" type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple>
+      <small>عکس واقعی از خود کالا، در نور روز، از روبه‌رو و نزدیک. عکس‌ها خودکار کم‌حجم می‌شوند.</small>
+      {% if errors.images %}<span class="err">{{ errors.images }}</span>{% endif %}
+    </div>
+  </section>
+
+  <section class="card-ic">
+    <h3>سایزها، قیمت و موجودی</h3>
+    <p class="muted small">قیمت را به تومان بنویسید. «موجودی» را خالی بگذارید اگر همیشه موجود است؛ با هر فروش خودکار کم می‌شود.</p>
+    {% if errors.variations %}<div class="alert-ic">{% for e in errors.variations %}{{ e }}<br>{% endfor %}</div>{% endif %}
+    <div id="vrows">
+    {% for v in form.variations %}
+      <div class="mk-vrow">
+        <input type="hidden" name="v_id" value="{{ v.id|default:'' }}"><input type="hidden" name="v_delete" value="0" class="v-del">
+        <label>سایز<select name="v_size"><option value="">بدون سایز استاندارد</option>{% for z in sizes %}<option value="{{ z.pk }}"{% if v.size == z.pk|stringformat:"s" %} selected{% endif %}>{{ z.label|fa_num }}</option>{% endfor %}</select></label>
+        <label>یا عنوان<input name="v_label" value="{{ v.label|default:'' }}" placeholder="مثل ۵۰ × ۷۰"></label>
+        <label>قیمت (تومان)<input name="v_price" value="{{ v.price|default:'' }}" inputmode="numeric" dir="ltr"></label>
+        <label>با تخفیف<input name="v_sale" value="{{ v.sale|default:'' }}" inputmode="numeric" dir="ltr" placeholder="—"></label>
+        <label>موجودی<input name="v_qty" value="{{ v.qty|default_if_none:'' }}" inputmode="numeric" dir="ltr" placeholder="∞"></label>
+        <label class="mk-chk"><input type="checkbox" class="v-pair"{% if v.pair %} checked{% endif %}> فقط جفتی<input type="hidden" name="v_pair" value="{% if v.pair %}1{% else %}0{% endif %}"></label>
+        <button type="button" class="mk-vrow__x" aria-label="حذف این ردیف">×</button>
+      </div>
+    {% endfor %}
+    </div>
+    <button type="button" class="pill" id="addRow">+ سایز دیگر</button>
+  </section>
+
+  <div class="mk-save">
+    <button class="btn-ic btn-ic--pink" type="submit">{% if product %}ذخیره{% else %}ثبت و ارسال برای بررسی{% endif %}</button>
+    <small class="muted">{% if seller.trusted %}تغییرها بی‌درنگ منتشر می‌شوند.{% else %}کالای تازه و تغییر عنوان، متن، عکس یا مشخصات بعد از بررسی ایران کارپت منتشر می‌شود؛ تا آن موقع کالا در سایت دیده نمی‌شود.{% endif %}</small>
+  </div>
+</form>
+<script>
+(function () {
+  var box = document.getElementById("vrows");
+  function sync(row) { var c = row.querySelector(".v-pair"); row.querySelector("input[name=v_pair]").value = c.checked ? "1" : "0"; }
+  box.addEventListener("change", function (e) { if (e.target.classList.contains("v-pair")) sync(e.target.closest(".mk-vrow")); });
+  box.addEventListener("click", function (e) {
+    if (!e.target.classList.contains("mk-vrow__x")) return;
+    var row = e.target.closest(".mk-vrow");
+    if (row.querySelector("input[name=v_id]").value) { row.querySelector(".v-del").value = "1"; row.hidden = true; }
+    else if (box.querySelectorAll(".mk-vrow:not([hidden])").length > 1) row.remove();
+  });
+  document.getElementById("addRow").addEventListener("click", function () {
+    var rows = box.querySelectorAll(".mk-vrow"), r = rows[rows.length - 1].cloneNode(true);
+    r.hidden = false;
+    r.querySelectorAll("input").forEach(function (i) { if (i.type === "checkbox") i.checked = false; else if (i.name === "v_delete") i.value = "0"; else if (i.name === "v_pair") i.value = "0"; else i.value = ""; });
+    r.querySelector("select").value = "";
+    box.appendChild(r);
+  });
+})();
+</script>
+{% endblock %}

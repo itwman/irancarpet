@@ -473,6 +473,10 @@ def build(p, variations=None):
 
             ctx.used.add(href.replace(settings.SITE_URL, "") or "/")
     blocks = []
+    if getattr(p, "seller_id", None):  # کالای فروشندهٔ مارکت‌پلیس: شرایط خود فروشنده، نه متن‌های ایران کارپت
+        from market.render import seller_block
+
+        return {"html": html, "bullets": bullets, "blocks": [seller_block(p)], "templated": False}
     for b in blocks_for(p):
         h = render(b.body, ctx)
         if re.sub(r"<[^>]+>|\s", "", h):

@@ -16,6 +16,8 @@ class Line:
             self.problem = "این سایز الان موجود نیست."
         elif not self.unit_price:
             self.problem = "قیمت این سایز استعلامی است."
+        elif self.product.seller_id and self.product.status != "publish":
+            self.problem = "این کالا الان فروخته نمی‌شود."
         from .offers import apply_to_line
 
         apply_to_line(self)
@@ -44,6 +46,8 @@ class Cart:
     @staticmethod
     def fix_qty(variation, qty):
         qty = max(1, min(int(qty or 1), MAX_QTY))
+        if variation.stock_qty is not None:  # کالای فروشنده با تعداد موجودی مشخص
+            qty = max(1, min(qty, variation.stock_qty))
         if variation.is_pair_only and qty % 2:
             from .offers import allows_qty
 
@@ -79,7 +83,7 @@ class Cart:
 
     def lines(self):
         ids = [int(k) for k in self.data]
-        vs = Variation.objects.filter(pk__in=ids).select_related("product__image", "size").prefetch_related("attributes")
+        vs = Variation.objects.filter(pk__in=ids).select_related("product__image", "product__seller", "size").prefetch_related("attributes")
         by_id = {v.pk: v for v in vs}
         out = []
         for k, q in self.data.items():

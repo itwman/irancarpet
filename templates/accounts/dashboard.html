@@ -31,6 +31,11 @@
       <a class="btn-ic btn-ic--teal btn-ic--sm" href="/affiliate/">آشنایی و ثبت‌نام</a>
       {% endif %}
     </section>{% endif %}
+    {% if user.seller %}<section class="card-ic">
+      <h2>فروشگاه {{ user.seller.name }}</h2>
+      <p class="mb-2">سفارش‌ها، کالاها و تسویه‌های فروشگاه‌تان در پنل فروشنده است.</p>
+      <a class="btn-ic btn-ic--ink btn-ic--sm" href="/seller/">پنل فروشنده</a>
+    </section>{% endif %}
     {% if referral or gifts %}
     <section class="card-ic ref-box">
       {% if referral %}

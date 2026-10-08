@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container">
+  <header class="mk-store">
+    {% if store.logo %}<img src="{{ store.logo.url }}" alt="" width="84" height="84">{% else %}<span class="mk-head__mono mk-head__mono--lg" aria-hidden="true">{{ store.name|slice:":1" }}</span>{% endif %}
+    <div>
+      <h1>{{ store.name }}</h1>
+      <p>ارسال از {{ store.city }} · {{ store.shipping_label }} · آماده‌سازی {{ store.prep_days|fa_num }} روز کاری{% if delivered %} · {{ delivered|fa_num }} سفارش تحویل‌شده{% endif %}</p>
+      {% if store.status == "paused" %}<p class="alert-ic alert-ic--warn mt-2 mb-0">این فروشگاه موقتاً سفارش نمی‌گیرد.</p>{% endif %}
+    </div>
+  </header>
+  {% if store.about %}<div class="prose mk-store__about">{{ store.about|linebreaks }}</div>{% endif %}
+  {% if page.object_list %}
+  <div class="p-grid">{% for p in page.object_list %}{% include "partials/product_card.html" %}{% endfor %}</div>
+  {% include "market/_pager.html" %}
+  {% else %}<p class="muted">این فروشگاه هنوز کالایی در سایت ندارد.</p>{% endif %}
+  <p class="muted small mt-4">پرداخت همهٔ سفارش‌ها از درگاه امن ایران کارپت انجام می‌شود. <a href="/sell/">شما هم در ایران کارپت بفروشید</a></p>
+</div>
+{% endblock %}

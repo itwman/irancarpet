@@ -204,6 +204,9 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField("تعداد", default=1)
     offer = models.ForeignKey("shop.SpecialOffer", null=True, blank=True, on_delete=models.SET_NULL, related_name="items",
                               verbose_name="فرصت ویژه")
+    seller_order = models.ForeignKey("market.SellerOrder", null=True, blank=True, on_delete=models.SET_NULL, related_name="items",
+                                     verbose_name="سفارش فروشنده")
+    commission_percent = models.DecimalField("کمیسیون (درصد)", max_digits=5, decimal_places=2, null=True, blank=True)
 
     class Meta:
         verbose_name = "قلم سفارش"

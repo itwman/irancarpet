@@ -1,0 +1,19 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<nav class="mk-filter">
+  <a href="?f=open"{% if f == "open" %} aria-current="true"{% endif %}>باز</a>
+  {% for k, label in statuses %}<a href="?f={{ k }}"{% if f == k %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  <a href="?f=all"{% if f == "all" %} aria-current="true"{% endif %}>همه</a>
+</nav>
+{% if page.object_list %}
+<div class="card-ic"><div class="table-wrap"><table class="orders">
+  <thead><tr><th>سفارش</th><th class="hide-sm">تاریخ پرداخت</th><th>مبلغ</th><th class="hide-sm">سهم شما</th><th>وضعیت</th></tr></thead>
+  <tbody>{% for so in page.object_list %}
+    <tr><td><a href="/seller/orders/{{ so.pk }}/"><b>{{ so.order.number|fa_num }}</b></a> <small class="muted">{{ so.n|fa_num }} قلم</small></td>
+      <td class="hide-sm">{{ so.paid_at|jdate:"%d %B، %H:%M" }}</td><td>{{ so.items_total|toman }}</td><td class="hide-sm">{{ so.seller_amount|toman }}</td>
+      <td><span class="mk-st mk-st--{{ so.status }}">{{ so.get_status_display }}</span></td></tr>
+  {% endfor %}</tbody>
+</table></div></div>
+{% include "market/_pager.html" %}
+{% else %}<div class="card-ic mk-empty"><p class="mb-0">سفارشی در این بخش نیست.</p></div>{% endif %}
+{% endblock %}

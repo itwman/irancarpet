@@ -1,0 +1,33 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<form method="post" enctype="multipart/form-data" class="mk-form" novalidate>{% csrf_token %}
+  <section class="card-ic">
+    <h3>معرفی فروشگاه</h3>
+    <p class="muted small">نام فروشگاه: <b>{{ seller.name }}</b> · نشانی: <span dir="ltr">irancarpet.net{{ seller.get_absolute_url }}</span> (برای تغییر با ایران کارپت تماس بگیرید)</p>
+    <div class="field{% if errors.logo %} has-err{% endif %}"><label for="lg">لوگو</label><input id="lg" type="file" name="logo" accept="image/*">{% if errors.logo %}<span class="err">{{ errors.logo }}</span>{% endif %}</div>
+    <div class="field"><label for="ab">دربارهٔ فروشگاه</label><textarea id="ab" name="about" rows="4">{{ seller.about }}</textarea></div>
+  </section>
+  <section class="card-ic">
+    <h3>ارسال</h3>
+    <div class="grid-2">
+      <div class="field"><label for="pv">استان</label><select id="pv" name="province"><option value="">—</option>{% for p in provinces %}<option{% if seller.province == p %} selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+      <div class="field{% if errors.city %} has-err{% endif %}"><label for="ct">شهر ارسال</label><input id="ct" name="city" value="{{ seller.city }}">{% if errors.city %}<span class="err">{{ errors.city }}</span>{% endif %}</div>
+    </div>
+    <div class="field"><label for="ad">نشانی انبار (فقط برای ایران کارپت)</label><textarea id="ad" name="address" rows="2">{{ seller.address }}</textarea></div>
+    <div class="grid-2">
+      <div class="field"><label for="shp">هزینهٔ ارسال</label><select id="shp" name="shipping">{% for k, l in seller.Shipping.choices %}<option value="{{ k }}"{% if seller.shipping == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="field{% if errors.prep_days %} has-err{% endif %}"><label for="pd">زمان آماده‌سازی (روز کاری)</label><input id="pd" name="prep_days" value="{{ seller.prep_days }}" inputmode="numeric" dir="ltr">{% if errors.prep_days %}<span class="err">{{ errors.prep_days }}</span>{% endif %}</div>
+    </div>
+    <div class="field"><label for="rp">شرایط مرجوعی</label><input id="rp" name="return_policy" value="{{ seller.return_policy }}" maxlength="300"></div>
+    <div class="field"><label for="ph">تلفن ثابت (فقط برای ایران کارپت)</label><input id="ph" name="phone" value="{{ seller.phone }}" dir="ltr"></div>
+  </section>
+  <section class="card-ic">
+    <h3>حساب بانکی برای تسویه</h3>
+    <div class="grid-2">
+      <div class="field{% if errors.sheba %} has-err{% endif %}"><label for="sb">شماره شبا</label><input id="sb" name="sheba" value="{{ seller.sheba }}" dir="ltr" placeholder="IR…">{% if errors.sheba %}<span class="err">{{ errors.sheba }}</span>{% endif %}</div>
+      <div class="field"><label for="ah">به نام</label><input id="ah" name="account_holder" value="{{ seller.account_holder }}"></div>
+    </div>
+  </section>
+  <div class="mk-save"><button class="btn-ic btn-ic--ink" type="submit">ذخیرهٔ تنظیمات</button></div>
+</form>
+{% endblock %}

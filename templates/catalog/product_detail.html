@@ -33,6 +33,10 @@
         {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}
       </div>
 
+      {% if product.seller_id %}{% with sl=product.seller %}
+      <div class="p-seller"><span>فروشنده: <b><a href="{{ sl.get_absolute_url }}">{{ sl.name }}</a></b></span><span class="muted">· ارسال از {{ sl.city }} · {{ sl.shipping_label }} · آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری</span></div>
+      {% endwith %}{% endif %}
+
       {% if specs %}
       <ul class="spec-chips">
         {% for t in specs %}<li><span>{{ t.attribute.label }}</span>{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}<strong>{{ t.name|fa_num }}</strong>{% endif %}</li>{% endfor %}
@@ -71,7 +75,7 @@
             {% with ok=v.is_available %}
             <tr class="{% if not ok %}na{% endif %}">
               <td><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
-              <td>{{ v.size.label|default:"—" }}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
+              <td>{% if v.size %}{{ v.size.label }}{% elif product.seller_id %}{{ v.sku|default:"—"|fa_num }}{% else %}—{% endif %}{% if v.stock_qty is not None and v.stock_qty <= 3 and ok %} <span class="tag tag--warn">فقط {{ v.stock_qty|fa_num }} عدد</span>{% endif %}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
                 {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
                 {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}{% if v.pk in offer_vids %}<span class="tag offer-tag">فرصت ویژه</span>{% endif %}</td>
               <td class="muted">{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} <small>(شامل پرتی)</small>{% endif %}</td>
