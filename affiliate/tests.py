@@ -30,12 +30,12 @@ class AffiliateTests(TestCase):
 
     # ----------------------------------------------------------- پیوند کوتاه و کوکی
     def test_short_host_redirects(self):
-        r = self.client.get("/sara", HTTP_HOST="crpt.it")
+        r = self.client.get("/sara", HTTP_HOST="crpt.ir")
         self.assertEqual(r.status_code, 302)
         self.assertTrue(r["Location"].endswith("/?ref=sara"))
-        r = self.client.get(f"/sara/{self.p.pk}", HTTP_HOST="crpt.it")
+        r = self.client.get(f"/sara/{self.p.pk}", HTTP_HOST="crpt.ir")
         self.assertIn("/product/golriz/?ref=sara", r["Location"])
-        r = self.client.get("/nobody", HTTP_HOST="crpt.it")
+        r = self.client.get("/nobody", HTTP_HOST="crpt.ir")
         self.assertNotIn("ref=", r["Location"])
 
     def test_ref_param_sets_cookie_and_click(self):
@@ -158,13 +158,13 @@ class AffiliateTests(TestCase):
         a.status = "active"
         a.save()
         r = self.client.get("/my-account/affiliate/")
-        self.assertContains(r, "crpt.it/ali_home")
+        self.assertContains(r, "crpt.ir/ali_home")
         r = self.client.get("/my-account/affiliate/products/?q=گلریز")
-        self.assertEqual(r.json()["items"][0]["link"], f"https://crpt.it/ali_home/{self.p.pk}")
+        self.assertEqual(r.json()["items"][0]["link"], f"https://crpt.ir/ali_home/{self.p.pk}")
         r = self.client.post("/my-account/affiliate/link/", {"url": "https://irancarpet.net/carpets-price-list/?utm_source=x"})
         link = r.json()["link"]
-        self.assertTrue(link.startswith("https://crpt.it/ali_home/x"))
-        r = self.client.get("/" + link.split("crpt.it/")[1], HTTP_HOST="crpt.it")
+        self.assertTrue(link.startswith("https://crpt.ir/ali_home/x"))
+        r = self.client.get("/" + link.split("crpt.ir/")[1], HTTP_HOST="crpt.ir")
         self.assertIn("/carpets-price-list/?ref=ali_home", r["Location"])
         self.assertEqual(self.client.post("/my-account/affiliate/link/", {"url": "https://evil.com/"}).status_code, 400)
 

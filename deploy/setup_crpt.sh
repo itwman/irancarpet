@@ -3,7 +3,7 @@
 # اجرا (با کاربر root):   bash deploy/setup_crpt.sh
 set -euo pipefail
 cd /var/www/irancarpet-django
-DOM=${1:-crpt.it}
+DOM=${1:-crpt.ir}
 IP=$(curl -s4 --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')
 echo "== IP این سرور: $IP"
 DNS=$(getent ahostsv4 "$DOM" | awk '{print $1; exit}' || true)
@@ -13,7 +13,7 @@ if [ "$DNS" != "$IP" ]; then
   exit 1
 fi
 echo "== تنظیم nginx"
-sed "s/crpt\.it/$DOM/g" deploy/nginx-crpt.conf > /etc/nginx/sites-available/crpt
+sed "s/crpt\.ir/$DOM/g" deploy/nginx-crpt.conf > /etc/nginx/sites-available/crpt
 ln -sf /etc/nginx/sites-available/crpt /etc/nginx/sites-enabled/crpt
 mkdir -p /var/www/html
 nginx -t

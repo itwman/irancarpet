@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1,irancarpet.net,www.irancarpet.net")
 # دامنهٔ پیوند کوتاه همکاران فروش (فقط ریدایرکت به سایت اصلی)
-SHORT_HOSTS = env_list("SHORT_HOSTS", "crpt.it,www.crpt.it")
+SHORT_HOSTS = env_list("SHORT_HOSTS", "crpt.ir,www.crpt.ir")
 ALLOWED_HOSTS += [h for h in SHORT_HOSTS if h not in ALLOWED_HOSTS]
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "https://irancarpet.net,https://www.irancarpet.net")
 
@@ -63,7 +63,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.it)
+    "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.ir)
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "seo.middleware.LegacyQueryMiddleware",

@@ -1,4 +1,4 @@
-"""ردیابی پیوند همکار: پیوند کوتاه (crpt.it)، ?ref= در هر صفحه، کوکی ماندگار و ثبت سفارش به نام همکار."""
+"""ردیابی پیوند همکار: پیوند کوتاه (crpt.ir)، ?ref= در هر صفحه، کوکی ماندگار و ثبت سفارش به نام همکار."""
 import hashlib
 import logging
 import re
@@ -112,7 +112,7 @@ def short_hosts():
 
 
 def short_redirect(request):
-    """crpt.it/<کد> ← صفحهٔ اول؛ crpt.it/<کد>/<شمارهٔ فرش> ← صفحهٔ فرش؛ crpt.it/<کد>/x<شناسه> ← صفحهٔ دلخواه."""
+    """crpt.ir/<کد> ← صفحهٔ اول؛ crpt.ir/<کد>/<شمارهٔ فرش> ← صفحهٔ فرش؛ crpt.ir/<کد>/x<شناسه> ← صفحهٔ دلخواه."""
     from catalog.models import Product
 
     site = settings.SITE_URL
@@ -206,7 +206,7 @@ def bind_user(user, a, ts):
 
 
 class ShortHostMiddleware:
-    """درخواست‌های دامنهٔ کوتاه (crpt.it) پیش از هر چیز به سایت اصلی هدایت می‌شوند."""
+    """درخواست‌های دامنهٔ کوتاه (crpt.ir) پیش از هر چیز به سایت اصلی هدایت می‌شوند."""
 
     def __init__(self, get_response):
         self.get_response = get_response

@@ -45,7 +45,7 @@ class AffiliateSettings(models.Model):
                                                    "تخفیف می‌گیرد و خرید به نام بازاریاب ثبت می‌شود.")
     coupon_percent = models.PositiveSmallIntegerField("درصد تخفیف کد بازاریاب", default=2)
     coupon_max = models.PositiveBigIntegerField("سقف تخفیف کد بازاریاب (تومان)", default=2_000_000, help_text="۰ یعنی بی‌سقف")
-    short_domain = models.CharField("دامنهٔ پیوند کوتاه", max_length=60, default="crpt.it",
+    short_domain = models.CharField("دامنهٔ پیوند کوتاه", max_length=60, default="crpt.ir",
                                     help_text="باید رکورد DNS آن به سرور اشاره کند. خالی: پیوندها با دامنهٔ خود سایت ساخته می‌شوند.")
     terms = models.TextField("قوانین همکاری", default=DEFAULT_TERMS, help_text="هر خط یک بند. {روز} = ماندگاری پیوند")
 
@@ -102,7 +102,7 @@ class Affiliate(models.Model):
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="affiliate", verbose_name="حساب کاربری")
     code = models.CharField("کد پیوند", max_length=20, unique=True,
-                            help_text="حروف کوچک انگلیسی، عدد و _ (۳ تا ۲۰ حرف)؛ در پیوند کوتاه می‌آید: crpt.it/کد")
+                            help_text="حروف کوچک انگلیسی، عدد و _ (۳ تا ۲۰ حرف)؛ در پیوند کوتاه می‌آید: crpt.ir/کد")
     status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
     name = models.CharField("نام و نام خانوادگی", max_length=120)
     mobile = models.CharField("موبایل", max_length=11, db_index=True)
