@@ -13,13 +13,14 @@
   [size_faq 6-meter 700]      پرسش‌های رایج قیمت آن سایز (و شانه) با پاسخ زنده (+ FAQPage)
   [shipping_info گرگان]       شیوه‌های پرداخت و ارسال امروز (سقف ارسال رایگان، بیعانه، اقساط) برای یک شهر
   [city_faq گرگان]            پرسش‌های رایج خرید فرش از آن شهر با پاسخ زنده (+ FAQPage)
+  [reeds_compare 1000 1200]   جدول مقایسهٔ زندهٔ دو یا چند شانه (قیمت روز هر سایز، تراکم، جنس نخ، دستگاه بافت)
 
 متن ثابت مقاله (برای گوگل) دست‌نخورده می‌ماند؛ فقط عددها و جدول‌ها هر روز از قیمت و تنظیمات واقعی ساخته می‌شوند.
 """
 import re
 
 from django.core.cache import cache
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
@@ -32,12 +33,13 @@ SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
+CMP_RE = re.compile(r"(?:<p[^>]*>\s*)?\[reeds_compare((?:\s+\d{3,4}){2,4})\s*\](?:\s*</p>)?")
 CITY_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(shipping_info|city_faq)(?:\s+([^\]\[<>]{1,40}))?\](?:\s*</p>)?")
 
 
 def has_blocks(content):
     c = content or ""
-    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c) or CITY_RE.search(c))
+    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c) or CITY_RE.search(c) or CMP_RE.search(c))
 
 
 def last_price_update():
@@ -306,6 +308,51 @@ def block_size_faq(request, size_slug, reeds=None):
     return render_to_string("blog/blocks/faq.html", {"items": items}, request=request) if items else ""
 
 
+def _common_spec(product_ids, label):
+    from django.db.models import Count
+
+    from catalog.models import Product
+
+    row = (Product.specs.through.objects.filter(product_id__in=product_ids, attributeterm__attribute__label=label)
+           .values("attributeterm__name").annotate(c=Count("product_id", distinct=True)).order_by("-c").first())
+    return row["attributeterm__name"] if row else ""
+
+
+def reeds_compare(reeds_list):
+    """ستون‌های جدول مقایسهٔ شانه‌ها از لیست قیمت و مشخصات فرش‌های منتشرشده."""
+    from catalog.models import Product
+    from pricing.pricelist import build
+
+    data = build()
+    groups = {g["reeds"]: g for g in data["groups"] if g["reeds"]}
+    cols = []
+    for r in reeds_list:
+        g = groups.get(str(r))
+        if not g:
+            continue
+        from catalog.models import AttributeTerm
+
+        terms = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter").filter(
+            Q(slug=str(r)) | Q(name=str(r)) | Q(name=fa_num(r)))
+        ids = list(Product.objects.filter(status="publish", seller__isnull=True, specs__in=terms)
+                   .values_list("pk", flat=True).distinct()[:2000])
+        sm = g.get("size_min", {})
+        cols.append({
+            "reeds": str(r), "title": g["title"], "url": g["reeds_url"], "count": g["count"], "lists": len(g["albums"]),
+            "p12": sm.get("12-meter"), "p9": sm.get("9-meter"), "p6": sm.get("6-meter"),
+            "density": _common_spec(ids, "تراکم"), "pile": _common_spec(ids, "جنس نخ خاب"),
+            "machine": _common_spec(ids, "دستگاه بافت"),
+        })
+    return cols
+
+
+def block_compare(request, nums):
+    cols = reeds_compare(nums)
+    if len(cols) < 2:
+        return ""
+    return render_to_string("blog/blocks/reeds_compare.html", {"cols": cols, "updated": last_price_update()}, request=request)
+
+
 def _shop():
     from shop.models import ShopSettings
 
@@ -414,7 +461,19 @@ def render(content, request):
             html = ""
         return '<div class="live-block">' + html + "</div>" if html else ""
 
-    return CITY_RE.sub(city_block, content)
+    content = CITY_RE.sub(city_block, content)
+
+    def cmp_block(m):
+        try:
+            html = block_compare(request, m.group(1).split())
+        except Exception:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).exception("compare block %s", m.group(0))
+            html = ""
+        return '<div class="live-block">' + html + "</div>" if html else ""
+
+    return CMP_RE.sub(cmp_block, content)
 
 
 def faq_jsonld(content):

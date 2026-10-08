@@ -107,3 +107,25 @@ class TidyAndCityTests(TestCase):
         self.assertIn("ایران کارپت در گرگان نمایندگی دارد؟", html)
         self.assertIn("پرداخت کامل آنلاین", html)
         self.assertIn("FAQPage", html)
+
+
+class TopPagesTests(TestCase):
+    def test_compare_and_price_transforms(self):
+        import importlib
+
+        mig = importlib.import_module("blog.migrations.0007_top_pages")
+        c = mig.PAGES["تفاوت-فرش-1500-شانه-و-فرش-1200-شانه"]["fn"]("<p>مقدمه</p><h2>مقایسه</h2><p>در جدول زیر مقایسه کرده‌ایم.</p><p>بعد</p>")
+        self.assertIn("در جدول زیر مقایسه کرده‌ایم.</p>\n[reeds_compare 1200 1500]", c)
+        c = mig.PAGES["قیمت-فرش-ماشینی"]["fn"]("<p>a</p><h2>قیمت فرش ماشینی به روز و معتبر در مردادماه 1401</h2><h2>سوالات متداول در مورد قیمت فرش ماشینی</h2>")
+        self.assertNotIn("1401", c)
+        self.assertIn("[size_prices 12-meter]", c)
+        self.assertIn("[size_faq 12-meter]", c)
+        self.assertIn("Carpet", mig.PAGES["لغت-و-اصطلاحات-تخصصی-انگلیسی-صنعت-فرش-م"]["fn"]("<p>x</p>"))
+        self.assertNotIn("رایگان", mig.PAGES["تلفن-کارخانه-فرش-کاشان"]["fn"]("<p>در کمتر از 2 هفته به صورت رایگان ارسال</p>"))
+
+    def test_image_heading_becomes_paragraph(self):
+        from blog.tidy import tidy
+
+        out = tidy('<h4><img src="/a.jpg" alt="x"></h4><h4>متن</h4><p>پ</p>')
+        self.assertIn('<p class="wp-img"><img', out)
+        self.assertIn("<h2>متن</h2>", out)

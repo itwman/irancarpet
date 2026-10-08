@@ -1,0 +1,17 @@
+{% load fa %}<section class="lb-cmp" aria-label="مقایسهٔ {% for c in cols %}{{ c.title|fa_num }}{% if not forloop.last %} و {% endif %}{% endfor %}">
+  <div class="table-wrap">
+    <table class="lb-table lb-cmp__t">
+      <caption>مقایسه با قیمت و مشخصات امروز فرش‌های ایران کارپت{% if updated %} · به‌روز در <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</caption>
+      <thead><tr><th scope="col"></th>{% for c in cols %}<th scope="col"><a href="{{ c.url }}">{{ c.title|fa_num }}</a></th>{% endfor %}</tr></thead>
+      <tbody>
+        <tr><th scope="row">قیمت ۱۲ متری (تومان)</th>{% for c in cols %}<td>{% if c.p12 %}{% if c.p12.min != c.p12.max %}<small>از</small> {% endif %}<strong>{{ c.p12.min|toman }}</strong>{% if c.p12.min != c.p12.max %}<br><small>تا {{ c.p12.max|toman }}</small>{% endif %}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><th scope="row">قیمت ۹ متری، از</th>{% for c in cols %}<td>{% if c.p9 %}{{ c.p9.min|toman }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><th scope="row">قیمت ۶ متری، از</th>{% for c in cols %}<td>{% if c.p6 %}{{ c.p6.min|toman }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><th scope="row">تراکم رایج</th>{% for c in cols %}<td>{{ c.density|fa_num|default:"—" }}</td>{% endfor %}</tr>
+        <tr><th scope="row">جنس نخ خاب رایج</th>{% for c in cols %}<td>{{ c.pile|fa_num|default:"—" }}</td>{% endfor %}</tr>
+        {% if cols.0.machine or cols.1.machine %}<tr><th scope="row">دستگاه بافت رایج</th>{% for c in cols %}<td dir="ltr">{{ c.machine|default:"—" }}</td>{% endfor %}</tr>{% endif %}
+        <tr><th scope="row">تنوع</th>{% for c in cols %}<td>{{ c.count|fa_num }} طرح در {{ c.lists|fa_num }} لیست</td>{% endfor %}</tr>
+      </tbody>
+    </table>
+  </div>
+</section>

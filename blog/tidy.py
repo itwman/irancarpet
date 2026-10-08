@@ -8,13 +8,15 @@ import re
 
 from django.utils.html import escape
 
-LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq)"
+LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare)"
 SHORTCODE = re.compile(r"\[/?(?!" + LIVE + r"\b)[a-z][a-z0-9_-]*(?:\s[^\[\]]*)?\]", re.I)
 EMPTY_P = re.compile(r"<p\b[^>]*>(?:\s|&nbsp;|&#160;|\xa0|<br\s*/?>|<span[^>]*>\s*</span>)*</p>", re.I)
 EMPTY_H = re.compile(r"<(h[2-6])\b[^>]*>(?:\s|&nbsp;|\xa0|<br\s*/?>|<(?:span|strong|b|a)[^>]*>\s*</(?:span|strong|b|a)>)*</\1>", re.I)
 HEAD = re.compile(r"<(h[2-6])\b[^>]*>(.*?)</\1>", re.I | re.S)
 H1 = re.compile(r"<(/?)h1\b", re.I)
 IMG = re.compile(r"<img\b[^>]*>", re.I)
+# تیتری که فقط یک عکس است (در وردپرس زیاد بود) ← پاراگراف عکس؛ «تیتر خالی» حساب نشود
+IMG_HEAD = re.compile(r"<(h[1-6])\b[^>]*>((?:\s|&nbsp;|<br\s*/?>)*(?:<a\b[^>]*>\s*)?<img\b[^>]*>(?:\s*</a>)?(?:\s|&nbsp;|<br\s*/?>)*)</\1>", re.I)
 MEDIA = re.compile(r"<(?:img|table|iframe|video|figure|ul|ol|blockquote|div class=\"live-block)", re.I)
 
 
@@ -82,6 +84,7 @@ def tidy(html, title=""):
     if not html:
         return html
     html = SHORTCODE.sub("", html)
+    html = IMG_HEAD.sub(lambda m: f'<p class="wp-img">{m.group(2).strip()}</p>', html)
     html = H1.sub(lambda m: f"<{m.group(1)}h2", html)
     for _ in range(2):
         html = EMPTY_P.sub("", html)

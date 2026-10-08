@@ -6,7 +6,7 @@
     <h1>{{ heading|fa_num }}</h1>
     <p class="muted">{{ page_obj.paginator.count|fa_num }} محصول{% if page_obj.number > 1 %} — صفحهٔ {{ page_obj.number|fa_num }}{% endif %}</p>
   </header>
-  {% block above_list %}{% endblock %}
+  {% block above_list %}{% if ainfo and ainfo_lead %}<div class="prose archive-lead">{{ ainfo.lead|safe }}</div>{% endif %}{% endblock %}
   <div class="row g-4">
     <aside class="col-lg-3">
       <button class="pill btn-filters d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فیلترها</button>
@@ -32,7 +32,13 @@
       {% include "partials/pagination.html" %}
     </div>
   </div>
-  {% block below_list %}{% if landing_links %}
+  {% block below_list %}{% if ainfo %}
+  {% if ainfo.size_rows %}<section class="archive-sizes" aria-labelledby="aSizes">
+    <h2 id="aSizes">قیمت {{ ainfo.title }} بر اساس سایز</h2>
+    <div class="lp-sizes" role="table" aria-label="قیمت {{ ainfo.title }} بر اساس سایز">{% for r in ainfo.size_rows %}<div class="lp-size"><span>{{ r.label|fa_num }}</span><strong>{% if r.lo != r.hi %}<small>از</small> {% endif %}{{ r.lo|toman }}</strong><small>{% if r.lo != r.hi %}تا {{ r.hi|toman }} · {% endif %}{{ r.n|fa_num }} طرح</small></div>{% endfor %}</div>
+  </section>{% endif %}
+  {% if ainfo.faqs %}<section class="lp-faq"><h2>پرسش‌های پرتکرار دربارهٔ {{ ainfo.title }}</h2>{% for f in ainfo.faqs %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}</section>{% endif %}
+  {% endif %}{% if landing_links %}
   <nav class="lp-related" aria-label="بر اساس سایز و رنگ">
     <h2>{{ heading|fa_num }} بر اساس سایز و رنگ</h2>
     <div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>

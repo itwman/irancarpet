@@ -124,8 +124,37 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
         "page_links": [(n, paged_url(path, n, query)) if n != "…" else (n, "") for n in
                        page_obj.paginator.get_elided_page_range(page, on_each_side=2, on_ends=1)],
     }
+    if archive is not None and page == 1 and not active and not g.get("sort") and template == "catalog/product_list.html":
+        ctx.update(_archive_info(archive, base_qs, heading, intro))
     ctx.update(extra or {})
     return render(request, template, ctx)
+
+
+def _archive_info(archive, base_qs, heading, intro):
+    """خلاصه، جدول قیمت سایزها و پرسش‌های خودکار برای دسته/برند/برچسب/شانه."""
+    import re as _re
+
+    from . import archive_info
+
+    reeds = None
+    name = heading
+    if isinstance(archive, AttributeTerm) and archive.attribute.slug == "reeds-per-meter":
+        reeds = _re.sub(r"\D", "", (archive.name or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))) or None
+        name = f"فرش {archive.name} شانه"
+    try:
+        data = archive_info.info(archive, base_qs, name, reeds)
+    except Exception:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).exception("archive info")
+        data = None
+    if not data:
+        return {}
+    out = {"ainfo": data, "ainfo_lead": len(strip_tags(intro or "").strip()) < 200}
+    faq = archive_info.faq_jsonld(data)
+    if faq:
+        out["jsonld"] = json.dumps(faq, ensure_ascii=False)
+    return out
 
 
 def shop(request, page=1, page_obj_cms=None):

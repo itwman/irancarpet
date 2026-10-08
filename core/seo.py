@@ -13,7 +13,7 @@ VAR_RE = re.compile(r"%\s*([a-z_]+)%")
 def plain(html, limit=None):
     import html as _html
 
-    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|size_(?:prices|faq)[^\]]*|shipping_info[^\]]*|city_faq[^\]]*)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
+    text = re.sub(r"\[(?:installment_[a-z]+|price_updated|size_(?:prices|faq)[^\]]*|shipping_info[^\]]*|city_faq[^\]]*|reeds_compare[^\]]*)\]", "", strip_tags(html or ""))  # شورت‌کد بخش‌های زنده
     text = re.sub(r"\s+", " ", _html.unescape(text).replace("\xa0", " ")).strip()
     if limit and len(text) > limit:
         text = text[:limit].rsplit(" ", 1)[0] + "…"

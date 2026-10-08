@@ -1250,3 +1250,10 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .lb-size__t{min-width:0}
 .prose .lb-size__t caption{caption-side:top;text-align:start;font-size:.88rem;color:var(--muted);padding-bottom:.5rem}
 .lb-size__t tbody th small{font-weight:500}
+.archive-lead{max-width:80ch;margin:0 0 1.5rem;color:var(--ink-2)}
+.archive-lead p{margin:0 0 .5rem}
+.archive-sizes{margin:2.5rem 0 0}
+.archive-sizes h2{font-size:1.15rem;font-weight:900;margin-bottom:.5rem}
+.lb-cmp__t{min-width:0}
+.prose .lb-cmp__t caption{caption-side:top;text-align:start;font-size:.88rem;color:var(--muted);padding-bottom:.5rem}
+.prose .lb-cmp__t tbody th{font-weight:700;color:var(--ink-2);white-space:nowrap}
