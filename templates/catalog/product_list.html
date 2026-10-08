@@ -25,7 +25,7 @@
         {% for key, label in sorts %}<a href="{% query_replace sort=key %}" class="{% if sort == key %}on{% endif %}" rel="nofollow">{{ label }}</a>{% endfor %}
       </div>
       {% if products %}
-        <div class="p-grid p-grid--3">{% for p in products %}{% include "partials/product_card.html" %}{% endfor %}</div>
+        <div class="p-grid p-grid--3">{% for p in products %}{% include "partials/product_card.html" with eager=True %}{% endfor %}</div>
       {% else %}
         <div class="empty">محصولی با این مشخصات پیدا نشد.</div>
       {% endif %}
