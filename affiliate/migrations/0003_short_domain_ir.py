@@ -7,6 +7,12 @@ def fix_domain(apps, schema_editor):
     """دامنهٔ درست کوتاه‌کننده crpt.ir است (crpt.it مال ما نیست)."""
     S = apps.get_model("affiliate", "AffiliateSettings")
     S.objects.filter(short_domain__in=["crpt.it", "www.crpt.it"]).update(short_domain="crpt.ir")
+    try:  # تنظیمات نگه‌داشته‌شده در کش هم پاک شود تا پیوندهای پنل همان لحظه درست شوند
+        from django.core.cache import cache
+
+        cache.delete("aff:settings")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 class Migration(migrations.Migration):
