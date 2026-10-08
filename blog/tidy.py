@@ -8,7 +8,7 @@ import re
 
 from django.utils.html import escape
 
-LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice)"
+LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links)"
 SHORTCODE = re.compile(r"\[/?(?!" + LIVE + r"\b)[a-z][a-z0-9_-]*(?:\s[^\[\]]*)?\]", re.I)
 EMPTY_P = re.compile(r"<p\b[^>]*>(?:\s|&nbsp;|&#160;|\xa0|<br\s*/?>|<span[^>]*>\s*</span>)*</p>", re.I)
 EMPTY_H = re.compile(r"<(h[2-6])\b[^>]*>(?:\s|&nbsp;|\xa0|<br\s*/?>|<(?:span|strong|b|a)[^>]*>\s*</(?:span|strong|b|a)>)*</\1>", re.I)
@@ -89,6 +89,9 @@ CITY_IMG = re.compile(_WRAP.format(r"/at-city"), re.I)
 LIVE_PRICES = re.compile(r"\[(?:size_prices|installment_prices|price_table)\b")
 
 
+BLOCK_SC = r"(\[(?:installment_(?:calc|prices|plans|steps|faq)|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links)\b[^\]]*\])"
+
+
 def _swap_images(html):
     has_prices = bool(LIVE_PRICES.search(html))
     html = PRICE_IMG.sub("" if has_prices else "</p>\n[price_table]\n<p>", html, count=0 if has_prices else 1)
@@ -123,13 +126,62 @@ def _swap_phones(html, phone):
     return html
 
 
-def tidy(html, title="", phone=""):
+# بنرهای شانه (700/1000/1200/1500-Reeds-min.png) که در ۸۳ مقاله یک‌بار اول و یک‌بار آخر تکرار شده بودند:
+# فقط یک‌بار، آخر مقاله، به‌صورت کارت متنی با قیمت روز ([reeds_links])؛ جای دستهٔ بالایی یک پیوند کوتاه «پرش به انتخاب فرش».
+_BANNER = r"(?:<a\b[^>]*>\s*)?<img\b[^>]*-Reeds(?:-min)?(?:-\d+)?\.(?:png|jpe?g|webp)[^>]*>(?:\s*</a>)?"
+BANNERS = re.compile(_BANNER + r"(?:(?:\s|&nbsp;|<br\s*/?>|</?p\b[^>]*>)*" + _BANNER + r")*", re.I)
+INTRO = re.compile(r"<p\b[^>]*>((?:(?!</p>).)*?(?:لینک(?:\s|‌)?(?:های)?\s+(?:زیر|ذیل)|انتخاب\s*(?:و\s*خریداری)?\s*(?:کنید|نمایید))(?:(?!</p>).)*)</p>\s*(?:<p\b[^>]*>\s*)?$", re.S)
+SKIP = '<p class="lb-skip">فرصت خواندن همهٔ مقاله را ندارید؟ <a href="#choose-reeds">فرش‌ها را بر اساس شانه ببینید</a>.</p>'
+
+
+def _merge_banners(html):
+    groups = list(BANNERS.finditer(html))
+    if not groups:
+        return html
+    out, last = [], 0
+    for i, g in enumerate(groups):
+        before = html[last:g.start()]
+        if i < len(groups) - 1:
+            m = INTRO.search(before)
+            if m:
+                before = before[:m.start()]
+            out.append(before + "</p>\n" + (SKIP if i == 0 else "") + "\n<p>")
+        else:
+            out.append(before + "</p>\n[reeds_links]\n<p>")
+        last = g.end()
+    out.append(html[last:])
+    return "".join(out)
+
+
+def _unlink_self(html, self_path):
+    """پیوند مقاله به خودش (بدون #) فقط متن می‌شود؛ برای گوگل ارزشی ندارد و برای خواننده صفحه را دوباره باز می‌کند."""
+    from urllib.parse import unquote, urlsplit
+
+    target = unquote(self_path or "").rstrip("/")
+    if not target:
+        return html
+
+    def fix(m):
+        href = m.group(1)
+        if "#" in href:
+            return m.group(0)
+        parts = urlsplit(unquote(href))
+        if parts.netloc and not parts.netloc.endswith("irancarpet.net"):
+            return m.group(0)
+        return m.group(2) if parts.path.rstrip("/") == target and not parts.query else m.group(0)
+    return re.sub(r'<a\b[^>]*\shref="([^"]*)"[^>]*>((?:(?!</?a\b).)*?)</a>', fix, html, flags=re.S | re.I)
+
+
+def tidy(html, title="", phone="", self_path=""):
     if not html:
         return html
     html = SHORTCODE.sub("", html)
     if phone:
         html = _swap_phones(html, phone)
     html = _swap_images(html)
+    html = _merge_banners(html)
+    if self_path:
+        html = _unlink_self(html, self_path)
     html = IMG_HEAD.sub(lambda m: f'<p class="wp-img">{m.group(2).strip()}</p>', html)
     html = H1.sub(lambda m: f"<{m.group(1)}h2", html)
     for _ in range(2):
@@ -138,4 +190,8 @@ def tidy(html, title="", phone=""):
     html = _drop_empty_sections(html)
     html = _shift_headings(html)
     html = IMG.sub(_img(title), html)
+    # برچسب‌های <p> سرگردان دور بخش‌های زنده (بعد از جایگزینی عکس‌ها)
+    html = re.sub(BLOCK_SC + r"\s*</p>", r"\1", html)
+    html = re.sub(r"<p\b[^>]*>\s*" + BLOCK_SC, r"\1", html)
+    html = re.sub(r"(</(?:p|div|nav|aside|ul|ol|table|h[2-6])>)\s*</p>", r"\1", html)
     return html

@@ -184,3 +184,21 @@ class NeutralTitleAndPhoneTests(TestCase):
         html = self.client.get(p.get_absolute_url()).content.decode()
         self.assertNotIn("09371982000", html)
         self.assertIn("09125347596", html)
+
+
+class ReedsBannerAndSelfLinkTests(TestCase):
+    def test_banners_once_and_self_links_unlinked(self):
+        def banners():
+            return "<p>" + "".join(f'<a href="https://irancarpet.net/product-category/carpet-{r}-reeds/"><img src="/wp-content/uploads/2020/01/{r}-Reeds-min.png" alt="" width="302" height="70" /></a> ' for r in (700, 1000, 1200, 1500)) + "</p>"
+        content = ("<p>اگر فرصت کافی برای مطالعه ندارید از طریق لینک های زیر فرش های خود را انتخاب کنید:</p>" + banners()
+                   + '<p>متن با <a href="https://irancarpet.net/%D8%AE%D8%B1%DB%8C%D8%AF-%D9%81%D8%B1%D8%B4-%D8%AF%D8%B1-%D8%A8%D8%B1%D9%88%D8%AC%D8%B1%D8%AF/">خرید فرش در بروجرد</a> و <a href="/guarantee/">ضمانت</a>.</p>'
+                   + "<p>برای خرید از لینک های زیر اقدام نمایید:</p>" + banners())
+        Post.objects.create(title="خرید فرش در بروجرد", slug="خرید-فرش-در-بروجرد", status="publish", content=content)
+        html = self.client.get("/خرید-فرش-در-بروجرد/").content.decode()
+        self.assertNotIn("-Reeds-min.png", html)
+        self.assertEqual(html.count('id="choose-reeds"'), 1)
+        self.assertIn('href="#choose-reeds"', html)
+        self.assertNotIn("فرصت کافی برای مطالعه", html.split('class="prose', 1)[1])
+        self.assertIn("متن با خرید فرش در بروجرد و", html)
+        self.assertIn('href="/guarantee/"', html)
+        self.assertIn("/product-category/carpet-1200-reeds/", html)

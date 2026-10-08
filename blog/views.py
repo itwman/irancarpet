@@ -74,7 +74,7 @@ def post_detail(request, post):
     from . import landing
     from .tidy import tidy
 
-    content = tidy(post.content, post.title, phone=_site_mobile())
+    content = tidy(post.content, post.title, phone=_site_mobile(), self_path=post.get_absolute_url())
     live = landing.has_blocks(content)
     content = landing.render(content, request, title=post.title) if live else content
     if live:
@@ -102,7 +102,7 @@ def page_detail(request, page):
     from . import landing
     from .tidy import tidy
 
-    content = tidy(page.content, page.title, phone=_site_mobile())
+    content = tidy(page.content, page.title, phone=_site_mobile(), self_path=page.get_absolute_url())
     live = landing.has_blocks(content)
     meta = seo.build(page, "page")
     meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())

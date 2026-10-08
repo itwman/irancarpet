@@ -15,6 +15,7 @@
   [city_faq گرگان]            پرسش‌های رایج خرید فرش از آن شهر با پاسخ زنده (+ FAQPage)
   [reeds_compare 1000 1200]   جدول مقایسهٔ زندهٔ دو یا چند شانه (قیمت روز هر سایز، تراکم، جنس نخ، دستگاه بافت)
   [price_table]               لیست قیمت امروز (جای عکس‌های قدیمی price-list-*.jpg): قیمت ۱۲، ۹ و ۶ متری هر گروه + اقساط و ارسال
+  [reeds_links]               کارت‌های انتخاب بر اساس شانه با قیمت روز (جای بنرهای تصویری ۷۰۰/۱۰۰۰/۱۲۰۰/۱۵۰۰ شانه)
   [city_notice]               اطلاعیهٔ «در شهر شما فروشگاه نداریم» (جای عکس at-city-min.jpg)؛ نام شهر از عنوان مقاله
 
 متن ثابت مقاله (برای گوگل) دست‌نخورده می‌ماند؛ فقط عددها و جدول‌ها هر روز از قیمت و تنظیمات واقعی ساخته می‌شوند.
@@ -35,7 +36,7 @@ SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
-MISC_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(price_table|city_notice)\](?:\s*</p>)?")
+MISC_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(price_table|city_notice|reeds_links)\](?:\s*</p>)?")
 CMP_RE = re.compile(r"(?:<p[^>]*>\s*)?\[reeds_compare((?:\s+\d{3,4}){2,4})\s*\](?:\s*</p>)?")
 CITY_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(shipping_info|city_faq)(?:\s+([^\]\[<>]{1,40}))?\](?:\s*</p>)?")
 
@@ -400,6 +401,23 @@ def block_price_table(request, title=""):
     }, request=request)
 
 
+REEDS_CATS = [("700", "/product-category/carpet-700-reeds/"), ("1000", "/product-category/carpet-1000-reeds/"),
+              ("1200", "/product-category/carpet-1200-reeds/"), ("1500", "/product-category/carpet-1500-reeds/")]
+
+
+def block_reeds_links(request, title=""):
+    """کارت‌های «انتخاب بر اساس شانه» با کمترین قیمت ۱۲ متری امروز (جای بنرهای تصویری شانه)."""
+    from pricing.pricelist import build
+
+    groups = {g["reeds"]: g for g in build()["groups"] if g["reeds"]}
+    cards = []
+    for reeds, url in REEDS_CATS:
+        g = groups.get(reeds)
+        sm = (g or {}).get("size_min", {}).get("12-meter")
+        cards.append({"reeds": reeds, "url": url, "from": sm["min"] if sm else None, "count": g["count"] if g else None})
+    return render_to_string("blog/blocks/reeds_links.html", {"cards": cards}, request=request)
+
+
 def city_from_title(title):
     m = re.match(r"^\s*خرید\s+فرش\s+در\s+(.+?)(?:\s*[|⭐☀️🌎+\-–:؛،!]|$)", title or "")
     return m.group(1).strip() if m else ""
@@ -536,7 +554,8 @@ def render(content, request, title=""):
 
     def misc_block(m):
         try:
-            fn = block_price_table if m.group(1) == "price_table" else block_city_notice
+            fn = {"price_table": block_price_table, "city_notice": block_city_notice,
+                  "reeds_links": block_reeds_links}[m.group(1)]
             html = fn(request, title)
         except Exception:  # noqa: BLE001
             import logging

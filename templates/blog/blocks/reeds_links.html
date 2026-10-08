@@ -1,0 +1,10 @@
+{% load fa %}<nav class="lb-reeds" id="choose-reeds" aria-label="انتخاب فرش بر اساس شانه">
+  <p class="lb-reeds__t">فرش‌ها را بر اساس شانه ببینید</p>
+  <div class="lb-reeds__grid">{% for c in cards %}
+    <a class="lb-reeds__c {{ c.reeds|reeds_class }}" href="{{ c.url }}">
+      <strong>فرش {{ c.reeds|fa_num }} شانه</strong>
+      {% if c.from %}<span>۱۲ متری از {{ c.from|toman }} تومان</span>{% endif %}
+      {% if c.count %}<small>{{ c.count|fa_num }} طرح</small>{% endif %}
+    </a>{% endfor %}
+  </div>
+</nav>
