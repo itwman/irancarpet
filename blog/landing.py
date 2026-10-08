@@ -14,6 +14,8 @@
   [shipping_info گرگان]       شیوه‌های پرداخت و ارسال امروز (سقف ارسال رایگان، بیعانه، اقساط) برای یک شهر
   [city_faq گرگان]            پرسش‌های رایج خرید فرش از آن شهر با پاسخ زنده (+ FAQPage)
   [reeds_compare 1000 1200]   جدول مقایسهٔ زندهٔ دو یا چند شانه (قیمت روز هر سایز، تراکم، جنس نخ، دستگاه بافت)
+  [price_table]               لیست قیمت امروز (جای عکس‌های قدیمی price-list-*.jpg): قیمت ۱۲، ۹ و ۶ متری هر گروه + اقساط و ارسال
+  [city_notice]               اطلاعیهٔ «در شهر شما فروشگاه نداریم» (جای عکس at-city-min.jpg)؛ نام شهر از عنوان مقاله
 
 متن ثابت مقاله (برای گوگل) دست‌نخورده می‌ماند؛ فقط عددها و جدول‌ها هر روز از قیمت و تنظیمات واقعی ساخته می‌شوند.
 """
@@ -33,13 +35,14 @@ SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
+MISC_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(price_table|city_notice)\](?:\s*</p>)?")
 CMP_RE = re.compile(r"(?:<p[^>]*>\s*)?\[reeds_compare((?:\s+\d{3,4}){2,4})\s*\](?:\s*</p>)?")
 CITY_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(shipping_info|city_faq)(?:\s+([^\]\[<>]{1,40}))?\](?:\s*</p>)?")
 
 
 def has_blocks(content):
     c = content or ""
-    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c) or CITY_RE.search(c) or CMP_RE.search(c))
+    return bool(BLOCK_RE.search(c) or INLINE_RE.search(c) or SIZE_RE.search(c) or CITY_RE.search(c) or CMP_RE.search(c) or MISC_RE.search(c))
 
 
 def last_price_update():
@@ -353,6 +356,62 @@ def block_compare(request, nums):
     return render_to_string("blog/blocks/reeds_compare.html", {"cols": cols, "updated": last_price_update()}, request=request)
 
 
+def price_table_data():
+    """گروه‌های اصلی (شانه و جنس) با کمترین قیمت ۱۲، ۹ و ۶ متری و تراکم رایج؛ کش با زمان آخرین تغییر قیمت."""
+    stamp = last_price_update()
+    key = f"landing:pt:{int(stamp.timestamp()) if stamp else 0}"
+    hit = cache.get(key)
+    if hit is not None:
+        return hit
+    from catalog.models import AttributeTerm, Product
+
+    rows = []
+    density = {}
+    for name, url, by in price_rows():
+        reeds = re.sub(r"\D", "", name.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")))
+        if reeds and reeds not in density:
+            terms = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter").filter(Q(slug=reeds) | Q(name=reeds))
+            ids = list(Product.objects.filter(status="publish", seller__isnull=True, specs__in=terms).values_list("pk", flat=True)[:2000])
+            density[reeds] = _common_spec(ids, "تراکم")
+        rows.append({"name": name, "url": url, "p12": by.get("12-meter"), "p9": by.get("9-meter"), "p6": by.get("6-meter"),
+                     "density": density.get(reeds, "")})
+    cache.set(key, rows, 3600)
+    return rows
+
+
+def block_price_table(request, title=""):
+    rows = price_table_data()
+    if not rows:
+        return ""
+    plans = _plans()
+    cheapest = min((r["p12"] for r in rows if r["p12"]), default=None)
+    quotes = []
+    if cheapest:
+        for p in plans:
+            q = _best_quote(p, cheapest)
+            if q:
+                quotes.append((p, q))
+    from installments.services import page_url
+
+    return render_to_string("blog/blocks/price_table.html", {
+        "rows": rows, "updated": last_price_update(), "quotes": quotes, "cheapest": cheapest,
+        "ship": shipping_lines(), "prep_days": plans[0].first_due_days if plans else None,
+        "inst_url": page_url(),
+    }, request=request)
+
+
+def city_from_title(title):
+    m = re.match(r"^\s*خرید\s+فرش\s+در\s+(.+?)(?:\s*[|⭐☀️🌎+\-–:؛،!]|$)", title or "")
+    return m.group(1).strip() if m else ""
+
+
+def block_city_notice(request, title=""):
+    from core.models import SiteSettings
+
+    return render_to_string("blog/blocks/city_notice.html", {
+        "city": city_from_title(title), "site": SiteSettings.load()}, request=request)
+
+
 def _shop():
     from shop.models import ShopSettings
 
@@ -418,7 +477,7 @@ BLOCKS = {"installment_calc": block_calc, "installment_prices": block_prices, "i
           "installment_steps": block_steps, "installment_faq": block_faq}
 
 
-def render(content, request):
+def render(content, request, title=""):
     """متن با شورت‌کدها ← HTML نهایی."""
     def inline(_m):
         d = last_price_update()
@@ -473,7 +532,20 @@ def render(content, request):
             html = ""
         return '<div class="live-block">' + html + "</div>" if html else ""
 
-    return CMP_RE.sub(cmp_block, content)
+    content = CMP_RE.sub(cmp_block, content)
+
+    def misc_block(m):
+        try:
+            fn = block_price_table if m.group(1) == "price_table" else block_city_notice
+            html = fn(request, title)
+        except Exception:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).exception("block %s", m.group(0))
+            html = ""
+        return '<div class="live-block">' + html + "</div>" if html else ""
+
+    return MISC_RE.sub(misc_block, content)
 
 
 def faq_jsonld(content):

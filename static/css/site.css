@@ -1257,3 +1257,13 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .lb-cmp__t{min-width:0}
 .prose .lb-cmp__t caption{caption-side:top;text-align:start;font-size:.88rem;color:var(--muted);padding-bottom:.5rem}
 .prose .lb-cmp__t tbody th{font-weight:700;color:var(--ink-2);white-space:nowrap}
+/* اطلاعیهٔ شهرها و لیست قیمت زنده (جای عکس‌های قدیمی) */
+.lb-notice{border-inline-start:6px solid var(--pink);background:var(--pink-t);border-radius:var(--r-lg);padding:1.1rem 1.4rem;margin:1.4rem 0}
+.prose .lb-notice__t{font-weight:900;font-size:1.08rem;color:var(--pink-d);margin:0 0 .5rem}
+.prose .lb-notice ul{margin:0 0 .4rem;padding-inline-start:1.2rem}
+.prose .lb-notice li{margin:.3rem 0}
+.lb-pt{margin:1.2rem 0 1.8rem}
+.lb-pt__t{min-width:560px}
+.prose .lb-pt__t caption{caption-side:top;text-align:start;font-size:.88rem;color:var(--muted);padding-bottom:.5rem}
+.prose .lb-pt__notes{font-size:.93rem;color:var(--ink-2);margin:.9rem 0 .4rem;padding-inline-start:1.2rem}
+.prose .lb-pt__notes li{margin:.3rem 0}

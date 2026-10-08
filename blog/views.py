@@ -17,6 +17,10 @@ def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
     try:
         page_obj = paginator.page(page)
     except EmptyPage:
+        if page > 1:
+            from django.http import HttpResponsePermanentRedirect
+
+            return HttpResponsePermanentRedirect(path)
         raise Http404
     link = lambda n: path + (f"page/{n}/" if n > 1 else "")  # noqa: E731
     return render(request, "blog/post_list.html", {
@@ -69,9 +73,9 @@ def post_detail(request, post):
     from . import landing
     from .tidy import tidy
 
-    live = landing.has_blocks(post.content)
     content = tidy(post.content, post.title)
-    content = landing.render(content, request) if live else content
+    live = landing.has_blocks(content)
+    content = landing.render(content, request, title=post.title) if live else content
     if live:
         upd = landing.last_price_update()
         if upd and upd > post.modified_at:  # قیمت‌های زندهٔ صفحه به‌روز شده‌اند
@@ -96,11 +100,11 @@ def page_detail(request, page):
     from . import landing
     from .tidy import tidy
 
-    live = landing.has_blocks(page.content)
     content = tidy(page.content, page.title)
+    live = landing.has_blocks(content)
     return render(request, "blog/page_detail.html", {
         "meta": seo.build(page, "page"), "page": page, "live": live,
-        "content": landing.render(content, request) if live else content,
+        "content": landing.render(content, request, title=page.title) if live else content,
         "crumbs": [(p.title, p.get_absolute_url()) for p in _ancestors(page)] + [(page.title, page.get_absolute_url())],
     })
 

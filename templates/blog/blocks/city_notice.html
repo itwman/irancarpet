@@ -1,0 +1,10 @@
+<aside class="lb-notice" role="note" aria-labelledby="cityNotice">
+  <p class="lb-notice__t" id="cityNotice">پیش از تماس، این را بدانید</p>
+  <ul>
+    <li>ایران کارپت فروشگاه آنلاین فرش ماشینی در کاشان است و در {% if city %}{{ city }}{% else %}شهر شما{% endif %} شعبه، فروشگاه یا نمایندگی ندارد.</li>
+    <li>فرش مستقیم از کاشان بسته‌بندی و به نشانی شما{% if city %} در {{ city }}{% endif %} فرستاده می‌شود.</li>
+    <li>ایران کارپت با فروشگاه‌هایی مانند «شهر فرش»، «آقای فرش» و «مهد فرش» هیچ ارتباطی ندارد.</li>
+    <li>قیمت، شرایط اقساط و ارسال در همین صفحه به‌روز است و سفارش را می‌توانید آنلاین و بدون تماس ثبت کنید.</li>
+  </ul>
+  <div class="lb-cta"><a class="btn-ic btn-ic--pink btn-ic--sm" href="/store/">دیدن فرش‌ها و ثبت سفارش</a><a class="btn-ic btn-ic--ink btn-ic--sm" href="/carpets-price-list/">لیست قیمت امروز</a>{% for key, name, url in site.messengers|slice:":2" %}<a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ url }}" target="_blank" rel="noopener">پرسش در {{ name }}</a>{% endfor %}</div>
+</aside>

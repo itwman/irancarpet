@@ -1,0 +1,22 @@
+{% load fa %}<section class="lb-pt" aria-label="لیست قیمت امروز فرش ماشینی">
+  <div class="table-wrap">
+    <table class="lb-table lb-pt__t">
+      <caption>لیست قیمت امروز فرش ماشینی کاشان، به تومان و برای یک تخته{% if updated %} · آخرین تغییر قیمت: <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</caption>
+      <thead><tr><th scope="col">گروه فرش</th><th scope="col">تراکم</th><th scope="col">۱۲ متری، از</th><th scope="col">۹ متری، از</th><th scope="col">۶ متری، از</th></tr></thead>
+      <tbody>{% for r in rows %}
+        <tr><th scope="row"><a href="{{ r.url }}">{{ r.name|fa_num }}</a></th>
+          <td>{{ r.density|fa_num|default:"—" }}</td>
+          <td><strong>{% if r.p12 %}{{ r.p12|toman }}{% else %}—{% endif %}</strong></td>
+          <td>{% if r.p9 %}{{ r.p9|toman }}{% else %}—{% endif %}</td>
+          <td>{% if r.p6 %}{{ r.p6|toman }}{% else %}—{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  <ul class="lb-pt__notes">
+    <li>قیمت‌ها همان قیمت فروش امروز سایت است و با تغییر قیمت کارخانه خودکار عوض می‌شود. قیمت هر نقشه و هر سایز در صفحهٔ همان فرش آمده است.</li>
+    {% for p, q in quotes %}<li><strong>{{ p.title }}:</strong> برای فرش {{ cheapest|toman }} تومانی، {% if q.down %}{{ q.down|toman }} تومان پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ q.count|fa_num }} قسط {% if q.step == 2 %}دوماهه{% else %}ماهانه{% endif %} {{ q.installment|toman }} تومانی.</li>{% endfor %}
+    {% for t, d in ship %}{% if forloop.first %}<li><strong>ارسال:</strong> {{ d }}</li>{% endif %}{% endfor %}
+    {% if prep_days %}<li><strong>آماده‌شدن سفارش:</strong> حدود {{ prep_days|fa_num }} روز پس از ثبت، و بعد ارسال از کاشان.</li>{% endif %}
+  </ul>
+  <div class="lb-cta"><a class="btn-ic btn-ic--ink btn-ic--sm" href="/carpets-price-list/">لیست قیمت همهٔ سایزها و آلبوم‌ها</a>{% if inst_url %}<a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ inst_url }}">محاسبهٔ اقساط</a>{% endif %}</div>
+</section>

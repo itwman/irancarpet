@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
+from django.views.generic import RedirectView
 from django.urls import include, path, re_path
 from django.views.static import serve
 
@@ -49,6 +50,8 @@ urlpatterns = [
     path("sitemap_index.xml", sitemaps.index),
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),
     path("feed/", LatestPostsFeed()),
+    # نشانی‌های قدیمی خبرخوان (وردپرس و افزونه‌ها) ← /feed/
+    re_path(r"^(?:rss2?|atom|rdf|feed/(?:rss2?|atom|rdf))/?$", RedirectView.as_view(url="/feed/", permanent=True)),
     path("search/", catalog_views.search, name="search"),
     path("", include("affiliate.urls")),
     path("", include("market.urls")),

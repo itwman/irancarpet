@@ -99,8 +99,15 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
     try:
         page_obj = paginator.page(page)
     except EmptyPage:
-        raise Http404
-    if page > 1 and not paginator.count:
+        page_obj = None
+    if page > 1 and (page_obj is None or not paginator.count):
+        # صفحهٔ چندمِ ناموجود (فیلتر قدیمی وردپرس، محصول کم‌شده) ← صفحهٔ اول همان فهرست، نه ۴۰۴
+        from django.http import HttpResponsePermanentRedirect
+
+        q = g.copy()
+        q.pop("p", None)
+        return HttpResponsePermanentRedirect(path + (f"?{q.urlencode()}" if q else ""))
+    if page_obj is None:
         raise Http404
 
     query = g.urlencode()

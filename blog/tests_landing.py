@@ -129,3 +129,33 @@ class TopPagesTests(TestCase):
         out = tidy('<h4><img src="/a.jpg" alt="x"></h4><h4>متن</h4><p>پ</p>')
         self.assertIn('<p class="wp-img"><img', out)
         self.assertIn("<h2>متن</h2>", out)
+
+
+class ImageSwapTests(TestCase):
+    def test_price_and_city_images_become_live_blocks(self):
+        Post.objects.create(
+            title="خرید فرش در اندیمشک ⭐️ فروشگاه", slug="andimeshk", status="publish",
+            content='<p>ما فروشگاهی نداریم. <img class="aligncenter" src="https://irancarpet.net/wp-content/uploads/2020/09/at-city-min.jpg" alt="" /></p>'
+                    '<p>قیمت‌ها:<br /><a href="/x/"><img src="/wp-content/uploads/2025/01/price-list-20-10-1403.jpg" alt=""></a></p><p>پایان</p>')
+        html = self.client.get("/andimeshk/").content.decode()
+        self.assertNotIn("at-city-min.jpg", html)
+        self.assertNotIn("price-list-20-10-1403.jpg", html)
+        self.assertIn("در اندیمشک شعبه", html)
+        self.assertIn("آقای فرش", html)
+        self.assertNotIn("[price_table]", html)
+
+    def test_price_image_dropped_when_page_has_live_prices(self):
+        from blog.tidy import tidy
+
+        out = tidy('<p>a<img src="/u/price-list-1.jpg"></p>[size_prices 6-meter]')
+        self.assertNotIn("price-list", out)
+        self.assertNotIn("[price_table]", out)
+
+
+class PaginationTests(TestCase):
+    def test_out_of_range_page_redirects_to_first(self):
+        r = self.client.get("/blog/page/99/")
+        self.assertEqual(r.status_code, 301)
+        self.assertEqual(r["Location"], "/blog/")
+        self.assertEqual(self.client.get("/rss").status_code, 301)
+        self.assertEqual(self.client.get("/rss/")["Location"], "/feed/")

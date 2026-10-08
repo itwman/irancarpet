@@ -8,7 +8,7 @@ import re
 
 from django.utils.html import escape
 
-LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare)"
+LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice)"
 SHORTCODE = re.compile(r"\[/?(?!" + LIVE + r"\b)[a-z][a-z0-9_-]*(?:\s[^\[\]]*)?\]", re.I)
 EMPTY_P = re.compile(r"<p\b[^>]*>(?:\s|&nbsp;|&#160;|\xa0|<br\s*/?>|<span[^>]*>\s*</span>)*</p>", re.I)
 EMPTY_H = re.compile(r"<(h[2-6])\b[^>]*>(?:\s|&nbsp;|\xa0|<br\s*/?>|<(?:span|strong|b|a)[^>]*>\s*</(?:span|strong|b|a)>)*</\1>", re.I)
@@ -80,10 +80,29 @@ def _shift_headings(html):
     return re.sub(r"<(/?)h([3-6])\b", lambda m: f"<{m.group(1)}h{int(m.group(2)) - shift}", html, flags=re.I)
 
 
+# عکس‌های قدیمی که جایشان بخش زنده می‌نشیند:
+#   price-list-*.jpg   (لیست قیمت تصویری با قیمت‌های کهنه)  ← [price_table]
+#   at-city*.jpg       (اطلاعیهٔ «ما در شهر شما فروشگاه نداریم») ← [city_notice]
+_WRAP = r"(?:<br\s*/?>\s*)*(?:<a\b[^>]*>\s*)?<img\b[^>]*src=\"[^\"]*{}[^\"]*\"[^>]*>(?:\s*</a>)?"
+PRICE_IMG = re.compile(_WRAP.format(r"/price-list-"), re.I)
+CITY_IMG = re.compile(_WRAP.format(r"/at-city"), re.I)
+LIVE_PRICES = re.compile(r"\[(?:size_prices|installment_prices|price_table)\b")
+
+
+def _swap_images(html):
+    has_prices = bool(LIVE_PRICES.search(html))
+    html = PRICE_IMG.sub("" if has_prices else "</p>\n[price_table]\n<p>", html, count=0 if has_prices else 1)
+    html = PRICE_IMG.sub("", html)  # تکرار همان عکس در یک صفحه
+    html = CITY_IMG.sub("</p>\n[city_notice]\n<p>", html, count=1)
+    html = CITY_IMG.sub("", html)
+    return html
+
+
 def tidy(html, title=""):
     if not html:
         return html
     html = SHORTCODE.sub("", html)
+    html = _swap_images(html)
     html = IMG_HEAD.sub(lambda m: f'<p class="wp-img">{m.group(2).strip()}</p>', html)
     html = H1.sub(lambda m: f"<{m.group(1)}h2", html)
     for _ in range(2):
