@@ -61,8 +61,10 @@ def post_detail(request, post):
         "datePublished": post.published_at.isoformat(), "dateModified": post.modified_at.isoformat(),
         "mainEntityOfPage": site + post.get_absolute_url(),
         "image": [post.image.absolute_url] if post.image_id else [],
-        "author": {"@type": "Organization", "name": "ایران کارپت"},
-        "publisher": {"@type": "Organization", "name": "ایران کارپت"},
+        "author": {"@type": "Organization", "name": "ایران کارپت", "url": site + "/"},
+        "publisher": {"@type": "Organization", "name": "ایران کارپت", "url": site + "/",
+                      "logo": {"@type": "ImageObject", "url": site + "/static/img/logo.png"}},
+        "inLanguage": "fa-IR",
     }
     from . import landing
     from .tidy import tidy
@@ -77,8 +79,11 @@ def post_detail(request, post):
         faq = landing.faq_jsonld(post.content)
         if faq:
             jsonld = {"@context": "https://schema.org", "@graph": [{k: v for k, v in jsonld.items() if k != "@context"}, faq]}
+    meta = seo.build(post, "post")
+    if meta.get("description"):
+        (jsonld["@graph"][0] if "@graph" in jsonld else jsonld)["description"] = meta["description"]
     return render(request, "blog/post_detail.html", {
-        "meta": seo.build(post, "post"), "post": post, "crumbs": crumbs, "related": related,
+        "meta": meta, "post": post, "crumbs": crumbs, "related": related,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
         "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
         "price_updated": landing.last_price_update() if live else None,
