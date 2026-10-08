@@ -9,6 +9,7 @@ from .models import Album, Size
 PRICE_LIST_PATH = "/carpets-price-list/"
 SHORTCODE = "[icap_price_list]"
 CACHE_SECONDS = 600
+MAIN_SIZES = ["12-meter", "9-meter", "6-meter"]  # ستون‌هایی که روی موبایل همیشه دیده می‌شوند
 
 JALALI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
 
@@ -99,22 +100,41 @@ def build():
         if not updated or a.last_updated > updated:
             updated = a.last_updated
     out = []
+    by_slug = {s.slug: s for s in sizes}
     for reeds, g in sorted(groups.items(), key=lambda kv: (not kv[0], int(kv[0]) if kv[0].isdigit() else 0)):
         g["albums"].sort(key=lambda x: (x["order"], x["base_price"] or x["min_price"]))
         g["sizes"] = [s for s in sizes if s.pk in g["size_ids"]]
+        g["main"] = [s.slug in MAIN_SIZES for s in g["sizes"]]
         for al in g["albums"]:
             al["cells"] = [al["prices"].get(s.pk) for s in g["sizes"]]
+        # آلبوم‌های با قیمت کاملاً یکسان یک ردیف می‌شوند (نام همه با پیوند خودشان می‌آید)
+        rows = {}
+        for al in g["albums"]:
+            rows.setdefault(tuple(al["cells"]), []).append(al)
+        g["rows"] = [{"albums": als, "cells": [{"price": c, "main": m} for c, m in zip(als[0]["cells"], g["main"])],
+                      "count": sum(a["count"] for a in als)} for als in rows.values()]
         bases = [x["base_price"] for x in g["albums"] if x["base_price"]]
+        size_min = {}
+        for slug in MAIN_SIZES:
+            z = by_slug.get(slug)
+            vals = [al["prices"][z.pk] for al in g["albums"] if z and al["prices"].get(z.pk)]
+            if vals:
+                size_min[slug] = {"min": min(vals), "max": max(vals), "label": z.label.split("(")[0].strip()}
         g.update(
             title=f"فرش {reeds} شانه" if reeds else "سایر فرش‌ها",
             anchor=f"reeds-{reeds}" if reeds else "others",
             min_base=min(bases) if bases else None, max_base=max(bases) if bases else None,
-            count=sum(x["count"] for x in g["albums"]),
+            count=sum(x["count"] for x in g["albums"]), size_min=size_min,
+            reeds_url=f"/reeds-per-meter/{reeds}/" if reeds else "",
+            per_m2=(min(bases) // 12) if bases else None,
         )
         del g["size_ids"]
         out.append(g)
+    for z in sizes:
+        z.short = (z.label or "").split("(")[0].strip()
     data = {"groups": out, "updated": updated, "albums": sum(len(g["albums"]) for g in out),
-            "products": sum(g["count"] for g in out)}
+            "products": sum(g["count"] for g in out),
+            "main_sizes": [by_slug[x] for x in MAIN_SIZES if x in by_slug], "main_size_slugs": MAIN_SIZES}
     cache.set(key, data, CACHE_SECONDS)
     return data
 

@@ -14,6 +14,12 @@ from . import pricelist
 from .models import Album
 
 
+def pricelist_strip(html):
+    import re
+
+    return re.sub(r"<[^>]+>|\s|&nbsp;", "", html or "")
+
+
 def _ctx_vars():
     month, year = pricelist.month_year()
     return {"currentmonth": month, "currentyear": year, "currentdate": f"{month} {year}"}
@@ -29,9 +35,10 @@ def _crumb_ld(items):
     }
 
 
-def _faq(data, plans_text):
+def _faq(data, plans_text, guide=None):
     """پرسش‌های متداول که خودشان از روی قیمت‌های روز ساخته می‌شوند."""
     out = []
+    guide = guide or {}
     month, year = pricelist.month_year(data["updated"])
     for g in data["groups"]:
         if not g["min_base"] or not g["reeds"]:
@@ -47,10 +54,59 @@ def _faq(data, plans_text):
         out.append({"q": "قیمت‌های این لیست به‌روز هستند؟",
                     "a": "بله. قیمت‌ها مستقیم از قیمت‌گذاری فروشگاه خوانده می‌شوند و با هر تغییر قیمت کارخانه همین صفحه هم عوض می‌شود. "
                          f"آخرین تغییر: {month} {year}."})
+    g9 = guide.get("size9") or {}
     out.append({"q": "قیمت سایزهای دیگر چطور حساب می‌شود؟",
-                "a": "قیمت هر سایز به نسبت متراژ از قیمت ۱۲ متری همان لیست به دست می‌آید؛ برای ۹ متری (۲٫۵ × ۳٫۵) هزینهٔ پرتی هم اضافه می‌شود."})
+                "a": "قیمت هر سایز به نسبت متراژ از قیمت ۱۲ متری همان لیست به دست می‌آید"
+                     + (f"؛ برای {g9['label']} هزینهٔ پرتی هم اضافه می‌شود." if g9.get("label") else ".")})
+    if guide.get("cheapest"):
+        c = guide["cheapest"]
+        out.append({"q": "ارزان‌ترین فرش ماشینی ۱۲ متری چند است؟",
+                    "a": f"در لیست قیمت {month} {year}، ارزان‌ترین فرش ماشینی ۱۲ متری ایران کارپت {fa_num(c['group'])} است "
+                         f"با قیمت {toman(c['price'])} تومان (لیست «{fa_num(c['album'])}»)."})
+    for slug, q in (("9-meter", "قیمت فرش ماشینی ۹ متری چند است؟"), ("6-meter", "قیمت فرش ماشینی ۶ متری چند است؟")):
+        parts = [f"{fa_num(g['title'])} از {toman(g['size_min'][slug]['min'])}" for g in data["groups"] if slug in g.get("size_min", {})]
+        if parts:
+            out.append({"q": q, "a": f"در {month} {year}: " + "؛ ".join(parts) + " تومان."})
+    if guide.get("material"):
+        m = guide["material"]
+        out.append({"q": "فرق قیمت فرش آکریلیک و پلی‌استر چقدر است؟",
+                    "a": f"در فرش ۷۰۰ شانه، ۱۲ متری پلی‌استر از {toman(m['poly'])} و آکریلیک از {toman(m['acr'])} تومان است. "
+                         "آکریلیک نرم‌تر و گرم‌تر است و رنگ را بهتر نگه می‌دارد؛ پلی‌استر سبک‌تر، براق‌تر و ارزان‌تر است."})
+    if guide.get("free_min"):
+        out.append({"q": "هزینهٔ ارسال فرش چقدر است؟",
+                    "a": f"ارسال به سراسر ایران است. برای خرید با پرداخت کامل آنلاین بالای {toman(guide['free_min'])} تومان ارسال رایگان است؛ "
+                         "در بقیهٔ سفارش‌ها هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه)."})
     if plans_text:
         out.append({"q": "امکان خرید اقساطی فرش هست؟", "a": plans_text})
+    return out
+
+
+def _guide(data):
+    """عددهای زندهٔ بخش «قیمت فرش ماشینی به چه چیزهایی بستگی دارد» و پرسش‌ها."""
+    out = {}
+    with_base = [g for g in data["groups"] if g["min_base"] and g["reeds"]]
+    if with_base:
+        lo = min(with_base, key=lambda g: g["min_base"])
+        hi = max(with_base, key=lambda g: g["max_base"])
+        album = min((a for a in lo["albums"] if a["base_price"]), key=lambda a: a["base_price"])
+        out["cheapest"] = {"group": lo["title"], "price": lo["min_base"], "album": album["title"]}
+        out["priciest"] = {"group": hi["title"], "price": hi["max_base"]}
+        out["by_reeds"] = [{"title": g["title"], "min": g["min_base"], "per_m2": g["per_m2"]} for g in with_base]
+    nine = next((z for z in data.get("main_sizes", []) if z.needs_waste), None)
+    if nine:
+        out["size9"] = {"label": nine.label}
+    try:
+        from blog.landing import price_rows
+
+        rows = {name: by for name, _, by in price_rows()}
+        poly, acr = rows.get("فرش 700 شانه پلی‌استر", {}), rows.get("فرش 700 شانه آکریلیک", {})
+        if poly.get("12-meter") and acr.get("12-meter"):
+            out["material"] = {"poly": poly["12-meter"], "acr": acr["12-meter"]}
+    except Exception:  # noqa: BLE001
+        pass
+    from shop.models import ShopSettings
+
+    out["free_min"] = ShopSettings.load().free_shipping_min
     return out
 
 
@@ -74,7 +130,13 @@ def price_list(request, page):
         teaser = inst_teaser(min(bases)) if bases else None
     except ImportError:
         pass
-    faq = _faq(data, plans_text)
+    guide = _guide(data)
+    faq = _faq(data, plans_text, guide)
+    if teaser:
+        teaser["payable"] = teaser["down"] + teaser["installment"] * teaser["count"]
+    from blog.models import Post
+
+    inst_post = Post.objects.filter(slug="خرید-فرش-قسطی-از-کارخانه-فرش-کاشان", status="publish").only("slug", "title").first()
     vars_ = _ctx_vars()
     meta = seo.build(page, "page", extra=vars_)
     s = SiteSettings.load()
@@ -95,6 +157,9 @@ def price_list(request, page):
          "itemListElement": [{"@type": "ListItem", "position": i + 1, "name": a["title"], "url": settings.SITE_URL + a["url"]}
                              for i, a in enumerate(a for g in data["groups"] for a in g["albums"])]},
     ]
+    if data["updated"]:
+        graph.append({"@type": "WebPage", "@id": settings.SITE_URL + page.get_absolute_url(), "name": page.title,
+                      "dateModified": data["updated"].isoformat(), "inLanguage": "fa-IR"})
     if faq:
         graph.append({"@type": "FAQPage", "mainEntity": [
             {"@type": "Question", "name": f["q"], "acceptedAnswer": {"@type": "Answer", "text": f["a"]}} for f in faq]})
@@ -104,6 +169,7 @@ def price_list(request, page):
     return render(request, "pricing/price_list.html", {
         "size_links": size_links,
         "meta": meta, "page": page, "data": data, "before": before, "after": after, "faq": faq, "teaser": teaser,
+        "guide": guide, "inst_post": inst_post, "auto_intro": not pricelist_strip(before),
         "crumbs": [(page.title, page.get_absolute_url())], "month": vars_["currentdate"],
         "jsonld": json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False),
     })

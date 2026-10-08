@@ -119,3 +119,30 @@ class OwnPriceTests(TestCase):
         self.v12.refresh_from_db()
         self.assertFalse(self.v12.on_sale)
         self.assertEqual(self.v12.price, self.v12.final_price)
+
+
+class PriceListPageTests(TestCase):
+    def test_summary_merge_and_guide(self):
+        from decimal import Decimal
+
+        from blog.models import Page
+        from catalog.models import Product
+        from pricing.models import Album, Size, seed_sizes
+
+        seed_sizes()
+        s12 = Size.objects.get(slug="12-meter")
+        Page.objects.create(title="لیست قیمت فرش ماشینی", slug="carpets-price-list", template="price_list", status="publish",
+                            content="[icap_price_list]")
+        for i, name in enumerate(["مولوی ۷۰۰ شانه", "مهر ۷۰۰ شانه", "نگار ۱۲۰۰ شانه"]):
+            a = Album.objects.create(name=name, code=f"A{i}", base_size=s12, base_price=Decimal("30000000") if i < 2 else Decimal("60000000"))
+            a.sizes.set(Size.objects.filter(slug__in=["12-meter", "6-meter", "runner-3x1"]))
+            Product.objects.create(title=f"فرش {i}", slug=f"p{i}", album=a, status="publish")
+        r = self.client.get("/carpets-price-list/")
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        self.assertIn("قیمت فرش ماشینی امروز، خلاصه", html)
+        self.assertIn("۲ لیست هم‌قیمت", html)
+        self.assertIn("قیمت فرش ماشینی به چه چیزهایی بستگی دارد؟", html)
+        self.assertIn("ارزان‌ترین فرش ماشینی ۱۲ متری", html)
+        self.assertIn('class="pl-x"', html)
+        self.assertIn('"dateModified"', html)

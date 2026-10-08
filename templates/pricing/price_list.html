@@ -5,29 +5,47 @@
   <header class="pl-head">
     <h1>{{ page.title }}</h1>
     <p class="pl-stamp">{% if data.updated %}آخرین تغییر قیمت: <time datetime="{{ data.updated|date:'c' }}">{{ data.updated|jdate:"%d %B %Y" }}</time> · {% endif %}{{ data.albums|fa_num }} لیست قیمت · {{ data.products|fa_num }} فرش</p>
-    {% if before %}<div class="prose pl-intro">{{ before|safe }}</div>{% endif %}
-    {% if data.groups|length > 1 %}
-    <nav class="pl-jump" aria-label="پرش به شانه">
-      {% for g in data.groups %}<a href="#{{ g.anchor }}" class="pl-jump__item {{ g.reeds|reeds_class }}"><strong>{{ g.title|fa_num }}</strong>{% if g.min_base %}<small>۱۲ متری از {{ g.min_base|toman }}</small>{% endif %}</a>{% endfor %}
-    </nav>
-    {% endif %}
+    {% if auto_intro %}
+      {% if guide.cheapest %}<p class="pl-lead">قیمت فرش ماشینی ۱۲ متری در {{ month }} از <strong>{{ guide.cheapest.price|toman }} تومان</strong> ({{ guide.cheapest.group|fa_num }}) شروع می‌شود و تا <strong>{{ guide.priciest.price|toman }} تومان</strong> ({{ guide.priciest.group|fa_num }}) می‌رسد. قیمت‌های این صفحه مستقیم از قیمت‌گذاری فروشگاه ایران کارپت خوانده می‌شوند و با هر تغییر قیمت کارخانه همین‌جا به‌روز می‌شوند؛ خرید مستقیم از کاشان، نقد و اقساط.</p>{% endif %}
+    {% else %}<div class="prose pl-intro">{{ before|safe }}</div>{% endif %}
   </header>
+
+  {% if data.groups %}
+  <section class="pl-now" aria-labelledby="plNow">
+    <h2 id="plNow">قیمت فرش ماشینی امروز، خلاصه</h2>
+    <div class="pl-table-wrap">
+      <table class="pl-now__t">
+        <caption class="sr-only">کمترین و بیشترین قیمت فرش ماشینی هر شانه، {{ month }}، به تومان</caption>
+        <thead><tr><th scope="col">شانه</th>{% for z in data.main_sizes %}<th scope="col">{{ z.short|fa_num }}</th>{% endfor %}<th scope="col"><span class="sr-only">جدول کامل</span></th></tr></thead>
+        <tbody>{% for g in data.groups %}{% if g.size_min %}
+          <tr class="{{ g.reeds|reeds_class }}">
+            <th scope="row">{% if g.reeds_url %}<a href="{{ g.reeds_url }}">{{ g.title|fa_num }}</a>{% else %}{{ g.title|fa_num }}{% endif %}</th>
+            {% for z in data.main_sizes %}{% with v=g.size_min|get_item:z.slug %}<td>{% if v %}{% if v.min == v.max %}{{ v.min|toman }}{% else %}{{ v.min|toman }} <small>تا</small> {{ v.max|toman }}{% endif %}{% else %}—{% endif %}</td>{% endwith %}{% endfor %}
+            <td><a class="pl-now__go" href="#{{ g.anchor }}">همهٔ {{ g.albums|length|fa_num }} لیست</a></td>
+          </tr>
+        {% endif %}{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="pl-all-toggle"><button type="button" class="pill" data-pl-all aria-pressed="false">نمایش همهٔ سایزها (کناره، قالیچه، گرد…)</button></div>
 
   {% for g in data.groups %}
   <section class="pl-group {{ g.reeds|reeds_class }}" id="{{ g.anchor }}" aria-labelledby="{{ g.anchor }}-h">
     <div class="pl-group__head">
       <h2 id="{{ g.anchor }}-h">قیمت {{ g.title|fa_num }}</h2>
-      <p>{% if g.min_base %}{% if g.min_base == g.max_base %}۱۲ متری {{ g.min_base|toman }} تومان{% else %}۱۲ متری از {{ g.min_base|toman }} تا {{ g.max_base|toman }} تومان{% endif %} · {% endif %}{{ g.albums|length|fa_num }} لیست · {{ g.count|fa_num }} فرش</p>
+      <p>{% if g.min_base %}{% if g.min_base == g.max_base %}۱۲ متری {{ g.min_base|toman }} تومان{% else %}۱۲ متری از {{ g.min_base|toman }} تا {{ g.max_base|toman }} تومان{% endif %} · {% endif %}{{ g.albums|length|fa_num }} لیست · {{ g.count|fa_num }} فرش{% if g.reeds_url %} · <a href="{{ g.reeds_url }}">دیدن همهٔ {{ g.title|fa_num }}‌ها</a>{% endif %}</p>
     </div>
     <div class="pl-table-wrap" role="region" aria-label="جدول قیمت {{ g.title|fa_num }}" tabindex="0">
       <table class="pl-table">
         <caption>قیمت {{ g.title|fa_num }} به تومان، {{ month }}</caption>
-        <thead><tr><th scope="col" class="pl-name">لیست قیمت</th>{% for s in g.sizes %}<th scope="col">{{ s.label|fa_num }}</th>{% endfor %}</tr></thead>
+        <thead><tr><th scope="col" class="pl-name">لیست قیمت</th>{% for s in g.sizes %}<th scope="col"{% if not s.slug in data.main_size_slugs %} class="pl-x"{% endif %}>{{ s.label|fa_num }}</th>{% endfor %}</tr></thead>
         <tbody>
-          {% for a in g.albums %}
+          {% for r in g.rows %}
           <tr>
-            <th scope="row" class="pl-name"><a href="{{ a.url }}">{{ a.title|fa_num }}</a><small>{{ a.count|fa_num }} فرش{% if a.company %} · {{ a.company }}{% endif %}</small></th>
-            {% for c in a.cells %}<td>{% if c %}{{ c|toman }}{% else %}<span class="pl-na" aria-label="ندارد">—</span>{% endif %}</td>{% endfor %}
+            <th scope="row" class="pl-name">{% for a in r.albums %}<a href="{{ a.url }}">{{ a.title|fa_num }}</a>{% if not forloop.last %}<span class="pl-and">، </span>{% endif %}{% endfor %}<small>{{ r.count|fa_num }} فرش{% if r.albums|length > 1 %} · {{ r.albums|length|fa_num }} لیست هم‌قیمت{% elif r.albums.0.company %} · {{ r.albums.0.company }}{% endif %}</small></th>
+            {% for c in r.cells %}<td{% if not c.main %} class="pl-x"{% endif %}>{% if c.price %}{{ c.price|toman }}{% else %}<span class="pl-na" title="این سایز در این لیست بافته نمی‌شود">—</span>{% endif %}</td>{% endfor %}
           </tr>
           {% endfor %}
         </tbody>
@@ -37,13 +55,34 @@
   {% empty %}
   <div class="alert-ic alert-ic--warn">لیست قیمت در حال به‌روزرسانی است. برای قیمت روز با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
   {% endfor %}
+  {% if data.groups %}<p class="small muted">«—» یعنی آن سایز در آن لیست بافته نمی‌شود. قیمت‌ها به تومان و برای یک تخته است؛ سایزهای «فقط جفت» جفتی فروخته می‌شوند.</p>{% endif %}
 
   {% if teaser %}
   <aside class="pl-inst">
     <div><strong>خرید اقساطی هم داریم</strong>
-      <p>مثلاً فرش {{ teaser.amount|toman }} تومانی: {% if teaser.down_percent %}{{ teaser.down_percent|fa_num }}٪ پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ teaser.count|fa_num }} قسط {% if teaser.step == 2 %}دوماهه{% else %}ماهانه{% endif %} {{ teaser.installment|toman }} تومانی ({{ teaser.plan }}).</p></div>
-    {% if teaser.url %}<a class="btn-ic btn-ic--ink btn-ic--sm" href="{{ teaser.url }}?amount={{ teaser.amount }}">محاسبهٔ اقساط</a>{% endif %}
+      <p>مثلاً فرش {{ teaser.amount|toman }} تومانی با «{{ teaser.plan }}»: {% if teaser.down %}{{ teaser.down|toman }} تومان پیش‌پرداخت و {% else %}بدون پیش‌پرداخت، {% endif %}{{ teaser.count|fa_num }} قسط {% if teaser.step == 2 %}دوماهه{% else %}ماهانه{% endif %} {{ teaser.installment|toman }} تومانی؛ جمع پرداختی {{ teaser.payable|toman }} تومان.</p></div>
+    <div class="pl-inst__btns">
+      {% if inst_post %}<a class="btn-ic btn-ic--ink btn-ic--sm" href="{{ inst_post.get_absolute_url }}">خرید فرش قسطی از کارخانه</a>{% endif %}
+      {% if teaser.url %}<a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ teaser.url }}?amount={{ teaser.amount }}">محاسبهٔ اقساط</a>{% endif %}
+    </div>
   </aside>
+  {% endif %}
+
+  {% if guide.by_reeds and not "بستگی دارد" in after %}
+  <section class="prose container--narrow pl-guide" aria-labelledby="plGuide">
+    <h2 id="plGuide">قیمت فرش ماشینی به چه چیزهایی بستگی دارد؟</h2>
+    <h3>تعداد شانه و تراکم</h3>
+    <p>هرچه شانه (تعداد گره در عرض یک متر) و تراکم بیشتر باشد، نقش ظریف‌تر و فرش سنگین‌تر و گران‌تر است. در لیست امروز، قیمت هر متر مربع فرش ۱۲ متری از این عددها شروع می‌شود:</p>
+    <ul>{% for r in guide.by_reeds %}<li>{{ r.title|fa_num }}: ۱۲ متری از {{ r.min|toman }} تومان، یعنی متری حدود {{ r.per_m2|toman }} تومان</li>{% endfor %}</ul>
+    <h3>جنس نخ: آکریلیک یا پلی‌استر</h3>
+    <p>نخ آکریلیک نرم‌تر و گرم‌تر است و رنگ را بهتر نگه می‌دارد؛ پلی‌استر سبک‌تر و براق‌تر و ارزان‌تر است.{% if guide.material %} در فرش ۷۰۰ شانه، ۱۲ متری پلی‌استر از {{ guide.material.poly|toman }} و آکریلیک از {{ guide.material.acr|toman }} تومان است.{% endif %}</p>
+    <h3>سایز</h3>
+    <p>قیمت هر سایز به نسبت متراژ از قیمت ۱۲ متری همان لیست حساب می‌شود{% if guide.size9 %}؛ {{ guide.size9.label|fa_num }} هزینهٔ پرتی هم دارد، چون از عرض ۳ متری دستگاه بریده می‌شود{% endif %}. برای انتخاب سایز درست، <a href="/محاسبه-سایز-فرش/">محاسبهٔ سایز فرش</a> را ببینید.</p>
+    <h3>نقشه، برند و گل‌برجسته</h3>
+    <p>هر لیست قیمت (آلبوم) مجموعه‌ای از نقشه‌های یک کارخانه با کیفیت و قیمت یکسان است؛ قیمت همهٔ نقشه‌ها و رنگ‌های یک لیست برابر است. فرش‌های گل‌برجسته و نقشه‌های پرکار معمولاً در لیست‌های گران‌تر هستند.</p>
+    <h3>خرید مستقیم از کارخانه</h3>
+    <p>ایران کارپت فرش را مستقیم از کاشان و بی‌واسطه می‌فروشد؛ قیمت هر سایز روشن است و با پرداخت کامل یا {% if inst_post %}<a href="{{ inst_post.get_absolute_url }}">خرید قسطی</a>{% else %}اقساط{% endif %} می‌توانید سفارش دهید.{% if guide.free_min %} برای خریدهای بالای {{ guide.free_min|toman }} تومان با پرداخت کامل آنلاین، ارسال رایگان است.{% endif %}</p>
+  </section>
   {% endif %}
 
   {% if size_links %}
@@ -62,3 +101,10 @@
   {% endif %}
 </div>
 {% endblock %}
+{% block scripts %}<script>
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-pl-all]"); if (!b) return;
+  var on = document.body.classList.toggle("pl-show-all");
+  document.querySelectorAll("[data-pl-all]").forEach(function (x) { x.setAttribute("aria-pressed", on); x.textContent = on ? "فقط سایزهای اصلی" : "نمایش همهٔ سایزها (کناره، قالیچه، گرد…)"; });
+});
+</script>{% endblock %}

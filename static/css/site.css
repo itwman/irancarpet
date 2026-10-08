@@ -1192,3 +1192,35 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 @media (max-width:767px){.lb-steps{grid-template-columns:1fr 1fr}}
 @media (max-width:480px){.lb-steps{grid-template-columns:1fr}}
 .prose .lb-table{display:table;margin:0}
+
+/* --- لیست قیمت: خلاصهٔ امروز، ستون‌های اصلی روی موبایل، راهنما --- */
+.pl-lead{font-size:1.06rem;line-height:2.05;color:var(--ink-2);max-width:62rem;margin:.6rem 0 0}
+.pl-lead strong{color:var(--ink)}
+.pl-now{margin:1.5rem 0 1rem;background:var(--soft);border-radius:var(--r-lg);padding:1.25rem 1.25rem 1rem}
+.pl-now h2{font-size:1.25rem;margin:0 0 .8rem}
+.pl-now__t{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;font-size:.97rem}
+.pl-now__t th,.pl-now__t td{padding:.7rem .8rem;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+.pl-now__t thead th{font-size:.82rem;color:var(--muted);font-weight:700}
+.pl-now__t tbody th{border-inline-start:5px solid var(--acc)}
+.pl-now__t tbody th a{color:var(--ink);font-weight:800}
+.pl-now__t td{font-weight:700}
+.pl-now__t small{color:var(--muted);font-weight:500}
+.pl-now__go{font-size:.85rem;font-weight:700}
+.pl-all-toggle{display:none;margin:.5rem 0 0}
+.pl-name .pl-and{color:var(--muted)}
+.pl-inst__btns{display:flex;gap:.5rem;flex-wrap:wrap}
+.pl-guide{margin-top:2.5rem}
+@media (max-width:991px){
+  .pl-all-toggle{display:block}
+  .pl-table .pl-x{display:none}
+  .pl-show-all .pl-table .pl-x{display:table-cell}
+}
+.pl-table th.pl-name{white-space:normal;min-width:180px}
+@media (max-width:991px){body:not(.pl-show-all) .pl-table{min-width:0}}
+.pl-table-wrap{position:relative}
+@media (max-width:640px){
+  .pl-now{padding:1rem .75rem}
+  .pl-now__t th,.pl-now__t td{white-space:normal;padding:.6rem .5rem;font-size:.88rem}
+  .pl-now__t th:last-child,.pl-now__t td:last-child{display:none}
+}
+@media (max-width:640px){.pl-table th.pl-name{min-width:120px}.pl-table th,.pl-table td{padding:.6rem .55rem}}
