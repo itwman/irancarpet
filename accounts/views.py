@@ -196,4 +196,5 @@ def dashboard(request):
     return render(request, "accounts/dashboard.html", {
         "meta": {**META, "title": "حساب کاربری"}, "profile": profile, "orders": orders, "errors": errors,
         "referral": referral, "shop": shop, "gifts": gifts,
+        "aff_enabled": __import__("affiliate.models", fromlist=["AffiliateSettings"]).AffiliateSettings.load().enabled,
     })

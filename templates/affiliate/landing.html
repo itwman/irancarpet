@@ -1,0 +1,80 @@
+{% extends "base.html" %}{% load fa static %}
+{% block content %}
+<div class="container aff">
+  <section class="aff-hero">
+    <div class="aff-hero__text">
+      <h1>فرش معرفی کنید،<br>از هر فروش پورسانت بگیرید</h1>
+      <p>پیوند فرش‌های ایران کارپت را برای دوستان، مشتری‌ها یا دنبال‌کننده‌هایتان بفرستید. هر کس تا {{ s.attribution_days|fa_num }} روز بعد از باز کردن پیوند شما خرید کند، پورسانتش به حساب شما می‌آید؛ هرچه فروش {% if s.tier_period == "month" %}ماهانهٔ{% else %}{% endif %} شما بیشتر شود، درصدتان بالاتر می‌رود.</p>
+      <div class="aff-hero__cta">
+        <a class="btn-ic btn-ic--pink" href="#join">ثبت‌نام همکاری</a>
+        <a class="btn-ic btn-ic--teal" href="#calc">پورسانتم چقدر می‌شود؟</a>
+      </div>
+    </div>
+    <figure class="aff-stairs" aria-label="پله‌های پورسانت">
+      {% for t in tiers %}
+      <div class="aff-step" style="--h:{{ t.height }}%">
+        <strong>{{ t.pct }}٪</strong>
+        <span>{% if t.max %}{% if forloop.first %}تا {{ t.max_label }}{% else %}{{ t.min_label }} تا {{ t.max_label }}{% endif %}{% else %}بالای {{ t.min_label }}{% endif %}</span>
+      </div>
+      {% endfor %}
+      <figcaption>پورسانت بر اساس جمع فروش {% if s.tier_period == "month" %}هر ماه{% else %}از ابتدای همکاری{% endif %} (تومان)</figcaption>
+    </figure>
+  </section>
+
+  <section class="aff-how" aria-labelledby="how">
+    <h2 id="how">چطور کار می‌کند</h2>
+    <ol>
+      <li><strong>ثبت‌نام کنید</strong><span>با شمارهٔ موبایلتان وارد شوید و فرم پایین را پر کنید. بعد از تأیید، پنل همکاری‌تان باز می‌شود.</span></li>
+      <li><strong>پیوند یا کدتان را بفرستید</strong><span>پیوند کوتاه هر فرش (مثل <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/نام‌شما</span>) را در واتس‌اپ، تلگرام یا بیو اینستاگرام بگذارید.{% if s.coupon_enabled %} برای پست و استوری اینستاگرام هم یک کد تخفیف اختصاصی می‌گیرید که مشتری با آن {{ s.coupon_percent|fa_num }}٪ تخفیف می‌گیرد.{% endif %}</span></li>
+      <li><strong>پورسانت بگیرید</strong><span>بعد از تحویل فرش به مشتری، پورسانت قابل تسویه می‌شود و به شماره شبای خودتان واریز می‌شود.</span></li>
+    </ol>
+  </section>
+
+  <section class="aff-calc card-ic" id="calc" aria-labelledby="calcH">
+    <h2 id="calcH">پورسانت خودتان را حساب کنید</h2>
+    <label for="calcIn">فروش {% if s.tier_period == "month" %}در یک ماه{% else %}کل{% endif %}: <output id="calcSales">۲۰۰ میلیون</output> تومان</label>
+    <input id="calcIn" type="range" min="10000000" max="3000000000" step="10000000" value="200000000">
+    <p class="aff-calc__out">پورسانت شما: <strong id="calcOut">—</strong> تومان <small class="muted" id="calcRate"></small></p>
+    {{ calc|json_script:"calcData" }}
+  </section>
+
+  <section class="aff-join" id="join" aria-labelledby="joinH">
+    <div class="card-ic">
+      <h2 id="joinH">ثبت‌نام همکاری در فروش</h2>
+      {% if not user.is_authenticated %}
+        <p>برای ثبت‌نام اول با شمارهٔ موبایلتان وارد شوید؛ کد ورود پیامک می‌شود.</p>
+        <a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/login/?next=/affiliate/%23join">ورود و ادامهٔ ثبت‌نام</a>
+      {% else %}
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="grid-2">
+          <div class="field{% if errors.name %} has-err{% endif %}"><label for="an">نام و نام خانوادگی</label>
+            <input id="an" name="name" value="{{ data.name|default:user.get_full_name }}" required autocomplete="name">{% if errors.name %}<span class="err">{{ errors.name }}</span>{% endif %}</div>
+          <div class="field"><label for="ac">شهر</label><input id="ac" name="city" value="{{ data.city|default:'' }}"></div>
+        </div>
+        <div class="field"><label for="ach">کجا فرش‌ها را معرفی می‌کنید؟</label>
+          <textarea id="ach" name="channels" rows="2" placeholder="مثلاً صفحهٔ اینستاگرام، کانال تلگرام، فروشگاه لوازم خانگی، طراحی داخلی…">{{ data.channels|default:'' }}</textarea></div>
+        <div class="grid-2">
+          <div class="field{% if errors.code %} has-err{% endif %}"><label for="acode">نام دلخواه در پیوند (اختیاری)</label>
+            <input id="acode" name="code" value="{{ data.code|default:'' }}" dir="ltr" placeholder="sara_home" maxlength="20" autocapitalize="off">
+            <small>پیوند شما: <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/<b id="codePrev">{{ data.code|default:"…" }}</b></span>. خالی بماند، خودکار ساخته می‌شود.</small>
+            {% if errors.code %}<span class="err">{{ errors.code }}</span>{% endif %}</div>
+          <div class="field{% if errors.sheba %} has-err{% endif %}"><label for="ash">شماره شبا (اختیاری؛ برای واریز)</label>
+            <input id="ash" name="sheba" value="{{ data.sheba|default:'' }}" dir="ltr" placeholder="IR…" inputmode="numeric">
+            {% if errors.sheba %}<span class="err">{{ errors.sheba }}</span>{% endif %}</div>
+        </div>
+        <div class="field{% if errors.terms %} has-err{% endif %}">
+          <label class="aff-check"><input type="checkbox" name="terms" value="1"{% if data and not errors.terms %} checked{% endif %}> قوانین همکاری (پایین صفحه) را خواندم و می‌پذیرم.</label>
+          {% if errors.terms %}<span class="err">{{ errors.terms }}</span>{% endif %}
+        </div>
+        <button class="btn-ic btn-ic--pink" type="submit">ثبت درخواست همکاری</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="aff-terms">
+      <h2>قوانین همکاری</h2>
+      <ul>{% for t in terms %}<li>{{ t|fa_num }}</li>{% endfor %}</ul>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/affiliate.js' %}" defer></script>{% endblock %}

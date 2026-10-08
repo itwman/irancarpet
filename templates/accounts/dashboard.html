@@ -20,6 +20,17 @@
       <p class="muted mb-3">هنوز سفارشی ثبت نکرده‌اید.</p><a href="/store/" class="btn-ic btn-ic--teal btn-ic--sm">دیدن فرش‌ها</a>
       {% endif %}
     </section>
+    {% if aff_enabled or user.affiliate %}<section class="card-ic aff-acc">
+      {% if user.affiliate %}
+      <h2>همکاری در فروش</h2>
+      <p class="mb-2">پیوندها، کد تخفیف اختصاصی و پورسانت‌هایتان در پنل همکاری است.</p>
+      <a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/affiliate/">پنل همکاری در فروش</a>
+      {% else %}
+      <h2>همکار فروش ایران کارپت شوید</h2>
+      <p class="mb-2">فرش‌ها را به دیگران معرفی کنید و از هر خرید پورسانت پله‌ای بگیرید.</p>
+      <a class="btn-ic btn-ic--teal btn-ic--sm" href="/affiliate/">آشنایی و ثبت‌نام</a>
+      {% endif %}
+    </section>{% endif %}
     {% if referral or gifts %}
     <section class="card-ic ref-box">
       {% if referral %}

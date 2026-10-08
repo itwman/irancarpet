@@ -67,7 +67,11 @@ class OrderAdmin(ModelAdmin):
                            colors.get(o.status, "#999"), o.get_status_display())
 
     def _set(self, request, qs, status):
-        n = qs.update(status=status)
+        n = 0
+        for o in qs:  # تک‌تک ذخیره می‌شود تا پورسانت همکار و بقیهٔ هماهنگی‌ها هم اجرا شود
+            o.status = status
+            o.save(update_fields=["status"])
+            n += 1
         self.message_user(request, f"{n} سفارش به‌روز شد.")
 
     @admin.action(description="در حال آماده‌سازی")

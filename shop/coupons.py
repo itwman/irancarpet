@@ -36,6 +36,8 @@ def check(code, user, total, source="web"):
             return None, 0, "کد معرفی فعلاً فعال نیست."
         if user and c.owner_id == user.pk:
             return None, 0, "نمی‌توانید از کد معرفی خودتان استفاده کنید."
+    if user and user.is_authenticated and c.affiliates.filter(user=user).exists():
+        return None, 0, "نمی‌توانید از کد همکاری خودتان استفاده کنید."
     used = Order.objects.filter(coupon_code=c.code, status__in=PLACED)
     if c.usage_limit and used.count() >= c.usage_limit:
         return None, 0, "ظرفیت استفاده از این کد تمام شده است."

@@ -25,6 +25,9 @@ def env_list(name, default=""):
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1,irancarpet.net,www.irancarpet.net")
+# دامنهٔ پیوند کوتاه همکاران فروش (فقط ریدایرکت به سایت اصلی)
+SHORT_HOSTS = env_list("SHORT_HOSTS", "crpt.it,www.crpt.it")
+ALLOWED_HOSTS += [h for h in SHORT_HOSTS if h not in ALLOWED_HOSTS]
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "https://irancarpet.net,https://www.irancarpet.net")
 
 SITE_URL = os.environ.get("SITE_URL", "https://irancarpet.net").rstrip("/")
@@ -56,15 +59,18 @@ INSTALLED_APPS = [
     "landing",
     "growth",
     "content",
+    "affiliate",
 ]
 
 MIDDLEWARE = [
+    "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.it)
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "seo.middleware.LegacyQueryMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "affiliate.track.RefMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "seo.middleware.RedirectFallbackMiddleware",

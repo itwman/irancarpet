@@ -1,0 +1,114 @@
+{% extends "base.html" %}{% load fa static aff %}
+{% block content %}
+<div class="container aff aff-dash">
+  <div class="page-head d-flex justify-content-between align-items-end flex-wrap gap-3">
+    <div><h1>پنل همکاری در فروش</h1><p>{{ a.name }} · کد <span dir="ltr">{{ a.code }}</span></p></div>
+    <a class="pill" href="/my-account/">حساب من</a>
+  </div>
+  {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}">{{ m }}</div>{% endfor %}
+
+  {% if a.status == "pending" %}
+    <div class="card-ic aff-wait">
+      <h2>درخواستتان ثبت شد</h2>
+      <p class="mb-0">همکاران ما درخواست را بررسی می‌کنند؛ بعد از تأیید، پیامک می‌گیرید و پیوندهای شما همین‌جا آماده است.</p>
+    </div>
+  {% elif a.status != "active" %}
+    <div class="alert-ic alert-ic--warn">حساب همکاری شما {{ a.get_status_display }} است. برای پیگیری با ایران کارپت تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
+  {% else %}
+
+  <section class="aff-stats" aria-label="خلاصه">
+    <div class="aff-stat aff-stat--tier">
+      <span>فروش {{ period_label }}</span>
+      <strong>{{ sales|toman }} <small>تومان</small></strong>
+      <div class="aff-bar" role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"><i style="width:{{ progress }}%"></i></div>
+      <small>{% if a.custom_percent is not None %}درصد اختصاصی شما {{ rate|pct }}٪{% else %}پورسانت فعلی {{ rate|pct }}٪{% if next_tier %} · {{ left|toman }} تومان دیگر تا {{ next_tier.percent|pct }}٪{% else %} · بالاترین پله{% endif %}{% endif %}</small>
+    </div>
+    <div class="aff-stat"><span>قابل تسویه</span><strong>{{ payable|toman }} <small>تومان</small></strong>
+      <small>{% if payable >= s.min_payout %}در نوبت واریز{% else %}واریز از {{ s.min_payout|toman }} تومان{% endif %}</small></div>
+    <div class="aff-stat"><span>در راه</span><strong>{{ upcoming|toman }} <small>تومان</small></strong><small>سفارش‌های پرداخت یا تحویل‌نشده</small></div>
+    <div class="aff-stat"><span>۳۰ روز اخیر</span><strong>{{ visitors30|fa_num }} <small>بازدیدکننده</small></strong><small>{{ clicks30|fa_num }} ورود · {{ orders30|fa_num }} سفارش</small></div>
+  </section>
+
+  <section class="aff-links">
+    <div class="card-ic aff-main-link">
+      <h2>پیوند عمومی شما</h2>
+      <p class="muted">برای بیو اینستاگرام، استوری و معرفی کلی ایران کارپت. هر صفحه‌ای که مشتری بعد از این پیوند ببیند و بخرد، به نام شماست.</p>
+      <div class="aff-copy"><input readonly dir="ltr" value="{{ general }}" aria-label="پیوند عمومی"><button class="pill" type="button" data-copy="{{ general }}">کپی</button></div>
+      <div class="aff-share">
+        <a class="pill" href="https://wa.me/?text={{ 'فرش ماشینی کاشان، نقد و اقساط، ارسال به سراسر ایران 👇 '|urlencode }}{{ general|urlencode }}" target="_blank" rel="noopener">واتس‌اپ</a>
+        <a class="pill" href="https://t.me/share/url?url={{ general|urlencode }}&text={{ 'فرش ماشینی کاشان، نقد و اقساط'|urlencode }}" target="_blank" rel="noopener">تلگرام</a>
+      </div>
+    </div>
+    {% if coupon %}
+    <div class="card-ic aff-coupon">
+      <h2>کد تخفیف اختصاصی</h2>
+      <p class="muted">برای پست و استوری اینستاگرام که پیوند کلیک نمی‌شود: مشتری این کد را در سبد خرید می‌زند، {{ s.coupon_percent|fa_num }}٪ تخفیف{% if s.coupon_max %} (تا {{ s.coupon_max|toman }} تومان){% endif %} می‌گیرد و خریدش به نام شما ثبت می‌شود.</p>
+      <div class="aff-code"><code dir="ltr">{{ coupon.code }}</code><button class="pill" type="button" data-copy="{{ coupon.code }}">کپی کد</button></div>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card-ic aff-maker" aria-labelledby="mk">
+    <h2 id="mk">پیوند یک فرش</h2>
+    <p class="muted">نام، رنگ یا نقشهٔ فرش را بنویسید (مثل «گلریز لاکی») یا نشانی صفحهٔ فرش را بچسبانید.</p>
+    <div class="aff-search"><input id="affQ" type="search" placeholder="جستجوی فرش…" autocomplete="off"></div>
+    <ul class="aff-results" id="affResults" aria-live="polite"></ul>
+    <h3 class="h6 mt-4">پیوند هر صفحهٔ دیگر</h3>
+    <form class="aff-page" id="affPage">{% csrf_token %}
+      <input name="url" dir="ltr" placeholder="https://irancarpet.net/carpets-price-list/…" aria-label="نشانی صفحه">
+      <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">پیوند کوتاه بساز</button>
+    </form>
+    <div class="aff-copy" id="affPageOut" hidden><input readonly dir="ltr" aria-label="پیوند ساخته‌شده"><button class="pill" type="button" data-copy="">کپی</button></div>
+    <p class="err" id="affPageErr" hidden></p>
+    {% if links %}<ul class="aff-mylinks">{% for lk, url in links %}<li><span dir="ltr">{{ lk.path|truncatechars:60 }}</span> → <button class="linkbtn" type="button" data-copy="{{ url }}" dir="ltr">{{ url }}</button></li>{% endfor %}</ul>{% endif %}
+  </section>
+
+  {% if top_products %}
+  <section class="card-ic">
+    <h2>فرش‌هایی که بیشتر از پیوند شما دیده شده‌اند (۳۰ روز)</h2>
+    <ul class="mb-0">{% for t in top_products %}<li>{{ t.product__title|fa_num }} — {{ t.n|fa_num }} ورود</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section class="card-ic">
+    <h2>سفارش‌ها و پورسانت‌ها</h2>
+    {% if commissions %}
+    <div class="table-wrap"><table class="orders">
+      <thead><tr><th>سفارش</th><th class="hide-sm">تاریخ</th><th>خرید</th><th>درصد</th><th>پورسانت</th><th>وضعیت</th></tr></thead>
+      <tbody>{% for c in commissions %}
+        <tr><td>{{ c.order.number|fa_num }}</td><td class="hide-sm">{{ c.created_at|jdate }}</td><td>{{ c.base|toman }}</td>
+          <td>{{ c.percent|pct }}٪</td><td><strong>{{ c.amount|toman }}</strong></td>
+          <td><span class="st aff-st-{{ c.status }}">{{ c.get_status_display }}</span></td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="muted small mb-0">نام و نشانی مشتری‌ها محرمانه است و نمایش داده نمی‌شود. درصد سفارش‌های تسویه‌نشده با رسیدن به پلهٔ بالاتر خودکار به‌روز می‌شود.</p>
+    {% else %}
+    <p class="muted mb-0">هنوز سفارشی با پیوند یا کد شما ثبت نشده. اولین پیوند را همین حالا بفرستید.</p>
+    {% endif %}
+  </section>
+
+  <div class="aff-two">
+    <section class="card-ic">
+      <h2>پله‌های پورسانت</h2>
+      <table class="aff-tiers">
+        <tbody>{% for t in tiers %}
+          <tr{% if tier and tier.min == t.min and a.custom_percent is None %} class="on"{% endif %}><td>{% if t.max %}{% if forloop.first %}تا {{ t.max_label }}{% else %}{{ t.min_label }} تا {{ t.max_label }}{% endif %}{% else %}بالای {{ t.min_label }}{% endif %}</td><td><strong>{{ t.pct }}٪</strong></td></tr>
+        {% endfor %}</tbody>
+      </table>
+      <p class="muted small mb-0">بر اساس جمع فروش {% if s.tier_period == "month" %}هر ماه شمسی{% else %}از ابتدای همکاری{% endif %}. ماندگاری پیوند: {{ s.attribution_days|fa_num }} روز.</p>
+    </section>
+    <section class="card-ic" id="bank">
+      <h2>واریزها</h2>
+      {% if payouts %}<ul>{% for p in payouts %}<li>{{ p.paid_at|jdate }} — <strong>{{ p.amount|toman }}</strong> تومان{% if p.reference %} <small class="muted">(پیگیری {{ p.reference|fa_num }})</small>{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="muted">هنوز واریزی نبوده. جمع واریزها: {{ paid_total|toman }} تومان</p>{% endif %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="bank">
+        <div class="field"><label for="bs">شماره شبا</label><input id="bs" name="sheba" dir="ltr" value="{{ a.sheba }}" placeholder="IR…"></div>
+        <div class="field"><label for="bh">به نام</label><input id="bh" name="account_holder" value="{{ a.account_holder }}"></div>
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ذخیرهٔ حساب بانکی</button>
+      </form>
+    </section>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/affiliate.js' %}" defer></script>{% endblock %}

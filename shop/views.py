@@ -193,7 +193,9 @@ def checkout(request):
         if summary["coupon_error"]:
             errors["coupon"] = summary["coupon_error"] + " کد را از سبد حذف کنید یا کد دیگری بزنید."
         if not errors:
-            order = create_order(request.user, form, summary, shop, installment=inst)
+            from affiliate.track import ref_from_request
+
+            order = create_order(request.user, form, summary, shop, installment=inst, ref=ref_from_request(request))
             request.session.pop("coupon", None)
             if not pay_now:
                 Cart(request).clear()
@@ -215,7 +217,7 @@ def checkout(request):
 
 
 @transaction.atomic
-def create_order(user, form, summary, shop, source="web", installment=None):
+def create_order(user, form, summary, shop, source="web", installment=None, ref=None):
     from accounts.views import profile_of
 
     total = summary["total"]
@@ -252,6 +254,12 @@ def create_order(user, form, summary, shop, source="web", installment=None):
     p = profile_of(u)
     p.province, p.city, p.address, p.postal_code = order.province, order.city, order.address, order.postal_code
     p.save()
+    try:  # همکاری در فروش: پیوند یا کد تخفیف همکار
+        from affiliate.track import attach
+
+        attach(order, ref)
+    except Exception:  # noqa: BLE001
+        log.exception("affiliate attach")
     return order
 
 

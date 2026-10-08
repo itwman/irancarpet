@@ -132,6 +132,14 @@ def run_all(out=print):
             done["پست خودکار کانال‌ها"] = len(sent)
     except Exception:  # noqa: BLE001
         log.exception("rajyar refresh")
+    try:
+        from affiliate.commission import resync_all
+
+        n = resync_all()
+        if n:
+            done["پورسانت همکاران"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("affiliate resync")
     if cache.add("jobs:landing", 1, 6 * 3600):
         try:
             from landing.build import sync

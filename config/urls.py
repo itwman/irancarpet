@@ -50,6 +50,7 @@ urlpatterns = [
     re_path(r"^(?P<name>[a-z_\-]+?)-sitemap(?P<num>\d*)\.xml$", sitemaps.section),
     path("feed/", LatestPostsFeed()),
     path("search/", catalog_views.search, name="search"),
+    path("", include("affiliate.urls")),
     path("", include("shop.urls")),
     path("blog/", blog_views.blog_index, name="blog"),
     re_path(rf"^blog/{P}$", blog_views.blog_index),

@@ -54,6 +54,7 @@
         {% if order.wp_id %}<div class="kv"><span>وضعیت در سایت قبلی</span><strong>{{ order.wp_status|default:"—" }}</strong></div>
         <div class="kv"><span>پرداخت در سایت قبلی</span><strong>{{ order.wp_payment|default:"—" }}</strong></div>{% endif %}
         <div class="kv"><span>مانده</span><strong{% if order.remaining %} class="text-danger"{% endif %}>{{ order.remaining|toman }} تومان</strong></div>
+        {% if order.commission %}{% with c=order.commission %}<div class="kv"><span>همکار فروش</span><strong><a href="/panel/affiliates/{{ c.affiliate_id }}/">{{ c.affiliate.name }}</a> · <a href="/panel/affiliate-commissions/{{ c.pk }}/">پورسانت {{ c.amount|toman }}</a> <small class="muted">({{ c.get_source_display }}، {{ c.get_status_display }})</small></strong></div>{% endwith %}{% endif %}
       </div>
     </section>
     <section class="card-p"><h2>تراکنش‌ها</h2>

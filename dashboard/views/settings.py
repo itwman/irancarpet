@@ -16,6 +16,7 @@ from pricing.models import PricingSettings
 from shop import config, gateways
 from shop.models import ShopSettings
 from api.models import AppSettings
+from affiliate.models import AffiliateSettings
 from content.models import ContentSettings
 from rajyar.models import RajyarSettings
 from seo import indexnow
@@ -40,6 +41,7 @@ TABS = [
     ("seo", "سئو و هوش مصنوعی"),
     ("rajyar", "رج‌یار (کانال‌ها)"),
     ("content", "متن محصولات"),
+    ("affiliate", "همکاری در فروش"),
 ]
 
 FORMS = {
@@ -66,6 +68,8 @@ FORMS = {
                                 "weekly_enabled", "weekly_day", "weekly_time", "weekly_sizes", "weekly_group", "weekly_reeds", "weekly_albums",
                                 "weekly_title"]),
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
+    "affiliate": (AffiliateSettings, ["enabled", "auto_approve", "attribution_days", "tier_period", "tier_mode", "new_customers_only",
+                                      "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
@@ -226,6 +230,14 @@ def settings_view(request):
                 from django.core.cache import cache
 
                 cache.delete("torob_rows")
+            if tab == "affiliate":
+                from affiliate import commission, track
+
+                track.clear_cache()
+                if {"tier_period", "tier_mode"} & set(form.changed_data):
+                    commission.reperiod()
+                else:
+                    commission.recalc_open(obj)
             messages.success(request, msg)
             return redirect(f"/panel/settings/?tab={tab}")
         messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")

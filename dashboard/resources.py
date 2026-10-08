@@ -753,3 +753,4 @@ import finder.panel  # noqa: E402,F401  فرش‌یاب
 import growth.panel  # noqa: E402,F401  رشد فروش
 import rajyar.panel  # noqa: E402,F401  رج‌یار
 import content.panel  # noqa: E402,F401  متن محصولات
+import affiliate.panel  # noqa: E402,F401  همکاری در فروش
