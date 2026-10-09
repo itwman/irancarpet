@@ -109,6 +109,26 @@ class RewriteFlowTests(TestCase):
             self.assertEqual(rewrite.publish_due(t), 1)
         self.assertEqual(PostRewrite.objects.get(status=S.PUBLISHED).post, other)
 
+    def test_schedule_matches_rules(self):
+        """برآورد زمان انتشار: پس از مهلت بررسی، روزانه به تعداد تنظیم‌شده و به ترتیب اولویت."""
+        SeoSettings.objects.update_or_create(pk=1, defaults={"rewrite_per_day": 2, "rewrite_hour": 9, "rewrite_review_days": 2})
+        rewrite.import_data(sample(), "a")
+        rewrite.import_data(sample(slug="دیگر"), "b")
+        third = Post.objects.create(title="سوم", slug="سوم", content="<p>متن قدیمی</p>", status="publish")
+        rewrite.import_data(sample(slug="سوم"), "c")
+        PostRewrite.objects.filter(post__slug="خرید-فرش-در-گرگان").update(rank=1)
+        PostRewrite.objects.filter(post__slug="دیگر").update(rank=2)
+        PostRewrite.objects.filter(post=third).update(rank=3)
+        base = timezone.localtime().replace(hour=8, minute=0, second=0, microsecond=0)
+        PostRewrite.objects.update(publish_after=base + timezone.timedelta(days=2, hours=7))  # روز سوم ساعت ۱۵
+        plan = rewrite.schedule(base)
+        by = {r.post.slug: plan[r.pk] for r in PostRewrite.objects.select_related("post")}
+        self.assertEqual(by["خرید-فرش-در-گرگان"], base + timezone.timedelta(days=2, hours=7))
+        self.assertEqual(by["دیگر"], base + timezone.timedelta(days=2, hours=7))
+        self.assertEqual(by["سوم"], base + timezone.timedelta(days=3, hours=1))  # روز بعد ساعت ۹
+        PostRewrite.objects.filter(post=third).update(status=S.APPROVED)
+        self.assertEqual(rewrite.schedule(base)[PostRewrite.objects.get(post=third).pk], base + timezone.timedelta(hours=1))
+
     def test_import_dir_and_github_and_gsc(self):
         d = tempfile.mkdtemp()
         os.makedirs(os.path.join(d, "posts"))

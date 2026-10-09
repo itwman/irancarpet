@@ -77,7 +77,7 @@ class SeoSettings(models.Model):
 
     rewrite_enabled = models.BooleanField(
         "انتشار خودکار مقاله‌های بازنویسی‌شده", default=True,
-        help_text="روزی یک مقالهٔ بازنویسی‌شده (به ترتیب اولویت) روی همان نشانی قبلی منتشر می‌شود؛ نسخهٔ قبلی نگه داشته می‌شود.")
+        help_text="هر روز به «تعداد انتشار در روز» مقالهٔ بازنویسی‌شده (به ترتیب اولویت) روی همان نشانی قبلی منتشر می‌شود؛ نسخهٔ قبلی نگه داشته می‌شود.")
     rewrite_hour = models.PositiveSmallIntegerField("ساعت انتشار روزانه", default=9, help_text="به وقت تهران، ۰ تا ۲۳")
     rewrite_per_day = models.PositiveSmallIntegerField("تعداد انتشار در روز", default=2)
     rewrite_review_days = models.PositiveSmallIntegerField(

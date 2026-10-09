@@ -25,15 +25,31 @@ def _status(o):
                        format_html(' <span title="{}">⚠️</span>', o.warnings[:300]) if o.warnings else "")
 
 
+_SCHED = {"at": None, "data": {}}
+
+
+def _schedule():
+    now = timezone.now()
+    if _SCHED["at"] is None or (now - _SCHED["at"]).total_seconds() > 30:
+        _SCHED["data"], _SCHED["at"] = rewrite.schedule(now), now
+    return _SCHED["data"]
+
+
 def _when(o):
     if o.status == S.PUBLISHED and o.published_at:
-        return jdate(o.published_at, "%Y/%m/%d")
-    if o.status == S.READY and o.publish_after:
-        return "از " + jdate(o.publish_after, "%m/%d %H:%M")
+        return "منتشر شد " + jdate(o.published_at, "%Y/%m/%d")
+    if o.status == S.MERGED and o.published_at:
+        return "ریدایرکت شد " + jdate(o.published_at, "%Y/%m/%d")
     if o.merge_into and o.status in (S.READY, S.APPROVED):
         return "همراه مقالهٔ مقصد"
-    if o.status == S.APPROVED:
-        return "نوبت بعدی"
+    if o.status in (S.READY, S.APPROVED):
+        at = _schedule().get(o.pk)
+        if at is None:
+            return "انتشار خودکار خاموش است" if not rewrite._settings().rewrite_enabled else "—"
+        return format_html('<span title="{}">حدود {}</span>', "زمان تقریبی؛ کار زمان‌بندی هر ۱۰ دقیقه اجرا می‌شود",
+                           jdate(at, "%m/%d ساعت %H:%M"))
+    if o.status == S.QUEUED:
+        return "منتظر متن تازه"
     return "—"
 
 
@@ -116,9 +132,10 @@ register(Resource(
     actions={"publish_now": ("انتشار همین حالا", _publish_now), "approve": ("تأیید (انتشار در نوبت بعدی)", _approve),
              "hold": ("سه روز عقب بینداز", _hold), "reject": ("رد کن (منتشر نشود)", _reject),
              "rollback": ("برگرداندن نسخهٔ قبلی", _rollback)},
-    help="ترتیب = بیشترین فرصت رشد در گوگل. متن تازهٔ هر مقاله «آماده» می‌شود، در مهلت بررسی (تنظیمات ← سئو) می‌ماند و بعد خودکار سر ساعت، "
-         "روزی یکی روی همان نشانی قبلی منتشر می‌شود. نسخهٔ قبلی نگه داشته می‌شود و با «برگرداندن نسخهٔ قبلی» برمی‌گردد. "
-         "ستون گوگل: آمار سرچ کنسول پیش از بازنویسی و (بعد از بارگذاری خروجی تازه) بعد از آن.",
+    help="تا وقتی وضعیت «آماده» است، سایت هنوز متن قبلی را نشان می‌دهد. متن تازه پس از «مهلت بررسی» خودکار منتشر می‌شود؛ "
+         "روزانه به «تعداد انتشار در روز» و از «ساعت انتشار روزانه» (هر دو در تنظیمات ← سئو)، به ترتیب اولویت و روی همان نشانی قبلی. "
+         "ستون انتشار زمان تقریبی را نشان می‌دهد. لازم نیست کاری بکنید؛ اگر خواستید متن تازه را ببینید، «ویرایش» ← «پیش‌نمایش متن تازه». "
+         "نسخهٔ قبلی نگه داشته می‌شود و با «برگرداندن نسخهٔ قبلی» برمی‌گردد. ستون گوگل: آمار سرچ کنسول پیش و بعد از بازنویسی.",
 ))
 
 

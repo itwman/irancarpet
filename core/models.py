@@ -100,7 +100,7 @@ class SiteSettings(models.Model):
     map_balad = models.URLField("پیوند بلد", blank=True, max_length=1500)
     trust_points = models.JSONField(
         "امتیازهای فروشگاه", default=list, blank=True,
-        help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۲۵ میلیون تومان"]]',
+        help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۵۰ میلیون تومان"]]',
     )
     footer_html = models.TextField("HTML فوتر", blank=True)
     home_about = models.TextField(

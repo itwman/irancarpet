@@ -4,7 +4,7 @@
   ۱. content/rewrites/plan.json ترتیب مقاله‌ها را می‌گوید (بیشترین فرصت در گوگل اول).
   ۲. نویسنده هر روز یک فایل content/rewrites/posts/NNNN.json می‌سازد و در مخزن می‌گذارد.
   ۳. سایت هر ساعت پوشه را از گیت‌هاب می‌خواند (اگر گیت‌هاب در دسترس نبود، با update.sh از همان مخزن روی سرور).
-  ۴. متن «آماده» تا پایان مهلت بررسی صبر می‌کند و بعد سر ساعت تعیین‌شده، روزی یکی روی همان نشانی منتشر می‌شود.
+  ۴. متن «آماده» تا پایان مهلت بررسی صبر می‌کند و بعد سر ساعت تعیین‌شده، روزانه به تعداد تنظیم‌شده روی همان نشانی منتشر می‌شود.
 """
 import base64
 import hashlib
@@ -321,6 +321,48 @@ def next_up(limit=10):
     approved = list(PostRewrite.objects.filter(status=S.APPROVED).order_by("rank")[:limit])
     ready = list(PostRewrite.objects.filter(status=S.READY).order_by("publish_after", "rank")[:limit])
     return approved, [r for r in ready if r.publish_after and r.publish_after <= now], ready
+
+
+def schedule(now=None, horizon_days=400):
+    """زمان تقریبی انتشار هر متن آماده/تأییدشده، با همان قاعدهٔ publish_due: {pk: datetime}.
+    کار زمان‌بندی هر ۱۰ دقیقه اجرا می‌شود؛ پس زمان واقعی تا چند دقیقه بعد از عدد برآوردی است."""
+    s = _settings()
+    if not s.rewrite_enabled or s.rewrite_per_day <= 0:
+        return {}
+    now = now or timezone.now()
+    local = timezone.localtime(now)
+    rows = list(PostRewrite.objects.filter(status__in=[S.READY, S.APPROVED], merge_into="").order_by("rank")
+                .values("pk", "status", "rank", "publish_after"))
+    approved = [r for r in rows if r["status"] == S.APPROVED]
+    ready = sorted((r for r in rows if r["status"] == S.READY), key=lambda r: r["rank"])
+    start = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    used = PostRewrite.objects.filter(status=S.PUBLISHED, published_at__gte=start).count()
+    out = {}
+    for d in range(horizon_days):
+        if not approved and not ready:
+            break
+        day = start + timezone.timedelta(days=d)
+        t = day.replace(hour=s.rewrite_hour)
+        if d == 0:
+            t = max(t, local)
+        end = day + timezone.timedelta(days=1)
+        left = s.rewrite_per_day - (used if d == 0 else 0)
+        while left > 0 and t < end:
+            if approved:
+                r = approved.pop(0)
+            else:
+                due = [r for r in ready if r["publish_after"] is None or r["publish_after"] <= t]
+                if not due:
+                    later = [r["publish_after"] for r in ready if r["publish_after"] and r["publish_after"] < end]
+                    if not later:
+                        break
+                    t = timezone.localtime(min(later))
+                    continue
+                r = due[0]
+                ready.remove(r)
+            out[r["pk"]] = t
+            left -= 1
+    return out
 
 
 def publish_due(now=None):
