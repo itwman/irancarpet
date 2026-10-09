@@ -54,8 +54,19 @@ class OffersPageAndSeasonTests(TestCase):
         self.assertEqual(self.client.get("/فرش-جشنواره-ای/?page=9").status_code, 302)
         self.assertEqual(self.client.get("/offers/").status_code, 301)
         home = self.client.get("/")
-        self.assertEqual(len(home.context["offers"]), 12)
+        self.assertEqual(len(home.context["offers"]), 8)
         self.assertContains(home, "همهٔ ۳۰ فرصت")
+        # فرصت زمان‌دار اول؛ بقیه هر روز می‌چرخند
+        from datetime import date
+
+        from core.views import _home_offers
+
+        SpecialOffer.objects.filter(pk=self.offers[0].pk).update(ends_at=timezone.now() + timezone.timedelta(days=2))
+        clear()
+        d1 = _home_offers(date(2026, 10, 9))["offers"]
+        d2 = _home_offers(date(2026, 10, 10))["offers"]
+        self.assertEqual((len(d1), d1[0].pk, d2[0].pk), (8, self.offers[0].pk, self.offers[0].pk))
+        self.assertNotEqual({o.pk for o in d1[1:]}, {o.pk for o in d2[1:]})
 
     def test_season_windows(self):
         self.assertTrue(season.in_window((12, 20), (12, 1), (1, 15)))

@@ -79,13 +79,28 @@ def _home_data():
     }
 
 
-def _home_offers():
-    """صفحهٔ اول: ۱۲ فرصت با بیشترین تخفیف (ردیف کشویی)؛ بقیه در /فرش-جشنواره-ای/."""
+HOME_OFFERS = 8
+
+
+def _home_offers(today=None):
+    """صفحهٔ اول: ۸ فرصت در یک ردیف کشویی؛ اول آن‌هایی که شمارندهٔ زمان دارند (زودتر تمام می‌شوند)،
+    بعد چرخش روزانه میان پرتخفیف‌ترها تا صفحهٔ اول هر روز تازه باشد. همه در /فرش-جشنواره-ای/."""
+    from django.utils import timezone
+
     from shop.offers import live_offers
 
     offers = live_offers()
-    top = sorted(offers, key=lambda o: (-o.off_percent, o.price))[:12]
-    return {"offers": top, "offers_total": len(offers)}
+    timed = sorted([o for o in offers if o.ends_at], key=lambda o: o.ends_at)[:HOME_OFFERS]
+    rest = sorted([o for o in offers if not o.ends_at], key=lambda o: (-o.off_percent, o.price))
+    need = HOME_OFFERS - len(timed)
+    pick = []
+    if need > 0 and rest:
+        pool = rest[:max(need * 3, 24)]  # چرخش میان پرتخفیف‌ترین‌ها
+        day = (today or timezone.localdate()).toordinal()
+        start = (day * need) % len(pool)
+        pick = [pool[(start + i) % len(pool)] for i in range(min(need, len(pool)))]
+        pick.sort(key=lambda o: -o.off_percent)
+    return {"offers": timed + pick, "offers_total": len(offers)}
 
 
 def home(request):
