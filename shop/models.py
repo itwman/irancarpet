@@ -327,6 +327,13 @@ class SpecialOffer(models.Model):
     percent = models.PositiveSmallIntegerField("درصد تخفیف", default=10, help_text="روی قیمت روز همان سایز")
     fixed_price = models.PositiveBigIntegerField("یا قیمت ثابت (تومان)", null=True, blank=True,
                                                  help_text="اگر پر شود به‌جای درصد تخفیف همین قیمت گرفته می‌شود.")
+    base_album = models.ForeignKey("pricing.Album", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                   verbose_name="قیمت از آلبوم",
+                                   help_text="برای فرشی که قیمت ندارد (مثلاً از تولید خارج شده): قیمت روز این سایز از همین آلبوم "
+                                             "حساب می‌شود. خود فرش و سایزهای دیگرش دست نمی‌خورد.")
+    base_price = models.PositiveBigIntegerField("یا قیمت پایهٔ دستی (تومان)", null=True, blank=True,
+                                                help_text="قیمت واقعی همین سایز پیش از تخفیف؛ تخفیف روی همین عدد زده می‌شود و خط‌خورده نمایش "
+                                                          "داده می‌شود. عدد بالاتر از قیمت واقعی، تخفیف صوری و خلاف قانون است.")
     quantity = models.PositiveSmallIntegerField("تعداد موجود در انبار", default=1)
     starts_at = models.DateTimeField("شروع", default=timezone.now)
     ends_at = models.DateTimeField("پایان (اختیاری)", null=True, blank=True,
@@ -353,6 +360,12 @@ class SpecialOffer(models.Model):
             raise ValidationError({"ends_at": "پایان باید بعد از شروع باشد."})
         if not self.fixed_price and not (0 < self.percent < 90):
             raise ValidationError({"percent": "درصد تخفیف بین ۱ و ۸۹ باشد (یا قیمت ثابت بنویسید)."})
+        if self.product_id and self.size_id and not self.price:
+            raise ValidationError("این سایز قیمت روز ندارد (مثلاً آلبوم فرش غیرفعال است یا قیمتش پاک شده)، پس فرصت روی سایت نمی‌آید. "
+                                  "«قیمت از آلبوم» یا «قیمت پایهٔ دستی» یا «قیمت ثابت» را پر کنید.")
+        reg = self.regular_price
+        if self.fixed_price and reg and self.fixed_price >= reg:
+            raise ValidationError({"fixed_price": "قیمت ثابت باید کمتر از قیمت روز این سایز باشد."})
 
     def save(self, *a, **kw):
         super().save(*a, **kw)
@@ -367,9 +380,22 @@ class SpecialOffer(models.Model):
         return self._variation
 
     @property
-    def regular_price(self):
+    def price_source(self):
+        """(قیمت پیش از تخفیف، از کجا آمده)"""
+        if self.base_price:
+            return int(self.base_price), "قیمت پایهٔ دستی"
+        if self.base_album_id and self.size_id:
+            a = self.base_album
+            p = a.size_price(self.size) if a.offers(self.size) else None
+            return (int(p), f"آلبوم «{a}»") if p else (0, f"آلبوم «{a}» این سایز را ندارد")
         v = self.variation
-        return (v.price or 0) if v else 0
+        if v and v.price:
+            return int(v.price), "قیمت روز فرش"
+        return 0, "این سایز قیمت ندارد"
+
+    @property
+    def regular_price(self):
+        return self.price_source[0]
 
     @property
     def price(self):

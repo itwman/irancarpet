@@ -150,3 +150,58 @@ class OfferQtyTests(OfferTests):
         self.assertEqual((self.o.remaining, self.o.allowed), (2, [2]))
         self.assertTrue(self.summary(1)["lines"][0].problem)
         self.assertEqual(self.summary(2)["lines"][0].unit_price, self.o.price)
+
+
+class OfferBasePriceTests(TestCase):
+    """فرش از تولید خارج‌شده بدون قیمت: قیمت پیش از تخفیف از آلبوم یا دستی، پیش‌نمایش در پنل، و جدول سایزهای فرش ناموجود."""
+
+    def setUp(self):
+        from django.core.exceptions import ValidationError  # noqa: F401
+
+        seed_sizes()
+        s = {x.slug: x for x in Size.objects.all()}
+        self.s = s
+        self.album = Album.objects.create(name="قدیمی", code="Q", base_size=s["12-meter"], base_price=Decimal("40000000"))
+        self.album.sizes.set([s["12-meter"], s["9-meter"], s["6-meter"]])
+        self.p = Product.objects.create(title="فرش پارادایس", slug="paradise", status="publish", sale_status="unavailable",
+                                        image=Media.objects.create(file="y.jpg"))
+        self.v9 = self.p.variations.create(size=s["9-meter"], manual_price=None, is_available=False)
+        self.v6 = self.p.variations.create(size=s["6-meter"], manual_price=20000000, is_available=True)
+        self.p.refresh_price_cache()
+        clear()
+
+    def test_zero_price_blocked_then_album_or_manual(self):
+        from django.core.exceptions import ValidationError
+
+        o = SpecialOffer(product=self.p, size=self.s["9-meter"], percent=20)
+        with self.assertRaises(ValidationError):
+            o.full_clean()
+        o.base_album = self.album
+        o.full_clean()
+        self.assertEqual(o.regular_price, self.album.size_price(self.s["9-meter"]))
+        self.assertEqual(o.off_percent, 20)
+        o.base_price, o.base_album = 30000000, None
+        o.full_clean()
+        self.assertEqual(o.price, 24000000)
+        o.fixed_price = 31000000
+        with self.assertRaises(ValidationError):
+            o.full_clean()  # قیمت ثابت بالاتر از قیمت پیش از تخفیف
+        self.assertIsNone(Product.objects.get(pk=self.p.pk).album_id)  # خود فرش دست نخورد
+
+    def test_panel_preview_and_product_page(self):
+        admin = get_user_model().objects.create_superuser("adm", "a@a.com", "x")
+        self.client.force_login(admin)
+        url = "/panel/special-offers/preview/"
+        d = self.client.get(url, {"product": self.p.pk, "size": self.s["9-meter"].pk, "percent": "20"}).json()
+        self.assertFalse(d["ok"])
+        self.assertIn("قیمت", d["msg"])
+        d = self.client.get(url, {"product": self.p.pk, "size": self.s["9-meter"].pk, "percent": "۲۰", "base_price": "۳۰,۰۰۰,۰۰۰"}).json()
+        self.assertTrue(d["ok"])
+        self.assertEqual(d["off"], "۲۰")
+        self.assertEqual(self.client.get("/panel/special-offers/add/").status_code, 200)
+        SpecialOffer.objects.create(product=self.p, size=self.s["9-meter"], percent=20, base_price=30000000)
+        clear()
+        self.client.logout()
+        html = self.client.get(self.p.get_absolute_url()).content.decode()
+        self.assertIn("قیمت ویژه در کادر بالا", html)
+        self.assertNotIn("۲۰٬۰۰۰٬۰۰۰", html.split("قیمت سایزها")[-1].split("</table>")[0])  # سایز ۶ متری فرش ناموجود قیمت نشان نمی‌دهد

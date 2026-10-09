@@ -1,7 +1,9 @@
 """بخش‌های پنل: صفحه‌های فرود، کدهای تخفیف، خبرم کن، جستجوها."""
+from django.http import JsonResponse
 from django.utils.html import format_html
 
 from core.templatetags.fa import fa_num, jdate, toman
+from dashboard.auth import staff_required
 from dashboard.registry import Col, Resource, register, yesno
 
 from landing.models import LandingPage
@@ -140,8 +142,9 @@ register(Resource(
     search=["product__title", "note"], filters=["is_active"], ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("product", "size"),
     fieldsets=[("فرصت", ["product", "size", "percent", "fixed_price", "quantity"], "main"),
+               ("قیمت پیش از تخفیف (فقط اگر سایز قیمت ندارد)", ["base_album", "base_price"], "main"),
                ("زمان", ["starts_at", "ends_at", "is_active"], "side"), ("انبار", ["note"], "side")],
-    readonly=[("قیمت روز این سایز", lambda o: f"{toman(o.regular_price)} تومان" if o.pk and o.regular_price else "—"),
+    readonly=[("قیمت پیش از تخفیف", lambda o: f"{toman(o.regular_price)} تومان ({o.price_source[1]})" if o.pk and o.regular_price else "—"),
               ("قیمت ویژه", lambda o: f"{toman(o.price)} تومان" if o.pk and o.price else "—"),
               ("فروخته‌شده", lambda o: fa_num(o.sold) if o.pk else "—")],
     view_url=lambda o: o.product.get_absolute_url(),
@@ -150,5 +153,37 @@ register(Resource(
          "قیمت ویژه فقط برای تعدادهایی است که بعد از خرید، تختهٔ تک در انبار نماند (باقی‌مانده صفر یا زوج): "
          "۲ تخته ← فقط جفت؛ ۳ ← ۱ یا ۳؛ ۴ ← ۲ یا ۴؛ ۵ ← ۱، ۳ یا ۵. تعداد دیگر با قیمت معمول حساب می‌شود و کد تخفیف روی فرصت اعمال نمی‌شود. "
          "بدون «پایان»، فرصت تا فروش تخته‌ها (یا صفر کردن «تعداد») می‌ماند. اگر «پایان» بگذارید، شمارندهٔ معکوس تا همان زمان نشان داده می‌شود و فرصت واقعاً تمام می‌شود. "
-         "قیمت روز از آلبوم می‌آید؛ اگر قیمت آلبوم را به‌روز کنید، قیمت ویژه هم به همان نسبت به‌روز می‌شود.",
+         "قیمت روز از آلبوم می‌آید؛ اگر قیمت آلبوم را به‌روز کنید، قیمت ویژه هم به همان نسبت به‌روز می‌شود. "
+         "اگر فرش از تولید خارج شده و سایزش قیمت ندارد، آلبوم را روی خود فرش نگذارید؛ «قیمت از آلبوم» یا «قیمت پایهٔ دستی» همین فرصت را پر کنید. "
+         "قیمت نهایی پیش از ذخیره در فرم نشان داده می‌شود.",
 ))
+
+
+def _num(v):
+    v = (v or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+    v = "".join(ch for ch in v if ch.isdigit())
+    return int(v) if v else None
+
+
+@staff_required
+def offer_preview(request):
+    """پیش‌نمایش قیمت فرصت ویژه در فرم پنل (پیش از ذخیره)."""
+    from catalog.models import Product
+    from pricing.models import Album, Size
+
+    g = request.GET
+    o = SpecialOffer(percent=_num(g.get("percent")) or 0, fixed_price=_num(g.get("fixed_price")), base_price=_num(g.get("base_price")))
+    o.product = Product.objects.filter(pk=_num(g.get("product")) or 0).first()
+    o.size = Size.objects.filter(pk=_num(g.get("size")) or 0).first()
+    o.base_album = Album.objects.filter(pk=_num(g.get("base_album")) or 0).first()
+    if not (o.product and o.size):
+        return JsonResponse({"ok": False, "need": True, "msg": "فرش و سایز را انتخاب کنید تا قیمت نشان داده شود."})
+    if o.variation is None:
+        return JsonResponse({"ok": False, "msg": "این فرش چنین سایزی ندارد."})
+    reg, src = o.price_source
+    price = o.price
+    if not price:
+        return JsonResponse({"ok": False, "msg": f"{src}؛ «قیمت از آلبوم» یا «قیمت پایهٔ دستی» یا «قیمت ثابت» را پر کنید."})
+    off = o.off_percent
+    return JsonResponse({"ok": True, "regular": toman(reg) if reg else "", "price": toman(price), "off": fa_num(off) if off else "",
+                         "src": src, "msg": ("قیمت ثابت بیشتر از قیمت روز است." if reg and o.fixed_price and o.fixed_price >= reg else "")})

@@ -37,6 +37,14 @@
       </section>
       {% endfor %}
 
+      {% if res.key == "special-offers" %}
+      <section class="card-p offer-preview" id="offerPreview" aria-live="polite"><h2>قیمتی که مشتری می‌بیند</h2>
+        <p class="muted mb-0" data-msg>فرش و سایز را انتخاب کنید تا قیمت نشان داده شود.</p>
+        <p class="offer-preview__price mb-0" data-price hidden><del data-reg></del> <strong data-new></strong> تومان <span class="badge-ic b-publish" data-off></span></p>
+        <p class="small muted mb-0" data-src hidden></p>
+      </section>
+      {% endif %}
+
       {% if res.key == "reviews" or res.key == "comments" %}
       <section class="card-p"><h2>پاسخ فروشگاه</h2>
         {% for rep in obj.replies.all %}<div class="reply-old"><strong>{{ rep.author_name }}</strong><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
@@ -54,3 +62,28 @@
 </form>
 {% endblock %}
 {% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% endblock %}
+{% block scripts %}{% if res.key == "special-offers" %}<script>
+(function () {
+  var box = document.getElementById("offerPreview"), form = box && box.closest("form");
+  if (!form) return;
+  var names = ["product", "size", "percent", "fixed_price", "base_album", "base_price"], timer = null, q = function (s) { return box.querySelector(s); };
+  function run() {
+    var p = new URLSearchParams();
+    names.forEach(function (n) { var el = form.elements[n]; if (el) p.set(n, el.value || ""); });
+    fetch("/panel/special-offers/preview/?" + p.toString(), {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
+      q("[data-msg]").textContent = d.msg || "";
+      q("[data-msg]").hidden = !d.msg;
+      q("[data-msg]").className = d.ok ? "small text-danger mb-0" : (d.need ? "muted mb-0" : "text-danger mb-0");
+      q("[data-price]").hidden = q("[data-src]").hidden = !d.ok;
+      if (d.ok) {
+        q("[data-reg]").textContent = d.regular; q("[data-new]").textContent = d.price;
+        q("[data-off]").textContent = d.off ? "٪" + d.off + " تخفیف" : ""; q("[data-off]").hidden = !d.off;
+        q("[data-src]").textContent = "قیمت پیش از تخفیف: " + d.src;
+      }
+    }).catch(function () {});
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(run, 300); }
+  names.forEach(function (n) { var el = form.elements[n]; if (el) { el.addEventListener("change", later); el.addEventListener("input", later); } });
+  run();
+})();
+</script>{% endif %}{% endblock %}

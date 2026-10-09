@@ -74,14 +74,14 @@
           <tbody>
           {% for v in variations %}
             {% with ok=v.is_available %}
-            <tr class="{% if not ok %}na{% endif %}">
+            <tr class="{% if not ok or product.stock_status == 'outofstock' %}na{% endif %}">
               <td><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
               <td>{% if v.size %}{{ v.size.label }}{% elif product.seller_id %}{{ v.sku|default:"—"|fa_num }}{% else %}—{% endif %}{% if v.stock_qty is not None and v.stock_qty <= 3 and ok %} <span class="tag tag--warn">فقط {{ v.stock_qty|fa_num }} عدد</span>{% endif %}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
                 {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
                 {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}{% if v.pk in offer_vids %}<span class="tag offer-tag">فرصت ویژه</span>{% endif %}</td>
               <td class="muted">{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} <small>(شامل پرتی)</small>{% endif %}</td>
               <td class="num">
-                {% if not ok %}<span class="muted">ناموجود</span>
+                {% if not ok or product.stock_status == 'outofstock' %}<span class="muted">{% if v.pk in offer_vids %}قیمت ویژه در کادر بالا{% else %}ناموجود{% endif %}</span>
                 {% elif v.on_sale %}<del>{{ v.final_price|toman }}</del> <strong>{{ v.sale_price|toman }}</strong> <span class="off">٪{% percent_off v.sale_price v.final_price %}</span>
                 {% elif v.final_price %}<strong>{{ v.final_price|toman }}</strong>
                 {% else %}<span class="muted">استعلام</span>{% endif %}
