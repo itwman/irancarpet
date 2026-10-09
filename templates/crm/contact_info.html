@@ -1,0 +1,23 @@
+{% load fa %}<section class="ct" aria-label="راه‌های تماس با {{ s.site_name }}">
+  <div class="ct__lines">
+    {% if s.mobile %}<a class="ct__line ct__line--main" href="tel:{{ s.mobile }}">
+      <span class="ct__k">کارشناس فروش، تلفن و واتساپ</span>
+      <bdi class="ct__n" dir="ltr">{{ s.mobile|fa_num }}</bdi>
+      <span class="ct__h">مشاورهٔ خرید، پیگیری سفارش و خرید اقساطی</span>
+    </a>{% endif %}
+    {% if s.phone %}<a class="ct__line" href="tel:{{ s.phone|cut:'-'|cut:' ' }}">
+      <span class="ct__k">تلفن فروشگاه{% if s.store_city %} {{ s.store_city }}{% endif %}</span>
+      <bdi class="ct__n" dir="ltr">{{ s.phone|fa_num }}</bdi>
+      <span class="ct__h">{% if s.store_hours %}{{ s.store_hours|fa_num }}{% else %}در ساعت کاری فروشگاه{% endif %}</span>
+    </a>{% endif %}
+  </div>
+  {% if s.messengers %}<div class="ct__chat"><span>گفتگوی متنی:</span>{% for key, name, url in s.messengers %}<a class="ct__msg soc--{{ key }}" href="{{ url }}" target="_blank" rel="noopener">{% include "partials/_sico.html" with size=18 %}{{ name }}</a>{% endfor %}</div>{% endif %}
+  {% if s.address %}<div class="ct__store">
+    <div>
+      <strong>فروشگاه حضوری{% if s.store_city %} {{ s.store_city }}{% endif %}</strong>
+      <p>{{ s.address|fa_num }}</p>
+      {% if s.store_hours %}<p class="ct__hours">ساعت کاری: {{ s.store_hours|fa_num }}</p>{% endif %}
+    </div>
+    {% if s.map_neshan or s.map_balad or s.map_google %}<div class="ct__maps">{% if s.map_neshan %}<a href="{{ s.map_neshan }}" target="_blank" rel="noopener">مسیریابی با نشان</a>{% endif %}{% if s.map_balad %}<a href="{{ s.map_balad }}" target="_blank" rel="noopener">بلد</a>{% endif %}{% if s.map_google %}<a href="{{ s.map_google }}" target="_blank" rel="noopener">گوگل‌مپ</a>{% endif %}</div>{% endif %}
+  </div>{% endif %}
+</section>

@@ -8,7 +8,7 @@ import re
 
 from django.utils.html import escape
 
-LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links)"
+LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links|contact_info|contact_form)"
 SHORTCODE = re.compile(r"\[/?(?!" + LIVE + r"\b)[a-z][a-z0-9_-]*(?:\s[^\[\]]*)?\]", re.I)
 EMPTY_P = re.compile(r"<p\b[^>]*>(?:\s|&nbsp;|&#160;|\xa0|<br\s*/?>|<span[^>]*>\s*</span>)*</p>", re.I)
 EMPTY_H = re.compile(r"<(h[2-6])\b[^>]*>(?:\s|&nbsp;|\xa0|<br\s*/?>|<(?:span|strong|b|a)[^>]*>\s*</(?:span|strong|b|a)>)*</\1>", re.I)
@@ -89,7 +89,7 @@ CITY_IMG = re.compile(_WRAP.format(r"/at-city"), re.I)
 LIVE_PRICES = re.compile(r"\[(?:size_prices|installment_prices|price_table)\b")
 
 
-BLOCK_SC = r"(\[(?:installment_(?:calc|prices|plans|steps|faq)|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links)\b[^\]]*\])"
+BLOCK_SC = r"(\[(?:installment_(?:calc|prices|plans|steps|faq)|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links|contact_info|contact_form)\b[^\]]*\])"
 
 
 def _swap_images(html):

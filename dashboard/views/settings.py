@@ -78,7 +78,7 @@ FORMS = {
                                       "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
     "market": (MarketSettings, ["enabled", "signup_open", "default_commission", "accept_hours", "auto_deliver_days", "hold_days",
                                 "min_payout", "terms"]),
-    "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "paid_text", "admin_paid_text",
+    "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "contact_admin_sms", "paid_text", "admin_paid_text",
                           "status_sms", "shipped_text", "completed_text", "cancelled_text",
                           "remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3",
                           "cart_enabled", "cart_hours", "cart_text",
@@ -182,6 +182,8 @@ def rajyar_pricelist_png(request):
 CRM_GROUPS = [
     ("ثبت سفارش", "به مشتری و شماره‌های مدیر (زبانهٔ «فروش و ارسال» ← موبایل مدیران) از خط اختصاصی sms.ir.",
      ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text"]),
+    ("پیام تماس با ما", "وقتی کسی فرم «تماس با ما» را بفرستد، به شماره‌های مدیر خبر داده می‌شود؛ پاسخ از «فروش ← پیام‌های تماس با ما».",
+     ["contact_admin_sms"]),
     ("پرداخت موفق", "اگر قالب پیامک سفارش در زبانهٔ «پیامک» خالی باشد، این متن‌ها فرستاده می‌شوند.", ["paid_text", "admin_paid_text"]),
     ("تغییر وضعیت سفارش", "وقتی در پنل وضعیت را «ارسال شد»، «تکمیل شده» یا «لغو شده» می‌کنید.",
      ["status_sms", "shipped_text", "completed_text", "cancelled_text"]),

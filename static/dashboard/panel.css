@@ -335,3 +335,4 @@ textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-he
 .sms-log__kind{font-weight:800;color:var(--ink)}
 .sms-log__st{margin-inline-start:auto}
 .sms-log p{margin:0;font-size:.88rem;line-height:1.8;color:var(--ink);overflow-wrap:anywhere}
+.side__badge{display:inline-block;min-width:1.4em;padding:0 .4em;margin-inline-start:.35rem;border-radius:999px;background:#e5395b;color:#fff;font-size:.75rem;font-weight:700;line-height:1.5;text-align:center;vertical-align:middle}

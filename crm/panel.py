@@ -260,3 +260,58 @@ register(Resource(
          "یک روز قبل، متن و تعداد گیرنده‌ها برای مدیران پیامک می‌شود تا اگر خواستید خاموشش کنید. فصل شلوغ دی و بهمن و توقف سفارش از اول اسفند "
          "در متن‌ها لحاظ شده است. مناسبت‌های قمری (مثل روز مادر) هر سال تاریخ شمسی‌شان عوض می‌شود؛ آن‌ها را هر سال با تاریخ همان سال اضافه کنید.",
 ))
+
+
+# ------------------------------------------------------------------ پیام‌های «تماس با ما»
+from django.utils.html import linebreaks  # noqa: E402
+
+from .models import ContactMessage  # noqa: E402
+
+CM = ContactMessage.Status
+CM_BADGE = {"new": "pending", "answered": "completed", "archived": "draft"}
+
+
+def _cm_status(o):
+    return format_html('<span class="badge-ic b-{}">{}</span>', CM_BADGE.get(o.status, "draft"), o.get_status_display())
+
+
+def _cm_mark(status, label):
+    def act(request, qs):
+        n = qs.update(status=status)
+        return f"{fa_num(n)} پیام «{label}» شد."
+    return act
+
+
+def _cm_reply_info(o):
+    if not o.reply_sent:
+        return "هنوز پاسخی فرستاده نشده"
+    who = o.replied_by.get_full_name() or o.replied_by.username if o.replied_by_id else ""
+    return format_html("{}<br><small class=\"muted\">{} {}</small>", linebreaks(o.reply_sent),
+                       jdate(o.replied_at, "%Y/%m/%d %H:%M") if o.replied_at else "", who)
+
+
+def _cm_after_save(request, obj, created, form=None):
+    from .contact import send_reply
+
+    send_reply(request, obj)
+
+
+register(Resource(
+    key="contact-messages", model=ContactMessage, title="پیام‌های تماس با ما", single="پیام", group="فروش", icon="chat",
+    columns=[Col("created_at", "زمان", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M"), "created_at"),
+             Col("name", "فرستنده", lambda o: format_html("{}<br><small>{}</small>", o.name, _mob(o))),
+             Col("topic", "موضوع", lambda o: o.get_topic_display()),
+             Col("message", "پیام", lambda o: (o.message or "")[:90] + ("…" if len(o.message or "") > 90 else "")),
+             Col("status", "وضعیت", _cm_status, "status")],
+    search=["name", "mobile", "message"], filters=["status", "topic"], date_filter="created_at", ordering=("-created_at",),
+    can_add=False,
+    fieldsets=[("پاسخ با پیامک", ["reply"], "main"), ("وضعیت", ["status", "note"], "side")],
+    readonly=[("فرستنده", lambda o: format_html("{} — {}", o.name, _mob(o))), ("موضوع", lambda o: o.get_topic_display()),
+              ("زمان", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M")), ("پاسخ فرستاده‌شده", _cm_reply_info)],
+    actions={"answered": ("علامت «پاسخ داده شد»", _cm_mark(CM.ANSWERED, "پاسخ داده شد")),
+             "archive": ("بایگانی", _cm_mark(CM.ARCHIVED, "بایگانی")), "new": ("برگرداندن به «تازه»", _cm_mark(CM.NEW, "تازه"))},
+    after_save=_cm_after_save, badge=lambda: ContactMessage.objects.filter(status=CM.NEW).count(),
+    help="پیام‌های فرم «تماس با ما». پاسخ را در کادر «پاسخ با پیامک» بنویسید و «ذخیره» بزنید تا به موبایل فرستنده پیامک شود "
+         "(نام او اول و «ایران کارپت» آخر پیامک می‌آید). هر ۷۰ حرف فارسی یک پیامک است. با تلفن جواب دادید؟ "
+         "پاسخ را خالی بگذارید و وضعیت را «پاسخ داده شد» کنید. خبر پیام تازه به موبایل مدیران از «تنظیمات ← پیامک سفارش و باشگاه» روشن و خاموش می‌شود.",
+))

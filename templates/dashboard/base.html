@@ -26,8 +26,8 @@
     {% panel_nav as navgroups %}
     {% for g in navgroups %}
       <details class="side__group"{% for i in g.items %}{% if i.active %} open{% endif %}{% endfor %}{% if forloop.first %} open{% endif %}>
-        <summary><svg><use href="#i-{{ g.icon }}"/></svg>{{ g.title }}</summary>
-        {% for i in g.items %}<a href="{{ i.url }}" class="side__link side__link--sub{% if i.active %} on{% endif %}">{{ i.title }}</a>{% endfor %}
+        <summary><svg><use href="#i-{{ g.icon }}"/></svg>{{ g.title }}{% if g.badge %} <span class="side__badge" title="تازه">{{ g.badge|fa_num }}</span>{% endif %}</summary>
+        {% for i in g.items %}<a href="{{ i.url }}" class="side__link side__link--sub{% if i.active %} on{% endif %}">{{ i.title }}{% if i.badge %} <span class="side__badge">{{ i.badge|fa_num }}</span>{% endif %}</a>{% endfor %}
       </details>
     {% endfor %}
   </nav>

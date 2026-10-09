@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -13,6 +14,8 @@ class CrmSettings(models.Model):
     admin_sms = models.BooleanField("پیامک سفارش تازه به مدیران", default=True,
                                     help_text="به شماره‌های «تنظیمات ← فروش و ارسال ← موبایل مدیران»")
     admin_text = models.TextField("متن سفارش تازه (مدیر)", default=texts.ADMIN)
+    contact_admin_sms = models.BooleanField("پیامک خبر پیام تازهٔ «تماس با ما» به مدیران", default=True,
+                                            help_text="به شماره‌های مدیر (زبانهٔ «فروش و ارسال»)؛ فقط نام و پیوند پیام، نه متن آن.")
     paid_text = models.TextField("متن پرداخت موفق (مشتری)", default=texts.PAID,
                                  help_text="اگر در «پیامک» شمارهٔ قالب تأیید سفارش sms.ir وارد شده باشد، همان قالب فرستاده می‌شود.")
     admin_paid_text = models.TextField("متن پرداخت موفق (مدیر)", default=texts.ADMIN_PAID)
@@ -182,6 +185,7 @@ class SmsLog(models.Model):
         MARKET = "market", "مارکت‌پلیس"
         BULK = "bulk", "پیامک گروهی"
         MANUAL = "manual", "پیامک دستی"
+        CONTACT = "contact", "پاسخ تماس با ما"
         OTHER = "other", "سایر"
 
     mobile = models.CharField("موبایل", max_length=11, db_index=True)
@@ -292,3 +296,44 @@ class AutoCampaign(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ContactMessage(models.Model):
+    """پیام فرم «تماس با ما»؛ پاسخ از پنل با پیامک به موبایل فرستنده می‌رود."""
+
+    class Topic(models.TextChoices):
+        BUY = "buy", "مشاوره و خرید"
+        ORDER = "order", "پیگیری سفارش"
+        INST = "inst", "خرید اقساطی"
+        COOP = "coop", "همکاری"
+        COMPLAINT = "complaint", "انتقاد و شکایت"
+        OTHER = "other", "سایر"
+
+    class Status(models.TextChoices):
+        NEW = "new", "تازه"
+        ANSWERED = "answered", "پاسخ داده شد"
+        ARCHIVED = "archived", "بایگانی"
+
+    name = models.CharField("نام", max_length=80)
+    mobile = models.CharField("موبایل", max_length=11, db_index=True)
+    topic = models.CharField("موضوع", max_length=10, choices=Topic.choices, default=Topic.BUY)
+    message = models.TextField("پیام")
+    status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.NEW, db_index=True)
+    reply = models.TextField("پاسخ (با پیامک فرستاده می‌شود)", blank=True,
+                             help_text="بعد از «ذخیره» به موبایل فرستنده پیامک می‌شود. اگر بعداً متن را عوض کنید، متن تازه دوباره فرستاده می‌شود.")
+    reply_sent = models.TextField(blank=True, editable=False)
+    replied_at = models.DateTimeField("زمان پاسخ", null=True, blank=True, editable=False)
+    replied_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                   editable=False)
+    note = models.CharField("یادداشت داخلی", max_length=300, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True, editable=False)
+    page = models.CharField(max_length=300, blank=True, editable=False)
+    created_at = models.DateTimeField("زمان", auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "پیام تماس با ما"
+        verbose_name_plural = "پیام‌های تماس با ما"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} — {self.get_topic_display()}"

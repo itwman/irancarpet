@@ -17,7 +17,7 @@ ALLOWED_PHONES = {PHONE, "03155340038"}
 BANNED = ("شهر فرش", "آقای فرش", "مهد فرش", "فرش وزرا", "وزرا فرش")
 SHORTCODES = {"installment_calc", "installment_prices", "installment_plans", "installment_steps", "installment_faq",
               "price_updated", "size_prices", "size_faq", "shipping_info", "city_faq", "reeds_compare", "price_table",
-              "city_notice", "reeds_links"}
+              "city_notice", "reeds_links", "contact_info", "contact_form"}
 BLOCK_TAGS = ("div", "section", "table", "ul", "ol", "details", "blockquote", "figure", "p")
 FORBIDDEN_TAGS = ("script", "style", "iframe", "form", "input", "h1", "object", "embed")
 LIMITS = {"title": (10, 80), "seo_title": (20, 70), "seo_description": (90, 170), "excerpt": (40, 400)}

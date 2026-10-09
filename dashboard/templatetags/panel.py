@@ -19,6 +19,15 @@ GROUP_ICONS = {"باشگاه مشتریان": "users", "فروش": "receipt", "�
                "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users", "مارکت‌پلیس": "box"}
 
 
+def _badge(r):
+    if not r.badge:
+        return 0
+    try:
+        return r.badge() or 0
+    except Exception:  # noqa: BLE001
+        return 0
+
+
 @register.simple_tag(takes_context=True)
 def panel_nav(context):
     path = context["request"].path
@@ -29,7 +38,8 @@ def panel_nav(context):
                  for t, u, i in NAV_FIRST.get(g, [])]
         for r in REGISTRY.values():
             if r.group == g and r.nav:
-                items.append({"title": r.title, "url": r.url(), "icon": r.icon, "active": path.startswith(r.url())})
+                items.append({"title": r.title, "url": r.url(), "icon": r.icon, "active": path.startswith(r.url()),
+                              "badge": _badge(r)})
         for title, url, icon in EXTRA_NAV.get(g, []):
             items.append({"title": title, "url": url, "icon": icon, "active": full == url or (url == "/panel/settings/" and path == url)})
         if g == "تنظیمات":
@@ -38,7 +48,7 @@ def panel_nav(context):
             for i in items:
                 if i["url"] == "/panel/customers/":
                     i["active"] = False
-        out.append({"title": g, "items": items, "icon": GROUP_ICONS.get(g, "box")})
+        out.append({"title": g, "items": items, "icon": GROUP_ICONS.get(g, "box"), "badge": sum(i.get("badge") or 0 for i in items)})
     return out
 
 

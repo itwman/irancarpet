@@ -1,0 +1,28 @@
+{% load fa %}<section class="ct-form" id="contact-form" aria-labelledby="ct-form-t">
+  <h2 id="ct-form-t" class="ct-form__t">پیام بگذارید</h2>
+  <p class="ct-form__lead">پاسخ را با پیامک به موبایلتان می‌فرستیم؛ معمولاً در همان روز کاری.</p>
+  {% if sent %}<div class="ct-ok" role="status"><strong>پیامتان رسید.</strong> به‌زودی پاسخ را پیامک می‌کنیم.{% if site_settings.mobile %} اگر کارتان فوری است، با <a href="tel:{{ site_settings.mobile }}"><bdi dir="ltr">{{ site_settings.mobile|fa_num }}</bdi></a> تماس بگیرید.{% endif %}</div>{% endif %}
+  <form method="post" action="/contact/send/" novalidate>{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}"><input type="hidden" name="token" value="{{ token }}">
+    <div class="ct-hp" aria-hidden="true"><label>وب‌سایت <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div class="ct-form__grid">
+      <div class="ct-f{% if errors.name %} has-err{% endif %}"><label for="ct-name">نام و نام خانوادگی</label>
+        <input id="ct-name" name="name" value="{{ data.name|default:'' }}" maxlength="80" autocomplete="name" required{% if errors.name %} aria-invalid="true" aria-describedby="ct-name-e"{% endif %}>
+        {% if errors.name %}<small class="ct-err" id="ct-name-e">{{ errors.name }}</small>{% endif %}</div>
+      <div class="ct-f{% if errors.mobile %} has-err{% endif %}"><label for="ct-mobile">شمارهٔ موبایل</label>
+        <input id="ct-mobile" name="mobile" value="{{ data.mobile|default:'' }}" inputmode="tel" dir="ltr" placeholder="09xxxxxxxxx" maxlength="20" autocomplete="tel" required{% if errors.mobile %} aria-invalid="true" aria-describedby="ct-mobile-e"{% endif %}>
+        {% if errors.mobile %}<small class="ct-err" id="ct-mobile-e">{{ errors.mobile }}</small>{% endif %}</div>
+      <div class="ct-f ct-f--wide"><label for="ct-topic">موضوع</label>
+        <select id="ct-topic" name="topic">{% for v, l in topics %}<option value="{{ v }}"{% if data.topic == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="ct-f ct-f--wide{% if errors.message %} has-err{% endif %}"><label for="ct-msg">پیام</label>
+        <textarea id="ct-msg" name="message" rows="5" maxlength="3000" required placeholder="مثلاً نقشه و سایز فرشی که می‌خواهید، یا شمارهٔ سفارش"{% if errors.message %} aria-invalid="true" aria-describedby="ct-msg-e"{% endif %}>{{ data.message|default:'' }}</textarea>
+        {% if errors.message %}<small class="ct-err" id="ct-msg-e">{{ errors.message }}</small>{% endif %}</div>
+    </div>
+    <div class="ct-form__foot">
+      <div class="ct-f ct-cap{% if errors.answer %} has-err{% endif %}"><label for="ct-ans">پرسش امنیتی: <bdi dir="ltr">{{ q }}</bdi> چند می‌شود؟</label>
+        <input id="ct-ans" name="answer" inputmode="numeric" maxlength="3" autocomplete="off" required{% if errors.answer %} aria-invalid="true" aria-describedby="ct-ans-e"{% endif %}>
+        {% if errors.answer %}<small class="ct-err" id="ct-ans-e">{{ errors.answer }}</small>{% endif %}</div>
+      <button class="btn-ic btn-ic--pink" type="submit">فرستادن پیام</button>
+    </div>
+  </form>
+</section>

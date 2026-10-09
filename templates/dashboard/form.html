@@ -17,6 +17,9 @@
   {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
   <div class="edit__grid">
     <div class="edit__main">
+      {% if res.key == "contact-messages" and obj %}
+      <section class="card-p"><h2>پیام {{ obj.name }}</h2><div class="msg-body">{{ obj.message|linebreaks }}</div></section>
+      {% endif %}
       {% for g in groups %}{% if g.place == "main" %}
       <section class="card-p"><h2>{{ g.title }}</h2>{% for f in g.fields %}{% include "dashboard/_field.html" %}{% endfor %}</section>
       {% endif %}{% endfor %}
