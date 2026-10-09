@@ -1327,3 +1327,35 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 @media (min-width:768px){.post-recs .p-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}}
 .article-hits{margin:2.5rem 0}
 .article-hits h2{font-size:1.15rem;font-weight:900;margin-bottom:.75rem}
+/* باشگاه مشتریان: امتیاز مثل فرشی که گره‌به‌گره بافته می‌شود */
+.club-rug{position:relative;display:flex;align-items:center;gap:1.6rem;background:var(--ink);color:#fff;border-radius:22px;padding:1.5rem 1.6rem;margin-bottom:1.5rem;box-shadow:var(--shadow)}
+.club-rug__body{flex:1;min-width:0}
+.club-rug__label{display:block;font-size:.88rem;color:#D9DBF0;font-weight:700}
+.club-rug__num{display:block;font-size:clamp(2.8rem,7vw,3.8rem);font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.club-rug__val{display:block;font-weight:800;color:var(--saffron)}
+.club-rug__hint{margin:.6rem 0 0;font-size:.86rem;color:#D9DBF0}
+.club-rug__hint:empty{display:none}
+.club-rug__mat{position:relative;flex:0 0 46%;max-width:300px;margin-inline:12px}
+.club-rug__mat::before,.club-rug__mat::after{content:"";position:absolute;top:10px;bottom:10px;width:10px;background:repeating-linear-gradient(to bottom,#E9E3D3 0 2px,transparent 2px 5px)}
+.club-rug__mat::before{right:-10px}.club-rug__mat::after{left:-10px}
+.club-rug__field{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:8px;border:3px solid #B9324F;border-radius:6px;background:#2C3170;outline:2px solid rgba(255,255,255,.12);outline-offset:3px}
+.club-rug__field i{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.08)}
+.club-rug__field i.on{background:var(--pink);animation:knot-in .6s var(--ease) both}
+.club-rug__field i.on:nth-child(3n){background:var(--saffron)}.club-rug__field i.on:nth-child(4n+1){background:var(--teal)}.club-rug__field i.on:nth-child(7n){background:var(--pistachio)}
+@media(max-width:575.98px){.club-rug{flex-direction:column;align-items:stretch;text-align:center}.club-rug__mat{max-width:none;margin-inline:12px}}
+.club-redeem{margin-bottom:1.5rem}
+.club-redeem__row{display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:.6rem}
+.club-redeem__row .field{flex:1 1 160px}
+.club-codes{list-style:none;padding:0;margin:0 0 1rem}
+.club-codes li{display:flex;align-items:center;gap:.9rem;padding:.7rem 0;border-bottom:1px dashed var(--line)}
+.club-codes li:last-child{border-bottom:0}
+.club-codes code{background:var(--saffron-t);color:var(--ink);font-weight:800;padding:.3rem .6rem;border-radius:8px;font-size:.95rem}
+.club-codes span{flex:1;font-size:.92rem}
+.club-ways{padding-inline-start:1.1rem;margin:0;display:flex;flex-direction:column;gap:.5rem;font-size:.93rem}
+.alert-ic--ok{background:var(--teal-t);color:var(--teal-d)}
+.acc-club{display:flex;align-items:center;gap:1rem;background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:1.1rem 1.3rem}
+.acc-club b{font-size:1.8rem;font-weight:900;line-height:1}
+.acc-club span{flex:1;font-size:.9rem;color:#D9DBF0}
+.acc-club a{flex:none}
+@media(prefers-reduced-motion:reduce){.club-rug__field i.on{animation:none}}
+.acc-club .pill{border-color:#fff;color:#fff}.acc-club:hover{color:#fff}.acc-club:hover .pill{background:#fff;color:var(--ink)}

@@ -79,8 +79,12 @@ FORMS = {
     "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "paid_text", "admin_paid_text",
                           "status_sms", "shipped_text", "completed_text", "cancelled_text",
                           "remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3",
+                          "cart_enabled", "cart_hours", "cart_text",
                           "winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text",
-                          "vip_total", "vip_orders", "marketing_footer"]),
+                          "points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days",
+                          "points_since", "birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text",
+                          "review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days",
+                          "review_reward_text", "album_text", "vip_total", "vip_orders", "short_links", "marketing_footer"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
@@ -179,9 +183,18 @@ CRM_GROUPS = [
      ["status_sms", "shipped_text", "completed_text", "cancelled_text"]),
     ("پیگیری سفارش‌های پرداخت‌نشده", "سه پیامک در زمان‌های بالا؛ اگر مشتری پرداخت کند یا سفارش دیگری بدهد، ادامه پیدا نمی‌کند.",
      ["remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3"]),
+    ("سبد خرید رهاشده", "برای مشتری واردشده‌ای که فرش در سبد گذاشته ولی سفارش نداده؛ پیوند پیامک همان سبد را در هر دستگاهی برمی‌گرداند.",
+     ["cart_enabled", "cart_hours", "cart_text"]),
     ("کد بازگشت خودکار", "روزی یک‌بار برای مشتریانی که مدتی نخریده‌اند یک کد تخفیف شخصی (فقط با شمارهٔ خودشان و یک‌بار) می‌فرستد.",
      ["winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text"]),
-    ("باشگاه مشتریان", "", ["vip_total", "vip_orders", "marketing_footer"]),
+    ("امتیاز خرید", "مشتری در «حساب کاربری ← باشگاه مشتریان» امتیازش را می‌بیند و به کد تخفیف شخصی تبدیل می‌کند. کد بی‌استفادهٔ منقضی، امتیازش را برمی‌گرداند.",
+     ["points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days", "points_since"]),
+    ("هدیهٔ تولد", "مشتری روز و ماه تولدش را یک‌بار در صفحهٔ باشگاه ثبت می‌کند؛ آن روز کد هدیه پیامک می‌شود.",
+     ["birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text"]),
+    ("جایزهٔ نظر با عکس", "در پیامک دعوت به نظر هم گفته می‌شود. بعد از اینکه نظر را در «نظرات محصولات» تأیید کنید، کد هدیه می‌رود.",
+     ["review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days", "review_reward_text"]),
+    ("اطلاع افزایش قیمت آلبوم", "از «آلبوم‌های قیمت» آلبوم‌ها را انتخاب کنید و عملیات «پیامک قیمت به‌زودی بالا می‌رود» را بزنید.", ["album_text"]),
+    ("باشگاه مشتریان", "", ["vip_total", "vip_orders", "short_links", "marketing_footer"]),
 ]
 
 
@@ -214,7 +227,7 @@ def settings_view(request):
             which = request.POST.get("which") or "order_text"
             if not mobile:
                 messages.error(request, "شمارهٔ موبایل آزمایشی درست نیست.")
-            elif which not in FORMS["crm"][1] or not which.endswith("_text"):
+            elif which not in FORMS["crm"][1] or "_text" not in which:
                 messages.error(request, "متن نامعتبر.")
             else:
                 text = crm_notify.render(getattr(CrmSettings.load(), which), **crm_notify.sample_context())
@@ -295,6 +308,7 @@ def settings_view(request):
         "rj": RajyarSettings.load() if tab == "rajyar" else None,
         "crm_groups": crm_groups(form) if tab == "crm" else None,
         "line": ShopSettings.load().smsir_line_number if tab == "crm" else "",
+        "short_test": __import__("crm.links", fromlist=["shorten"]).shorten("/my-account/club/", "k") if tab == "crm" else "",
         "rj_next": __import__("rajyar.auto", fromlist=["next_runs"]).next_runs(RajyarSettings.load()) if tab == "rajyar" else [], "SITE_URL": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),

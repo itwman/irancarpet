@@ -70,9 +70,99 @@ def winback(now=None, limit=40):
     return sent
 
 
+def birthday(now=None, limit=200):
+    """روزی یک‌بار: کد هدیهٔ تولد برای کسانی که تولدشان (شمسی) امروز است؛ هر شماره سالی یک‌بار."""
+    import jdatetime
+
+    from accounts.models import Profile
+    from accounts.utils import normalize_mobile
+
+    from .campaigns import make_coupon, message
+    from .models import CrmSettings, SmsLog
+
+    s = CrmSettings.load()
+    if not s.birthday_enabled or not cache.add("crm:birthday:day", 1, 20 * 3600):
+        return 0
+    now = now or timezone.now()
+    j = jdatetime.date.fromgregorian(date=timezone.localtime(now).date())
+    got = set(SmsLog.objects.filter(kind=SmsLog.Kind.BIRTHDAY, ok=True, created_at__gte=now - td(days=300)).values_list("mobile", flat=True))
+    sent = 0
+    for p in Profile.objects.filter(birth_month=j.month, birth_day=j.day, user__is_active=True).select_related("user")[:limit]:
+        m = normalize_mobile(p.mobile or "") or normalize_mobile(p.user.username or "")
+        if not m or m in got:
+            continue
+        coupon = make_coupon("BD", m, "هدیهٔ تولد", s.birthday_amount, s.birthday_min_order, s.birthday_valid_days) if s.birthday_amount else None
+        if send(m, message(s.birthday_text, {"name": p.user.first_name}, coupon), SmsLog.Kind.BIRTHDAY):
+            sent += 1
+    return sent
+
+
+def abandoned_carts(now=None, limit=100):
+    """سبدی که چند ساعت دست نخورده و سفارشی پس از آن ثبت نشده: یک پیامک با پیوند بازگرداندن سبد."""
+    from shop.models import Order
+
+    from .carts import restore_url
+    from .club import mobile_of
+    from .models import CartSnapshot, CrmSettings, SmsLog
+
+    s = CrmSettings.load()
+    if not s.cart_enabled:
+        return 0
+    now = now or timezone.now()
+    qs = (CartSnapshot.objects.filter(reminded_at__isnull=True, updated_at__lte=now - td(hours=s.cart_hours),
+                                      updated_at__gte=now - td(days=7), user__is_active=True)
+          .select_related("user", "user__profile")[:limit])
+    sent = 0
+    for snap in qs:
+        CartSnapshot.objects.filter(pk=snap.pk).update(reminded_at=now)
+        user, m = snap.user, mobile_of(snap.user)
+        if not m or not snap.data:
+            continue
+        if Order.objects.filter(user=user, created_at__gte=snap.updated_at - td(hours=1)).exists():
+            continue  # بعد از آخرین تغییر سبد سفارش داده
+        if SmsLog.objects.filter(mobile=m, kind=SmsLog.Kind.CART, created_at__gte=now - td(days=3)).exists():
+            continue
+        text = render(s.cart_text, name=user.first_name or "مشتری", cart_link=restore_url(user))
+        if send(m, text, SmsLog.Kind.CART):
+            sent += 1
+    return sent
+
+
+def review_rewards(now=None, limit=50):
+    """نظرِ تأییدشدهٔ خریدار که عکس دارد ← کد هدیه (هر شماره هر ۶۰ روز یک‌بار)."""
+    from django.db.models import Count
+
+    from accounts.utils import normalize_mobile
+    from catalog.models import Review
+
+    from .campaigns import make_coupon, message
+    from .models import CrmSettings, SmsLog
+
+    s = CrmSettings.load()
+    if not s.review_reward_enabled or not s.review_reward_amount:
+        return 0
+    now = now or timezone.now()
+    qs = (Review.objects.filter(is_approved=True, verified=True, parent__isnull=True, created_at__gte=now - td(days=45))
+          .exclude(mobile="").annotate(_ph=Count("photos")).filter(_ph__gt=0).order_by("created_at")[:limit])
+    sent = 0
+    for r in qs:
+        m = normalize_mobile(r.mobile)
+        if not m or SmsLog.objects.filter(mobile=m, kind=SmsLog.Kind.REVIEW, created_at__gte=now - td(days=60)).exists():
+            continue
+        coupon = make_coupon("RV", m, "جایزهٔ نظر با عکس", s.review_reward_amount, s.review_reward_min_order, s.review_reward_valid_days)
+        name = (r.author_name or "").split(" ")[0]
+        if send(m, message(s.review_reward_text, {"name": name}, coupon), SmsLog.Kind.REVIEW):
+            sent += 1
+        else:
+            coupon.is_active = False
+            coupon.save(update_fields=["is_active"])
+    return sent
+
+
 def run():
     done = {}
-    for name, fn in (("یادآوری پرداخت", remind_unpaid), ("کد بازگشت مشتری", winback)):
+    for name, fn in (("یادآوری پرداخت", remind_unpaid), ("کد بازگشت مشتری", winback), ("هدیهٔ تولد", birthday),
+                     ("سبد رهاشده", abandoned_carts), ("جایزهٔ نظر", review_rewards)):
         try:
             n = fn()
             if n:

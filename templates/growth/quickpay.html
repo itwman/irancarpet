@@ -16,9 +16,13 @@
   <div class="card-ic sum">
     {% for it in order.items.all %}<div class="sum-row"><span>{{ it.title|fa_num }} <small class="muted">· {{ it.size_label|fa_num }} · {{ it.quantity|fa_num }} عدد</small></span><span class="text-nowrap">{{ it.unit_price|toman }}</span></div>{% endfor %}
     {% if order.discount %}<div class="sum-row sum-discount"><span>تخفیف</span><strong>−{{ order.discount|toman }}</strong></div>{% endif %}
-    <div class="sum-row big"><span>{% if order.payment_mode == "deposit" %}بیعانه (الان){% else %}مبلغ پرداخت{% endif %}</span><strong>{{ order.online_amount|toman }} تومان</strong></div>
+    {% if modes|length > 1 %}<div class="sum-row"><span>جمع سفارش</span><strong>{{ order.items_total|toman }} تومان</strong></div>
+    {% else %}<div class="sum-row big"><span>{% if order.payment_mode == "deposit" %}بیعانه (الان){% elif order.is_installment %}پیش‌پرداخت (الان){% else %}مبلغ پرداخت{% endif %}</span><strong>{{ order.online_amount|toman }} تومان</strong></div>
+    {% if order.payment_mode == "deposit" %}<p class="small muted">بقیهٔ مبلغ موقع تحویل پرداخت می‌شود.</p>{% endif %}{% endif %}
     {% if messages %}{% for m in messages %}<div class="alert-ic">{{ m }}</div>{% endfor %}{% endif %}
     <form method="post">{% csrf_token %}
+      {% include "shop/_paymodes.html" %}
+      {% if modes|length > 1 %}<p class="small fw-bold mb-2">درگاه پرداخت</p>{% endif %}
       <div class="choice" role="radiogroup" aria-label="درگاه پرداخت">
         {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong></span></label>{% endfor %}
       </div>

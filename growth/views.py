@@ -27,20 +27,21 @@ def _order_from(token, salt, days):
 
 # ------------------------------------------------------------------ پرداخت سریع (پیوند پیامک)
 def quickpay(request, token):
-    from shop import gateways
+    from shop import gateways, paymode
     from shop.models import ShopSettings
     from shop.views import start_payment
 
-    order = _order_from(token, QUICKPAY_SALT, 7)
+    order = _order_from(token, QUICKPAY_SALT, 30)
     gws = gateways.enabled(ShopSettings.load())
     if request.method == "POST" and order.can_pay:
         gw = next((g for g in gws if g.key == request.POST.get("gateway")), None)
         if gw:
+            paymode.switch(order, request.POST.get("mode"))
             return start_payment(request, order, gw, source="quickpay")
         messages.error(request, "درگاه پرداخت را انتخاب کنید.")
     return render(request, "growth/quickpay.html", {
         "meta": {**META, "title": f"پرداخت سفارش {order.number}"}, "order": order, "gateways": gws,
-        "paid": request.GET.get("paid") == "1",
+        "paid": request.GET.get("paid") == "1", "modes": paymode.options(order), "due": paymode.due_word(order),
     })
 
 
@@ -71,8 +72,12 @@ def review_invite(request, token):
         if n:
             return redirect(request.path + "?done=1")
         messages.error(request, "دست‌کم برای یک فرش امتیاز یا نظر بدهید.")
+    from crm.models import CrmSettings
+
+    cs = CrmSettings.load()
     return render(request, "growth/review_invite.html", {
         "meta": {**META, "title": "نظر شما دربارهٔ فرش"}, "order": order, "items": items, "done": done,
+        "reward": cs.review_reward_amount if cs.review_reward_enabled else 0,
     })
 
 

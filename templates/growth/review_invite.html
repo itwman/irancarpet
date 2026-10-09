@@ -3,11 +3,12 @@
 <section class="container py-4" style="max-width:720px">
   {% if done %}
   <div class="card-ic"><h1 class="sec-title">ممنون از نظرتان!</h1>
-    <p>نظر شما بعد از بررسی در صفحهٔ فرش نمایش داده می‌شود و به خریداران دیگر کمک می‌کند.</p>
+    <p>نظر شما بعد از بررسی در صفحهٔ فرش نمایش داده می‌شود و به خریداران دیگر کمک می‌کند.{% if reward %} اگر عکس فرستاده‌اید، کد هدیه‌تان بعد از تأیید پیامک می‌شود.{% endif %}</p>
     <a class="btn-ic btn-ic--ink" href="/">بازگشت به ایران کارپت</a></div>
   {% else %}
   <h1 class="sec-title">فرش‌تان چطور است؟</h1>
   <p class="muted">{{ order.first_name }} عزیز، برای هر فرش امتیاز بدهید و اگر دوست دارید عکس فرش در خانه‌تان را هم بفرستید.</p>
+  {% if reward %}<div class="alert-ic alert-ic--ok">با فرستادن عکس فرش، بعد از تأیید نظر یک کد هدیهٔ {{ reward|toman }} تومانی برایتان پیامک می‌شود.</div>{% endif %}
   {% for m in messages %}<div class="alert-ic">{{ m }}</div>{% endfor %}
   <form method="post" enctype="multipart/form-data" class="rv-invite">{% csrf_token %}
     {% for it in items %}

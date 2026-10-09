@@ -121,6 +121,11 @@ def short_redirect(request):
     parts = [p for p in request.path.split("/") if p]
     if not parts:
         return HttpResponseRedirect(site + "/")
+    if len(parts) == 2 and len(parts[0]) == 1:  # پیوند کوتاه پیامک‌ها (crm.links)
+        from crm.links import resolve
+
+        target = resolve(parts[1])
+        return HttpResponseRedirect(site + (target or "/"))
     a = by_code(parts[0])
     if a is None:
         return HttpResponseRedirect(site + "/")

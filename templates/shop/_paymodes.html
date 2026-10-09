@@ -1,0 +1,6 @@
+{% load fa %}{% if modes|length > 1 %}
+<p class="small fw-bold mb-2">چطور پرداخت می‌کنید؟</p>
+<div class="choice" role="radiogroup" aria-label="روش پرداخت">
+  {% for m in modes %}<label><input type="radio" name="mode" value="{{ m.mode }}"{% if m.on %} checked{% endif %}><span><strong>{{ m.label|fa_num }}: {{ m.amount|toman }} تومان</strong>{% if m.note %}<small class="d-block muted">{{ m.note|fa_num }}</small>{% endif %}</span></label>{% endfor %}
+</div>
+{% endif %}

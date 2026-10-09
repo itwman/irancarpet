@@ -261,6 +261,12 @@ def product_detail(request, slug):
     offers = for_product(product)
     if product.status != Product.Status.PUBLISH and not request.user.is_staff and not offers:
         raise Http404
+    try:  # علاقه‌مندان آلبوم (فقط مشتری واردشده)
+        from crm.interest import track_view
+
+        track_view(request, product)
+    except Exception:  # noqa: BLE001
+        pass
     variations = list(product.variations.select_related("size").prefetch_related("attributes__attribute").order_by("size__sort_order", "menu_order"))
     specs = product.specs.select_related("attribute").order_by("attribute__order", "order")
     gallery = [product.image] if product.image_id else []

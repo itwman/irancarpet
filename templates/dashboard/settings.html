@@ -85,7 +85,8 @@
         <select name="which" class="form-select" style="max-width:260px">
           <option value="order_text">ثبت سفارش</option><option value="admin_text">سفارش تازه (مدیر)</option><option value="paid_text">پرداخت موفق</option>
           <option value="remind_text_1">یادآوری اول</option><option value="remind_text_2">یادآوری دوم (نوسان قیمت)</option><option value="remind_text_3">یادآوری سوم</option>
-          <option value="shipped_text">ارسال شد</option><option value="winback_text">کد بازگشت</option>
+          <option value="shipped_text">ارسال شد</option><option value="cart_text">سبد رهاشده</option><option value="winback_text">کد بازگشت</option>
+          <option value="birthday_text">تولد</option><option value="review_reward_text">جایزهٔ نظر</option><option value="album_text">افزایش قیمت آلبوم</option>
         </select>
         <input name="test_mobile" class="form-control ltr-num" style="max-width:200px" placeholder="۰۹۱۲…" inputmode="tel">
         <button class="btn btn-ink" type="submit">ارسال نمونه</button>
@@ -141,7 +142,11 @@
       <p class="hint"><a dir="ltr" href="/llms.txt" target="_blank" rel="noopener">{{ SITE_URL }}/llms.txt</a> — خلاصهٔ فروشگاه، قیمت‌های روز و روش‌های خرید برای ChatGPT، Claude، Gemini و Perplexity. خودکار با قیمت‌ها به‌روز می‌شود.</p>
     </section>{% endif %}
     {% if tab == "torob" %}<section class="card-p"><h2>آدرس فید برای پنل ترب</h2><p class="hint">همان آدرس قبلی است و نیازی به تغییر در پنل ترب نیست:</p><p dir="ltr"><code>https://irancarpet.net/wp-json/torob/products/?page=1</code></p><p class="hint">محصول آلبومی با قیمت سایز ۱۲ متری در ترب نمایش داده می‌شود، مثل سایت قبلی.</p></section>{% endif %}
-    {% if tab == "crm" %}<section class="card-p"><h2>متغیرهای متن</h2>
+    {% if tab == "crm" %}<section class="card-p"><h2>آزمایش پیوند کوتاه</h2>
+      <p class="hint">این پیوند باید صفحهٔ باشگاه مشتریان سایت را باز کند. اگر باز نشد، دامنهٔ کوتاه روی سرور راه‌اندازی نشده؛ تا آن موقع «پیوند کوتاه در پیامک‌ها» را خاموش کنید.</p>
+      <p dir="ltr" class="mb-0"><a href="{{ short_test }}" target="_blank" rel="noopener">{{ short_test }}</a></p>
+    </section>
+    <section class="card-p"><h2>متغیرهای متن</h2>
       <div class="kv"><span>{name}</span><strong>نام مشتری</strong></div>
       <div class="kv"><span>{number}</span><strong>شمارهٔ سفارش</strong></div>
       <div class="kv"><span>{total}</span><strong>مبلغ کل</strong></div>
@@ -153,7 +158,11 @@
       <div class="kv"><span>{mobile} {city} {mode}</span><strong>موبایل، شهر، روش پرداخت</strong></div>
       <div class="kv"><span>{panel}</span><strong>پیوند سفارش در پنل (مدیر)</strong></div>
       <div class="kv"><span>{phone}</span><strong>شمارهٔ تماس فروشگاه</strong></div>
+      <div class="kv"><span>{due} {due_line}</span><strong>«بیعانه/پیش‌پرداخت/مبلغ» و سطر مبلغ قابل پرداخت</strong></div>
+      <div class="kv"><span>{points_line}</span><strong>امتیاز همین خرید (پرداخت موفق)</strong></div>
+      <div class="kv"><span>{cart_link}</span><strong>پیوند بازگرداندن سبد</strong></div>
       <div class="kv"><span>{code} {discount} {min} {until}</span><strong>کد تخفیف، مبلغ، حداقل خرید، مهلت</strong></div>
+      <div class="kv"><span>{album} {date}</span><strong>نام آلبوم و زمان افزایش قیمت</strong></div>
       <p class="hint mt-2">پیامک‌های تبلیغاتی (کمپین و کد بازگشت) با «{{ form.instance.marketing_footer|default:'لغو۱۱' }}» تمام می‌شوند. کمپین‌ها: <a href="/panel/crm-campaigns/">باشگاه مشتریان ← کمپین‌ها</a>.</p>
     </section>{% endif %}
     {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند؛ اگر خالی باشند، پیامک سفارش از «شمارهٔ خط» با متن‌های زبانهٔ <a href="?tab=crm">پیامک سفارش و باشگاه</a> فرستاده می‌شود.</p></section>{% endif %}

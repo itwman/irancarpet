@@ -16,7 +16,8 @@ RICH_FIELDS = {"content", "description", "answer", "footer_html", "home_about", 
 MONEY_FIELDS = {"base_price", "custom_base_price", "override_price", "manual_price", "sale_price", "shipping_fixed",
                 "free_shipping_min", "min_order_amount", "items_total", "online_amount", "paid_amount", "unit_price", "amount", "waste_value",
                 "max_discount", "min_order", "referral_max", "referral_min_order", "referral_reward", "discount",
-                "winback_amount", "winback_min_order", "vip_total"}
+                "winback_amount", "winback_min_order", "vip_total", "points_per", "point_value", "points_min_order",
+                "birthday_amount", "birthday_min_order", "review_reward_amount", "review_reward_min_order"}
 
 
 def to_en(s):

@@ -8,7 +8,7 @@ import threading
 from django.conf import settings
 from django.db import close_old_connections, transaction
 
-from core.templatetags.fa import toman
+from core.templatetags.fa import fa_num as fa, toman
 
 log = logging.getLogger(__name__)
 
@@ -64,17 +64,29 @@ def admins():
     return [m for m in (normalize_mobile(x) for x in raw) if m]
 
 
+def due_line(order):
+    if order.payment_mode == "deposit":
+        return f"بیعانه: {toman(order.online_amount)} تومان (از {toman(order.items_total)})"
+    if order.is_installment:
+        return f"پیش‌پرداخت: {toman(order.online_amount)} تومان"
+    return f"مبلغ: {toman(order.grand_total)} تومان"
+
+
 def context(order, **extra):
     from core.models import SiteSettings
     from growth.jobs import quickpay_url
+    from shop.paymode import due_word
+
+    from .links import shorten
 
     site = SiteSettings.load()
-    track = f"{settings.SITE_URL}{order.get_absolute_url()}"
     return {
         "name": order.first_name or "مشتری", "number": order.number, "total": toman(order.grand_total),
         "amount": toman(order.online_amount or order.items_total), "paid": toman(order.paid_amount),
-        "link": track, "pay_link": quickpay_url(order), "mobile": order.mobile, "city": order.city,
-        "mode": order.get_payment_mode_display(), "panel": f"{settings.SITE_URL}/panel/orders/{order.pk}/view/",
+        "due": due_word(order), "due_line": due_line(order),
+        "link": shorten(order.get_absolute_url(), "l"), "pay_link": shorten(quickpay_url(order), "o", days=30),
+        "mobile": order.mobile, "city": order.city, "mode": order.get_payment_mode_display(),
+        "panel": shorten(f"/panel/orders/{order.pk}/view/", "l"),
         "tracking": f" کد رهگیری: {order.tracking_code}." if order.tracking_code else "",
         "phone": site.mobile or site.phone or "", **extra,
     }
@@ -87,8 +99,11 @@ def sample_context():
     site = SiteSettings.load()
     url = settings.SITE_URL
     return {"name": "علی", "number": "10234", "total": toman(48_500_000), "amount": toman(48_500_000), "paid": toman(48_500_000),
-            "link": f"{url}/order/10234/", "pay_link": f"{url}/pay/10234/", "mobile": "09120000000", "city": "تهران",
-            "mode": "پرداخت کامل", "panel": f"{url}/panel/orders/", "tracking": " کد رهگیری: 123456789.",
+            "link": "https://crpt.ir/l/m4t8q2w", "pay_link": "https://crpt.ir/o/k3h9x2p", "mobile": "09120000000", "city": "تهران",
+            "mode": "بیعانه آنلاین", "panel": f"{url}/panel/orders/", "tracking": " کد رهگیری: 123456789.",
+            "due": "بیعانه", "due_line": f"بیعانه: {toman(4_850_000)} تومان (از {toman(48_500_000)})", "points": "۴۸",
+            "points_line": " ۴۸ امتیاز باشگاه مشتریان به حساب شما اضافه شد.", "cart_link": "https://crpt.ir/c/k3h9x2p",
+            "album": "فرش ۱۲۰۰ شانه نمونه", "date": "شنبه ۱۹ مهر",
             "phone": site.mobile or site.phone or "", "code": "C1-AB2CD", "discount": toman(2_000_000), "min": toman(40_000_000),
             "until": "۱۵ آبان", "site": url.replace("https://", "")}
 
@@ -100,7 +115,7 @@ def order_placed_now(order):
     s = CrmSettings.load()
     ctx = context(order)
     if s.order_sms and not SmsLog.objects.filter(order=order, kind=SmsLog.Kind.ORDER).exists():
-        tpl = s.order_installment_text if order.payment_mode == "installment" else s.order_text
+        tpl = s.order_installment_text if order.is_installment and not order.can_pay else s.order_text
         send(order.mobile, render(tpl, **ctx), SmsLog.Kind.ORDER, order)
     if s.admin_sms:
         text = render(s.admin_text, **ctx)
@@ -117,7 +132,10 @@ def order_paid_now(order, amount, customer=True, admin=True):
     from .models import CrmSettings, SmsLog
 
     s = CrmSettings.load()
-    ctx = context(order, paid=toman(amount))
+    from .points import for_amount
+
+    n = for_amount(order.items_total, s) if order.mobile else 0
+    ctx = context(order, paid=toman(amount), points_line=f" {fa(n)} امتیاز باشگاه مشتریان به حساب شما اضافه شد." if n else "")
     if customer:
         send(order.mobile, render(s.paid_text, **ctx), SmsLog.Kind.PAID, order)
     if admin:

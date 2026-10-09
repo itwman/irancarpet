@@ -22,6 +22,16 @@ from .models import ProductAlert, SearchLog
 MEDIA = tempfile.mkdtemp()
 
 
+def local(url):
+    """نشانی پیامک (کوتاه یا کامل) ← مسیر سایت."""
+    url = url.strip()
+    if "crpt.ir/" in url or "/s/" in url:
+        from crm.links import resolve
+
+        return resolve(url.rstrip("/").split("/")[-1])
+    return url.replace("https://irancarpet.net", "")
+
+
 def jpeg():
     from PIL import Image
 
@@ -131,7 +141,7 @@ class GrowthTests(TestCase):
             self.assertEqual(jobs.remind_unpaid(), 1)
             self.assertEqual(jobs.remind_unpaid(), 0)  # دومی یک روز بعد
         text = sms.call_args[0][1]
-        url = text.split("پرداخت: ")[1].replace("https://irancarpet.net", "")
+        url = local(text.split("پرداخت: ")[1])
         self.client.post("/my-account/logout/")
         r = self.client.get(url)
         self.assertContains(r, "پرداخت سفارش")
@@ -167,7 +177,7 @@ class GrowthTests(TestCase):
         Order.objects.filter(pk=o.pk).update(status="completed", created_at=timezone.now() - timezone.timedelta(days=8))
         with mock.patch("accounts.sms.send_bulk", return_value=(True, "")) as sms:
             self.assertEqual(jobs.invite_reviews(), 1)
-        url = sms.call_args[0][1].split(": ")[-1].replace("https://irancarpet.net", "")
+        url = local(sms.call_args[0][1].split(": ")[-1])
         self.client.post("/my-account/logout/")
         r = self.client.post(url, {f"rating_{self.p.pk}": "5", f"text_{self.p.pk}": "عالی بود", f"photos_{self.p.pk}": [jpeg()]})
         self.assertRedirects(r, url + "?done=1", fetch_redirect_response=False)

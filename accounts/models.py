@@ -12,6 +12,8 @@ class Profile(models.Model):
     city = models.CharField("شهر", max_length=80, blank=True)
     address = models.TextField("آدرس", blank=True)
     postal_code = models.CharField("کد پستی", max_length=10, blank=True)
+    birth_month = models.PositiveSmallIntegerField("ماه تولد (شمسی)", null=True, blank=True)
+    birth_day = models.PositiveSmallIntegerField("روز تولد", null=True, blank=True)
 
     class Meta:
         verbose_name = "پروفایل مشتری"

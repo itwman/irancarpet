@@ -20,16 +20,10 @@ log = logging.getLogger(__name__)
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
-def personal_coupon(prefix, mobile, title, discount, min_order, valid_days):
-    """کد تخفیف شخصی؛ اگر برای همین کمپین و همین موبایل ساخته شده، همان برمی‌گردد."""
+def make_coupon(prefix, mobile, title, discount, min_order, valid_days):
+    """یک کد تازهٔ یک‌بارمصرف که فقط با همین موبایل کار می‌کند."""
     from shop.models import Coupon
 
-    from django.db.models import Q
-
-    c = (Coupon.objects.filter(code__startswith=f"{prefix}-", for_mobile=mobile, is_active=True)
-         .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=timezone.now())).first())
-    if c:
-        return c
     for _ in range(10):
         code = f"{prefix}-{''.join(secrets.choice(ALPHABET) for _ in range(5))}"
         if not Coupon.objects.filter(code=code).exists():
@@ -40,16 +34,31 @@ def personal_coupon(prefix, mobile, title, discount, min_order, valid_days):
         for_mobile=mobile, is_active=True)
 
 
-def message(campaign_text, c, coupon=None, footer=""):
+def personal_coupon(prefix, mobile, title, discount, min_order, valid_days):
+    """کد تخفیف شخصی؛ اگر برای همین کمپین و همین موبایل ساخته شده و هنوز معتبر است، همان برمی‌گردد."""
+    from django.db.models import Q
+
+    from shop.models import Coupon
+
+    c = (Coupon.objects.filter(code__startswith=f"{prefix}-", for_mobile=mobile, is_active=True)
+         .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=timezone.now())).first())
+    return c or make_coupon(prefix, mobile, title, discount, min_order, valid_days)
+
+
+def message(campaign_text, c, coupon=None, footer="", **extra):
     text = render(campaign_text, name=c.get("name") or "مشتری", code=coupon.code if coupon else "",
                   discount=toman(coupon.value) if coupon else "", min=toman(coupon.min_order) if coupon else "",
                   until=jdate(coupon.ends_at, "%d %B") if coupon and coupon.ends_at else "",
-                  days="", site=settings.SITE_URL.replace("https://", ""))
+                  days="", site=settings.SITE_URL.replace("https://", ""), **extra)
     return f"{text}\n{footer}".strip() if footer else text
 
 
 def recipients(campaign):
-    return audience(campaign.segment, campaign.inactive_days, campaign.custom_numbers)
+    return audience(campaign.segment, campaign.inactive_days, campaign.custom_numbers, album=campaign.album_id)
+
+
+def extra_vars(campaign):
+    return {"album": campaign.album.title if campaign.album_id else "", "date": campaign.event_date}
 
 
 def start(campaign):
@@ -69,6 +78,7 @@ def _run(pk, pause=0.4):
     try:
         camp = Campaign.objects.get(pk=pk)
         footer = CrmSettings.load().marketing_footer
+        extras = extra_vars(camp)
         people = recipients(camp)
         Campaign.objects.filter(pk=pk).update(total=len(people), status=Campaign.Status.SENDING,
                                               started_at=camp.started_at or timezone.now())
@@ -82,7 +92,7 @@ def _run(pk, pause=0.4):
             coupon = None
             if camp.discount:
                 coupon = personal_coupon(camp.code_prefix, c["mobile"], camp.title, camp.discount, camp.min_order, camp.valid_days)
-            ok = send(c["mobile"], message(camp.text, c, coupon, footer), SmsLog.Kind.CAMPAIGN, campaign=camp)
+            ok = send(c["mobile"], message(camp.text, c, coupon, footer, **extras), SmsLog.Kind.CAMPAIGN, campaign=camp)
             if ok:
                 sent += 1
                 fails_in_row = 0

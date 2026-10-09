@@ -75,13 +75,20 @@ def invite_reviews(now=None):
     """۷ روز بعد از ارسال یا تحویل، فقط برای سفارش‌های همین سایت (نه سفارش‌های قدیمی وردپرس)."""
     from shop.models import Order
 
+    from crm.links import shorten
+    from crm.models import CrmSettings
+    from core.templatetags.fa import toman
+
+    cs = CrmSettings.load()
+    gift = (f" با فرستادن عکس، کد هدیهٔ {toman(cs.review_reward_amount)} تومانی می‌گیرید."
+            if cs.review_reward_enabled and cs.review_reward_amount else "")
     now = now or timezone.now()
     qs = Order.objects.filter(status__in=["shipped", "completed"], review_invited_at__isnull=True, wp_id__isnull=True,
                               created_at__gte=now - td(days=90), created_at__lte=now - td(days=7))
     sent = 0
     for o in qs[:100]:
-        text = (f"{o.first_name} عزیز، امیدواریم از فرش‌تان راضی باشید. نظر و عکس فرش در خانه‌تان به خریداران دیگر کمک می‌کند: "
-                f"{review_url(o)}")
+        text = (f"{o.first_name} عزیز، امیدواریم از فرش‌تان راضی باشید. نظر و عکس فرش در خانه‌تان به خریداران دیگر کمک می‌کند.{gift}"
+                f" ثبت نظر: {shorten(review_url(o), 'r')}")
         if send(o.mobile, text):
             Order.objects.filter(pk=o.pk).update(review_invited_at=now)
             sent += 1

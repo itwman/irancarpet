@@ -9,8 +9,8 @@ from django.utils import timezone
 from accounts.models import Profile
 from shop.models import Coupon, Order, ShopSettings
 
-from . import campaigns, jobs, notify, segments, spam
-from .models import Campaign, CrmSettings, SmsLog
+from . import campaigns, jobs, links, notify, points, segments, spam
+from .models import CartSnapshot, Campaign, CrmSettings, ProductView, ShortLink, SmsLog
 
 User = get_user_model()
 td = timezone.timedelta
@@ -196,8 +196,14 @@ class CrmTests(TestCase):
                     "/panel/spam-users/", "/panel/spam-users/?level=high", "/panel/settings/?tab=crm"]:
             self.assertEqual(self.client.get(url).status_code, 200, url)
         self.assertEqual(self.client.get("/panel/crm/segments/nope/").status_code, 404)
-        r = self.client.post("/panel/settings/", {"tab": "crm", "do": "crm_test", "which": "remind_text_2", "test_mobile": "09121111111"})
-        self.assertEqual(r.status_code, 302)
+        for which in ["remind_text_1", "remind_text_2", "order_text", "birthday_text", "album_text"]:
+            with OK as sms:
+                r = self.client.post("/panel/settings/", {"tab": "crm", "do": "crm_test", "which": which, "test_mobile": "09121111111"},
+                                     follow=True)
+            self.assertContains(r, "پیامک نمونه به", msg_prefix=which)
+            self.assertNotIn("{", sms.call_args[0][1])
+        self.assertContains(self.client.get("/panel/settings/?tab=crm"), "crpt.ir/k/")
+        self.assertEqual(self.client.get("/panel/crm-points/").status_code, 200)
 
     def test_panel_status_change_sends_sms(self):
         admin = User.objects.create_superuser("admin", "a@a.com", "x")
@@ -209,3 +215,206 @@ class CrmTests(TestCase):
             self.client.post(f"/panel/orders/{o.pk}/view/", data)
         sc.assert_called_once()
         self.assertEqual(sc.call_args[0][1], "paid")
+
+
+@override_settings(SMSIR_API_KEY="", STAGING=True, PAYMENT_FAKE=True)
+class CrmMoreTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def customer(self, mobile="09121111111", name="مریم"):
+        u = User.objects.create(username=mobile, first_name=name)
+        Profile.objects.update_or_create(user=u, defaults={"mobile": mobile})
+        return u
+
+    # ---------------------------------------------------------- پیوند کوتاه
+    def test_short_links(self):
+        url = links.shorten("https://irancarpet.net/my-account/club/", "k")
+        self.assertRegex(url, r"^https://crpt\.ir/k/[a-z0-9]{7}$")
+        self.assertEqual(links.shorten("/my-account/club/", "k"), url)  # تکراری ساخته نمی‌شود
+        code = url.rsplit("/", 1)[1]
+        r = self.client.get(f"/k/{code}", HTTP_HOST="crpt.ir")
+        self.assertEqual(r["Location"], "https://irancarpet.net/my-account/club/")
+        s = CrmSettings.load()
+        s.short_links = False
+        s.save()
+        url2 = links.shorten("/my-account/club/", "k")
+        self.assertEqual(url2, f"https://irancarpet.net/s/{code}/")
+        self.assertRedirects(self.client.get(f"/s/{code}/"), "/my-account/club/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/s/nope123/").status_code, 404)
+        self.assertEqual(ShortLink.objects.get(code=code).hits, 2)
+
+    # ---------------------------------------------------------- بیعانه / پیش‌پرداخت
+    def test_pay_link_follows_chosen_mode_and_can_switch(self):
+        from growth.jobs import quickpay_url
+        from shop import paymode
+
+        sh = ShopSettings.load()
+        sh.allow_full, sh.allow_deposit, sh.deposit_percent = True, True, 10
+        sh.save()
+        o = mk(total=48_500_000, payment_mode="deposit")
+        Order.objects.filter(pk=o.pk).update(online_amount=4_850_000)
+        o.refresh_from_db()
+        ctx = notify.context(o)
+        self.assertEqual(ctx["due"], "بیعانه")
+        self.assertIn("بیعانه", ctx["due_line"])
+        self.assertTrue(ctx["pay_link"].startswith("https://crpt.ir/o/"))
+        url = quickpay_url(o).replace("https://irancarpet.net", "")
+        page = self.client.get(url)
+        self.assertContains(page, "چطور پرداخت می‌کنید")
+        self.assertEqual([m["mode"] for m in paymode.options(o)], ["full", "deposit"])
+        self.client.post(url, {"gateway": "fake", "mode": "deposit"})
+        self.assertEqual(o.payments.get().amount, 4_850_000)
+        self.client.post(url, {"gateway": "fake", "mode": "full"})
+        o.refresh_from_db()
+        self.assertEqual((o.payment_mode, o.online_amount, o.payments.order_by("-pk").first().amount), ("full", 48_500_000, 48_500_000))
+
+    def test_installment_prepayment_label(self):
+        o = mk(total=60_000_000, payment_mode="installment")
+        Order.objects.filter(pk=o.pk).update(online_amount=15_000_000)
+        o.refresh_from_db()
+        ctx = notify.context(o)
+        self.assertEqual(ctx["due"], "پیش‌پرداخت")
+        self.assertIn("پیش‌پرداخت", ctx["due_line"])
+        from shop import paymode
+
+        self.assertEqual(paymode.options(o), [])
+
+    # ---------------------------------------------------------- امتیاز و باشگاه
+    def test_points_redeem_and_refund_on_expiry(self):
+        mk(status="completed", total=25_500_000)
+        mk(status="completed", total=50_000_000)
+        mk(status="cancelled", total=90_000_000)
+        self.assertEqual(points.balance("09121111111"), 75)
+        self.assertIn("کمترین", points.redeem("09121111111", 75)[1])
+        mk(status="paid", total=30_000_000)
+        c, err = points.redeem("09121111111", 100)
+        self.assertEqual((err, c.value, c.for_mobile, c.code[:3]), ("", 1_000_000, "09121111111", "PT-"))
+        self.assertEqual(points.balance("09121111111"), 5)
+        Coupon.objects.filter(pk=c.pk).update(ends_at=timezone.now() - td(days=1))
+        self.assertEqual(points.balance("09121111111"), 105)
+
+    def test_club_page_redeem_and_birthday(self):
+        u = self.customer()
+        mk(status="completed", total=120_000_000)
+        self.client.force_login(u)
+        r = self.client.get("/my-account/club/")
+        self.assertContains(r, "۱۲۰")
+        self.assertContains(self.client.get("/my-account/"), "/my-account/club/")
+        r = self.client.post("/my-account/club/", {"do": "redeem", "points": "۱۰۰"}, follow=True)
+        self.assertContains(r, "PT-")
+        self.client.post("/my-account/club/", {"do": "birthday", "month": "7", "day": "15"})
+        self.client.post("/my-account/club/", {"do": "birthday", "month": "7", "day": "17"})
+        u.profile.refresh_from_db()
+        self.assertEqual((u.profile.birth_month, u.profile.birth_day), (7, 15))
+        self.assertContains(self.client.get("/my-account/club/"), "مهر")
+
+    def test_paid_sms_mentions_points(self):
+        o = mk(status="paid", total=48_000_000)
+        with OK as sms:
+            notify.order_paid_now(o, 48_000_000, admin=False)
+        self.assertIn("۴۸ امتیاز", sms.call_args[0][1])
+
+    def test_birthday_gift(self):
+        import jdatetime
+
+        j = jdatetime.date.fromgregorian(date=timezone.localtime().date())
+        u = self.customer()
+        Profile.objects.filter(user=u).update(birth_month=j.month, birth_day=j.day)
+        with OK as sms:
+            self.assertEqual(jobs.birthday(), 1)
+            cache.delete("crm:birthday:day")
+            self.assertEqual(jobs.birthday(), 0)
+        self.assertIn("BD-", sms.call_args[0][1])
+        self.assertTrue(Coupon.objects.filter(code__startswith="BD-", for_mobile="09121111111").exists())
+
+    # ---------------------------------------------------------- سبد رهاشده
+    def test_abandoned_cart_reminder_and_restore(self):
+        u = self.customer()
+        CartSnapshot.objects.create(user=u, data={"77": 2}, updated_at=timezone.now() - td(hours=4))
+        with OK as sms:
+            self.assertEqual(jobs.abandoned_carts(), 1)
+            self.assertEqual(jobs.abandoned_carts(), 0)
+        link = sms.call_args[0][1].split(": ")[-1]
+        path = links.resolve(link.rsplit("/", 1)[1])
+        self.assertTrue(path.startswith("/cart/restore/"))
+        self.assertRedirects(self.client.get(path), "/cart/", fetch_redirect_response=False)
+        self.assertEqual(self.client.session["cart"], {"77": 2})
+        # ورود در دستگاه دیگر: سبد ذخیره‌شده برمی‌گردد
+        from django.test import Client
+
+        c2 = Client()
+        c2.force_login(u)
+        self.assertEqual(c2.session["cart"], {"77": 2})
+
+    def test_cart_reminder_skipped_after_order(self):
+        u = self.customer()
+        CartSnapshot.objects.create(user=u, data={"77": 1}, updated_at=timezone.now() - td(hours=4))
+        mk(user=u)
+        with OK as sms:
+            self.assertEqual(jobs.abandoned_carts(), 0)
+        self.assertFalse(sms.called)
+
+    # ---------------------------------------------------------- نظر با عکس و آلبوم
+    def _catalog(self):
+        from decimal import Decimal
+
+        from catalog.models import Product
+        from pricing.models import Album, Size, seed_sizes
+
+        seed_sizes()
+        s12 = Size.objects.get(slug="12-meter")
+        album = Album.objects.create(name="آلبوم ۱۲۰۰ شانه طاها", code="T", base_size=s12, base_price=Decimal("40000000"),
+                                     shipping_fixed=0, waste_value=0, public_name="فرش ۱۲۰۰ شانه طاها")
+        p = Product.objects.create(title="فرش طاها", slug="taha", album=album, status="publish")
+        return album, p
+
+    def test_review_reward(self):
+        from catalog.models import Review, ReviewPhoto
+
+        _, p = self._catalog()
+        r = Review.objects.create(product=p, author_name="مریم ر.", mobile="09121111111", content="عالی", is_approved=True, verified=True)
+        Review.objects.create(product=p, author_name="بی‌عکس", mobile="09122222222", content="خوب", is_approved=True, verified=True)
+        ReviewPhoto.objects.create(review=r, image="reviews/x.jpg")
+        with OK as sms:
+            self.assertEqual(jobs.review_rewards(), 1)
+            self.assertEqual(jobs.review_rewards(), 0)
+        self.assertIn("RV-", sms.call_args[0][1])
+        self.assertEqual(sms.call_args[0][0], ["09121111111"])
+
+    def test_album_price_notice(self):
+        from django.test import RequestFactory
+
+        from shop.models import OrderItem
+
+        from .panel import _album_notice
+
+        album, p = self._catalog()
+        viewer = self.customer("09121111111", "سارا")
+        ProductView.objects.create(user=viewer, product=p)
+        o = mk("09122222222")
+        OrderItem.objects.create(order=o, product=p, title="فرش طاها", unit_price=1, quantity=1)
+        buyer = mk("09123333333", "completed")
+        OrderItem.objects.create(order=buyer, product=p, title="فرش طاها", unit_price=1, quantity=1)
+        self.customer("09124444444")  # ندیده
+        req = RequestFactory().post("/", {"action_value": "شنبه ۲۶ مهر"})
+        from pricing.models import Album
+
+        msg = _album_notice(req, Album.objects.filter(pk=album.pk))
+        self.assertIn("۲ نفر", msg)
+        camp = Campaign.objects.get(segment="album")
+        Campaign.objects.filter(pk=camp.pk).update(status="sending")
+        with OK as sms:
+            campaigns.run_sync(camp.pk)
+        self.assertEqual(sorted(c[0][0][0] for c in sms.call_args_list), ["09121111111", "09122222222"])
+        text = sms.call_args_list[0][0][1]
+        self.assertIn("فرش ۱۲۰۰ شانه طاها", text)
+        self.assertIn("شنبه ۲۶ مهر", text)
+        self.assertFalse(Coupon.objects.exists())
+
+    def test_product_view_tracked(self):
+        _, p = self._catalog()
+        u = self.customer()
+        self.client.force_login(u)
+        self.client.get(p.get_absolute_url())
+        self.assertTrue(ProductView.objects.filter(user=u, product=p).exists())

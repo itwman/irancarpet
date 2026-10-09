@@ -35,8 +35,40 @@ class CrmSettings(models.Model):
     winback_valid_days = models.PositiveIntegerField("مهلت استفاده (روز)", default=30)
     winback_text = models.TextField("متن پیامک بازگشت", default=texts.WINBACK)
 
+    points_enabled = models.BooleanField("امتیاز خرید", default=True, help_text="امتیاز از خریدهای پرداخت‌شده؛ مشتری در «حساب کاربری ← باشگاه» آن را به کد تخفیف تبدیل می‌کند")
+    points_per = models.PositiveBigIntegerField("هر چند تومان خرید = یک امتیاز", default=1_000_000)
+    point_value = models.PositiveIntegerField("ارزش هر امتیاز (تومان)", default=10_000, help_text="۱۰ هزار تومان برای هر میلیون یعنی ۱٪ برگشت")
+    points_min_redeem = models.PositiveIntegerField("کمترین امتیاز برای تبدیل", default=100)
+    points_min_order = models.PositiveBigIntegerField("حداقل خرید برای کد امتیاز (تومان)", default=0)
+    points_valid_days = models.PositiveIntegerField("مهلت کد امتیاز (روز)", default=60)
+    points_since = models.DateField("امتیاز خریدهای از این تاریخ به بعد", null=True, blank=True,
+                                    help_text="خالی یعنی خریدهای قبلی (دورهٔ وردپرس هم) امتیاز دارند")
+
+    birthday_enabled = models.BooleanField("هدیهٔ تولد", default=True, help_text="مشتری تاریخ تولدش را در صفحهٔ باشگاه ثبت می‌کند")
+    birthday_amount = models.PositiveBigIntegerField("مبلغ هدیهٔ تولد (تومان)", default=1_000_000)
+    birthday_min_order = models.PositiveBigIntegerField("حداقل خرید برای کد تولد (تومان)", default=20_000_000)
+    birthday_valid_days = models.PositiveIntegerField("مهلت کد تولد (روز)", default=14)
+    birthday_text = models.TextField("متن پیامک تولد", default=texts.BIRTHDAY)
+
+    cart_enabled = models.BooleanField("یادآوری سبد خرید رهاشده", default=True,
+                                       help_text="برای مشتری واردشده‌ای که فرش در سبد گذاشته و سفارش نداده؛ یک‌بار")
+    cart_hours = models.PositiveSmallIntegerField("چند ساعت بعد از آخرین تغییر سبد", default=3)
+    cart_text = models.TextField("متن یادآوری سبد", default=texts.CART)
+
+    review_reward_enabled = models.BooleanField("جایزهٔ نظر با عکس", default=True,
+                                                help_text="بعد از تأیید نظرِ خریدار که عکس دارد، کد هدیه پیامک می‌شود (هر شماره هر ۶۰ روز یک‌بار)")
+    review_reward_amount = models.PositiveBigIntegerField("مبلغ جایزهٔ نظر (تومان)", default=500_000)
+    review_reward_min_order = models.PositiveBigIntegerField("حداقل خرید برای کد نظر (تومان)", default=10_000_000)
+    review_reward_valid_days = models.PositiveIntegerField("مهلت کد نظر (روز)", default=60)
+    review_reward_text = models.TextField("متن پیامک جایزهٔ نظر", default=texts.REVIEW_REWARD)
+
+    album_text = models.TextField("متن پیش‌فرض اطلاع افزایش قیمت آلبوم", default=texts.ALBUM,
+                                  help_text="متغیرها: {album} نام آلبوم و {date} زمان افزایش. از «آلبوم‌های قیمت ← عملیات گروهی» ساخته می‌شود.")
+
     vip_total = models.PositiveBigIntegerField("مشتری وفادار از جمع خرید (تومان)", default=150_000_000)
     vip_orders = models.PositiveSmallIntegerField("یا از تعداد سفارش پرداخت‌شده", default=2)
+    short_links = models.BooleanField("پیوند کوتاه در پیامک‌ها (crpt.ir)", default=True,
+                                      help_text="دامنهٔ کوتاه همان «تنظیمات ← همکاری در فروش» است؛ اگر خالی باشد پیوند با دامنهٔ اصلی ساخته می‌شود")
     marketing_footer = models.CharField("پایان پیامک‌های تبلیغاتی", max_length=40, default="لغو۱۱", blank=True,
                                         help_text="برای پیامک‌های تبلیغاتی (کمپین و بازگشت)؛ پیامک‌های سفارش این را ندارند.")
 
@@ -66,6 +98,7 @@ class Campaign(models.Model):
         NEW = "new", "خریداران تازه (۶۰ روز اخیر)"
         AT_RISK = "at_risk", "در خطر ریزش (۶ تا ۱۲ ماه بی‌خرید)"
         LOST = "lost", "از دست رفته (بیش از یک سال)"
+        ALBUM = "album", "علاقه‌مندان یک آلبوم (دیده، در سبد یا سفارش ناتمام)"
         UNPAID = "unpaid", "سفارش داده ولی هرگز پرداخت نکرده"
         REGISTERED = "registered", "ثبت‌نام‌کرده بدون سفارش"
         CUSTOM = "custom", "شماره‌های دلخواه"
@@ -80,6 +113,9 @@ class Campaign(models.Model):
     title = models.CharField("عنوان", max_length=120)
     segment = models.CharField("گیرنده‌ها", max_length=12, choices=Segment.choices, default=Segment.BUYERS)
     inactive_days = models.PositiveIntegerField("بی‌خریدی دست‌کم (روز)", default=180, help_text="فقط برای «مدتی نخریده‌اند»")
+    album = models.ForeignKey("pricing.Album", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="آلبوم",
+                              help_text="فقط برای «علاقه‌مندان یک آلبوم»")
+    event_date = models.CharField("زمان افزایش قیمت", max_length=60, blank=True, help_text="برای متغیر {date}؛ مثل «شنبه ۲۶ مهر»")
     custom_numbers = models.TextField("شماره‌های دلخواه", blank=True, help_text="هر شماره در یک خط")
     discount = models.PositiveBigIntegerField("مبلغ تخفیف (تومان)", default=2_000_000, help_text="۰ یعنی پیامک بدون کد تخفیف")
     min_order = models.PositiveBigIntegerField("حداقل خرید (تومان)", default=40_000_000)
@@ -120,6 +156,9 @@ class SmsLog(models.Model):
         REMIND = "remind", "یادآوری پرداخت"
         CAMPAIGN = "campaign", "کمپین"
         WINBACK = "winback", "بازگشت مشتری"
+        BIRTHDAY = "birthday", "تولد"
+        CART = "cart", "سبد رهاشده"
+        REVIEW = "review", "جایزهٔ نظر"
 
     mobile = models.CharField("موبایل", max_length=11, db_index=True)
     kind = models.CharField("نوع", max_length=10, choices=Kind.choices, db_index=True)
@@ -133,4 +172,59 @@ class SmsLog(models.Model):
     class Meta:
         verbose_name = "پیامک فرستاده‌شده"
         verbose_name_plural = "پیامک‌های فرستاده‌شده"
+        ordering = ["-created_at"]
+
+
+class ShortLink(models.Model):
+    """پیوند کوتاه پیامک‌ها: crpt.ir/o/<کد> ← مسیری در سایت."""
+
+    code = models.CharField(max_length=12, unique=True)
+    target = models.CharField(max_length=500, db_index=True)
+    hits = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "پیوند کوتاه"
+        verbose_name_plural = "پیوندهای کوتاه"
+
+    def __str__(self):
+        return self.code
+
+
+class CartSnapshot(models.Model):
+    """آخرین سبد خرید مشتری واردشده (برای یادآوری و بازگرداندن سبد در دستگاه دیگر)."""
+
+    user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name="cart_snapshot")
+    data = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(default=timezone.now, db_index=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "سبد ذخیره‌شده"
+        verbose_name_plural = "سبدهای ذخیره‌شده"
+
+
+class ProductView(models.Model):
+    """فرشی که مشتری واردشده دیده (برای اطلاع افزایش قیمت آلبوم)."""
+
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="+")
+    product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE, related_name="+")
+    seen_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        unique_together = [("user", "product")]
+
+
+class PointRedeem(models.Model):
+    """تبدیل امتیاز به کد تخفیف. اگر کد بی‌استفاده منقضی شود، امتیازش برمی‌گردد."""
+
+    mobile = models.CharField("موبایل", max_length=11, db_index=True)
+    points = models.PositiveIntegerField("امتیاز")
+    coupon = models.ForeignKey("shop.Coupon", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="کد تخفیف")
+    created_at = models.DateTimeField("زمان", default=timezone.now)
+
+    class Meta:
+        verbose_name = "تبدیل امتیاز"
+        verbose_name_plural = "تبدیل‌های امتیاز"
         ordering = ["-created_at"]

@@ -6,7 +6,7 @@ from core.templatetags.fa import fa_num, jdate, toman
 from dashboard.registry import Col, Resource, register
 
 from . import spam
-from .models import Campaign, SmsLog
+from .models import Campaign, PointRedeem, SmsLog
 
 GROUP = "باشگاه مشتریان"
 
@@ -50,7 +50,9 @@ def _camp_test(request, qs):
         from django.utils import timezone as _tz
         ends_at = _tz.now() + _tz.timedelta(days=c.valid_days)
 
-    text = message(c.text, {"name": "مدیر"}, Fake() if c.discount else None, CrmSettings.load().marketing_footer)
+    from .campaigns import extra_vars
+
+    text = message(c.text, {"name": "مدیر"}, Fake() if c.discount else None, CrmSettings.load().marketing_footer, **extra_vars(c))
     ok = all(send(m, text, SmsLog.Kind.CAMPAIGN) for m in to)
     return f"پیامک نمونه به {fa_num(len(to))} مدیر فرستاده شد." if ok else "sms.ir نپذیرفت؛ «پیامک‌های فرستاده‌شده» را ببینید."
 
@@ -86,13 +88,14 @@ register(Resource(
              Col("result", "نتیجه", _camp_result),
              Col("created_at", "ساخته شده", lambda o: jdate(o.created_at, "%Y/%m/%d"), "created_at")],
     search=["title"], filters=["status", "segment"], ordering=("-created_at",),
-    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "custom_numbers", "text"], "main"),
+    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "custom_numbers", "text"], "main"),
                ("کد تخفیف شخصی", ["discount", "min_order", "valid_days"], "side")],
     readonly=[("گیرنده‌ها", _camp_people), ("نتیجه", _camp_result), ("آخرین خطا", lambda o: o.last_error or "—")],
     actions={"start": ("شروع یا ادامهٔ ارسال", _camp_start), "stop": ("توقف ارسال", _camp_stop),
              "test": ("پیامک نمونه به مدیران", _camp_test)},
     help="برای هر گیرنده یک کد تخفیف شخصی ساخته می‌شود که فقط با شمارهٔ موبایل خود او و یک‌بار کار می‌کند؛ پخش شدنش در کانال‌ها بی‌اثر است. "
-         "اول با «پیامک نمونه به مدیران» متن را ببینید، بعد «شروع ارسال». متغیرها: {name} {code} {discount} {min} {until} {site}.",
+         "اول با «پیامک نمونه به مدیران» متن را ببینید، بعد «شروع ارسال». متغیرها: {name} {code} {discount} {min} {until} {site} "
+         "و برای آلبوم: {album} {date}. برای اطلاع افزایش قیمت، «مبلغ تخفیف» را ۰ بگذارید.",
 ))
 
 register(Resource(
@@ -106,6 +109,16 @@ register(Resource(
     search=["mobile", "text", "=order__number"], filters=["kind", "ok"], date_filter="created_at", ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("order"), can_add=False, fieldsets=[("پیامک", ["mobile", "kind", "text"], "main")],
     help="همهٔ پیامک‌های سفارش، یادآوری و کمپین که از خط اختصاصی فرستاده شده، با نتیجهٔ sms.ir.",
+))
+
+register(Resource(
+    key="crm-points", model=PointRedeem, title="تبدیل امتیاز به کد", single="تبدیل امتیاز", group=GROUP, icon="tag",
+    columns=[Col("created_at", "زمان", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M"), "created_at"),
+             Col("mobile", "موبایل", lambda o: fa_num(o.mobile)), Col("points", "امتیاز", lambda o: fa_num(o.points), "points"),
+             Col("coupon", "کد", lambda o: format_html('<code dir="ltr">{}</code> · {} تومان', o.coupon.code, toman(o.coupon.value)) if o.coupon_id else "—")],
+    search=["mobile", "coupon__code"], date_filter="created_at", ordering=("-created_at",),
+    queryset=lambda qs: qs.select_related("coupon"), can_add=False, fieldsets=[("تبدیل", ["mobile", "points"], "main")],
+    help="مشتری‌ها در «حساب کاربری ← باشگاه مشتریان» امتیازشان را به کد تخفیف شخصی تبدیل می‌کنند. تنظیم امتیاز: «تنظیمات ← پیامک سفارش و باشگاه».",
 ))
 
 User = get_user_model()
@@ -155,3 +168,28 @@ from dashboard.registry import GROUPS  # noqa: E402
 if GROUP in GROUPS and "فروش" in GROUPS:
     GROUPS.remove(GROUP)
     GROUPS.insert(GROUPS.index("فروش") + 1, GROUP)
+
+
+# «آلبوم‌های قیمت ← عملیات گروهی»: پیش‌نویس کمپین «قیمت به‌زودی بالا می‌رود» برای علاقه‌مندان هر آلبوم
+def _album_notice(request, qs):
+    from .interest import album_audience
+    from .models import CrmSettings
+
+    when = (request.POST.get("action_value") or "").strip()[:60]
+    if not when:
+        return "زمان افزایش را بنویسید؛ مثل «شنبه ۲۶ مهر» یا «از هفتهٔ آینده»."
+    s, made = CrmSettings.load(), []
+    for album in qs:
+        n = len(album_audience(album.pk))
+        Campaign.objects.create(title=f"افزایش قیمت {album.title}"[:120], segment=Campaign.Segment.ALBUM, album=album,
+                                event_date=when, discount=0, text=s.album_text)
+        made.append(f"{album.title} ({fa_num(n)} نفر)")
+    return (f"{fa_num(len(made))} کمپین پیش‌نویس ساخته شد: {'، '.join(made[:6])}. در «باشگاه مشتریان ← کمپین‌ها» "
+            "متن را ببینید، «پیامک نمونه به مدیران» و بعد «شروع ارسال» را بزنید.")
+
+
+from dashboard.registry import REGISTRY  # noqa: E402
+
+if "albums" in REGISTRY:
+    REGISTRY["albums"].actions["notify_interest"] = (
+        "پیامک «قیمت به‌زودی بالا می‌رود» به علاقه‌مندان (پیش‌نویس کمپین)", _album_notice, "زمان افزایش؛ مثلاً «شنبه ۲۶ مهر»")

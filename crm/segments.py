@@ -19,6 +19,7 @@ SEGMENTS = OrderedDict([
     ("vip", "وفادار"), ("new", "تازه"), ("active", "فعال"), ("at_risk", "در خطر ریزش"), ("lost", "از دست رفته"),
     ("unpaid", "سفارش بی‌پرداخت"), ("registered", "ثبت‌نام بدون سفارش"),
 ])
+JMONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
 HINTS = {
     "vip": "جمع خرید یا تعداد سفارش بالا (حدش در تنظیمات)", "new": "اولین خرید در ۶۰ روز اخیر", "active": "آخرین خرید در ۶ ماه اخیر",
     "at_risk": "آخرین خرید ۶ تا ۱۲ ماه پیش؛ بهترین زمان کد تخفیف", "lost": "بیش از یک سال بی‌خرید",
@@ -99,7 +100,7 @@ def segments_of(c, now=None, settings_obj=None):
     return out
 
 
-def audience(segment, inactive_days=180, custom=""):
+def audience(segment, inactive_days=180, custom="", album=None):
     """[{mobile, name, ...}] گیرنده‌های یک کمپین."""
     import re
 
@@ -118,6 +119,10 @@ def audience(segment, inactive_days=180, custom=""):
         return out
     if segment == "registered":
         return registered_only()
+    if segment == "album":
+        from .interest import album_audience
+
+        return album_audience(album) if album else []
     s, now = CrmSettings.load(), timezone.now()
     out = []
     for c in customers().values():

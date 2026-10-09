@@ -193,8 +193,21 @@ def dashboard(request):
 
         referral = referral_code(user)
     gifts = Coupon.objects.filter(for_user=user, is_active=True).order_by("-created_at")[:5]
+    club = None
+    try:
+        from crm import points
+        from crm.club import mobile_of
+        from crm.models import CrmSettings
+
+        cs = CrmSettings.load()
+        if cs.points_enabled or cs.birthday_enabled:
+            m = mobile_of(user)
+            bal = points.balance(m, cs) if m and cs.points_enabled else 0
+            club = {"balance": bal, "value": bal * cs.point_value, "s": cs}
+    except Exception:  # noqa: BLE001
+        club = None
     return render(request, "accounts/dashboard.html", {
         "meta": {**META, "title": "حساب کاربری"}, "profile": profile, "orders": orders, "errors": errors,
-        "referral": referral, "shop": shop, "gifts": gifts,
+        "referral": referral, "shop": shop, "gifts": gifts, "club": club,
         "aff_enabled": __import__("affiliate.models", fromlist=["AffiliateSettings"]).AffiliateSettings.load().enabled,
     })

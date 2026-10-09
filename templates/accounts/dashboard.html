@@ -5,6 +5,7 @@
     <div><h1>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h1><p>سفارش‌ها و اطلاعات حسابتان اینجاست.</p></div>
     <form method="post" action="/my-account/logout/">{% csrf_token %}<button class="pill" type="submit">خروج</button></form>
   </div>
+  {% if club %}<a class="acc-club mb-4" href="/my-account/club/"><b>{{ club.balance|fa_num }}</b><span>امتیاز باشگاه مشتریان{% if club.value %} · معادل {{ club.value|toman }} تومان{% endif %}<br>تبدیل امتیاز به کد تخفیف، کدهای هدیه و هدیهٔ تولد</span><span class="pill">باشگاه</span></a>{% endif %}
   <div class="acc-grid">
     <section class="card-ic">
       <h2>سفارش‌های من</h2>

@@ -36,12 +36,19 @@ class Line:
 
 class Cart:
     def __init__(self, request):
+        self.request = request
         self.session = request.session
         self.data = {str(k): int(v) for k, v in (self.session.get(KEY) or {}).items()}
 
     def save(self):
         self.session[KEY] = self.data
         self.session.modified = True
+        try:  # سبد مشتری واردشده برای یادآوری و دستگاه‌های دیگر (باشگاه مشتریان)
+            from crm.carts import track
+
+            track(self.request, self.data)
+        except Exception:  # noqa: BLE001
+            pass
 
     @staticmethod
     def fix_qty(variation, qty):

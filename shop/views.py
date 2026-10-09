@@ -15,7 +15,7 @@ from catalog.models import Variation
 from installments.services import active_plans, describe
 from installments.views import plans_payload
 
-from . import gateways, notify
+from . import gateways, notify, paymode
 from .cart import Cart
 from .models import Order, OrderItem, Payment, ShopSettings
 
@@ -335,6 +335,7 @@ def order_pay(request, number):
     if not gw:
         messages.error(request, "درگاه پرداخت را انتخاب کنید.")
         return redirect(order.get_absolute_url())
+    paymode.switch(order, request.POST.get("mode"))
     return start_payment(request, order, gw)
 
 
@@ -404,6 +405,7 @@ def order_detail(request, number):
         "meta": {**META, "title": f"سفارش {order.number}"}, "order": order,
         "just_paid": bool(request.GET.get("paid") or request.GET.get("placed")),
         "gateways": gateways.enabled(ShopSettings.load()) if order.can_pay else [], "shop": ShopSettings.load(),
+        "modes": paymode.options(order),
         "seller_orders": order.seller_orders.select_related("seller").prefetch_related("items"),
     })
 

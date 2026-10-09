@@ -1,0 +1,75 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container club">
+  <div class="page-head">
+    <h1>باشگاه مشتریان</h1>
+    <p>با هر خرید امتیاز می‌گیرید و امتیاز را هر وقت خواستید به کد تخفیف تبدیل می‌کنید.</p>
+  </div>
+  {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}">{{ m|fa_num }}</div>{% endfor %}
+  <div class="acc-grid">
+    <div>
+      {% if s.points_enabled %}
+      <section class="club-rug" aria-label="امتیاز شما">
+        <div class="club-rug__body">
+          <span class="club-rug__label">امتیاز شما</span>
+          <strong class="club-rug__num">{{ balance|fa_num }}</strong>
+          <span class="club-rug__val">معادل {{ value|toman }} تومان تخفیف</span>
+          <p class="club-rug__hint">{% if can_redeem %}فرش امتیازتان کامل شده؛ می‌توانید همین حالا آن را به کد تخفیف تبدیل کنید.{% elif to_go %}{{ to_go|fa_num }} امتیاز دیگر تا کامل شدن فرش و اولین کد تخفیف.{% endif %}</p>
+        </div>
+        <div class="club-rug__mat" aria-hidden="true"><div class="club-rug__field">{% for k in knots %}<i{% if k %} class="on"{% endif %}></i>{% endfor %}</div></div>
+      </section>
+      {% if can_redeem %}
+      <form method="post" class="card-ic club-redeem">{% csrf_token %}<input type="hidden" name="do" value="redeem">
+        <h2>تبدیل امتیاز به کد تخفیف</h2>
+        <div class="club-redeem__row">
+          <div class="field mb-0"><label for="pts">چند امتیاز؟</label><input id="pts" name="points" type="number" inputmode="numeric" min="{{ s.points_min_redeem }}" max="{{ max_redeem }}" value="{{ max_redeem }}" class="ltr"></div>
+          <button class="btn-ic btn-ic--pink" type="submit">ساخت کد تخفیف</button>
+        </div>
+        <small class="muted">هر امتیاز {{ s.point_value|toman }} تومان؛ کد {{ s.points_valid_days|fa_num }} روز اعتبار دارد{% if s.points_min_order %} و برای خرید بالای {{ s.points_min_order|toman }} تومان است{% endif %}. اگر استفاده نکنید، امتیازش برمی‌گردد.</small>
+      </form>
+      {% endif %}
+      {% endif %}
+
+      <section class="card-ic">
+        <h2>کدهای تخفیف شما</h2>
+        {% if coupons %}<ul class="club-codes">{% for c in coupons %}
+          <li><code dir="ltr">{{ c.code }}</code><span><b>{{ c.value|toman }} تومان</b>{% if c.min_order %} برای خرید بالای {{ c.min_order|toman }}{% endif %}{% if c.ends_at %}<small class="d-block muted">تا {{ c.ends_at|jdate:"%d %B" }}</small>{% endif %}</span>
+            <button class="pill" type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ c.code }}');this.textContent='کپی شد'">کپی</button></li>
+        {% endfor %}</ul>
+        <a class="btn-ic btn-ic--teal btn-ic--sm" href="/cart/">رفتن به سبد خرید</a>
+        {% else %}<p class="muted mb-0">فعلاً کد فعالی ندارید. کدهایی که با پیامک یا از امتیاز می‌گیرید اینجا می‌آیند؛ هر کد فقط با همین شماره کار می‌کند.</p>{% endif %}
+      </section>
+    </div>
+
+    <div>
+      {% if s.birthday_enabled %}
+      <section class="card-ic">
+        <h2>هدیهٔ تولد</h2>
+        {% if birth_label %}
+          <p class="mb-0">تولد شما: <b>{{ birth_label|fa_num }}</b>. آن روز یک کد هدیهٔ {{ s.birthday_amount|toman }} تومانی برایتان پیامک می‌شود.</p>
+        {% else %}
+          <p>روز تولدتان را ثبت کنید تا آن روز یک کد هدیهٔ {{ s.birthday_amount|toman }} تومانی بگیرید.</p>
+          <form method="post">{% csrf_token %}<input type="hidden" name="do" value="birthday">
+            <div class="grid-2">
+              <div class="field"><label for="bd">روز</label><select id="bd" name="day">{% for d in days %}<option value="{{ d }}">{{ d|fa_num }}</option>{% endfor %}</select></div>
+              <div class="field"><label for="bm">ماه</label><select id="bm" name="month">{% for i, m in months %}<option value="{{ i }}">{{ m }}</option>{% endfor %}</select></div>
+            </div>
+            <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ثبت تاریخ تولد</button>
+            <small class="d-block muted mt-2">فقط یک‌بار ثبت می‌شود.</small>
+          </form>
+        {% endif %}
+      </section>
+      {% endif %}
+      <section class="card-ic">
+        <h2>راه‌های گرفتن امتیاز و هدیه</h2>
+        <ul class="club-ways">
+          {% if s.points_enabled %}<li><b>خرید:</b> هر {{ s.points_per|toman }} تومان خرید پرداخت‌شده، یک امتیاز.{% if earned %} تاکنون {{ earned|fa_num }} امتیاز گرفته‌اید.{% endif %}</li>{% endif %}
+          {% if s.review_reward_enabled %}<li><b>نظر با عکس:</b> بعد از تحویل، نظرتان را با عکس فرش در خانه بفرستید و کد هدیهٔ {{ s.review_reward_amount|toman }} تومانی بگیرید.</li>{% endif %}
+          {% if s.birthday_enabled %}<li><b>تولد:</b> کد هدیهٔ {{ s.birthday_amount|toman }} تومانی در روز تولدتان.</li>{% endif %}
+          {% if shop.referral_enabled %}<li><b>معرفی دوستان:</b> بعد از خرید دوستتان با کد معرفی شما، {{ shop.referral_reward|toman }} تومان هدیه. کد معرفی در <a href="/my-account/">حساب کاربری</a> است.</li>{% endif %}
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

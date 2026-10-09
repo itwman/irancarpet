@@ -13,6 +13,7 @@ from seo import views as seo_views
 from api import views as api_views
 from finder import api as finder_api
 from finder import views as finder_views
+from crm import links as crm_links
 from growth import views as growth_views
 from installments import views as installments_views
 from landing import views as landing_views
@@ -41,6 +42,7 @@ urlpatterns = [
     path("installments/quote/", installments_views.quote_api),
     path("robots.txt", core_views.robots_txt),
     path("o/<str:token>/", growth_views.quickpay),
+    path("s/<str:code>/", crm_links.view),
     path("review/<str:token>/", growth_views.review_invite),
     path("alerts/", growth_views.alert),
     path("farsh-yab/", finder_views.page),
@@ -53,6 +55,7 @@ urlpatterns = [
     # نشانی‌های قدیمی خبرخوان (وردپرس و افزونه‌ها) ← /feed/
     re_path(r"^(?:rss2?|atom|rdf|feed/(?:rss2?|atom|rdf))/?$", RedirectView.as_view(url="/feed/", permanent=True)),
     path("search/", catalog_views.search, name="search"),
+    path("", include("crm.urls")),
     path("", include("affiliate.urls")),
     path("", include("market.urls")),
     path("", include("shop.urls")),
