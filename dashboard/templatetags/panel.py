@@ -10,9 +10,12 @@ EXTRA_NAV = {
     "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
     "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
     "همکاری در فروش": [("تنظیمات همکاری در فروش", "/panel/settings/?tab=affiliate", "settings")],
+    "باشگاه مشتریان": [("تنظیمات پیامک سفارش و باشگاه", "/panel/settings/?tab=crm", "settings")],
     "مارکت‌پلیس": [("صف بررسی کالاها", "/panel/seller-products/?queue=1", "search"), ("تنظیمات مارکت‌پلیس", "/panel/settings/?tab=market", "settings")],
 }
-GROUP_ICONS = {"فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
+NAV_FIRST = {"باشگاه مشتریان": [("گزارش فروش و مشتریان", "/panel/crm/report/", "layers"),
+                                 ("گروه‌های مشتریان", "/panel/crm/segments/", "users")]}
+GROUP_ICONS = {"باشگاه مشتریان": "users", "فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
                "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users", "مارکت‌پلیس": "box"}
 
 
@@ -22,7 +25,7 @@ def panel_nav(context):
     full = context["request"].get_full_path()
     out = []
     for g in GROUPS:
-        items = []
+        items = [{"title": t, "url": u, "icon": i, "active": path.startswith(u)} for t, u, i in NAV_FIRST.get(g, [])]
         for r in REGISTRY.values():
             if r.group == g and r.nav:
                 items.append({"title": r.title, "url": r.url(), "icon": r.icon, "active": path.startswith(r.url())})

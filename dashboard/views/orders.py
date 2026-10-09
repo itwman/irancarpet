@@ -45,13 +45,21 @@ def order_view(request, pk):
                     if order.status in ("pending", "on_hold"):
                         order.status = "paid" if order.paid_amount >= order.grand_total else "deposit_paid"
                     order.save()
+                    from crm.notify import order_paid as crm_paid
+
+                    if request.POST.get("notify") != "0":
+                        crm_paid(order, d["amount"], customer=True, admin=False)
                 log(request, "action", "سفارش‌ها", order, f"ثبت دریافت {d['amount']:,} تومان")
                 messages.success(request, "دریافت وجه ثبت شد.")
                 return redirect(request.path)
         else:
+            old_status = order.status
             form = style_form(OrderForm(request.POST, instance=order))
             if form.is_valid():
                 form.save()
+                from crm.notify import status_changed
+
+                status_changed(order, old_status)
                 log(request, "update", "سفارش‌ها", order, "وضعیت: " + order.get_status_display())
                 messages.success(request, "سفارش ذخیره شد.")
                 return redirect(request.path)

@@ -1,0 +1,6 @@
+{% load fa %}<div class="segs">
+  {% for k, title, n, hint in cards %}<div class="seg{% if k == key %} on{% endif %}">
+    <b>{{ n|fa_num }}</b><span>{{ title }}</span><small>{{ hint }}</small>
+    <div class="seg__a"><a href="/panel/crm/segments/{{ k }}/">فهرست</a>{% if n %}<a href="/panel/crm-campaigns/add/?segment={{ k }}&title={{ title|urlencode }}">کمپین پیامکی</a>{% endif %}</div>
+  </div>{% endfor %}
+</div>

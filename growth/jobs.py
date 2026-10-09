@@ -40,30 +40,10 @@ def review_url(order):
 
 # ------------------------------------------------------------------ یادآوری پرداخت
 def remind_unpaid(now=None):
-    """سفارش ثبت‌شده‌ای که پرداخت نشده: یک ساعت بعد و یک روز بعد پیامک با پیوند پرداخت."""
-    from shop.coupons import PLACED
-    from shop.models import Order
+    """پیگیری سفارش‌های پرداخت‌نشده؛ زمان‌ها و متن‌ها در «باشگاه مشتریان» (crm.jobs) تنظیم می‌شوند."""
+    from crm.jobs import remind_unpaid as run
 
-    now = now or timezone.now()
-    qs = Order.objects.filter(status="pending", online_amount__gt=0, wp_id__isnull=True,
-                              created_at__gte=now - td(days=3), reminded_count__lt=2)
-    sent = 0
-    for o in qs:
-        due = o.created_at + (td(hours=1) if o.reminded_count == 0 else td(hours=24))
-        if now < due:
-            continue
-        # بعد از این سفارش، سفارش دیگری را پرداخت کرده؟ پس یادآوری لازم نیست
-        if o.user_id and Order.objects.filter(user_id=o.user_id, status__in=PLACED, created_at__gt=o.created_at).exists():
-            Order.objects.filter(pk=o.pk).update(reminded_count=2)
-            continue
-        first = o.reminded_count == 0
-        text = (f"{o.first_name} عزیز، سفارش {o.number} شما در ایران کارپت منتظر پرداخت است. "
-                + ("فرش‌های انتخابی‌تان را برایتان نگه داشته‌ایم. " if first else "تا فردا فرصت دارید. ")
-                + f"پرداخت: {quickpay_url(o)}")
-        if send(o.mobile, text):
-            Order.objects.filter(pk=o.pk).update(reminded_count=o.reminded_count + 1, reminded_at=now)
-            sent += 1
-    return sent
+    return run(now)
 
 
 # ------------------------------------------------------------------ «خبرم کن»
@@ -112,11 +92,17 @@ def invite_reviews(now=None):
 def run_all(out=print):
     done = {}
     if sms_ready():
-        for name, fn in (("یادآوری پرداخت", remind_unpaid), ("خبرم کن", run_alerts), ("دعوت به نظر", invite_reviews)):
+        for name, fn in (("خبرم کن", run_alerts), ("دعوت به نظر", invite_reviews)):
             try:
                 done[name] = fn()
             except Exception:  # noqa: BLE001
                 log.exception(name)
+        try:
+            from crm.jobs import run as crm_run
+
+            done.update(crm_run())
+        except Exception:  # noqa: BLE001
+            log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
     try:

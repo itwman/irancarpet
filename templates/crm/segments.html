@@ -1,0 +1,17 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}{% if key %}{{ title }} · {% endif %}گروه‌های مشتریان{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>{% if key %}{{ title }}{% else %}گروه‌های مشتریان{% endif %}</h1><p class="muted">هر شمارهٔ موبایل یک مشتری است؛ گروه‌ها خودکار از روی سفارش‌ها ساخته می‌شوند (هر ۱۰ دقیقه به‌روز).</p></div>
+  {% if key and total %}<div class="page-top__actions"><a class="btn btn-pink" href="/panel/crm-campaigns/add/?segment={{ key }}&title={{ title|urlencode }}"><svg class="ic"><use href="#i-send"/></svg> کمپین برای این {{ total|fa_num }} نفر</a></div>{% endif %}
+</div>
+<section class="card-p">{% include "crm/_segs.html" %}</section>
+{% if key %}
+<section class="card-p table-wrap">
+  {% if page.object_list %}<table class="tbl"><thead><tr><th>مشتری</th><th>موبایل</th><th>شهر</th><th>سفارش</th><th>پرداخت‌شده</th><th>جمع خرید</th><th>آخرین خرید</th></tr></thead><tbody>
+    {% for c in page.object_list %}<tr data-href="/panel/orders/?q={{ c.mobile }}"><td>{{ c.full_name|default:"—" }}</td><td class="ltr-num">{{ c.mobile|fa_num }}</td><td>{{ c.city|default:"—" }}</td><td>{{ c.orders|fa_num }}</td><td>{{ c.paid_orders|fa_num }}</td><td class="num">{% if c.total %}{{ c.total|toman }}{% else %}—{% endif %}</td><td class="muted">{% if c.last %}{{ c.last|jdate:"%Y/%m/%d" }}{% elif c.last_order %}سفارش: {{ c.last_order|jdate:"%Y/%m/%d" }}{% else %}—{% endif %}</td></tr>{% endfor %}
+  </tbody></table>{% else %}<p class="muted p-3 m-0">کسی در این گروه نیست.</p>{% endif %}
+</section>
+{% include "dashboard/_pager.html" %}
+{% endif %}
+{% endblock %}

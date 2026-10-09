@@ -19,6 +19,7 @@ from api.models import AppSettings
 from affiliate.models import AffiliateSettings
 from market.models import MarketSettings
 from content.models import ContentSettings
+from crm.models import CrmSettings
 from rajyar.models import RajyarSettings
 from seo import indexnow
 from seo.models import SeoSettings
@@ -44,6 +45,7 @@ TABS = [
     ("content", "متن محصولات"),
     ("affiliate", "همکاری در فروش"),
     ("market", "مارکت‌پلیس"),
+    ("crm", "پیامک سفارش و باشگاه"),
 ]
 
 FORMS = {
@@ -74,6 +76,11 @@ FORMS = {
                                       "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
     "market": (MarketSettings, ["enabled", "signup_open", "default_commission", "accept_hours", "auto_deliver_days", "hold_days",
                                 "min_payout", "terms"]),
+    "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "paid_text", "admin_paid_text",
+                          "status_sms", "shipped_text", "completed_text", "cancelled_text",
+                          "remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3",
+                          "winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text",
+                          "vip_total", "vip_orders", "marketing_footer"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
@@ -164,6 +171,24 @@ def rajyar_pricelist_png(request):
     return resp
 
 
+CRM_GROUPS = [
+    ("ثبت سفارش", "به مشتری و شماره‌های مدیر (زبانهٔ «فروش و ارسال» ← موبایل مدیران) از خط اختصاصی sms.ir.",
+     ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text"]),
+    ("پرداخت موفق", "اگر قالب پیامک سفارش در زبانهٔ «پیامک» خالی باشد، این متن‌ها فرستاده می‌شوند.", ["paid_text", "admin_paid_text"]),
+    ("تغییر وضعیت سفارش", "وقتی در پنل وضعیت را «ارسال شد»، «تکمیل شده» یا «لغو شده» می‌کنید.",
+     ["status_sms", "shipped_text", "completed_text", "cancelled_text"]),
+    ("پیگیری سفارش‌های پرداخت‌نشده", "سه پیامک در زمان‌های بالا؛ اگر مشتری پرداخت کند یا سفارش دیگری بدهد، ادامه پیدا نمی‌کند.",
+     ["remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3"]),
+    ("کد بازگشت خودکار", "روزی یک‌بار برای مشتریانی که مدتی نخریده‌اند یک کد تخفیف شخصی (فقط با شمارهٔ خودشان و یک‌بار) می‌فرستد.",
+     ["winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text"]),
+    ("باشگاه مشتریان", "", ["vip_total", "vip_orders", "marketing_footer"]),
+]
+
+
+def crm_groups(form):
+    return [(title, hint, [form[f] for f in fields]) for title, hint, fields in CRM_GROUPS]
+
+
 @staff_required
 def settings_view(request):
     tab = request.GET.get("tab") or request.POST.get("tab") or "site"
@@ -182,6 +207,22 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do") == "crm_test":
+            from crm import notify as crm_notify
+
+            mobile = normalize_mobile(request.POST.get("test_mobile"))
+            which = request.POST.get("which") or "order_text"
+            if not mobile:
+                messages.error(request, "شمارهٔ موبایل آزمایشی درست نیست.")
+            elif which not in FORMS["crm"][1] or not which.endswith("_text"):
+                messages.error(request, "متن نامعتبر.")
+            else:
+                text = crm_notify.render(getattr(CrmSettings.load(), which), **crm_notify.sample_context())
+                if crm_notify.send(mobile, text, "admin"):
+                    messages.success(request, f"پیامک نمونه به {mobile} فرستاده شد.")
+                else:
+                    messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR.get('msg') or 'شمارهٔ خط یا کلید API را بررسی کنید'}")
+            return redirect("/panel/settings/?tab=crm")
         if request.POST.get("do") == "rajyar_ping":
             from rajyar.client import ping
 
@@ -252,6 +293,8 @@ def settings_view(request):
         "fp": farshplus_info() if tab == "farshplus" else None,
         "seo": SeoSettings.load() if tab == "seo" else None,
         "rj": RajyarSettings.load() if tab == "rajyar" else None,
+        "crm_groups": crm_groups(form) if tab == "crm" else None,
+        "line": ShopSettings.load().smsir_line_number if tab == "crm" else "",
         "rj_next": __import__("rajyar.auto", fromlist=["next_runs"]).next_runs(RajyarSettings.load()) if tab == "rajyar" else [], "SITE_URL": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),

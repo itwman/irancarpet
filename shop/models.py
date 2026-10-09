@@ -280,6 +280,8 @@ class Coupon(models.Model):
                               verbose_name="صاحب کد معرفی", help_text="اگر پر باشد، کد معرفی همین مشتری است و بعد از خرید دوستش هدیه می‌گیرد")
     for_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="+",
                                  verbose_name="فقط برای این مشتری")
+    for_mobile = models.CharField("فقط برای این موبایل", max_length=11, blank=True, db_index=True,
+                                  help_text="کد شخصی کمپین‌ها؛ فقط مشتری با همین شماره می‌تواند استفاده کند")
     is_active = models.BooleanField("فعال", default=True)
     created_at = models.DateTimeField("ساخته شده", default=timezone.now)
 

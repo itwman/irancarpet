@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "content",
     "affiliate",
     "market",
+    "crm",
 ]
 
 MIDDLEWARE = [

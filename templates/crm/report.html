@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}گزارش فروش و مشتریان{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>گزارش فروش و مشتریان</h1><p class="muted">سفارش‌های ثبت‌شده در سایت تازه{% if days %} در {{ days|fa_num }} روز اخیر{% else %} از ابتدا{% endif %}؛ مشتریان شامل خریداران دورهٔ وردپرس هم هستند.</p></div>
+  <div class="page-top__actions"><a class="btn btn-pink" href="/panel/crm-campaigns/add/"><svg class="ic"><use href="#i-send"/></svg> کمپین تازه</a></div>
+</div>
+<nav class="tabs-p" aria-label="بازهٔ زمانی">{% for d, t in periods %}<a href="?days={{ d }}" class="{% if d == days %}on{% endif %}">{{ t }}</a>{% endfor %}</nav>
+
+<div class="tiles">
+  <a class="tile t-pink" href="/panel/orders/?status=paid"><span>فروش پرداخت‌شده</span><strong>{{ r.revenue|toman }}</strong><small>تومان · {{ r.paid|fa_num }} سفارش</small></a>
+  <a class="tile t-teal" href="/panel/orders/"><span>نرخ تبدیل سفارش به پرداخت</span><strong>{{ r.conv|fa_num }}٪</strong><small>از {{ r.created|fa_num }} سفارش ثبت‌شده</small></a>
+  <div class="tile t-saffron"><span>میانگین هر خرید</span><strong>{{ r.aov|toman }}</strong><small>تومان</small></div>
+  <a class="tile t-ink" href="/panel/crm-sms/?kind=remind"><span>برگشته با پیامک یادآوری</span><strong>{{ r.recovered|fa_num }}</strong><small>{{ r.recovered_sum|toman }} تومان · از {{ r.reminded|fa_num }} یادآوری</small></a>
+</div>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p"><h2>قیف سفارش</h2>
+      {% for label, n, pct in r.funnel %}<div class="hbar"><span>{{ label }}</span><div class="hbar__track"><i style="width:{{ pct }}%"></i></div><strong>{{ n|fa_num }} · {{ pct|fa_num }}٪</strong></div>{% endfor %}
+      <div class="stat-row mt-3">
+        <div><span>منتظر پرداخت</span><strong>{{ r.pending|fa_num }}</strong></div>
+        <div><span>در انتظار بررسی (اقساط/کارت)</span><strong>{{ r.on_hold|fa_num }}</strong></div>
+        <div><span>لغو یا مرجوع</span><strong>{{ r.cancelled|fa_num }}</strong></div>
+        <div><span>نرخ بازگشت با یادآوری</span><strong>{{ r.recover_rate|fa_num }}٪</strong></div>
+      </div>
+    </section>
+
+    <section class="card-p"><div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">فروش ۱۲ ماه اخیر</h2><span class="muted small">همهٔ سفارش‌های پرداخت‌شده</span></div>
+      <div class="bars bars--months" role="img" aria-label="نمودار فروش ماهانه">
+        {% for m in r.months %}<div class="bar" tabindex="0" data-tip="{{ m.label }}: {{ m.sum|toman }} تومان، {{ m.n|fa_num }} سفارش"><i style="height:{% if m.sum %}max(4px,{{ m.w }}%){% else %}0{% endif %}"></i></div>{% endfor %}
+      </div>
+      <div class="bars-labels">{% for m in r.months %}<span>{{ m.label }}</span>{% endfor %}</div>
+    </section>
+
+    <section class="card-p"><h2>گروه‌های مشتریان</h2>{% with cards=r.segments key="" %}{% include "crm/_segs.html" %}{% endwith %}</section>
+
+    <section class="card-p"><div class="d-flex justify-content-between align-items-center"><h2 class="m-0">بهترین مشتریان</h2><a href="/panel/crm/segments/vip/" class="small">وفاداران</a></div>
+      {% if r.top_customers %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>مشتری</th><th>موبایل</th><th>شهر</th><th>خرید</th><th>جمع</th><th>آخرین خرید</th></tr></thead><tbody>
+        {% for c in r.top_customers %}<tr data-href="/panel/orders/?q={{ c.mobile }}"><td>{{ c.full_name|default:"—" }}</td><td class="ltr-num">{{ c.mobile|fa_num }}</td><td>{{ c.city|default:"—" }}</td><td>{{ c.paid_orders|fa_num }}</td><td class="num">{{ c.total|toman }}</td><td class="muted">{{ c.last|jdate:"%Y/%m/%d" }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">هنوز خریداری نیست.</p>{% endif %}
+    </section>
+
+    <section class="card-p"><div class="d-flex justify-content-between align-items-center"><h2 class="m-0">کمپین‌ها</h2><a href="/panel/crm-campaigns/" class="small">همه</a></div>
+      {% if r.campaigns %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>کمپین</th><th>ارسال</th><th>خرید با کد</th><th>نرخ</th><th>فروش</th></tr></thead><tbody>
+        {% for x in r.campaigns %}<tr data-href="/panel/crm-campaigns/{{ x.c.pk }}/"><td>{{ x.c.title }}</td><td>{{ x.c.sent|fa_num }}</td><td>{{ x.orders|fa_num }}</td><td>{{ x.rate|fa_num }}٪</td><td class="num">{{ x.sum|toman }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted mt-2">هنوز کمپینی نساخته‌اید. از کارت هر گروه «کمپین پیامکی» را بزنید.</p>{% endif %}
+      {% if r.winback_orders %}<p class="hint mt-2">کد بازگشت خودکار: {{ r.winback_orders|fa_num }} خرید، {{ r.winback_sum|toman }} تومان.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="edit__side">
+    <section class="card-p"><h2>خریداران این بازه</h2>
+      <div class="kv"><span>خریدار</span><strong>{{ r.buyers|fa_num }}</strong></div>
+      <div class="kv"><span>خریدار تازه</span><strong>{{ r.new_buyers|fa_num }}</strong></div>
+      <div class="kv"><span>خریدار قدیمی که برگشته</span><strong>{{ r.returning|fa_num }}</strong></div>
+      <div class="kv"><span>همهٔ خریداران تاکنون</span><strong>{{ r.all_buyers|fa_num }}</strong></div>
+      <div class="kv"><span>بیش از یک‌بار خریده‌اند</span><strong>{{ r.repeat|fa_num }} ({{ r.repeat_rate|fa_num }}٪)</strong></div>
+    </section>
+    <section class="card-p"><h2>روش پرداخت</h2>
+      {% for m in r.by_mode %}<div class="kv"><span>{{ m.label }}</span><strong>{{ m.p|fa_num }} از {{ m.n|fa_num }} · {{ m.rate|fa_num }}٪</strong></div>
+      {% empty %}<p class="muted">سفارشی در این بازه نیست.</p>{% endfor %}
+    </section>
+    {% if r.cities %}<section class="card-p"><h2>شهرهای پرخرید</h2>
+      {% for city, n in r.cities %}<div class="kv"><span>{{ city }}</span><strong>{{ n|fa_num }}</strong></div>{% endfor %}
+    </section>{% endif %}
+    <section class="card-p"><h2>پیامک‌ها</h2>
+      {% for s in r.sms %}<div class="kv"><span>{{ s.label }}</span><strong>{{ s.n|fa_num }}{% if s.bad %} <small class="text-danger">({{ s.bad|fa_num }} ناموفق)</small>{% endif %}</strong></div>
+      {% empty %}<p class="muted">هنوز پیامکی فرستاده نشده.</p>{% endfor %}
+      <a class="btn btn-light btn-sm mt-2" href="/panel/settings/?tab=crm">متن پیامک‌ها</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

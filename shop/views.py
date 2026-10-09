@@ -278,6 +278,12 @@ def create_order(user, form, summary, shop, source="web", installment=None, ref=
         attach(order, ref)
     except Exception:  # noqa: BLE001
         log.exception("affiliate attach")
+    try:  # پیامک ثبت سفارش به مشتری و مدیران (باشگاه مشتریان)
+        from crm.notify import order_placed
+
+        order_placed(order)
+    except Exception:  # noqa: BLE001
+        log.exception("crm order sms")
     return order
 
 

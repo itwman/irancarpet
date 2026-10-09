@@ -295,3 +295,25 @@ textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-he
 .row-edit{display:inline-flex;align-items:center;gap:.3rem;border:1px solid var(--line,#ecedf6);border-radius:9px;padding:.25rem .6rem;font-size:.8rem;font-weight:700;color:var(--ink);background:#fff;margin-inline-end:.35rem;text-decoration:none}
 .row-edit:hover{border-color:var(--pink);color:var(--pink-d)}
 .row-edit .ic{width:15px;height:15px}
+/* باشگاه مشتریان */
+.hbar{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:.8rem;align-items:center;padding:.35rem 0;font-size:.9rem}
+.hbar__track{height:12px;background:var(--soft);border-radius:999px;overflow:hidden}
+.hbar__track i{display:block;height:100%;background:var(--teal);border-radius:999px}
+.hbar:first-of-type .hbar__track i{background:var(--ink)}
+.hbar strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bars--months{height:160px}
+.bars--months .bar i{background:var(--pink)}
+.bars-labels{display:flex;gap:2px;direction:ltr;margin-top:.35rem}
+.bars-labels span{flex:1;direction:rtl;text-align:center;font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden}
+.segs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.8rem}
+.seg{border:1px solid var(--line);border-radius:14px;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.15rem;background:#fff}
+.seg.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.seg b{font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.4}
+.seg span{font-weight:700;font-size:.88rem}
+.seg small{color:var(--muted);font-size:.74rem;min-height:2.2em}
+.seg__a{display:flex;gap:.8rem;margin-top:.4rem;font-size:.8rem;font-weight:700}
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem}
+.stat-row div{background:var(--soft);border-radius:12px;padding:.7rem .85rem}
+.stat-row span{display:block;font-size:.76rem;color:var(--muted);font-weight:600}
+.stat-row strong{font-size:1.15rem;font-weight:900;font-variant-numeric:tabular-nums}
+@media (max-width:760px){.stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}.hbar{grid-template-columns:110px 1fr auto;gap:.5rem}}

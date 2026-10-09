@@ -15,7 +15,8 @@ RICH_FIELDS = {"content", "description", "answer", "footer_html", "home_about", 
 # فیلدهای مبلغ (با جداکنندهٔ هزارگان)
 MONEY_FIELDS = {"base_price", "custom_base_price", "override_price", "manual_price", "sale_price", "shipping_fixed",
                 "free_shipping_min", "min_order_amount", "items_total", "online_amount", "paid_amount", "unit_price", "amount", "waste_value",
-                "max_discount", "min_order", "referral_max", "referral_min_order", "referral_reward", "discount"}
+                "max_discount", "min_order", "referral_max", "referral_min_order", "referral_reward", "discount",
+                "winback_amount", "winback_min_order", "vip_total"}
 
 
 def to_en(s):

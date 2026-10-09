@@ -1,0 +1,82 @@
+"""کارهای دوره‌ای باشگاه مشتریان (از growth.jobs.run_all هر ۱۰ دقیقه): پیگیری سفارش ناتمام و کد بازگشت خودکار."""
+import logging
+
+from django.core.cache import cache
+from django.utils import timezone
+
+from .notify import context, render, send
+
+log = logging.getLogger(__name__)
+td = timezone.timedelta
+
+
+def remind_unpaid(now=None):
+    """سفارش ثبت‌شده‌ای که پرداخت آنلاینش انجام نشده: پیامک در زمان‌های تنظیمات (پیش‌فرض ۱، ۲۴ و ۷۲ ساعت)."""
+    from shop.coupons import PLACED
+    from shop.models import Order
+
+    from .models import CrmSettings, SmsLog
+
+    s = CrmSettings.load()
+    steps = s.hours()
+    if not s.remind_enabled or not steps:
+        return 0
+    texts = [s.remind_text_1, s.remind_text_2, s.remind_text_3]
+    now = now or timezone.now()
+    window = td(hours=steps[-1]) + td(days=2)
+    qs = Order.objects.filter(status="pending", online_amount__gt=0, wp_id__isnull=True,
+                              created_at__gte=now - window, reminded_count__lt=len(steps))
+    sent = 0
+    for o in qs:
+        step = o.reminded_count
+        if now < o.created_at + td(hours=steps[step]):
+            continue
+        # بعد از این سفارش، سفارش دیگری را پرداخت کرده؟ پس یادآوری لازم نیست
+        if Order.objects.filter(mobile=o.mobile, status__in=PLACED, created_at__gt=o.created_at).exists() or (
+                o.user_id and Order.objects.filter(user_id=o.user_id, status__in=PLACED, created_at__gt=o.created_at).exists()):
+            Order.objects.filter(pk=o.pk).update(reminded_count=len(steps))
+            continue
+        tpl = texts[min(step, len(texts) - 1)] or texts[0]
+        if send(o.mobile, render(tpl, **context(o)), SmsLog.Kind.REMIND, o):
+            Order.objects.filter(pk=o.pk).update(reminded_count=step + 1, reminded_at=now)
+            sent += 1
+    return sent
+
+
+def winback(now=None, limit=40):
+    """مشتریانی که «winback_days» روز است نخریده‌اند (و در یک سال گذشته کد بازگشت نگرفته‌اند): کد شخصی + پیامک. روزی یک‌بار."""
+    from .campaigns import message, personal_coupon
+    from .models import CrmSettings, SmsLog
+    from .segments import customers
+
+    s = CrmSettings.load()
+    if not s.winback_auto or not cache.add("crm:winback:day", 1, 20 * 3600):
+        return 0
+    now = now or timezone.now()
+    got = set(SmsLog.objects.filter(kind=SmsLog.Kind.WINBACK, created_at__gte=now - td(days=365)).values_list("mobile", flat=True))
+    sent = 0
+    for c in customers().values():
+        if sent >= limit:
+            break
+        if not c["paid_orders"] or not c["last"] or c["mobile"] in got:
+            continue
+        days = (now - c["last"]).days
+        if not (s.winback_days <= days <= s.winback_days + 60):
+            continue
+        coupon = personal_coupon("WB", c["mobile"], "کد بازگشت مشتری", s.winback_amount, s.winback_min_order, s.winback_valid_days) \
+            if s.winback_amount else None
+        if send(c["mobile"], message(s.winback_text, c, coupon, s.marketing_footer), SmsLog.Kind.WINBACK):
+            sent += 1
+    return sent
+
+
+def run():
+    done = {}
+    for name, fn in (("یادآوری پرداخت", remind_unpaid), ("کد بازگشت مشتری", winback)):
+        try:
+            n = fn()
+            if n:
+                done[name] = n
+        except Exception:  # noqa: BLE001
+            log.exception(name)
+    return done

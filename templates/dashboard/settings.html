@@ -17,6 +17,12 @@
         {% with f=form.zarinpal_merchant_id %}{% include "dashboard/_field.html" %}{% endwith %}
         {% with f=form.zarinpal_sandbox %}{% include "dashboard/_field.html" %}{% endwith %}
         <p class="hint">آدرس بازگشت: <code class="ltr-num">{{ callback_zp }}</code></p>
+      {% elif tab == "crm" %}
+        {% if not line %}<div class="alert alert-warning">شمارهٔ خط اختصاصی sms.ir هنوز در زبانهٔ <a href="?tab=sms">پیامک</a> وارد نشده؛ تا آن را وارد نکنید هیچ‌کدام از این پیامک‌ها فرستاده نمی‌شود.</div>{% endif %}
+        {% for title, hint, fields in crm_groups %}
+          <h2{% if not forloop.first %} class="mt-4"{% endif %}>{{ title }}</h2>{% if hint %}<p class="hint">{{ hint }}</p>{% endif %}
+          {% for f in fields %}{% include "dashboard/_field.html" %}{% endfor %}
+        {% endfor %}
       {% else %}
         {% for f in form %}{% include "dashboard/_field.html" %}{% endfor %}
       {% endif %}
@@ -71,6 +77,21 @@
       <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="seo"><button class="btn btn-ink" name="do" value="indexnow_all">ارسال همهٔ نشانی‌ها</button></form>
     </section>
     {% endif %}
+    {% if tab == "crm" %}
+    <form method="post" class="card-p">{% csrf_token %}<input type="hidden" name="tab" value="crm"><input type="hidden" name="do" value="crm_test">
+      <h2>پیامک نمونه</h2>
+      <p class="hint">متن ذخیره‌شده با اطلاعات یک سفارش نمونه به این شماره فرستاده می‌شود تا ظاهرش را ببینید.</p>
+      <div class="d-flex gap-2 flex-wrap">
+        <select name="which" class="form-select" style="max-width:260px">
+          <option value="order_text">ثبت سفارش</option><option value="admin_text">سفارش تازه (مدیر)</option><option value="paid_text">پرداخت موفق</option>
+          <option value="remind_text_1">یادآوری اول</option><option value="remind_text_2">یادآوری دوم (نوسان قیمت)</option><option value="remind_text_3">یادآوری سوم</option>
+          <option value="shipped_text">ارسال شد</option><option value="winback_text">کد بازگشت</option>
+        </select>
+        <input name="test_mobile" class="form-control ltr-num" style="max-width:200px" placeholder="۰۹۱۲…" inputmode="tel">
+        <button class="btn btn-ink" type="submit">ارسال نمونه</button>
+      </div>
+    </form>
+    {% endif %}
     {% if tab == "sms" %}
     <form method="post" class="card-p">{% csrf_token %}<input type="hidden" name="tab" value="sms"><input type="hidden" name="do" value="sms_test">
       <h2>آزمایش پیامک</h2>
@@ -120,7 +141,22 @@
       <p class="hint"><a dir="ltr" href="/llms.txt" target="_blank" rel="noopener">{{ SITE_URL }}/llms.txt</a> — خلاصهٔ فروشگاه، قیمت‌های روز و روش‌های خرید برای ChatGPT، Claude، Gemini و Perplexity. خودکار با قیمت‌ها به‌روز می‌شود.</p>
     </section>{% endif %}
     {% if tab == "torob" %}<section class="card-p"><h2>آدرس فید برای پنل ترب</h2><p class="hint">همان آدرس قبلی است و نیازی به تغییر در پنل ترب نیست:</p><p dir="ltr"><code>https://irancarpet.net/wp-json/torob/products/?page=1</code></p><p class="hint">محصول آلبومی با قیمت سایز ۱۲ متری در ترب نمایش داده می‌شود، مثل سایت قبلی.</p></section>{% endif %}
-    {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند.</p></section>{% endif %}
+    {% if tab == "crm" %}<section class="card-p"><h2>متغیرهای متن</h2>
+      <div class="kv"><span>{name}</span><strong>نام مشتری</strong></div>
+      <div class="kv"><span>{number}</span><strong>شمارهٔ سفارش</strong></div>
+      <div class="kv"><span>{total}</span><strong>مبلغ کل</strong></div>
+      <div class="kv"><span>{amount}</span><strong>مبلغ قابل پرداخت آنلاین</strong></div>
+      <div class="kv"><span>{paid}</span><strong>مبلغ پرداخت‌شده</strong></div>
+      <div class="kv"><span>{pay_link}</span><strong>پیوند پرداخت بدون ورود</strong></div>
+      <div class="kv"><span>{link}</span><strong>پیگیری سفارش</strong></div>
+      <div class="kv"><span>{tracking}</span><strong>کد رهگیری پست (اگر باشد)</strong></div>
+      <div class="kv"><span>{mobile} {city} {mode}</span><strong>موبایل، شهر، روش پرداخت</strong></div>
+      <div class="kv"><span>{panel}</span><strong>پیوند سفارش در پنل (مدیر)</strong></div>
+      <div class="kv"><span>{phone}</span><strong>شمارهٔ تماس فروشگاه</strong></div>
+      <div class="kv"><span>{code} {discount} {min} {until}</span><strong>کد تخفیف، مبلغ، حداقل خرید، مهلت</strong></div>
+      <p class="hint mt-2">پیامک‌های تبلیغاتی (کمپین و کد بازگشت) با «{{ form.instance.marketing_footer|default:'لغو۱۱' }}» تمام می‌شوند. کمپین‌ها: <a href="/panel/crm-campaigns/">باشگاه مشتریان ← کمپین‌ها</a>.</p>
+    </section>{% endif %}
+    {% if tab == "sms" %}<section class="card-p"><h2>راهنما</h2><p class="hint">در پنل sms.ir بخش «ارسال سریع/قالب‌ها» یک قالب با متغیر <code>CODE</code> بسازید؛ مثل «کد ورود شما به ایران کارپت: #CODE#». شمارهٔ قالب را اینجا وارد کنید. قالب‌های پیامک سفارش اختیاری‌اند؛ اگر خالی باشند، پیامک سفارش از «شمارهٔ خط» با متن‌های زبانهٔ <a href="?tab=crm">پیامک سفارش و باشگاه</a> فرستاده می‌شود.</p></section>{% endif %}
   </div>
 </div>
 {% endblock %}

@@ -14,6 +14,14 @@ def find(code):
     return Coupon.objects.filter(code=code).first() if code else None
 
 
+def _mobile_of(user):
+    if not user or not getattr(user, "is_authenticated", False):
+        return ""
+    from accounts.utils import normalize_mobile
+
+    return normalize_mobile(getattr(getattr(user, "profile", None), "mobile", "") or "") or normalize_mobile(user.username or "") or ""
+
+
 def check(code, user, total, source="web"):
     """(coupon, تخفیف، پیام خطا) — تخفیف به تومان و هرگز بیشتر از جمع سبد نیست."""
     c = find(code)
@@ -26,6 +34,8 @@ def check(code, user, total, source="web"):
         return None, 0, "مهلت این کد تخفیف تمام شده است."
     if c.for_user_id and (not user or user.pk != c.for_user_id):
         return None, 0, "این کد مخصوص مشتری دیگری است."
+    if c.for_mobile and _mobile_of(user) != c.for_mobile:
+        return None, 0, "این کد مخصوص شمارهٔ موبایل دیگری است؛ با همان شماره‌ای که پیامک گرفته‌اید وارد شوید."
     if c.app_only and not source.startswith("app"):
         return None, 0, "این کد فقط برای خرید از اپ است."
     if c.min_order and total < c.min_order:
