@@ -19,8 +19,29 @@ def configured():
     return bool(_cfg("SMSIR_API_KEY") and _cfg("SMSIR_OTP_TEMPLATE_ID"))
 
 
-def send_template(mobile, template_id, params):
+def record(mobiles, text, ok, error="", kind="other", order=None):
+    """ثبت پیامک در «پیامک‌های فرستاده‌شده» تا در پروفایل مشتری و صفحهٔ سفارش دیده شود."""
+    try:
+        from accounts.utils import normalize_mobile
+        from crm.models import SmsLog
+
+        rows = [SmsLog(mobile=m, kind=kind, order=order, text=(text or "")[:2000], ok=bool(ok), error=(error or "")[:300])
+                for m in {normalize_mobile(x) for x in mobiles} if m]
+        SmsLog.objects.bulk_create(rows, batch_size=500)
+    except Exception:  # noqa: BLE001
+        log.exception("sms log")
+
+
+def send_template(mobile, template_id, params, kind="other", order=None, log_it=True):
     """params: dict نام متغیر ← مقدار. خروجی: True اگر sms.ir پذیرفت."""
+    ok = _send_template(mobile, template_id, params)
+    if log_it and template_id and _cfg("SMSIR_API_KEY"):
+        text = f"(قالب {template_id}) " + "، ".join(f"{k}: {v}" for k, v in params.items())
+        record([mobile], text, ok, "" if ok else LAST_ERROR["msg"], kind, order)
+    return ok
+
+
+def _send_template(mobile, template_id, params):
     key = _cfg("SMSIR_API_KEY")
     if not key or not template_id:
         return False
@@ -49,14 +70,22 @@ def send_template(mobile, template_id, params):
 
 
 def send_otp(mobile, code):
-    return send_template(mobile, _cfg("SMSIR_OTP_TEMPLATE_ID"), {"CODE": code})
+    return send_template(mobile, _cfg("SMSIR_OTP_TEMPLATE_ID"), {"CODE": code}, log_it=False)  # کد ورود ثبت نمی‌شود
 
 
 BULK_API = "https://api.sms.ir/v1/send/bulk"
 
 
-def send_bulk(mobiles, text):
-    """پیامک یکسان به چند شماره (حداکثر ۱۰۰ در هر درخواست). خروجی: (موفق؟, پیام)"""
+def send_bulk(mobiles, text, kind="other", order=None, log_it=True):
+    """پیامک یکسان به چند شماره (حداکثر ۱۰۰ در هر درخواست). خروجی: (موفق؟, پیام). هر پیامک در دفتر پیامک‌ها ثبت می‌شود."""
+    mobiles = list(mobiles)
+    ok, msg = _send_bulk(mobiles, text)
+    if log_it:
+        record(mobiles, text, ok, msg, kind, order)
+    return ok, msg
+
+
+def _send_bulk(mobiles, text):
     key, line = _cfg("SMSIR_API_KEY"), _cfg("SMSIR_LINE_NUMBER")
     if not key or not line:
         return False, "کلید API یا شمارهٔ خط پیامک تنظیم نشده است."

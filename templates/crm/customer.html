@@ -1,0 +1,90 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}{{ name }} · مشتری{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/crm/segments/" class="back">‹ مشتریان</a>
+    <h1>{{ name }}</h1>
+    <p class="muted cu-meta"><span class="ltr-num">{{ m|fa_num }}</span>
+      {% if cities %} · {{ cities|join:"، " }}{% endif %}
+      {% if c.first %} · مشتری از {{ c.first|jdate:"%B %Y" }}{% elif acct %} · عضو از {{ acct.date_joined|jdate:"%B %Y" }}{% endif %}
+      {% for k, t in segments %}<a class="cu-seg cu-seg--{{ k }}" href="/panel/crm/segments/{{ k }}/">{{ t }}</a>{% endfor %}</p></div>
+  <div class="page-top__actions">
+    <a class="btn btn-light btn-sm" href="tel:{{ m }}"><svg class="ic"><use href="#i-phone"/></svg> تماس</a>
+    <a class="btn btn-light btn-sm" href="https://wa.me/98{{ m|slice:'1:' }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-chat"/></svg> واتساپ</a>
+    <a class="btn btn-ink btn-sm" href="#sms"><svg class="ic"><use href="#i-send"/></svg> پیامک</a>
+  </div>
+</div>
+{% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %}">{{ msg }}</div>{% endfor %}
+
+<div class="tiles">
+  <div class="tile t-pink"><span>جمع خرید</span><strong>{{ c.total|toman }}</strong><small>تومان · میانگین {{ avg|toman }}</small></div>
+  <div class="tile t-teal"><span>سفارش پرداخت‌شده</span><strong>{{ c.paid_orders|fa_num }}</strong><small>از {{ c.orders|fa_num }} سفارش{% if unpaid %} · {{ unpaid|fa_num }} منتظر پرداخت{% endif %}</small></div>
+  <div class="tile t-saffron"><span>آخرین خرید</span><strong>{% if c.last %}{{ c.last|jdate:"%d %B" }}{% else %}—{% endif %}</strong><small>{% if c.last %}{{ c.last|timesince|fa_num }} پیش{% else %}هنوز خریدی نکرده{% endif %}</small></div>
+  <div class="tile t-ink"><span>امتیاز باشگاه</span><strong>{% if points is not None %}{{ points|fa_num }}{% else %}—{% endif %}</strong><small>{% if earned %}{{ earned|fa_num }} امتیاز تاکنون{% endif %}{% if birthday %} · تولد {{ birthday|fa_num }}{% endif %}</small></div>
+</div>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p table-wrap"><h2 class="px-2 pt-2">سفارش‌ها</h2>
+      {% if orders %}<table class="tbl"><thead><tr><th>شماره</th><th>تاریخ</th><th>اقلام</th><th>مبلغ</th><th>پرداخت‌شده</th><th>وضعیت</th></tr></thead><tbody>
+      {% for o in orders %}<tr data-href="/panel/orders/{{ o.pk }}/view/"><td><a href="/panel/orders/{{ o.pk }}/view/">{{ o.number|fa_num }}</a>{% if o.wp_id %} <small class="muted">وردپرس</small>{% endif %}</td>
+        <td class="muted">{{ o.created_at|jdate:"%Y/%m/%d" }}</td>
+        <td><small>{% for it in o.items.all|slice:":2" %}{{ it.title|truncatechars:34|fa_num }}{% if it.size_label %} ({{ it.size_label|fa_num }}){% endif %}{% if not forloop.last %}، {% endif %}{% endfor %}{% if o.items.all|length > 2 %} و {{ o.items.all|length|add:"-2"|fa_num }} قلم دیگر{% endif %}</small></td>
+        <td class="num">{{ o.items_total|toman }}</td><td class="num">{{ o.paid_amount|toman }}</td>
+        <td><span class="badge-ic b-{{ o.status }}">{{ o.status_label }}</span><small class="d-block muted">{{ o.get_payment_mode_display }}</small></td></tr>{% endfor %}
+      </tbody></table>{% else %}<p class="muted px-2">سفارشی ندارد.</p>{% endif %}
+    </section>
+
+    <section class="card-p" id="sms"><div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">پیامک‌ها</h2>
+      <span class="muted small">{{ sms_count|fa_num }} پیامک{% if sms_count > 200 %} · ۲۰۰ تای آخر{% endif %}</span></div>
+      <form method="post" class="cu-send">{% csrf_token %}<input type="hidden" name="do" value="sms">
+        <textarea name="text" rows="2" class="form-control" placeholder="متن پیامک به {{ name }}…" maxlength="600" required></textarea>
+        <button class="btn btn-ink btn-sm" type="submit">ارسال</button>
+      </form>
+      {% include "crm/_sms_list.html" with logs=sms show_order=True %}
+    </section>
+
+    {% if reviews %}<section class="card-p"><h2>نظرها</h2>
+      {% for r in reviews %}<div class="kv"><span>{{ r.product.title|truncatechars:40|fa_num }} · {{ r.created_at|jdate:"%Y/%m/%d" }}{% if not r.is_approved %} <small class="text-danger">(تأییدنشده)</small>{% endif %}</span><strong>{% if r.rating %}{{ r.rating|fa_num }} از ۵{% endif %}</strong></div>
+      <p class="small mb-2">{{ r.content|truncatechars:180 }}</p>{% endfor %}
+    </section>{% endif %}
+  </div>
+
+  <div class="edit__side">
+    <section class="card-p"><h2>مشخصات</h2>
+      <div class="kv"><span>موبایل</span><strong class="ltr-num">{{ m|fa_num }}</strong></div>
+      {% if latest.email or acct.email %}<div class="kv"><span>ایمیل</span><strong class="ltr-num small">{% if latest.email %}{{ latest.email }}{% else %}{{ acct.email }}{% endif %}</strong></div>{% endif %}
+      {% if latest %}<div class="kv"><span>آخرین نشانی</span><strong class="small">{{ latest.province }}، {{ latest.city }}</strong></div>
+      <p class="small mb-1">{{ latest.address }}{% if latest.postal_code %} · کد پستی <span class="ltr-num">{{ latest.postal_code|fa_num }}</span>{% endif %}</p>{% endif %}
+      {% if users %}{% for u in users %}<div class="kv"><span>حساب کاربری</span><strong><a href="/panel/customers/{{ u.pk }}/edit/">{{ u.username|truncatechars:22 }}</a></strong></div>
+        <div class="kv"><span>آخرین ورود</span><strong>{% if u.last_login %}{{ u.last_login|jdate:"%Y/%m/%d" }}{% else %}هرگز{% endif %}</strong></div>
+        {% if u.affiliate %}<div class="kv"><span>همکار فروش</span><strong><a href="/panel/affiliates/{{ u.affiliate.pk }}/">پرونده</a></strong></div>{% endif %}{% endfor %}
+      {% else %}<p class="hint mb-0">حساب کاربری ندارد (خرید مهمان یا دورهٔ وردپرس).</p>{% endif %}
+      {% if cancelled %}<div class="kv"><span>لغو یا مرجوع</span><strong>{{ cancelled|fa_num }}</strong></div>{% endif %}
+    </section>
+
+    <section class="card-p" id="notes"><h2>یادداشت داخلی</h2>
+      <form method="post">{% csrf_token %}<input type="hidden" name="do" value="note">
+        <textarea name="text" rows="2" class="form-control mb-2" placeholder="مثلاً: فرش ۹ متری کرم می‌خواهد، آخر ماه تماس بگیرید" required></textarea>
+        <button class="btn btn-light btn-sm" type="submit">ثبت یادداشت</button></form>
+      {% for n in notes %}<div class="cu-note"><p>{{ n.text|linebreaksbr }}</p><small class="muted">{% if n.author %}{{ n.author.get_full_name|default:n.author.username }}{% else %}—{% endif %} · {{ n.created_at|jdate:"%Y/%m/%d %H:%M" }}</small>
+        <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="do" value="del_note"><input type="hidden" name="note" value="{{ n.pk }}"><button class="cu-x" type="submit" aria-label="حذف یادداشت">×</button></form></div>{% endfor %}
+    </section>
+
+    <section class="card-p"><h2>کدهای تخفیف</h2>
+      {% for x in codes %}<div class="kv"><span><code dir="ltr">{{ x.code }}</code> <small>{{ x.title|default:"" }}</small></span>
+        <strong class="small">{{ x.label|default:"" }}{% if x.used %} <span class="badge-ic b-completed">استفاده شد</span>{% elif x.expired or not x.is_active %} <span class="badge-ic b-cancelled">منقضی</span>{% elif x.ends_at %} <small class="muted">تا {{ x.ends_at|jdate:"%d %B" }}</small>{% endif %}</strong></div>
+      {% empty %}<p class="hint mb-0">کد شخصی ندارد.</p>{% endfor %}
+    </section>
+
+    {% if cart %}<section class="card-p"><h2>سبد خرید باز</h2>
+      {% for v, q in cart %}<div class="kv"><span><a href="{{ v.product.get_absolute_url }}" target="_blank" rel="noopener">{{ v.product.title|truncatechars:30|fa_num }}</a> <small>{{ v.size.label|default:""|fa_num }}</small></span><strong>{{ q|fa_num }} عدد</strong></div>{% endfor %}
+      <p class="hint mt-1 mb-0">آخرین تغییر {{ cart_at|jdate:"%Y/%m/%d %H:%M" }}</p>
+    </section>{% endif %}
+
+    {% if views %}<section class="card-p"><h2>فرش‌هایی که اخیراً دیده</h2>
+      {% for v in views %}<div class="kv"><span><a href="{{ v.product.get_absolute_url }}" target="_blank" rel="noopener">{{ v.product.title|truncatechars:34|fa_num }}</a></span><strong class="small muted">{{ v.seen_at|jdate:"%d %B" }}</strong></div>{% endfor %}
+    </section>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -11,6 +11,10 @@ from .models import Campaign, PointRedeem, SmsLog
 GROUP = "باشگاه مشتریان"
 
 
+def _mob(o):
+    return format_html('<a href="/panel/crm/customer/{}/">{}</a>', o.mobile, fa_num(o.mobile)) if o.mobile else "—"
+
+
 def _ready():
     from accounts import sms
 
@@ -101,20 +105,21 @@ register(Resource(
 register(Resource(
     key="crm-sms", model=SmsLog, title="پیامک‌های فرستاده‌شده", single="پیامک", group=GROUP, icon="chat",
     columns=[Col("created_at", "زمان", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M"), "created_at"),
-             Col("kind", "نوع", lambda o: o.get_kind_display()), Col("mobile", "موبایل", lambda o: fa_num(o.mobile)),
+             Col("kind", "نوع", lambda o: o.get_kind_display()), Col("mobile", "موبایل", _mob),
              Col("order", "سفارش", lambda o: format_html('<a href="/panel/orders/{}/view/">{}</a>', o.order_id, fa_num(o.order.number)) if o.order_id else "—"),
              Col("ok", "نتیجه", lambda o: format_html('<span class="badge-ic b-{}">{}</span>', "ok" if o.ok else "failed",
                                                       "رسید" if o.ok else (o.error[:40] or "ناموفق"))),
              Col("text", "متن", lambda o: (o.text or "")[:70] + ("…" if len(o.text or "") > 70 else ""))],
     search=["mobile", "text", "=order__number"], filters=["kind", "ok"], date_filter="created_at", ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("order"), can_add=False, fieldsets=[("پیامک", ["mobile", "kind", "text"], "main")],
-    help="همهٔ پیامک‌های سفارش، یادآوری و کمپین که از خط اختصاصی فرستاده شده، با نتیجهٔ sms.ir.",
+    help="همهٔ پیامک‌های فرستاده‌شده (سفارش، یادآوری، کمپین، اقساط، پیامک گروهی و…) با متن و نتیجهٔ sms.ir. کد ورود ثبت نمی‌شود. "
+         "با کلیک روی موبایل، پروفایل مشتری باز می‌شود.",
 ))
 
 register(Resource(
     key="crm-points", model=PointRedeem, title="تبدیل امتیاز به کد", single="تبدیل امتیاز", group=GROUP, icon="tag",
     columns=[Col("created_at", "زمان", lambda o: jdate(o.created_at, "%Y/%m/%d %H:%M"), "created_at"),
-             Col("mobile", "موبایل", lambda o: fa_num(o.mobile)), Col("points", "امتیاز", lambda o: fa_num(o.points), "points"),
+             Col("mobile", "موبایل", _mob), Col("points", "امتیاز", lambda o: fa_num(o.points), "points"),
              Col("coupon", "کد", lambda o: format_html('<code dir="ltr">{}</code> · {} تومان', o.coupon.code, toman(o.coupon.value)) if o.coupon_id else "—")],
     search=["mobile", "coupon__code"], date_filter="created_at", ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("coupon"), can_add=False, fieldsets=[("تبدیل", ["mobile", "points"], "main")],

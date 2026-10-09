@@ -139,7 +139,7 @@ def _sms(order, template, link=""):
     from accounts.sms import send_bulk
 
     text = template.replace("{name}", order.first_name or order.full_name).replace("{order}", str(order.number)).replace("{link}", link)
-    return send_bulk([order.mobile], text)
+    return send_bulk([order.mobile], text, kind="inst", order=order)
 
 
 def set_state(order, state, site_url=""):

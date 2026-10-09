@@ -317,3 +317,21 @@ textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-he
 .stat-row span{display:block;font-size:.76rem;color:var(--muted);font-weight:600}
 .stat-row strong{font-size:1.15rem;font-weight:900;font-variant-numeric:tabular-nums}
 @media (max-width:760px){.stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}.hbar{grid-template-columns:110px 1fr auto;gap:.5rem}}
+/* پروفایل مشتری و فهرست پیامک‌ها */
+.cu-meta{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .5rem}
+.cu-seg{display:inline-block;font-size:.74rem;font-weight:800;border-radius:999px;padding:.05rem .6rem;background:var(--soft);color:var(--ink)}
+.cu-seg--vip{background:#FFF1D6;color:#8A5A00}.cu-seg--at_risk{background:#FFE7EC;color:#B3203E}.cu-seg--lost{background:#ECEDF3;color:#5B5F80}
+.cu-seg--new,.cu-seg--active{background:#E2F6F7;color:#0B7C88}
+.cu-send{display:flex;gap:.6rem;align-items:flex-end;margin:.8rem 0 1rem}
+.cu-send textarea{flex:1}
+.cu-note{position:relative;border-top:1px dashed var(--line);padding:.6rem 0 .4rem 1.6rem}
+.cu-note p{margin:0 0 .15rem;font-size:.88rem}
+.cu-x{position:absolute;left:0;top:.5rem;border:0;background:transparent;color:var(--muted);font-size:1.1rem;line-height:1;cursor:pointer}
+.cu-x:hover{color:#B3203E}
+.sms-log{list-style:none;margin:0;padding:0}
+.sms-log li{border-inline-start:3px solid var(--teal);background:var(--soft);border-radius:10px;padding:.6rem .85rem;margin-bottom:.6rem}
+.sms-log li.is-bad{border-inline-start-color:#E5395B;background:#FFF5F7}
+.sms-log__head{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .8rem;font-size:.78rem;color:var(--muted);margin-bottom:.25rem}
+.sms-log__kind{font-weight:800;color:var(--ink)}
+.sms-log__st{margin-inline-start:auto}
+.sms-log p{margin:0;font-size:.88rem;line-height:1.8;color:var(--ink);overflow-wrap:anywhere}

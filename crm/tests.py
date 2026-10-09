@@ -418,3 +418,70 @@ class CrmMoreTests(TestCase):
         self.client.force_login(u)
         self.client.get(p.get_absolute_url())
         self.assertTrue(ProductView.objects.filter(user=u, product=p).exists())
+
+
+@override_settings(SMSIR_API_KEY="", STAGING=True)
+class CustomerProfileTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.admin = User.objects.create_superuser("admin", "a@a.com", "x")
+
+    def test_all_sms_logged_once_and_otp_not_logged(self):
+        from accounts import sms
+
+        o = mk()
+        with mock.patch("accounts.sms._send_bulk", return_value=(True, "")):
+            sms.send_bulk(["9121111111"], "متن اقساط", kind="inst", order=o)
+            notify.send("09121111111", "متن سفارش", SmsLog.Kind.ORDER, o)
+        with mock.patch("accounts.sms._send_bulk", return_value=(False, "اعتبار کافی نیست")):
+            sms.send_bulk(["09121111111"], "بی‌اعتبار")
+        with mock.patch("accounts.sms._send_template", return_value=True), mock.patch("accounts.sms._cfg", return_value="1"):
+            sms.send_otp("09121111111", "12345")
+            sms.send_template("09121111111", "77", {"ORDER": o.number}, kind="paid", order=o)
+        logs = list(SmsLog.objects.order_by("pk").values_list("kind", "ok", "order_id"))
+        self.assertEqual(logs, [("inst", True, o.pk), ("order", True, o.pk), ("other", False, None), ("paid", True, o.pk)])
+        self.assertFalse(SmsLog.objects.filter(text__contains="12345").exists())
+        self.assertEqual(SmsLog.objects.get(ok=False).error, "اعتبار کافی نیست")
+
+    def test_customer_profile_page(self):
+        self.client.force_login(self.admin)
+        u = User.objects.create(username="09121111111", first_name="مریم")
+        Profile.objects.update_or_create(user=u, defaults={"mobile": "09121111111"})
+        o1 = mk(status="completed", total=60_000_000, days=40, first_name="مریم")
+        mk(status="pending", total=30_000_000, user=u, first_name="مریم")
+        mk("09129999999", status="completed")  # مشتری دیگر
+        SmsLog.objects.create(mobile="09121111111", kind="order", order=o1, text="سفارش ثبت شد آزمایشی", ok=True)
+        r = self.client.get("/panel/crm/customer/09121111111/")
+        self.assertContains(r, "مریم")
+        self.assertContains(r, "سفارش ثبت شد آزمایشی")
+        self.assertContains(r, f"/panel/orders/{o1.pk}/view/")
+        self.assertEqual(len(r.context["orders"]), 2)
+        self.assertRedirects(self.client.get("/panel/crm/customer/9121111111/"), "/panel/crm/customer/09121111111/",
+                             fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/panel/crm/customer/09129999999/").status_code, 200)  # مهمان، بدون حساب
+        self.assertEqual(self.client.get("/panel/crm/customer/123/").status_code, 404)
+        self.assertEqual(self.client.get("/panel/crm/customer/09127777777/").status_code, 404)
+        self.client.post("/panel/crm/customer/09121111111/", {"do": "note", "text": "آخر ماه تماس بگیرید"})
+        with OK:
+            self.client.post("/panel/crm/customer/09121111111/", {"do": "sms", "text": "سلام، فرش شما آماده است"})
+        r = self.client.get("/panel/crm/customer/09121111111/")
+        self.assertContains(r, "آخر ماه تماس بگیرید")
+        self.assertTrue(SmsLog.objects.filter(kind="manual", text__contains="آماده است").exists())
+
+    def test_links_from_orders_customers_and_search(self):
+        self.client.force_login(self.admin)
+        o = mk(status="paid", first_name="سوسن")
+        SmsLog.objects.create(mobile="09121111111", kind="paid", order=o, text="پرداخت انجام شد آزمایشی", ok=False, error="خط نامعتبر")
+        self.assertContains(self.client.get("/panel/orders/"), "/panel/crm/customer/09121111111/")
+        r = self.client.get(f"/panel/orders/{o.pk}/view/")
+        self.assertContains(r, "پیامک‌های این سفارش")
+        self.assertContains(r, "پرداخت انجام شد آزمایشی")
+        self.assertContains(r, "خط نامعتبر")
+        self.assertContains(r, "/panel/crm/customer/09121111111/")
+        u = User.objects.create(username="09121111111")
+        self.assertContains(self.client.get("/panel/customers/"), "/panel/crm/customer/09121111111/")
+        self.assertContains(self.client.get(f"/panel/customers/{u.pk}/edit/"), "/panel/crm/customer/09121111111/")
+        self.assertRedirects(self.client.get("/panel/crm/segments/?q=۰۹۱۲۱۱۱۱۱۱۱"), "/panel/crm/customer/09121111111/",
+                             fetch_redirect_response=False)
+        self.assertContains(self.client.get("/panel/crm/segments/?q=سوسن"), "/panel/crm/customer/09121111111/")
+        self.assertContains(self.client.get("/panel/crm-sms/"), "/panel/crm/customer/09121111111/")

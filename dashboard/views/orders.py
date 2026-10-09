@@ -63,12 +63,14 @@ def order_view(request, pk):
                 log(request, "update", "سفارش‌ها", order, "وضعیت: " + order.get_status_display())
                 messages.success(request, "سفارش ذخیره شد.")
                 return redirect(request.path)
+    from crm.customer import url as customer_url
     from installments.orders import info_rows
 
     return render(request, "dashboard/order_view.html", {
         "order": order, "form": form, "pay_form": pay_form, "items": order.items.select_related("product"),
         "payments": order.payments.all(), "provinces": PROVINCES,
         "inst_info": info_rows(order) if order.is_installment else [],
+        "sms_logs": order.sms_logs.order_by("created_at"), "customer_url": customer_url(order.mobile),
     })
 
 

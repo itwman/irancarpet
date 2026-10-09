@@ -21,10 +21,10 @@ def sms_ready():
     return bool(_cfg("SMSIR_API_KEY") and _cfg("SMSIR_LINE_NUMBER"))
 
 
-def send(mobile, text):
+def send(mobile, text, kind="other", order=None):
     from accounts.sms import send_bulk
 
-    ok, msg = send_bulk([mobile], text)
+    ok, msg = send_bulk([mobile], text, kind=kind, order=order)
     if not ok:
         log.warning("sms to %s failed: %s", mobile, msg)
     return ok
@@ -64,7 +64,7 @@ def run_alerts(now=None):
             text = f"قیمت «{p.title}» در ایران کارپت کم شد: از {p.min_price:,} تومان. {url}"
         else:
             continue
-        if send(a.mobile, text):
+        if send(a.mobile, text, "alert"):
             ProductAlert.objects.filter(pk=a.pk).update(sent_at=now)
             sent += 1
     return sent
@@ -89,7 +89,7 @@ def invite_reviews(now=None):
     for o in qs[:100]:
         text = (f"{o.first_name} عزیز، امیدواریم از فرش‌تان راضی باشید. نظر و عکس فرش در خانه‌تان به خریداران دیگر کمک می‌کند.{gift}"
                 f" ثبت نظر: {shorten(review_url(o), 'r')}")
-        if send(o.mobile, text):
+        if send(o.mobile, text, "invite", o):
             Order.objects.filter(pk=o.pk).update(review_invited_at=now)
             sent += 1
     return sent

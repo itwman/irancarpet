@@ -23,12 +23,14 @@ def order_paid(order, amount):
         except Exception:  # noqa: BLE001
             pass
     if config.get('SMSIR_ORDER_TEMPLATE_ID'):
-        send_template(order.mobile, config.get('SMSIR_ORDER_TEMPLATE_ID'), {"ORDER": order.number, "AMOUNT": f"{amount:,}"})
+        send_template(order.mobile, config.get('SMSIR_ORDER_TEMPLATE_ID'), {"ORDER": order.number, "AMOUNT": f"{amount:,}"},
+                      kind="paid", order=order)
     if config.get('SMSIR_ADMIN_TEMPLATE_ID'):
         for m in (ShopSettings.load().admin_mobiles or "").split(","):
             m = m.strip()
             if m:
-                send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'), {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{amount:,}"})
+                send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'), {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{amount:,}"},
+                              kind="admin", order=order)
 
 
 def installment_request(order):
@@ -42,7 +44,8 @@ def installment_request(order):
             m = m.strip()
             if m:
                 send_template(m, config.get('SMSIR_ADMIN_TEMPLATE_ID'),
-                              {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{order.items_total:,} (اقساطی)"})
+                              {"ORDER": order.number, "NAME": order.full_name[:25], "AMOUNT": f"{order.items_total:,} (اقساطی)"},
+                              kind="admin", order=order)
 
 
 def admin_text(text):
@@ -51,4 +54,4 @@ def admin_text(text):
 
     mobiles = [m.strip() for m in (ShopSettings.load().admin_mobiles or "").split(",") if m.strip()]
     if mobiles:
-        send_bulk(mobiles, text)
+        send_bulk(mobiles, text, kind="admin")

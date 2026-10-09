@@ -35,7 +35,7 @@ def send(mobile, text, kind, order=None, campaign=None):
     mobile = normalize_mobile(mobile)
     if not mobile or not text:
         return False
-    ok, msg = send_bulk([mobile], text)
+    ok, msg = send_bulk([mobile], text, log_it=False)
     SmsLog.objects.create(mobile=mobile, kind=kind, order=order, campaign=campaign, text=text[:2000], ok=ok, error=(msg or "")[:300])
     if not ok:
         log.warning("sms %s to %s failed: %s", kind, mobile, msg)

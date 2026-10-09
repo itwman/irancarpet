@@ -159,6 +159,13 @@ class SmsLog(models.Model):
         BIRTHDAY = "birthday", "تولد"
         CART = "cart", "سبد رهاشده"
         REVIEW = "review", "جایزهٔ نظر"
+        INVITE = "invite", "دعوت به نظر"
+        ALERT = "alert", "خبرم کن"
+        INST = "inst", "اقساط"
+        MARKET = "market", "مارکت‌پلیس"
+        BULK = "bulk", "پیامک گروهی"
+        MANUAL = "manual", "پیامک دستی"
+        OTHER = "other", "سایر"
 
     mobile = models.CharField("موبایل", max_length=11, db_index=True)
     kind = models.CharField("نوع", max_length=10, choices=Kind.choices, db_index=True)
@@ -227,4 +234,16 @@ class PointRedeem(models.Model):
     class Meta:
         verbose_name = "تبدیل امتیاز"
         verbose_name_plural = "تبدیل‌های امتیاز"
+        ordering = ["-created_at"]
+
+
+class CustomerNote(models.Model):
+    """یادداشت داخلی دربارهٔ مشتری (فقط در پنل؛ مشتری نمی‌بیند)."""
+
+    mobile = models.CharField("موبایل", max_length=11, db_index=True)
+    text = models.TextField("یادداشت")
+    author = models.ForeignKey("auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
         ordering = ["-created_at"]

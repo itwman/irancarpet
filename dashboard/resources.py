@@ -36,7 +36,9 @@ def link(url_fn, text_fn):
 register(Resource(
     key="orders", model=Order, title="سفارش‌ها", single="سفارش", group="فروش", icon="receipt",
     columns=[Col("number", "شماره", lambda o: fa_num(o.number), "number"),
-             Col("customer", "مشتری", lambda o: format_html("{}<br><small class='muted'>{}</small>", o.full_name, fa_num(o.mobile))),
+             Col("customer", "مشتری", lambda o: format_html(
+                 '<a href="/panel/crm/customer/{}/" title="پروفایل مشتری">{}</a><br><small class="muted">{}</small>',
+                 o.mobile, o.full_name, fa_num(o.mobile)) if o.mobile else o.full_name),
              Col("items_total", "مبلغ", money("items_total"), "items_total"),
              Col("paid_amount", "پرداخت‌شده", money("paid_amount"), "paid_amount"),
              Col("payment_mode", "پرداخت", lambda o: o.get_payment_mode_display() + (
@@ -64,10 +66,21 @@ register(Resource(
 ))
 
 User = get_user_model()
+
+
+def _cust_link(mobile):
+    from accounts.utils import normalize_mobile
+
+    m = normalize_mobile(mobile or "")
+    if not m:
+        return fa_num(mobile)
+    return format_html('<a href="/panel/crm/customer/{}/" title="پروفایل مشتری: سفارش‌ها و پیامک‌ها">{}</a>', m, fa_num(m))
+
+
 register(Resource(
     key="customers", model=User, title="مشتریان و کارمندان", single="کاربر", group="فروش", icon="users",
     columns=[Col("name", "نام", lambda o: o.get_full_name() or "—"),
-             Col("mobile", "موبایل", lambda o: fa_num(getattr(getattr(o, "profile", None), "mobile", "") or o.username)),
+             Col("mobile", "موبایل", lambda o: _cust_link(getattr(getattr(o, "profile", None), "mobile", "") or o.username)),
              Col("email", "ایمیل", lambda o: o.email),
              Col("orders", "سفارش", lambda o: fa_num(o._orders), "_orders"),
              Col("is_staff", "دسترسی پنل", yesno("is_staff"), "is_staff"),
@@ -721,7 +734,7 @@ def _sms_test(request, qs):
     if not admins:
         return "در «تنظیمات ← فروش» شمارهٔ موبایل مدیر را وارد کنید."
     c = qs.first()
-    ok, msg = sms.send_bulk(admins[:3], c.text)
+    ok, msg = sms.send_bulk(admins[:3], c.text, kind="bulk")
     return f"پیامک آزمایشی به {fa_num(len(admins[:3]))} شمارهٔ مدیر فرستاده شد." if ok else f"sms.ir نپذیرفت: {msg}"
 
 

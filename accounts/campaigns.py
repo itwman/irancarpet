@@ -56,7 +56,7 @@ def _run(pk):
             if SmsCampaign.objects.filter(pk=pk, status=SmsCampaign.Status.SENDING).count() == 0:
                 return   # متوقف شد
             batch = nums[pos:pos + BATCH]
-            ok, msg = sms.send_bulk(batch, c.text)
+            ok, msg = sms.send_bulk(batch, c.text, kind="bulk")
             if ok:
                 SmsCampaign.objects.filter(pk=pk).update(sent=c.sent + len(batch))
                 c.sent += len(batch)

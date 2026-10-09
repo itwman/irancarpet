@@ -25,7 +25,7 @@ def _sms(mobile, text):
     try:
         from accounts.sms import send_bulk
 
-        send_bulk([mobile], text)
+        send_bulk([mobile], text, kind="market")
     except Exception:  # noqa: BLE001
         pass
 

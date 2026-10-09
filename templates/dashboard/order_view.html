@@ -4,7 +4,7 @@
 <div class="page-top">
   <div><a href="/panel/orders/" class="back">‹ سفارش‌ها</a>
     <h1>سفارش {{ order.number|fa_num }} <span class="badge-ic b-{{ order.status }}">{{ order.status_label }}</span></h1>
-    <p class="muted">{{ order.created_at|jdate:"%d %B %Y، ساعت %H:%M" }}{% if order.user %} · <a href="/panel/customers/{{ order.user_id }}/edit/">پروفایل مشتری</a>{% endif %}</p></div>
+    <p class="muted">{{ order.created_at|jdate:"%d %B %Y، ساعت %H:%M" }}{% if customer_url %} · <a href="{{ customer_url }}">پروفایل مشتری و سفارش‌های قبلی</a>{% endif %}{% if order.user %} · <a href="/panel/customers/{{ order.user_id }}/edit/">حساب کاربری</a>{% endif %}</p></div>
   <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/orders/{{ order.pk }}/print/" target="_blank"><svg class="ic"><use href="#i-print"/></svg> چاپ فاکتور</a></div>
 </div>
 <div class="edit__grid">
@@ -66,6 +66,10 @@
         <div class="grid-3">{% for f in pay_form %}{% include "dashboard/_field.html" %}{% endfor %}</div>
         <button class="btn btn-ink btn-sm" type="submit">ثبت دریافت</button>
       </form>
+    </section>
+    <section class="card-p" id="sms"><div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">پیامک‌های این سفارش</h2>
+      {% if customer_url %}<a class="small" href="{{ customer_url }}#sms">همهٔ پیامک‌های این مشتری</a>{% endif %}</div>
+      <div class="mt-3">{% include "crm/_sms_list.html" with logs=sms_logs empty="برای این سفارش هنوز پیامکی ثبت نشده است. (پیامک‌های پیش از راه‌اندازی دفتر پیامک‌ها ثبت نشده‌اند.)" %}</div>
     </section>
   </div>
   <div class="edit__side">

@@ -103,4 +103,7 @@ def customer_edit(request, pk=None):
         messages.success(request, "اطلاعات کاربر ذخیره شد.")
         return redirect(f"/panel/customers/{u.pk}/edit/")
     orders = Order.objects.filter(user=user).order_by("-created_at") if user else []
-    return render(request, "dashboard/customer_form.html", {"obj": user, "form": form, "orders": orders})
+    from crm.customer import url as customer_url
+
+    cu = customer_url((getattr(profile, "mobile", "") or "") or (user.username if user else "")) if user else ""
+    return render(request, "dashboard/customer_form.html", {"obj": user, "form": form, "orders": orders, "customer_url": cu})

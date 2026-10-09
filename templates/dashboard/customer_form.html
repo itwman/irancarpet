@@ -4,7 +4,7 @@
 <form method="post" novalidate>{% csrf_token %}
 <div class="page-top">
   <div><a href="/panel/customers/" class="back">‹ مشتریان</a><h1>{% if obj %}{{ obj.get_full_name|default:obj.username }}{% else %}کاربر تازه{% endif %}</h1>
-    {% if obj %}<p class="muted">عضو از {{ obj.date_joined|jdate }}{% if obj.last_login %} · آخرین ورود {{ obj.last_login|jdate:"%Y/%m/%d %H:%M" }}{% endif %}</p>{% endif %}</div>
+    {% if obj %}<p class="muted">{% if customer_url %}<a href="{{ customer_url }}">پروفایل مشتری (سفارش‌ها و پیامک‌ها)</a> · {% endif %}عضو از {{ obj.date_joined|jdate }}{% if obj.last_login %} · آخرین ورود {{ obj.last_login|jdate:"%Y/%m/%d %H:%M" }}{% endif %}</p>{% endif %}</div>
   <div class="page-top__actions"><button class="btn btn-pink" type="submit">ذخیره</button></div>
 </div>
 {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}

@@ -14,7 +14,7 @@ EXTRA_NAV = {
     "مارکت‌پلیس": [("صف بررسی کالاها", "/panel/seller-products/?queue=1", "search"), ("تنظیمات مارکت‌پلیس", "/panel/settings/?tab=market", "settings")],
 }
 NAV_FIRST = {"باشگاه مشتریان": [("گزارش فروش و مشتریان", "/panel/crm/report/", "layers"),
-                                 ("گروه‌های مشتریان", "/panel/crm/segments/", "users")]}
+                                 ("پروفایل و گروه‌های مشتریان", "/panel/crm/segments/", "users")]}
 GROUP_ICONS = {"باشگاه مشتریان": "users", "فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
                "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users", "مارکت‌پلیس": "box"}
 
@@ -25,7 +25,8 @@ def panel_nav(context):
     full = context["request"].get_full_path()
     out = []
     for g in GROUPS:
-        items = [{"title": t, "url": u, "icon": i, "active": path.startswith(u)} for t, u, i in NAV_FIRST.get(g, [])]
+        items = [{"title": t, "url": u, "icon": i, "active": path.startswith(u) or (u.endswith("/segments/") and path.startswith("/panel/crm/customer/"))}
+                 for t, u, i in NAV_FIRST.get(g, [])]
         for r in REGISTRY.values():
             if r.group == g and r.nav:
                 items.append({"title": r.title, "url": r.url(), "icon": r.icon, "active": path.startswith(r.url())})

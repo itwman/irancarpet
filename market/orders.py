@@ -186,7 +186,7 @@ def ship(so, tracking_code, carrier=""):
         from accounts.sms import send_bulk
 
         send_bulk([so.order.mobile], f"ایران کارپت: بخشی از سفارش {so.order.number} توسط «{so.seller.name}» ارسال شد."
-                                     + (f" {carrier}" if carrier else "") + f" کد رهگیری: {so.tracking_code}")
+                                     + (f" {carrier}" if carrier else "") + f" کد رهگیری: {so.tracking_code}", kind="market", order=so.order)
     except Exception:  # noqa: BLE001
         pass
     return True

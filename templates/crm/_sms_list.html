@@ -1,0 +1,11 @@
+{% load fa %}{% if logs %}<ol class="sms-log">
+  {% for s in logs %}<li class="{% if not s.ok %}is-bad{% endif %}">
+    <div class="sms-log__head"><span class="sms-log__kind">{{ s.get_kind_display }}</span>
+      <time>{{ s.created_at|jdate:"%Y/%m/%d ساعت %H:%M" }}</time>
+      {% if show_order and s.order_id %}<a href="/panel/orders/{{ s.order_id }}/view/">سفارش {{ s.order.number|fa_num }}</a>{% endif %}
+      {% if show_mobile %}<a class="ltr-num" href="/panel/crm/customer/{{ s.mobile }}/">{{ s.mobile|fa_num }}</a>{% endif %}
+      <span class="sms-log__st">{% if s.ok %}<span class="badge-ic b-ok">رسید به sms.ir</span>{% else %}<span class="badge-ic b-failed">نرفت</span>{% endif %}</span></div>
+    <p>{{ s.text|linebreaksbr }}</p>
+    {% if not s.ok and s.error %}<small class="text-danger">علت: {{ s.error }}</small>{% endif %}
+  </li>{% endfor %}
+</ol>{% else %}<p class="muted mb-0">{{ empty|default:"هنوز پیامکی برای این مشتری ثبت نشده است." }}</p>{% endif %}
