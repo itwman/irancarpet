@@ -39,6 +39,17 @@ class ShopSettings(models.Model):
     referral_min_order = models.PositiveBigIntegerField("حداقل خرید برای کد معرفی (تومان)", default=10_000_000)
     referral_reward = models.PositiveBigIntegerField("هدیهٔ معرف (تومان)", default=1_000_000,
                                                      help_text="بعد از خرید دوست، یک کد تخفیف با این مبلغ برای معرف ساخته و پیامک می‌شود")
+    busy_enabled = models.BooleanField("اطلاعیهٔ فصل شلوغ", default=True)
+    busy_from = models.CharField("شروع فصل شلوغ (ماه-روز شمسی)", max_length=5, default="10-01", help_text="مثل 10-01 یعنی اول دی")
+    busy_to = models.CharField("پایان فصل شلوغ", max_length=5, default="11-30")
+    busy_message = models.CharField("پیام فصل شلوغ", max_length=300, default=(
+        "در دی و بهمن به‌خاطر حجم بالای سفارش‌های عید، بافت و ارسال فرش ممکن است چند روز بیشتر از معمول طول بکشد."))
+    pause_enabled = models.BooleanField("توقف سفارش بافت در پایان سال", default=True,
+                                        help_text="در این بازه فرش‌هایی که باید بافته شوند سفارش گرفته نمی‌شوند؛ فرصت‌های ویژه (آماده در انبار) فروخته می‌شوند.")
+    pause_from = models.CharField("شروع توقف (ماه-روز شمسی)", max_length=5, default="12-01", help_text="مثل 12-01 یعنی اول اسفند")
+    pause_to = models.CharField("پایان توقف", max_length=5, default="01-15", help_text="مثل 01-15 یعنی ۱۵ فروردین")
+    pause_message = models.CharField("پیام توقف سفارش", max_length=300, default=(
+        "سفارش فرش‌هایی که باید بافته شوند تا ۱۵ فروردین پذیرفته نمی‌شود؛ فرش‌های «فرصت ویژه» آماده‌اند و فوری ارسال می‌شوند."))
     smsir_api_key = models.CharField("کلید API پنل sms.ir", max_length=200, blank=True)
     smsir_otp_template_id = models.CharField("شمارهٔ قالب کد ورود", max_length=20, blank=True, help_text="قالب با متغیر CODE")
     smsir_order_template_id = models.CharField(

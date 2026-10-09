@@ -11,7 +11,7 @@ from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
 
-from core.templatetags.fa import jdate, toman
+from core.templatetags.fa import fa_num, jdate, toman
 
 from .notify import render, send
 from .segments import audience
@@ -57,8 +57,25 @@ def recipients(campaign):
     return audience(campaign.segment, campaign.inactive_days, campaign.custom_numbers, album=campaign.album_id)
 
 
+def offer_vars(o):
+    """متغیرهای پیامک یک فرصت ویژه."""
+    from .links import shorten
+
+    if o.ends_at:
+        left = f"فقط تا {jdate(o.ends_at, '%A %d %B')}."
+    elif o.remaining == 1:
+        left = "فقط یک تخته باقی مانده."
+    else:
+        left = f"فقط {fa_num(o.remaining)} تخته باقی مانده."
+    return {"product": o.product.title, "size": o.size.label, "percent": fa_num(o.off_percent), "left": left,
+            "link": shorten(o.product.get_absolute_url(), "l", days=30)}
+
+
 def extra_vars(campaign):
-    return {"album": campaign.album.title if campaign.album_id else "", "date": campaign.event_date}
+    out = {"album": campaign.album.title if campaign.album_id else "", "date": campaign.event_date}
+    if campaign.offer_id:
+        out.update(offer_vars(campaign.offer))
+    return out
 
 
 def start(campaign):
@@ -71,28 +88,46 @@ def run_sync(pk):
     _run(pk, pause=0)
 
 
-def _run(pk, pause=0.4):
+LOCK = "crm:camp:lock:{}"
+
+
+def _run(pk, pause=0.4, limit=None):
+    """ارسال (یا ادامهٔ ارسال) یک کمپین. limit: حداکثر پیامک در همین اجرا (کارهای دوره‌ای)؛ کمپین «در حال ارسال» می‌ماند."""
+    from django.core.cache import cache
+
     from .models import Campaign, CrmSettings, SmsLog
 
+    lock = LOCK.format(pk)
+    if not cache.add(lock, 1, 900):
+        return  # یک اجرای دیگر همین کمپین را می‌فرستد
     close_old_connections()
     try:
-        camp = Campaign.objects.get(pk=pk)
+        camp = Campaign.objects.select_related("offer__product", "offer__size").get(pk=pk)
         footer = CrmSettings.load().marketing_footer
         extras = extra_vars(camp)
         people = recipients(camp)
         Campaign.objects.filter(pk=pk).update(total=len(people), status=Campaign.Status.SENDING,
                                               started_at=camp.started_at or timezone.now())
         done = set(SmsLog.objects.filter(campaign=camp, ok=True).values_list("mobile", flat=True))
-        sent, failed, fails_in_row = len(done), camp.failed, 0
+        sent, failed, fails_in_row, this_run = len(done), camp.failed, 0, 0
         for c in people:
             if c["mobile"] in done:
                 continue
+            if limit is not None and this_run >= limit:
+                return  # بقیه در اجرای بعدی
             if not Campaign.objects.filter(pk=pk, status=Campaign.Status.SENDING).exists():
                 return  # متوقف شد
+            if camp.offer_id and this_run % 25 == 0 and not _offer_live(camp.offer_id):
+                Campaign.objects.filter(pk=pk).update(status=Campaign.Status.DONE, sent=sent, failed=failed, finished_at=timezone.now(),
+                                                      last_error="فرصت ویژه تمام شد؛ ارسال متوقف شد")
+                return
             coupon = None
             if camp.discount:
                 coupon = personal_coupon(camp.code_prefix, c["mobile"], camp.title, camp.discount, camp.min_order, camp.valid_days)
             ok = send(c["mobile"], message(camp.text, c, coupon, footer, **extras), SmsLog.Kind.CAMPAIGN, campaign=camp)
+            this_run += 1
+            if this_run % 50 == 0:
+                cache.set(lock, 1, 900)
             if ok:
                 sent += 1
                 fails_in_row = 0
@@ -112,7 +147,26 @@ def _run(pk, pause=0.4):
         log.exception("crm campaign %s", pk)
         Campaign.objects.filter(pk=pk).update(status=Campaign.Status.FAILED, last_error="خطای داخلی")
     finally:
+        cache.delete(lock)
         close_old_connections()
+
+
+def _offer_live(pk):
+    from shop.models import SpecialOffer
+
+    o = SpecialOffer.objects.filter(pk=pk).first()
+    return bool(o and o.is_live)
+
+
+def resume_sending(limit=300):
+    """کمپین‌های «در حال ارسال» که اجرایشان قطع شده (یا کمپین‌های خودکار): هر بار تا limit پیامک."""
+    from .models import Campaign
+
+    n = 0
+    for pk in Campaign.objects.filter(status=Campaign.Status.SENDING).values_list("pk", flat=True):
+        _run(pk, pause=0.15, limit=limit)
+        n += 1
+    return n
 
 
 def results(campaign):

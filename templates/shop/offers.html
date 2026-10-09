@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load static fa %}
+{% block content %}
+<div class="container offers-page">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="offers-hero">
+    <div>
+      <h1>فرش جشنواره‌ای و زیر قیمت</h1>
+      <p class="offers-hero__lead">فرصت‌های ویژهٔ خرید ایران کارپت: فرش ماشینی نو و آمادهٔ ارسال از انبار کاشان، با قیمتی کمتر از قیمت روز. از هر نقشه فقط یک یا چند تخته هست و با فروش آخرین تخته، فرصت تمام می‌شود.</p>
+    </div>
+    {% if total %}<dl class="offers-hero__stats">
+      <div><dt>فرصت فعال</dt><dd>{{ total|fa_num }}</dd></div>
+      <div><dt>بیشترین تخفیف</dt><dd>٪{{ best|fa_num }}</dd></div>
+      <div><dt>ارسال</dt><dd>فوری</dd></div>
+    </dl>{% endif %}
+  </header>
+
+  {% if total %}
+  <div class="offers-tools">
+    {% if sizes|length > 1 %}<div class="offers-tools__row"><span class="offers-tools__label">سایز</span><div class="chips">{% for s, label, u in sizes %}<a class="chip{% if s == size %} on{% endif %}" href="{{ u }}" rel="nofollow">{{ label|fa_num }}</a>{% endfor %}</div></div>{% endif %}
+    {% if reeds_opts|length > 1 %}<div class="offers-tools__row"><span class="offers-tools__label">شانه</span><div class="chips">{% for r, u in reeds_opts %}<a class="chip{% if r == reed %} on{% endif %}" href="{{ u }}" rel="nofollow">{{ r|fa_num }} شانه</a>{% endfor %}</div></div>{% endif %}
+    <div class="sortbar"><span>مرتب‌سازی:</span>{% for k, label, u in sorts %}<a href="{{ u }}" class="{% if k == sort %}on{% endif %}" rel="nofollow">{{ label }}</a>{% endfor %}
+      <span class="offers-tools__count">{{ count|fa_num }} فرش{% if clear_url %} · <a class="chip clear" href="{{ clear_url }}">حذف فیلترها</a>{% endif %}</span></div>
+  </div>
+  {% if offers %}
+  <div class="offer-grid">{% for o in offers %}{% include "shop/_offer_card.html" %}{% endfor %}</div>
+  {% include "partials/pagination.html" %}
+  {% else %}<div class="empty"><p>با این فیلتر فرصتی نیست.</p><a class="btn-ic btn-ic--ink btn-ic--sm" href="{{ clear_url|default:'/فرش-جشنواره-ای/' }}">همهٔ فرصت‌ها</a></div>{% endif %}
+  {% else %}
+  <div class="empty"><p>همین الان فرصت ویژه‌ای در انبار نیست. فرصت‌های تازه معمولاً هر هفته اضافه می‌شوند؛ برای باخبر شدن کانال ایران کارپت را دنبال کنید یا از <a href="/carpets-price-list/">لیست قیمت فرش ماشینی</a> سفارش دهید.</p></div>
+  {% endif %}
+
+  {% if first_page %}
+  <section class="offers-about prose">
+    <h2>فرش استوک و زیر قیمت در ایران کارپت یعنی چه؟</h2>
+    <p>فرش‌های لیست قیمت ایران کارپت پس از سفارش بافته می‌شوند. گاهی چند تخته از یک نقشه آماده در انبار می‌ماند؛ مثلاً تختهٔ باقی‌ماندهٔ یک جفت، سفارشی که لغو شده یا رنگی که دیگر بافته نمی‌شود. این فرش‌ها نو و بی‌استفاده‌اند و با تخفیف، به‌عنوان «فرصت ویژه» عرضه می‌شوند. در بازار به آن‌ها فرش جشنواره‌ای، فرش زیر قیمت یا فرش استوک هم می‌گویند.</p>
+    <h2>چرا فرصت‌های ویژه زود تمام می‌شوند؟</h2>
+    <p>از هر نقشه و سایز فقط همان تعداد تخته‌ای که روی کارت نوشته شده موجود است. قیمت ویژه فقط برای همین تخته‌هاست. با فروش آخرین تخته، کارت از این صفحه برداشته می‌شود. فرصت‌هایی که شمارندهٔ معکوس دارند، با تمام شدن زمان به قیمت روز برمی‌گردند.</p>
+    <h2>مزیت خرید از فرصت‌های ویژه</h2>
+    <ul>
+      <li><strong>ارسال فوری:</strong> فرش آماده است و منتظر بافت نمی‌ماند. در شلوغی دی و بهمن، و حتی وقتی سفارش بافت پذیرفته نمی‌شود، بهترین راه خرید است.</li>
+      <li><strong>کیفیت یکسان:</strong> همان فرش‌های ۷۰۰ تا ۱۵۰۰ شانهٔ لیست قیمت‌اند، با همان مشخصات.</li>
+      <li><strong>قیمت شفاف:</strong> قیمت روز و قیمت ویژه کنار هم نوشته شده است.</li>
+    </ul>
+    <p>اگر نقشه یا سایز دلخواهتان در فرصت‌ها نیست، از <a href="/carpets-price-list/">لیست قیمت فرش ماشینی</a> سفارش دهید یا با <a href="/farsh-yab/">فرش‌یاب</a> فرش مناسب خانه‌تان را پیدا کنید.</p>
+    <h2>پرسش‌های رایج</h2>
+    <div class="faq">{% for q, a in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}

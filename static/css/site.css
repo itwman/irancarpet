@@ -1359,3 +1359,21 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .acc-club a{flex:none}
 @media(prefers-reduced-motion:reduce){.club-rug__field i.on{animation:none}}
 .acc-club .pill{border-color:#fff;color:#fff}.acc-club:hover{color:#fff}.acc-club:hover .pill{background:#fff;color:var(--ink)}
+/* فرصت‌های ویژه: صفحهٔ اول یک ردیف کشویی، صفحهٔ «فرش جشنواره‌ای» شبکهٔ کامل */
+.offers-lead{margin:-.75rem 0 1rem}
+.offer-grid--row{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(230px,260px);overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px 12px;scrollbar-width:thin}
+.offer-grid--row .offer-card{scroll-snap-align:start}
+.offers-page{padding-bottom:3rem}
+.offers-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem;align-items:end;margin:1rem 0 1.5rem}
+.offers-hero h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:0 0 .5rem}
+.offers-hero__lead{color:var(--ink-2);max-width:680px;margin:0}
+.offers-hero__stats{display:flex;gap:.6rem;margin:0}
+.offers-hero__stats div{background:var(--pink-t);border-radius:var(--r-md);padding:.6rem 1rem;text-align:center;min-width:92px}
+.offers-hero__stats dt{font-size:.75rem;color:var(--pink-d);font-weight:700}
+.offers-hero__stats dd{margin:0;font-size:1.35rem;font-weight:900;color:var(--ink)}
+.offers-tools{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.25rem}
+.offers-tools__row{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
+.offers-tools__label{font-weight:800;font-size:.88rem;min-width:3rem}
+.offers-tools__count{margin-inline-start:auto;font-weight:700;color:var(--ink-2)}
+.offers-about{max-width:900px;margin-top:3rem}
+@media(max-width:767.98px){.offers-hero{grid-template-columns:1fr}.offers-hero__stats div{flex:1;min-width:0}.offers-tools__count{margin-inline-start:0;width:100%}}

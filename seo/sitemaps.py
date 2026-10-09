@@ -76,6 +76,7 @@ def section(request, name, num=""):
     rows = []
     if name == "page":
         rows.append(f"<url><loc>{site}/</loc></url>")
+        rows.append(f"<url><loc>{escape(site + '/فرش-جشنواره-ای/')}</loc></url>")
     for o in objs:
         url = o.get_absolute_url()
         if url == "/":

@@ -62,6 +62,20 @@ class CrmSettings(models.Model):
     review_reward_valid_days = models.PositiveIntegerField("مهلت کد نظر (روز)", default=60)
     review_reward_text = models.TextField("متن پیامک جایزهٔ نظر", default=texts.REVIEW_REWARD)
 
+    offer_sms_enabled = models.BooleanField("پیامک هفتگی فرصت ویژه", default=True,
+                                            help_text="هر هفته یکی از فرصت‌های ویژه (بیشترین تخفیف، تکراری نه) برای مشتریان پیامک می‌شود")
+    offer_sms_weekday = models.PositiveSmallIntegerField("روز ارسال", default=5, choices=[
+        (5, "شنبه"), (6, "یکشنبه"), (0, "دوشنبه"), (1, "سه‌شنبه"), (2, "چهارشنبه"), (3, "پنجشنبه"), (4, "جمعه")])
+    offer_sms_hour = models.PositiveSmallIntegerField("ساعت ارسال", default=11)
+    offer_sms_segment = models.CharField("گیرنده‌ها", max_length=12, default="all", choices=[
+        ("all", "همه (خریداران، سفارش ناتمام و ثبت‌نامی‌ها)"), ("buyers", "همهٔ خریداران"), ("active", "خریداران فعال"),
+        ("at_risk", "در خطر ریزش"), ("registered", "ثبت‌نام‌کرده بدون سفارش")])
+    offer_sms_min_percent = models.PositiveSmallIntegerField("کمترین تخفیف برای ارسال (٪)", default=5)
+    offer_sms_text = models.TextField("متن پیامک فرصت ویژه", default=texts.OFFER)
+
+    calendar_preview = models.BooleanField("پیش‌نمایش کمپین‌های تقویم برای مدیران", default=True,
+                                           help_text="یک روز پیش از هر کمپین خودکار، متن و تعداد گیرنده‌ها برای مدیران پیامک می‌شود تا اگر خواستند خاموشش کنند")
+
     album_text = models.TextField("متن پیش‌فرض اطلاع افزایش قیمت آلبوم", default=texts.ALBUM,
                                   help_text="متغیرها: {album} نام آلبوم و {date} زمان افزایش. از «آلبوم‌های قیمت ← عملیات گروهی» ساخته می‌شود.")
 
@@ -91,6 +105,7 @@ class CrmSettings(models.Model):
 
 class Campaign(models.Model):
     class Segment(models.TextChoices):
+        ALL = "all", "همه (خریداران، سفارش ناتمام و ثبت‌نامی‌ها)"
         BUYERS = "buyers", "همهٔ خریداران"
         INACTIVE = "inactive", "خریدارانی که مدتی نخریده‌اند"
         VIP = "vip", "مشتریان وفادار"
@@ -113,6 +128,8 @@ class Campaign(models.Model):
     title = models.CharField("عنوان", max_length=120)
     segment = models.CharField("گیرنده‌ها", max_length=12, choices=Segment.choices, default=Segment.BUYERS)
     inactive_days = models.PositiveIntegerField("بی‌خریدی دست‌کم (روز)", default=180, help_text="فقط برای «مدتی نخریده‌اند»")
+    offer = models.ForeignKey("shop.SpecialOffer", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                              verbose_name="فرصت ویژه", help_text="برای متغیرهای {product} {size} {percent} {left} {link}")
     album = models.ForeignKey("pricing.Album", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="آلبوم",
                               help_text="فقط برای «علاقه‌مندان یک آلبوم»")
     event_date = models.CharField("زمان افزایش قیمت", max_length=60, blank=True, help_text="برای متغیر {date}؛ مثل «شنبه ۲۶ مهر»")
@@ -247,3 +264,31 @@ class CustomerNote(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class AutoCampaign(models.Model):
+    """تقویم کمپین‌های خودکار: هر سال در روز شمسی تعیین‌شده، یک کمپین (با کد تخفیف شخصی یا بدون آن) خودش ساخته و فرستاده می‌شود."""
+
+    title = models.CharField("مناسبت", max_length=120)
+    enabled = models.BooleanField("فعال", default=True)
+    month = models.PositiveSmallIntegerField("ماه شمسی", choices=[(i, n) for i, n in enumerate(
+        ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"], 1)])
+    day = models.PositiveSmallIntegerField("روز")
+    hour = models.PositiveSmallIntegerField("ساعت ارسال", default=10)
+    segment = models.CharField("گیرنده‌ها", max_length=12, choices=Campaign.Segment.choices, default=Campaign.Segment.ALL)
+    inactive_days = models.PositiveIntegerField("بی‌خریدی دست‌کم (روز)", default=180)
+    discount = models.PositiveBigIntegerField("مبلغ تخفیف (تومان)", default=0, help_text="۰ یعنی بدون کد تخفیف")
+    min_order = models.PositiveBigIntegerField("حداقل خرید (تومان)", default=40_000_000)
+    valid_days = models.PositiveIntegerField("مهلت کد (روز)", default=7)
+    text = models.TextField("متن پیامک", help_text="متغیرها: {name} {code} {discount} {min} {until} {site}")
+    note = models.CharField("یادداشت", max_length=300, blank=True)
+    last_run_year = models.PositiveSmallIntegerField("آخرین سال ارسال", null=True, blank=True, editable=False)
+    preview_year = models.PositiveSmallIntegerField(null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "مناسبت تقویم پیامکی"
+        verbose_name_plural = "تقویم کمپین‌های خودکار"
+        ordering = ["month", "day"]
+
+    def __str__(self):
+        return self.title

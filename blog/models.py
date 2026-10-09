@@ -179,12 +179,14 @@ class PostRewrite(models.Model):
         PUBLISHED = "published", "منتشر شد"
         REJECTED = "rejected", "رد شد"
         SKIPPED = "skipped", "کنار گذاشته شد"
+        MERGED = "merged", "ادغام شد (ریدایرکت)"
 
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="rewrite", verbose_name="مقاله")
     rank = models.PositiveIntegerField("اولویت", default=9999, db_index=True, help_text="عدد کمتر زودتر")
     kind = models.CharField("نوع", max_length=20, blank=True)
     reason = models.CharField("چرا", max_length=150, blank=True)
     keyword = models.CharField("کلمهٔ هدف", max_length=200, blank=True)
+    merge_into = models.CharField("ادغام در", max_length=300, blank=True, help_text="نشانی مقالهٔ اصلی؛ این مقاله با ریدایرکت ۳۰۱ به آن می‌رود")
     status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.QUEUED, db_index=True)
     gsc_clicks = models.PositiveIntegerField("کلیک گوگل", default=0)
     gsc_impressions = models.PositiveIntegerField("نمایش گوگل", default=0)

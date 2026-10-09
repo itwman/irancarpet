@@ -6,7 +6,7 @@ from core.templatetags.fa import fa_num, jdate, toman
 from dashboard.registry import Col, Resource, register
 
 from . import spam
-from .models import Campaign, PointRedeem, SmsLog
+from .models import AutoCampaign, Campaign, PointRedeem, SmsLog
 
 GROUP = "باشگاه مشتریان"
 
@@ -92,7 +92,7 @@ register(Resource(
              Col("result", "نتیجه", _camp_result),
              Col("created_at", "ساخته شده", lambda o: jdate(o.created_at, "%Y/%m/%d"), "created_at")],
     search=["title"], filters=["status", "segment"], ordering=("-created_at",),
-    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "custom_numbers", "text"], "main"),
+    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "offer", "custom_numbers", "text"], "main"),
                ("کد تخفیف شخصی", ["discount", "min_order", "valid_days"], "side")],
     readonly=[("گیرنده‌ها", _camp_people), ("نتیجه", _camp_result), ("آخرین خطا", lambda o: o.last_error or "—")],
     actions={"start": ("شروع یا ادامهٔ ارسال", _camp_start), "stop": ("توقف ارسال", _camp_stop),
@@ -198,3 +198,65 @@ from dashboard.registry import REGISTRY  # noqa: E402
 if "albums" in REGISTRY:
     REGISTRY["albums"].actions["notify_interest"] = (
         "پیامک «قیمت به‌زودی بالا می‌رود» به علاقه‌مندان (پیش‌نویس کمپین)", _album_notice, "زمان افزایش؛ مثلاً «شنبه ۲۶ مهر»")
+
+
+# ------------------------------------------------------------------ تقویم کمپین‌های خودکار
+MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
+
+
+def _cal_next(o):
+    import jdatetime
+
+    t = jdatetime.date.today()
+    try:
+        d = jdatetime.date(t.year, o.month, o.day)
+    except ValueError:
+        return "تاریخ نامعتبر"
+    if (o.month, o.day) < (t.month, t.day) or o.last_run_year == t.year:
+        try:
+            d = jdatetime.date(t.year + 1, o.month, o.day)
+        except ValueError:
+            return "—"
+    left = (d - t).days
+    return f"{fa_num(o.day)} {MONTHS[o.month - 1]} {fa_num(d.year)}" + (" (امروز)" if left == 0 else f" ({fa_num(left)} روز دیگر)")
+
+
+def _cal_people(o):
+    from .campaigns import recipients
+
+    return f"{fa_num(len(recipients(Campaign(segment=o.segment, inactive_days=o.inactive_days))))} نفر" if o.pk else "—"
+
+
+def _cal_preview(o):
+    from .campaigns import message
+    from .models import CrmSettings
+
+    if not o.text:
+        return "—"
+
+    class Fake:
+        code, value, min_order = "C9-AB2CD", o.discount, o.min_order
+        ends_at = timezone.now() + timezone.timedelta(days=o.valid_days)
+
+    return message(o.text, {"name": "علی"}, Fake() if o.discount else None, CrmSettings.load().marketing_footer)
+
+
+from django.utils import timezone  # noqa: E402
+
+register(Resource(
+    key="crm-calendar", model=AutoCampaign, title="تقویم کمپین‌های خودکار", single="مناسبت", group=GROUP, icon="calendar",
+    columns=[Col("date", "تاریخ", lambda o: f"{fa_num(o.day)} {MONTHS[o.month - 1]}", "month"), Col("title", "مناسبت", sort="title"),
+             Col("segment", "گیرنده‌ها", lambda o: o.get_segment_display()),
+             Col("discount", "کد تخفیف", lambda o: f"{toman(o.discount)} از {toman(o.min_order)}" if o.discount else "بدون کد"),
+             Col("next", "نوبت بعدی", _cal_next), Col("enabled", "فعال", lambda o: "بله" if o.enabled else "خاموش", "enabled")],
+    search=["title", "text"], filters=["enabled", "segment"], ordering=("month", "day"),
+    fieldsets=[("مناسبت", ["title", "month", "day", "hour", "enabled", "segment", "inactive_days", "text", "note"], "main"),
+               ("کد تخفیف شخصی", ["discount", "min_order", "valid_days"], "side")],
+    readonly=[("گیرنده‌ها (الان)", _cal_people), ("نمونهٔ پیامک", _cal_preview), ("نوبت بعدی", _cal_next),
+              ("آخرین ارسال", lambda o: fa_num(o.last_run_year) if o.last_run_year else "هنوز نه")],
+    actions={"on": ("روشن کن", lambda r, qs: f"{fa_num(qs.update(enabled=True))} مناسبت روشن شد."),
+             "off": ("خاموش کن", lambda r, qs: f"{fa_num(qs.update(enabled=False))} مناسبت خاموش شد.")},
+    help="هر سال در روز و ساعت هر مناسبت، کمپین خودش ساخته و برای گیرنده‌ها فرستاده می‌شود (با کد تخفیف شخصی اگر مبلغ گذاشته باشید). "
+         "یک روز قبل، متن و تعداد گیرنده‌ها برای مدیران پیامک می‌شود تا اگر خواستید خاموشش کنید. فصل شلوغ دی و بهمن و توقف سفارش از اول اسفند "
+         "در متن‌ها لحاظ شده است. مناسبت‌های قمری (مثل روز مادر) هر سال تاریخ شمسی‌شان عوض می‌شود؛ آن‌ها را هر سال با تاریخ همان سال اضافه کنید.",
+))

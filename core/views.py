@@ -79,6 +79,15 @@ def _home_data():
     }
 
 
+def _home_offers():
+    """صفحهٔ اول: ۱۲ فرصت با بیشترین تخفیف (ردیف کشویی)؛ بقیه در /فرش-جشنواره-ای/."""
+    from shop.offers import live_offers
+
+    offers = live_offers()
+    top = sorted(offers, key=lambda o: (-o.off_percent, o.price))[:12]
+    return {"offers": top, "offers_total": len(offers)}
+
+
 def home(request):
     import json
 
@@ -123,7 +132,7 @@ def home(request):
 
     return render(request, "home.html", {
         "meta": seo.build(kind="home"), "page": page, "about_html": home_about(site, page),
-        "offers": __import__("shop.offers", fromlist=["live_offers"]).live_offers()[:8], "posts": posts, "categories": cats,
+        **_home_offers(), "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps(graph if len(graph) > 1 else org, ensure_ascii=False), **data,
         "direct": direct,
         "aff": _aff_home(), "mk": _market_home(),

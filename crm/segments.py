@@ -119,6 +119,8 @@ def audience(segment, inactive_days=180, custom="", album=None):
         return out
     if segment == "registered":
         return registered_only()
+    if segment == "all":
+        return sorted(customers().values(), key=lambda c: -(c["total"] or 0)) + registered_only()
     if segment == "album":
         from .interest import album_audience
 

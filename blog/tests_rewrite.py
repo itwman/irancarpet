@@ -152,3 +152,50 @@ class RewriteFlowTests(TestCase):
         rw.refresh_from_db()
         self.assertEqual(rw.status, S.PUBLISHED)
         self.assertContains(self.client.get(f"/panel/rewrites/{rw.pk}/preview/?old=1"), "متن قدیمی")
+
+
+@override_settings(STAGING=True)
+class MergeAndNewTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.main = Post.objects.create(title="قیمت فرش ماشینی", slug="قیمت-فرش-ماشینی", content="<p>قدیمی</p>", status="publish")
+        self.dup = Post.objects.create(title="قیمت انواع فرش ماشینی", slug="قیمت-انواع-فرش-ماشینی", content="<p>تکراری</p>", status="publish")
+
+    def test_merge_follows_target_publish_and_rollback(self):
+        from seo.models import Redirect
+
+        rewrite.load_plan([{"rank": 1, "slug": self.main.slug, "kind": "price"},
+                           {"rank": 2, "slug": self.dup.slug, "kind": "merge", "merge_into": "/قیمت-فرش-ماشینی/"}])
+        m = PostRewrite.objects.get(post=self.dup)
+        self.assertEqual((m.status, m.merge_into), (S.READY, "/قیمت-فرش-ماشینی/"))
+        t = timezone.localtime().replace(hour=12)
+        with mock.patch("django.utils.timezone.now", return_value=t):
+            self.assertEqual(rewrite.publish_due(t), 0)  # مقصد هنوز منتشر نشده؛ ادغام صبر می‌کند
+        m.refresh_from_db()
+        self.assertEqual(m.status, S.READY)
+        rewrite.import_data(sample(slug=self.main.slug), "x")
+        main = PostRewrite.objects.get(post=self.main)
+        self.assertTrue(rewrite.publish(main))
+        m.refresh_from_db()
+        self.dup.refresh_from_db()
+        self.assertEqual((m.status, self.dup.status), (S.MERGED, "draft"))
+        r = Redirect.objects.get(source=self.dup.slug)
+        self.assertEqual(r.target, "/قیمت-فرش-ماشینی/")
+        resp = self.client.get(self.dup.get_absolute_url())
+        self.assertEqual(resp.status_code, 301)
+        self.assertTrue(rewrite.rollback(m))
+        self.dup.refresh_from_db()
+        self.assertEqual(self.dup.status, "publish")
+        self.assertFalse(Redirect.objects.filter(source=self.dup.slug).exists())
+
+    def test_new_article(self):
+        data = sample(slug="فرش-موکا", title="فرش موکا؛ رنگ گرم سال برای خانه‌های امروزی", new=True)
+        self.assertEqual(rewrite.import_data(data, "n1"), "آماده")
+        p = Post.objects.get(slug="فرش-موکا")
+        self.assertEqual(p.status, "draft")
+        self.assertEqual(self.client.get("/فرش-موکا/").status_code, 404)
+        rw = PostRewrite.objects.get(post=p)
+        self.assertTrue(rewrite.publish(rw))
+        p.refresh_from_db()
+        self.assertEqual(p.status, "publish")
+        self.assertEqual(self.client.get("/فرش-موکا/").status_code, 200)

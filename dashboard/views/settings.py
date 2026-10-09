@@ -56,6 +56,7 @@ FORMS = {
                             "latitude", "longitude", "map_google", "map_neshan", "map_balad",
                             "trust_badge", "trust_html", "home_about", "footer_html"]),
     "shop": (ShopSettings, ["allow_full", "allow_deposit", "deposit_percent", "free_shipping_min", "checkout_note", "admin_mobiles",
+                            "busy_enabled", "busy_from", "busy_to", "busy_message", "pause_enabled", "pause_from", "pause_to", "pause_message",
                             "referral_enabled", "referral_percent", "referral_max", "referral_min_order", "referral_reward"]),
     "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox"]),
     "sms": (ShopSettings, ["smsir_api_key", "smsir_otp_template_id", "smsir_order_template_id", "smsir_admin_template_id",
@@ -85,7 +86,9 @@ FORMS = {
                           "points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days",
                           "points_since", "birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text",
                           "review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days",
-                          "review_reward_text", "album_text", "vip_total", "vip_orders", "short_links", "marketing_footer"]),
+                          "review_reward_text", "album_text", "offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour",
+                          "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text", "calendar_preview",
+                          "vip_total", "vip_orders", "short_links", "marketing_footer"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
@@ -195,6 +198,10 @@ CRM_GROUPS = [
     ("جایزهٔ نظر با عکس", "در پیامک دعوت به نظر هم گفته می‌شود. بعد از اینکه نظر را در «نظرات محصولات» تأیید کنید، کد هدیه می‌رود.",
      ["review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days", "review_reward_text"]),
     ("اطلاع افزایش قیمت آلبوم", "از «آلبوم‌های قیمت» آلبوم‌ها را انتخاب کنید و عملیات «پیامک قیمت به‌زودی بالا می‌رود» را بزنید.", ["album_text"]),
+    ("پیامک هفتگی فرصت ویژه", "هر هفته یک فرصت ویژه با بیشترین تخفیف (که در دو ماه گذشته فرستاده نشده) با درصد تخفیف، زمان یا تعداد باقی‌مانده و پیوند. "
+     "اگر فرصت وسط ارسال تمام شود، ارسال می‌ایستد. متغیرها: {product} {size} {percent} {left} {link}",
+     ["offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour", "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text"]),
+    ("تقویم کمپین‌ها", "مناسبت‌ها و متن‌هایشان در «باشگاه مشتریان ← تقویم کمپین‌های خودکار» است.", ["calendar_preview"]),
     ("باشگاه مشتریان", "", ["vip_total", "vip_orders", "short_links", "marketing_footer"]),
 ]
 

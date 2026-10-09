@@ -14,6 +14,7 @@ from api import views as api_views
 from finder import api as finder_api
 from finder import views as finder_views
 from crm import links as crm_links
+from shop import offers_page as shop_offers_page
 from growth import views as growth_views
 from installments import views as installments_views
 from landing import views as landing_views
@@ -55,6 +56,8 @@ urlpatterns = [
     # نشانی‌های قدیمی خبرخوان (وردپرس و افزونه‌ها) ← /feed/
     re_path(r"^(?:rss2?|atom|rdf|feed/(?:rss2?|atom|rdf))/?$", RedirectView.as_view(url="/feed/", permanent=True)),
     path("search/", catalog_views.search, name="search"),
+    path("فرش-جشنواره-ای/", shop_offers_page.offers_page, name="offers"),
+    path("offers/", RedirectView.as_view(url="/فرش-جشنواره-ای/", permanent=True)),
     path("", include("crm.urls")),
     path("", include("affiliate.urls")),
     path("", include("market.urls")),

@@ -37,8 +37,12 @@ def cart_view(request):
 
     cart = Cart(request)
     summary = _with_coupon(request, cart.summary())
-    return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **summary, "shop": ShopSettings.load(),
-                                              "inst_teaser": teaser(summary["total"]) if summary["total"] else None})
+    from .season import pause_error, state
+
+    shop = ShopSettings.load()
+    return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **summary, "shop": shop,
+                                              "inst_teaser": teaser(summary["total"]) if summary["total"] else None,
+                                              "season": state(shop=shop), "pause_error": pause_error(summary["lines"], shop=shop)})
 
 
 def _with_coupon(request, summary):
@@ -196,6 +200,11 @@ def checkout(request):
             errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
         if summary["has_problem"]:
             errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
+        from .season import pause_error
+
+        paused = pause_error(summary["lines"], shop=shop)
+        if paused:
+            errors["cart"] = paused
         if summary["coupon_error"]:
             errors["coupon"] = summary["coupon_error"] + " کد را از سبد حذف کنید یا کد دیگری بزنید."
         if not errors:

@@ -159,10 +159,73 @@ def review_rewards(now=None, limit=50):
     return sent
 
 
+def _jtoday(now):
+    import jdatetime
+
+    return jdatetime.date.fromgregorian(date=timezone.localtime(now).date())
+
+
+def auto_campaigns(now=None):
+    """تقویم کمپین‌ها: روز مناسبت سر ساعت، کمپین ساخته و ارسالش شروع می‌شود؛ یک روز پیش از آن، پیش‌نمایش برای مدیران."""
+    from .campaigns import message, recipients
+    from .models import AutoCampaign, Campaign, CrmSettings, SmsLog
+    from .notify import admins
+
+    now = now or timezone.now()
+    s = CrmSettings.load()
+    today = _jtoday(now)
+    tomorrow = today + __import__("jdatetime").timedelta(days=1)
+    hour = timezone.localtime(now).hour
+    started = 0
+    for a in AutoCampaign.objects.filter(enabled=True):
+        if (a.month, a.day) == (tomorrow.month, tomorrow.day) and a.preview_year != tomorrow.year and s.calendar_preview and hour >= 12:
+            probe = Campaign(title=a.title, segment=a.segment, inactive_days=a.inactive_days, discount=a.discount)
+            n = len(recipients(probe))
+            sample = message(a.text, {"name": "مشتری"}, None, s.marketing_footer)
+            text = f"پیش‌نمایش کمپین فردا ساعت {a.hour}: «{a.title}» برای {n} نفر" + (f"، با کد {a.discount:,} تومانی" if a.discount else "") + \
+                f".\n{sample[:300]}\nبرای لغو: پنل ← باشگاه مشتریان ← تقویم کمپین‌ها"
+            for m in admins():
+                send(m, text, SmsLog.Kind.ADMIN)
+            AutoCampaign.objects.filter(pk=a.pk).update(preview_year=tomorrow.year)
+        if (a.month, a.day) == (today.month, today.day) and a.last_run_year != today.year and hour >= a.hour:
+            Campaign.objects.create(title=f"{a.title} {today.year}"[:120], segment=a.segment, inactive_days=a.inactive_days,
+                                    discount=a.discount, min_order=a.min_order, valid_days=a.valid_days, text=a.text,
+                                    status=Campaign.Status.SENDING, started_at=now)
+            AutoCampaign.objects.filter(pk=a.pk).update(last_run_year=today.year)
+            started += 1
+    return started
+
+
+def weekly_offer(now=None):
+    """هر هفته یک فرصت ویژه (بیشترین تخفیف، در ۶۰ روز گذشته فرستاده‌نشده) برای مشتریان."""
+    from shop.offers import live_offers
+
+    from .models import Campaign, CrmSettings
+
+    s = CrmSettings.load()
+    now = now or timezone.now()
+    local = timezone.localtime(now)
+    if not s.offer_sms_enabled or local.weekday() != s.offer_sms_weekday or local.hour < s.offer_sms_hour:
+        return 0
+    if Campaign.objects.filter(offer__isnull=False, created_at__gte=now - td(days=6)).exists():
+        return 0
+    recent = set(Campaign.objects.filter(offer__isnull=False, created_at__gte=now - td(days=60)).values_list("offer_id", flat=True))
+    pool = [o for o in live_offers() if o.pk not in recent and o.off_percent >= s.offer_sms_min_percent]
+    if not pool:
+        return 0
+    o = sorted(pool, key=lambda x: (-x.off_percent, x.price))[0]
+    Campaign.objects.create(title=f"فرصت ویژهٔ هفته: {o.product.title}"[:120], segment=s.offer_sms_segment, discount=0,
+                            text=s.offer_sms_text, offer=o, status=Campaign.Status.SENDING, started_at=now)
+    return 1
+
+
 def run():
+    from .campaigns import resume_sending
+
     done = {}
     for name, fn in (("یادآوری پرداخت", remind_unpaid), ("کد بازگشت مشتری", winback), ("هدیهٔ تولد", birthday),
-                     ("سبد رهاشده", abandoned_carts), ("جایزهٔ نظر", review_rewards)):
+                     ("سبد رهاشده", abandoned_carts), ("جایزهٔ نظر", review_rewards), ("تقویم کمپین‌ها", auto_campaigns),
+                     ("فرصت ویژهٔ هفته", weekly_offer), ("ادامهٔ ارسال کمپین‌ها", resume_sending)):
         try:
             n = fn()
             if n:

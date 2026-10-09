@@ -95,6 +95,7 @@
           <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
           <button class="btn-ic btn-ic--pink flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
         </div>
+        {% if season.paused %}<p class="alert-ic small mt-2 mb-0">{{ season.paused|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></p>{% elif season.busy %}<p class="small muted mt-2 mb-0">{{ season.busy }}</p>{% endif %}
         {% if inst_teaser %}
         <a class="inst-teaser" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}">
           <span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span>

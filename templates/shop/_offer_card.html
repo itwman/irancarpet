@@ -1,0 +1,9 @@
+{% load fa %}<a class="offer-card" href="{{ o.product.get_absolute_url }}">
+  <span class="offer-card__img">{% if o.product.image %}<img src="{{ o.product.image|thumb:480 }}" alt="{{ o.product.title }}" loading="lazy">{% endif %}{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }}</span>{% endif %}</span>
+  <span class="offer-card__body">
+    <strong class="offer-card__title">{{ o.product.title|fa_num }}</strong>
+    <span class="offer-card__size">{{ o.size.label|fa_num }}، {% if o.remaining == 1 %}یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %}</span>
+    <span class="offer-card__price"><del>{{ o.regular_price|toman }}</del> <b>{{ o.price|toman }}</b> <small>تومان</small></span>
+    {% if o.ends_at %}<span class="offer-card__clock" data-offer-end="{{ o.ends_at|date:'c' }}"></span>{% elif o.remaining == 1 %}<span class="offer-card__clock">آخرین تخته</span>{% endif %}
+  </span>
+</a>

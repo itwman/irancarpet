@@ -40,8 +40,9 @@ def _post(slug):
 
 # ------------------------------------------------------------------ برنامه
 def load_plan(items):
-    """[{rank, slug, kind, reason, keyword}] ← ردیف‌های صف؛ متن‌های رسیده دست نمی‌خورند."""
-    n = 0
+    """[{rank, slug, kind, reason, keyword, merge_into}] ← ردیف‌های صف؛ متن‌های رسیده دست نمی‌خورند.
+    ردیف‌های «در صف نوشتن» که دیگر در برنامه نیستند پاک می‌شوند."""
+    n, keep = 0, set()
     for it in items:
         post = _post(it.get("slug"))
         if not post:
@@ -51,8 +52,14 @@ def load_plan(items):
         rw.kind = (it.get("kind") or rw.kind)[:20]
         rw.reason = (it.get("reason") or rw.reason)[:150]
         rw.keyword = (it.get("keyword") or rw.keyword)[:200]
-        rw.save(update_fields=["rank", "kind", "reason", "keyword"])
+        rw.merge_into = (it.get("merge_into") or rw.merge_into)[:300]
+        if rw.merge_into and rw.status == S.QUEUED:
+            rw.status, rw.ready_at = S.READY, timezone.now()  # ادغام نوشتن نمی‌خواهد؛ همراه مقالهٔ مقصد انجام می‌شود
+        rw.save(update_fields=["rank", "kind", "reason", "keyword", "merge_into", "status", "ready_at"])
+        keep.add(rw.pk)
         n += 1
+    if keep:
+        PostRewrite.objects.filter(status=S.QUEUED, content="").exclude(pk__in=keep).delete()
     return n
 
 
@@ -124,13 +131,25 @@ def _link_warnings(content):
 def import_data(data, sha=""):
     """یک فایل نویسنده ← ردیف صف. خروجی: پیام کوتاه."""
     post = _post(data.get("slug"))
+    if not post and data.get("new") and (data.get("title") or "").strip():
+        post = Post.objects.create(title=data["title"][:300], slug=unquote(data["slug"]).strip("/")[:255], status="draft",
+                                   author_name="ایران کارپت")
     if not post:
         return f"مقاله‌ای با نامک «{data.get('slug')}» نیست"
     rw, _ = PostRewrite.objects.get_or_create(post=post)
     if sha and rw.source_sha == sha:
         return "تکراری"
-    if rw.status == S.PUBLISHED and not data.get("revise"):
+    if rw.status in (S.PUBLISHED, S.MERGED) and not data.get("revise"):
         return "قبلاً منتشر شده"
+    if data.get("action") == "merge":
+        into = "/" + unquote(data.get("into") or "").strip("/") + "/"
+        if into == "//" or into.strip("/") == post.slug:
+            return "مقصد ادغام نامعتبر است"
+        rw.merge_into, rw.status, rw.source_sha = into, S.READY, sha
+        rw.notes = (data.get("notes") or f"ادغام در {into}")[:2000]
+        rw.ready_at = timezone.now()
+        rw.save(update_fields=["merge_into", "status", "source_sha", "notes", "ready_at"])
+        return "ادغام آماده"
     if data.get("action") == "skip":
         rw.status, rw.notes, rw.source_sha = S.SKIPPED, (data.get("skip_reason") or "")[:2000], sha
         rw.save(update_fields=["status", "notes", "source_sha"])
@@ -240,9 +259,32 @@ def publish(rw):
         val = getattr(rw, f)
         if val:
             setattr(post, f, val)
-    post.modified_at = timezone.now()
+    now = timezone.now()
+    post.modified_at = now
+    if post.status != "publish":  # مقالهٔ تازه
+        rw.old["status"] = post.status
+        post.status, post.published_at = "publish", now
     post.save()  # IndexNow خودکار
-    rw.status, rw.published_at = S.PUBLISHED, timezone.now()
+    rw.status, rw.published_at = S.PUBLISHED, now
+    rw.save(update_fields=["old", "status", "published_at"])
+    cache.delete("rw:paths")
+    for m in PostRewrite.objects.filter(merge_into=post.get_absolute_url(), status__in=[S.READY, S.APPROVED]):
+        merge(m)
+    return True
+
+
+def merge(rw):
+    """صفحهٔ تکراری ← ریدایرکت ۳۰۱ به مقالهٔ اصلی و خارج شدن از انتشار."""
+    from seo.models import Redirect
+
+    if rw.status == S.MERGED or not rw.merge_into:
+        return False
+    post = rw.post
+    Redirect.objects.update_or_create(source=post.slug, defaults={"target": rw.merge_into, "status_code": 301, "is_active": True})
+    rw.old = {"status": post.status}
+    post.status = "draft"
+    post.save(update_fields=["status"])
+    rw.status, rw.published_at = S.MERGED, timezone.now()
     rw.save(update_fields=["old", "status", "published_at"])
     cache.delete("rw:paths")
     return True
@@ -250,9 +292,19 @@ def publish(rw):
 
 @transaction.atomic
 def rollback(rw):
+    if rw.status == S.MERGED:
+        from seo.models import Redirect
+
+        Redirect.objects.filter(source=rw.post.slug, target=rw.merge_into).delete()
+        Post.objects.filter(pk=rw.post_id).update(status=(rw.old or {}).get("status") or "publish")
+        rw.status = S.REJECTED
+        rw.save(update_fields=["status"])
+        return True
     if rw.status != S.PUBLISHED or not rw.old:
         return False
     post = Post.objects.select_for_update().get(pk=rw.post_id)
+    if rw.old.get("status"):
+        post.status = rw.old["status"]
     for f in FIELDS:
         if f in rw.old:
             setattr(post, f, rw.old[f])
@@ -280,11 +332,15 @@ def publish_due(now=None):
     if local.hour < s.rewrite_hour:
         return 0
     start = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    for m in PostRewrite.objects.filter(status__in=[S.READY, S.APPROVED]).exclude(merge_into=""):
+        target = PostRewrite.objects.filter(post__slug=unquote(m.merge_into).strip("/")).first()
+        if target is None or target.status == S.PUBLISHED:
+            merge(m)  # ادغام جای انتشار روزانه را نمی‌گیرد
     left = s.rewrite_per_day - PostRewrite.objects.filter(status=S.PUBLISHED, published_at__gte=start).count()
     if left <= 0:
         return 0
-    approved = list(PostRewrite.objects.filter(status=S.APPROVED).order_by("rank")[:left])
-    due = list(PostRewrite.objects.filter(status=S.READY, publish_after__lte=now).order_by("rank")[:left - len(approved)]) \
+    approved = list(PostRewrite.objects.filter(status=S.APPROVED, merge_into="").order_by("rank")[:left])
+    due = list(PostRewrite.objects.filter(status=S.READY, publish_after__lte=now, merge_into="").order_by("rank")[:left - len(approved)]) \
         if left > len(approved) else []
     n = 0
     for rw in approved + due:

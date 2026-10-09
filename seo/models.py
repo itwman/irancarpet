@@ -79,7 +79,7 @@ class SeoSettings(models.Model):
         "انتشار خودکار مقاله‌های بازنویسی‌شده", default=True,
         help_text="روزی یک مقالهٔ بازنویسی‌شده (به ترتیب اولویت) روی همان نشانی قبلی منتشر می‌شود؛ نسخهٔ قبلی نگه داشته می‌شود.")
     rewrite_hour = models.PositiveSmallIntegerField("ساعت انتشار روزانه", default=9, help_text="به وقت تهران، ۰ تا ۲۳")
-    rewrite_per_day = models.PositiveSmallIntegerField("تعداد انتشار در روز", default=1)
+    rewrite_per_day = models.PositiveSmallIntegerField("تعداد انتشار در روز", default=2)
     rewrite_review_days = models.PositiveSmallIntegerField(
         "مهلت بررسی (روز)", default=2, help_text="متن تازه این مدت در پنل می‌ماند تا اگر خواستید ویرایش یا رد کنید؛ بعد خودکار منتشر می‌شود.")
     rewrite_repo = models.CharField("مخزن گیت‌هاب متن‌ها", max_length=100, default="itwman/irancarpet", blank=True,

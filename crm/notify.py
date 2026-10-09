@@ -104,6 +104,7 @@ def sample_context():
             "due": "بیعانه", "due_line": f"بیعانه: {toman(4_850_000)} تومان (از {toman(48_500_000)})", "points": "۴۸",
             "points_line": " ۴۸ امتیاز باشگاه مشتریان به حساب شما اضافه شد.", "cart_link": "https://crpt.ir/c/k3h9x2p",
             "album": "فرش ۱۲۰۰ شانه نمونه", "date": "شنبه ۱۹ مهر",
+            "product": "فرش ۱۲۰۰ شانه افشان کرم", "size": "۱۲ متری (۴ × ۳)", "percent": "۱۸", "left": "فقط یک تخته باقی مانده.",
             "phone": site.mobile or site.phone or "", "code": "C1-AB2CD", "discount": toman(2_000_000), "min": toman(40_000_000),
             "until": "۱۵ آبان", "site": url.replace("https://", "")}
 

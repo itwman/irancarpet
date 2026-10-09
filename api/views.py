@@ -525,6 +525,11 @@ def order_create(request):
         return fail("سبد خرید خالی است.")
     if summary["coupon_error"]:
         return fail(summary["coupon_error"], errors={"coupon": summary["coupon_error"]})
+    from shop.season import pause_error
+
+    paused = pause_error(summary["lines"])
+    if paused:
+        return fail(paused, errors={"cart": paused})
     form = {k: str(d.get(k) or "").strip() for k in
             ("first_name", "last_name", "mobile", "email", "province", "city", "address", "postal_code", "note", "payment_mode", "gateway")}
     form["mobile"] = normalize_mobile(form["mobile"]) or form["mobile"]

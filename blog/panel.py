@@ -15,9 +15,9 @@ from .models import PostRewrite
 from .rewrite_rules import words
 
 S = PostRewrite.Status
-BADGE = {"queued": "draft", "ready": "pending", "approved": "processing", "published": "completed", "rejected": "cancelled",
+BADGE = {"merged": "completed", "queued": "draft", "ready": "pending", "approved": "processing", "published": "completed", "rejected": "cancelled",
          "skipped": "draft"}
-KINDS = {"city": "شهر", "price": "قیمت", "installment": "اقساط", "guide": "آموزشی"}
+KINDS = {"merge": "ادغام", "city": "شهر", "price": "قیمت", "installment": "اقساط", "guide": "آموزشی"}
 
 
 def _status(o):
@@ -30,6 +30,8 @@ def _when(o):
         return jdate(o.published_at, "%Y/%m/%d")
     if o.status == S.READY and o.publish_after:
         return "از " + jdate(o.publish_after, "%m/%d %H:%M")
+    if o.merge_into and o.status in (S.READY, S.APPROVED):
+        return "همراه مقالهٔ مقصد"
     if o.status == S.APPROVED:
         return "نوبت بعدی"
     return "—"
@@ -50,7 +52,7 @@ def _set(qs, status, **kw):
 
 
 def _publish_now(request, qs):
-    n = sum(rewrite.publish(r) for r in qs.filter(status__in=[S.READY, S.APPROVED]))
+    n = sum(rewrite.merge(r) if r.merge_into else rewrite.publish(r) for r in qs.filter(status__in=[S.READY, S.APPROVED]))
     return f"{fa_num(n)} مقاله منتشر شد."
 
 
@@ -108,7 +110,7 @@ register(Resource(
     queryset=lambda qs: qs.select_related("post"),
     fieldsets=[("متن تازه", ["title", "seo_title", "seo_description", "focus_keyword", "excerpt", "content"], "main"),
                ("انتشار", ["status", "rank", "publish_after"], "side"), ("یادداشت نویسنده", ["notes"], "side")],
-    readonly=[("پیش‌نمایش", _preview_links), ("کلمهٔ هدف", lambda o: o.keyword or "—"), ("چرا این مقاله", lambda o: o.reason or "—"),
+    readonly=[("پیش‌نمایش", _preview_links), ("کلمهٔ هدف", lambda o: o.keyword or "—"), ("ادغام در", lambda o: o.merge_into or "—"), ("چرا این مقاله", lambda o: o.reason or "—"),
               ("حجم متن", _words), ("گوگل", _gsc),
               ("هشدارها", lambda o: format_html("{}", linebreaks(o.warnings)) if o.warnings else "ندارد")],
     actions={"publish_now": ("انتشار همین حالا", _publish_now), "approve": ("تأیید (انتشار در نوبت بعدی)", _approve),
