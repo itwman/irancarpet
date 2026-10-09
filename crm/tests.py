@@ -82,17 +82,28 @@ class CrmTests(TestCase):
     # ---------------------------------------------------------- پیگیری پرداخت
     def test_three_step_reminder_with_price_fluctuation(self):
         o = mk(days=0)
-        Order.objects.filter(pk=o.pk).update(created_at=timezone.now() - td(hours=2))
+        t = timezone.now()
+        Order.objects.filter(pk=o.pk).update(created_at=t - td(hours=2))
         with OK as sms:
-            self.assertEqual(jobs.remind_unpaid(), 1)
-            self.assertEqual(jobs.remind_unpaid(), 0)
-            Order.objects.filter(pk=o.pk).update(created_at=timezone.now() - td(hours=25))
-            self.assertEqual(jobs.remind_unpaid(), 1)
-            Order.objects.filter(pk=o.pk).update(created_at=timezone.now() - td(hours=73))
-            self.assertEqual(jobs.remind_unpaid(), 1)
-            self.assertEqual(jobs.remind_unpaid(), 0)
+            self.assertEqual(jobs.remind_unpaid(t), 1)
+            self.assertEqual(jobs.remind_unpaid(t), 0)
+            self.assertEqual(jobs.remind_unpaid(t + td(hours=23)), 1)
+            self.assertEqual(jobs.remind_unpaid(t + td(hours=71)), 1)
+            self.assertEqual(jobs.remind_unpaid(t + td(hours=72)), 0)
         self.assertIn("نوسان قیمت", sms.call_args_list[1][0][1])
         self.assertEqual(Order.objects.get(pk=o.pk).reminded_count, 3)
+
+    def test_old_order_reminders_are_spaced(self):
+        o = mk()
+        Order.objects.filter(pk=o.pk).update(created_at=timezone.now() - td(hours=100))
+        t = timezone.now()
+        with OK as sms:
+            self.assertEqual(jobs.remind_unpaid(t), 1)
+            self.assertEqual(jobs.remind_unpaid(t + td(minutes=10)), 0)  # یادآوری دوم پشت سر اولی نمی‌آید
+            self.assertEqual(jobs.remind_unpaid(t + td(hours=24)), 1)
+        self.assertEqual(sms.call_count, 2)
+        self.assertIn("/o/", sms.call_args_list[0][0][1])
+        self.assertNotIn("irancarpet.net/o/", sms.call_args_list[0][0][1])  # پیوند کوتاه
 
     def test_reminder_skipped_when_later_order_paid(self):
         o = mk()

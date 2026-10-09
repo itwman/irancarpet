@@ -24,12 +24,17 @@ def remind_unpaid(now=None):
     texts = [s.remind_text_1, s.remind_text_2, s.remind_text_3]
     now = now or timezone.now()
     window = td(hours=steps[-1]) + td(days=2)
-    qs = Order.objects.filter(status="pending", online_amount__gt=0, wp_id__isnull=True,
-                              created_at__gte=now - window, reminded_count__lt=len(steps))
+    from django.db.models import Q
+
+    qs = Order.objects.filter(Q(created_at__gte=now - window) | Q(reminded_at__gte=now - window),
+                              status="pending", online_amount__gt=0, wp_id__isnull=True, reminded_count__lt=len(steps))
     sent = 0
     for o in qs:
         step = o.reminded_count
-        if now < o.created_at + td(hours=steps[step]):
+        due = o.created_at + td(hours=steps[step])
+        if step and o.reminded_at:  # فاصلهٔ دو یادآوری هیچ‌وقت کمتر از فاصلهٔ برنامه نشود (سفارش قدیمی پشت سر هم پیامک نگیرد)
+            due = max(due, o.reminded_at + td(hours=steps[step] - steps[step - 1]))
+        if now < due:
             continue
         # بعد از این سفارش، سفارش دیگری را پرداخت کرده؟ پس یادآوری لازم نیست
         if Order.objects.filter(mobile=o.mobile, status__in=PLACED, created_at__gt=o.created_at).exists() or (
