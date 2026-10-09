@@ -48,8 +48,12 @@
   <div class="container">
     <div class="section-head"><h2 class="sec-title" id="offersTitle">فرصت‌های ویژهٔ خرید</h2><a class="link-more" href="/فرش-جشنواره-ای/">{% if offers_total > offers|length %}همهٔ {{ offers_total|fa_num }} فرصت{% else %}فرش جشنواره‌ای و زیر قیمت{% endif %}</a></div>
     <p class="muted small offers-lead">تک‌تخته‌های نو و آمادهٔ ارسال انبار کاشان با تخفیف؛ بدون انتظار برای بافت.</p>
-    <div class="offer-grid offer-grid--row">
-      {% for o in offers %}{% include "shop/_offer_card.html" %}{% endfor %}
+    <div class="row-scroll" data-row-scroll>
+      <button type="button" class="row-scroll__btn row-scroll__btn--prev" data-dir="prev" aria-label="فرصت‌های قبلی" hidden><span aria-hidden="true">›</span></button>
+      <div class="offer-grid offer-grid--row" data-row-track>
+        {% for o in offers %}{% include "shop/_offer_card.html" %}{% endfor %}
+      </div>
+      <button type="button" class="row-scroll__btn row-scroll__btn--next" data-dir="next" aria-label="فرصت‌های بعدی" hidden><span aria-hidden="true">‹</span></button>
     </div>
   </div>
 </section>

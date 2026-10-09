@@ -258,3 +258,35 @@
     apply("");
   }
 })();
+
+/* ردیف فرصت‌های ویژه: دکمه‌های ‹ › (بدون حرکت خودکار) */
+(function () {
+  "use strict";
+  Array.prototype.forEach.call(document.querySelectorAll("[data-row-scroll]"), function (box) {
+    var track = box.querySelector("[data-row-track]");
+    var prev = box.querySelector('[data-dir="prev"]');
+    var next = box.querySelector('[data-dir="next"]');
+    if (!track || !prev || !next) return;
+    var rtl = getComputedStyle(track).direction === "rtl";
+    function pos() { return Math.abs(track.scrollLeft); }
+    function update() {
+      var max = track.scrollWidth - track.clientWidth;
+      var scrollable = max > 4;
+      prev.hidden = next.hidden = !scrollable;
+      prev.disabled = pos() <= 4;
+      next.disabled = pos() >= max - 4;
+    }
+    function step(dir) {
+      var card = track.firstElementChild;
+      var w = card ? card.getBoundingClientRect().width + 16 : track.clientWidth * 0.8;
+      var n = Math.max(1, Math.floor(track.clientWidth / w));
+      var dx = w * n * (dir === "next" ? 1 : -1) * (rtl ? -1 : 1);
+      track.scrollBy({ left: dx, behavior: "smooth" });
+    }
+    prev.addEventListener("click", function () { step("prev"); });
+    next.addEventListener("click", function () { step("next"); });
+    track.addEventListener("scroll", function () { window.requestAnimationFrame(update); }, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  });
+})();
