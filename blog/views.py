@@ -53,10 +53,11 @@ def tag_detail(request, slug, page=1):
                   tag.name, tag.description, [("مجله", "/blog/"), (tag.name, tag.get_absolute_url())])
 
 
-def post_detail(request, post):
+def post_detail(request, post, preview=False):
     if post.status != "publish" and not request.user.is_staff:
         raise Http404
-    Post.objects.filter(pk=post.pk).update(views=F("views") + 1)
+    if not preview:
+        Post.objects.filter(pk=post.pk).update(views=F("views") + 1)
     cat = post.primary_category or post.categories.first()
     crumbs = [("مجله", "/blog/")] + ([(cat.name, cat.get_absolute_url())] if cat else []) + [(post.title, post.get_absolute_url())]
     related = Post.objects.published().filter(categories=cat).exclude(pk=post.pk).select_related("image")[:3] if cat else []
@@ -81,9 +82,9 @@ def post_detail(request, post):
         upd = landing.last_price_update()
         if upd and upd > post.modified_at:  # قیمت‌های زندهٔ صفحه به‌روز شده‌اند
             jsonld["dateModified"] = upd.isoformat()
-        faq = landing.faq_jsonld(post.content)
-        if faq:
-            jsonld = {"@context": "https://schema.org", "@graph": [{k: v for k, v in jsonld.items() if k != "@context"}, faq]}
+    faq = landing.faq_jsonld(post.content) if (live or 'class="faq' in (post.content or "")) else None
+    if faq:
+        jsonld = {"@context": "https://schema.org", "@graph": [{k: v for k, v in jsonld.items() if k != "@context"}, faq]}
     meta = seo.build(post, "post")
     meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())
     if meta.get("description"):

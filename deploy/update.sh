@@ -31,6 +31,8 @@ for U in irancarpet-jobs.service irancarpet-jobs.timer; do
 done
 systemctl daemon-reload
 systemctl enable --now irancarpet-jobs.timer >/dev/null
+echo "== متن‌های بازنویسی‌شدهٔ مقاله‌ها (content/rewrites)"
+runuser -u www-data -- venv/bin/python manage.py rewrites || true
 echo "== صفحه‌های فرود"
 runuser -u www-data -- venv/bin/python manage.py run_jobs --landing || true
 echo "== راه‌اندازی دوباره"

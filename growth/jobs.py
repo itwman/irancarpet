@@ -112,6 +112,12 @@ def run_all(out=print):
             log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:  # بازنویسی مقاله‌ها: دریافت از گیت‌هاب و انتشار روزانه
+        from blog.rewrite import run as rewrite_run
+
+        done.update(rewrite_run())
+    except Exception:  # noqa: BLE001
+        log.exception("rewrite jobs")
     try:
         from rajyar.client import refresh
 

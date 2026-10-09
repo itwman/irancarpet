@@ -72,6 +72,12 @@
     {% endif %}
     {% if tab == "seo" %}
     <section class="card-p">
+      <h2>آمار سرچ کنسول برای برنامهٔ بازنویسی</h2>
+      <p class="hint">در سرچ کنسول: «Performance ← Export ← Download CSV»؛ فایل Pages.csv داخل آن را اینجا بدهید. آمار هر مقاله پیش از بازنویسی، و برای مقاله‌های منتشرشده آمار بعد از بازنویسی ثبت می‌شود تا نتیجه را مقایسه کنید.</p>
+      <form method="post" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap">{% csrf_token %}<input type="hidden" name="tab" value="seo"><input type="hidden" name="do" value="gsc_upload">
+        <input type="file" name="gsc" accept=".csv" class="form-control" style="max-width:320px"><button class="btn btn-ink" type="submit">بارگذاری</button></form>
+    </section>
+    <section class="card-p">
       <h2>ارسال همهٔ صفحه‌ها به IndexNow</h2>
       <p class="hint">همهٔ نشانی‌های نقشهٔ سایت یک‌جا به Bing و Yandex فرستاده می‌شوند. یک بار بعد از راه‌اندازی کافی است؛ بعد از آن هر تغییر خودکار فرستاده می‌شود.</p>
       <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="seo"><button class="btn btn-ink" name="do" value="indexnow_all">ارسال همهٔ نشانی‌ها</button></form>
@@ -131,6 +137,14 @@
       {% for name, at in rj_next %}<div class="kv"><span>{{ name }}</span><strong>{{ at|jdate:"%A %d %B، %H:%M" }}</strong></div>
       {% empty %}<p class="hint">ارسال خودکار روشن نیست.</p>{% endfor %}
       {% if rj_next and not rj.enabled %}<p class="hint">اتصال رج‌یار خاموش است؛ چیزی فرستاده نمی‌شود.</p>{% endif %}
+    </section>{% endif %}
+    {% if rw %}<section class="card-p"><h2>بازنویسی مقاله‌ها</h2>
+      {% for label, n, k in rw.counts %}<div class="kv"><span>{{ label }}</span><strong><a href="/panel/rewrites/?status={{ k }}">{{ n|fa_num }}</a></strong></div>{% endfor %}
+      {% if rw.next %}<p class="hint mt-2 mb-1">نوبت‌های بعدی:</p>{% for r in rw.next %}<div class="kv"><span>{{ r.post.title|truncatechars:34|fa_num }}</span><strong class="small">{% if r.status == "approved" %}تأییدشده{% else %}از {{ r.publish_after|jdate:"%d %B" }}{% endif %}</strong></div>{% endfor %}{% endif %}
+      <div class="kv"><span>آخرین دریافت از گیت‌هاب</span><strong class="small">{% if seo.rewrite_last_sync %}{{ seo.rewrite_last_sync|jdate:"%d %B %H:%M" }}{% else %}هنوز نه{% endif %}</strong></div>
+      {% if seo.rewrite_last_status %}<p class="hint mb-2">{{ seo.rewrite_last_status|fa_num }}</p>{% endif %}
+      <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="tab" value="seo"><button class="btn btn-light btn-sm" name="do" value="rewrite_sync">دریافت همین حالا</button></form>
+      <a class="btn btn-light btn-sm" href="/panel/rewrites/">برنامهٔ کامل</a>
     </section>{% endif %}
     {% if seo %}<section class="card-p"><h2>وضعیت IndexNow</h2>
       <div class="kv"><span>آخرین ارسال</span><strong>{% if seo.indexnow_last_at %}{{ seo.indexnow_last_at|jdate:"%d %B %H:%M" }}{% else %}هنوز ارسالی نبوده{% endif %}</strong></div>

@@ -163,3 +163,53 @@ class Faq(models.Model):
 
     def __str__(self):
         return self.question
+
+
+class PostRewrite(models.Model):
+    """بازنویسی برنامه‌ریزی‌شدهٔ یک مقاله (صف روزانه).
+
+    ترتیب = اولویت سئو (بیشترین فرصت در گوگل اول). متن تازه از نویسنده (فایل‌های content/rewrites/posts در مخزن) می‌رسد،
+    «مهلت بررسی» صبر می‌کند و بعد خودکار روزی یکی روی همان نشانی منتشر می‌شود؛ نسخهٔ قبلی نگه داشته می‌شود.
+    """
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "در صف نوشتن"
+        READY = "ready", "آماده (در مهلت بررسی)"
+        APPROVED = "approved", "تأیید شد؛ انتشار در نوبت بعدی"
+        PUBLISHED = "published", "منتشر شد"
+        REJECTED = "rejected", "رد شد"
+        SKIPPED = "skipped", "کنار گذاشته شد"
+
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="rewrite", verbose_name="مقاله")
+    rank = models.PositiveIntegerField("اولویت", default=9999, db_index=True, help_text="عدد کمتر زودتر")
+    kind = models.CharField("نوع", max_length=20, blank=True)
+    reason = models.CharField("چرا", max_length=150, blank=True)
+    keyword = models.CharField("کلمهٔ هدف", max_length=200, blank=True)
+    status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.QUEUED, db_index=True)
+    gsc_clicks = models.PositiveIntegerField("کلیک گوگل", default=0)
+    gsc_impressions = models.PositiveIntegerField("نمایش گوگل", default=0)
+    gsc_position = models.FloatField("رتبهٔ میانگین", default=0)
+    gsc_after = models.JSONField("آمار گوگل بعد از انتشار", default=dict, blank=True)
+
+    title = models.CharField("عنوان تازه", max_length=300, blank=True)
+    seo_title = models.CharField("عنوان سئو تازه", max_length=300, blank=True)
+    seo_description = models.TextField("توضیح متای تازه", blank=True)
+    focus_keyword = models.CharField("کلمهٔ کلیدی", max_length=300, blank=True)
+    excerpt = models.TextField("خلاصهٔ تازه", blank=True)
+    content = models.TextField("متن تازه (HTML)", blank=True)
+    notes = models.TextField("یادداشت نویسنده", blank=True)
+    warnings = models.TextField("هشدارها", blank=True)
+    source_sha = models.CharField(max_length=64, blank=True, editable=False)
+
+    ready_at = models.DateTimeField("آماده شد", null=True, blank=True)
+    publish_after = models.DateTimeField("انتشار از", null=True, blank=True)
+    published_at = models.DateTimeField("منتشر شد", null=True, blank=True)
+    old = models.JSONField("نسخهٔ قبلی", default=dict, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "بازنویسی مقاله"
+        verbose_name_plural = "برنامهٔ بازنویسی مقاله‌ها"
+        ordering = ["rank"]
+
+    def __str__(self):
+        return self.post.title

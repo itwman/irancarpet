@@ -75,6 +75,19 @@ class SeoSettings(models.Model):
                   "بالای فایل /llms.txt می‌آید.",
     )
 
+    rewrite_enabled = models.BooleanField(
+        "انتشار خودکار مقاله‌های بازنویسی‌شده", default=True,
+        help_text="روزی یک مقالهٔ بازنویسی‌شده (به ترتیب اولویت) روی همان نشانی قبلی منتشر می‌شود؛ نسخهٔ قبلی نگه داشته می‌شود.")
+    rewrite_hour = models.PositiveSmallIntegerField("ساعت انتشار روزانه", default=9, help_text="به وقت تهران، ۰ تا ۲۳")
+    rewrite_per_day = models.PositiveSmallIntegerField("تعداد انتشار در روز", default=1)
+    rewrite_review_days = models.PositiveSmallIntegerField(
+        "مهلت بررسی (روز)", default=2, help_text="متن تازه این مدت در پنل می‌ماند تا اگر خواستید ویرایش یا رد کنید؛ بعد خودکار منتشر می‌شود.")
+    rewrite_repo = models.CharField("مخزن گیت‌هاب متن‌ها", max_length=100, default="itwman/irancarpet", blank=True,
+                                    help_text="متن‌های تازه از پوشهٔ content/rewrites/posts این مخزن خوانده می‌شود")
+    rewrite_branch = models.CharField("شاخه", max_length=50, default="main", blank=True)
+    rewrite_last_sync = models.DateTimeField("آخرین دریافت از گیت‌هاب", null=True, blank=True, editable=False)
+    rewrite_last_status = models.CharField("نتیجهٔ آخرین دریافت", max_length=300, blank=True, editable=False)
+
     class Meta:
         verbose_name = "تنظیمات سئو و هوش مصنوعی"
         verbose_name_plural = verbose_name

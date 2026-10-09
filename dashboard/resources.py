@@ -769,3 +769,4 @@ import content.panel  # noqa: E402,F401  متن محصولات
 import affiliate.panel  # noqa: E402,F401  همکاری در فروش
 import market.panel  # noqa: E402,F401  مارکت‌پلیس
 import crm.panel  # noqa: E402,F401  باشگاه مشتریان
+import blog.panel  # noqa: E402,F401  برنامهٔ بازنویسی مقاله‌ها

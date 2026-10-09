@@ -71,7 +71,8 @@ FORMS = {
                                 "daily_enabled", "daily_times", "daily_albums",
                                 "weekly_enabled", "weekly_day", "weekly_time", "weekly_sizes", "weekly_group", "weekly_reeds", "weekly_albums",
                                 "weekly_title"]),
-    "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about"]),
+    "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about", "rewrite_enabled", "rewrite_hour", "rewrite_per_day",
+                          "rewrite_review_days", "rewrite_repo", "rewrite_branch"]),
     "affiliate": (AffiliateSettings, ["enabled", "auto_approve", "attribution_days", "tier_period", "tier_mode", "new_customers_only",
                                       "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
     "market": (MarketSettings, ["enabled", "signup_open", "default_commission", "accept_hours", "auto_deliver_days", "hold_days",
@@ -202,6 +203,18 @@ def crm_groups(form):
     return [(title, hint, [form[f] for f in fields]) for title, hint, fields in CRM_GROUPS]
 
 
+def rewrite_summary():
+    from django.db.models import Count
+
+    from blog.models import PostRewrite
+    from blog.rewrite import next_up
+
+    counts = dict(PostRewrite.objects.values_list("status").annotate(n=Count("pk")))
+    approved, _, ready = next_up(5)
+    return {"counts": [(label, counts.get(k, 0), k) for k, label in PostRewrite.Status.choices], "total": sum(counts.values()),
+            "next": (approved + ready)[:5]}
+
+
 @staff_required
 def settings_view(request):
     tab = request.GET.get("tab") or request.POST.get("tab") or "site"
@@ -258,6 +271,24 @@ def settings_view(request):
                     request, f"{what} به رج‌یار فرستاده شد." if ok else f"ارسال نشد: {post.error}")
             log(request, "action", "رج‌یار", None, request.POST["do"])
             return redirect("/panel/settings/?tab=rajyar")
+        if request.POST.get("do") == "rewrite_sync":
+            from blog import rewrite
+
+            got = rewrite.sync_github(force=True)
+            st = SeoSettings.load().rewrite_last_status
+            (messages.error if st.startswith("خطا") else messages.success)(request, f"گیت‌هاب: {st}" + (
+                " — " + "، ".join(f"{k}: {v}" for k, v in list(got.items())[:6]) if got else ""))
+            return redirect("/panel/settings/?tab=seo")
+        if request.POST.get("do") == "gsc_upload":
+            from blog import rewrite
+
+            f = request.FILES.get("gsc")
+            if not f:
+                messages.error(request, "فایل Pages.csv را انتخاب کنید.")
+            else:
+                n = rewrite.load_gsc_csv(f.read().decode("utf-8-sig", errors="ignore"))
+                messages.success(request, f"آمار گوگل {n} مقاله به‌روز شد." if n else "در این فایل آماری برای مقاله‌های صف پیدا نشد.")
+            return redirect("/panel/settings/?tab=seo")
         if request.POST.get("do") == "indexnow_all":
             urls = indexnow.all_urls()
             ok, msg = indexnow.submit(urls)
@@ -305,6 +336,7 @@ def settings_view(request):
         "tabs": TABS, "tab": tab, "form": form, "trust": trust, "info": status_info(),
         "fp": farshplus_info() if tab == "farshplus" else None,
         "seo": SeoSettings.load() if tab == "seo" else None,
+        "rw": rewrite_summary() if tab == "seo" else None,
         "rj": RajyarSettings.load() if tab == "rajyar" else None,
         "crm_groups": crm_groups(form) if tab == "crm" else None,
         "line": ShopSettings.load().smsir_line_number if tab == "crm" else "",

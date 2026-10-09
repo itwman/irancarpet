@@ -567,6 +567,21 @@ def render(content, request, title=""):
     return MISC_RE.sub(misc_block, content)
 
 
+FAQ_BOX_RE = re.compile(r'<div class="faq[^"]*">(.*?)</div>', re.S)
+FAQ_ITEM_RE = re.compile(r"<details[^>]*>\s*<summary[^>]*>(.*?)</summary>(.*?)</details>", re.S)
+
+
+def static_faq(content):
+    """پرسش‌های رایج نوشته‌شده در خود متن (<div class="faq"><details><summary>پرسش</summary><p>پاسخ</p></details>…)."""
+    out = []
+    for box in FAQ_BOX_RE.findall(content or ""):
+        for q, a in FAQ_ITEM_RE.findall(box):
+            q, a = re.sub(r"<[^>]+>", "", q).strip(), " ".join(re.sub(r"<[^>]+>", " ", a).split())
+            if q and a:
+                out.append((q, a))
+    return out
+
+
 def faq_jsonld(content):
     items = []
     if "[installment_faq]" in (content or ""):
@@ -583,6 +598,7 @@ def faq_jsonld(content):
                 items += size_faq_items(m.group(2), m.group(3))
             except Exception:  # noqa: BLE001
                 pass
+    items += static_faq(content)
     if not items:
         return None
     return {"@type": "FAQPage", "mainEntity": [
