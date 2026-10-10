@@ -14,6 +14,7 @@ from api import views as api_views
 from finder import api as finder_api
 from finder import views as finder_views
 from crm import links as crm_links
+from stats import track as stats_track
 from shop import offers_page as shop_offers_page
 from growth import views as growth_views
 from installments import views as installments_views
@@ -44,6 +45,7 @@ urlpatterns = [
     path("robots.txt", core_views.robots_txt),
     path("o/<str:token>/", growth_views.quickpay),
     path("s/<str:code>/", crm_links.view),
+    path("t/", stats_track.beacon),
     path("review/<str:token>/", growth_views.review_invite),
     path("alerts/", growth_views.alert),
     path("farsh-yab/", finder_views.page),

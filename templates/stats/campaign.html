@@ -1,0 +1,54 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}گزارش کمپین {{ c.title }}{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/crm-campaigns/" class="back">‹ کمپین‌های پیامکی</a>
+    <h1>گزارش «{{ c.title|fa_num }}»</h1>
+    <p class="muted">ارسال {{ c.started_at|default:c.created_at|jdate:"%A %d %B %Y، ساعت %H:%M" }} · {{ c.get_segment_display }}</p></div>
+  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/crm-campaigns/{{ c.pk }}/">کمپین</a></div>
+</div>
+
+<div class="tiles">
+  <div class="tile t-ink"><span>پیامک رسیده به sms.ir</span><strong>{{ r.sent|fa_num }}</strong><small>{{ r.failed|fa_num }} ناموفق · {{ r.parts|fa_num }} پیامک مصرفی</small></div>
+  <div class="tile t-teal"><span>کلیک (بدون ربات)</span>{% if r.personal %}<strong>{{ r.clicked|fa_num }}</strong><small>{{ r.click_rate|fa_num }}٪ گیرنده‌ها · {{ r.visits|fa_num }} ورود به سایت</small>{% else %}<strong>—</strong><small>{% if r.shared_hits %}پیوند مشترک {{ r.shared_hits|fa_num }} بار باز شده (همراه ربات‌ها){% else %}این کمپین پیوند شخصی نداشت{% endif %}</small>{% endif %}</div>
+  <div class="tile t-saffron"><span>خرید پس از کلیک</span><strong>{{ r.att_orders|fa_num }}</strong><small>{{ r.att_sum|toman }} تومان{% if r.att_pending %} · {{ r.att_pending|fa_num }} سفارش پرداخت‌نشده{% endif %}</small></div>
+  <div class="tile t-pink"><span>خرید گیرنده‌ها در ۷ روز</span><strong>{{ r.week_orders|fa_num }}</strong><small>{{ r.week_sum|toman }} تومان · {{ r.week_buyers|fa_num }} نفر</small></div>
+</div>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    {% if r.funnel %}<section class="card-p"><h2>قیف کمپین</h2>
+      {% with top=r.funnel.0.1 %}{% for label, n in r.funnel %}<div class="hbar"><span>{{ label }}</span><div class="hbar__track"><i style="width:{% widthratio n top 100 %}%"></i></div><strong>{{ n|fa_num }}</strong></div>{% endfor %}{% endwith %}
+    </section>{% endif %}
+
+    <section class="card-p"><h2>خریداران قبلی و بقیه</h2>
+      <div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>گروه</th><th>گیرنده</th><th>کلیک</th><th>نرخ کلیک</th><th>خرید در ۷ روز</th><th>نرخ خرید</th></tr></thead><tbody>
+        <tr><td>قبلاً از ما خریده بودند</td><td>{{ r.old.n|fa_num }}</td><td>{% if r.personal %}{{ r.old.clicked|fa_num }}{% else %}—{% endif %}</td><td>{% if r.personal %}{{ r.old.click_rate|fa_num }}٪{% else %}—{% endif %}</td><td>{{ r.old.bought|fa_num }}</td><td>{{ r.old.buy_rate|fa_num }}٪</td></tr>
+        <tr><td>هنوز خرید نداشتند (ثبت‌نامی، سفارش ناتمام…)</td><td>{{ r.new.n|fa_num }}</td><td>{% if r.personal %}{{ r.new.clicked|fa_num }}{% else %}—{% endif %}</td><td>{% if r.personal %}{{ r.new.click_rate|fa_num }}٪{% else %}—{% endif %}</td><td>{{ r.new.bought|fa_num }}</td><td>{{ r.new.buy_rate|fa_num }}٪</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section class="card-p"><h2>کلیک‌کننده‌ها و خریداران</h2>
+      {% if r.people %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>مشتری</th><th>موبایل</th><th>کلیک</th><th>اولین کلیک</th><th>خرید ۷ روزه</th><th>خریدار قبلی</th></tr></thead><tbody>
+        {% for x in r.people %}<tr data-href="/panel/crm/customer/{{ x.mobile }}/"><td>{{ x.name|default:"—" }}</td><td class="ltr-num">{{ x.mobile|fa_num }}</td><td>{{ x.clicks|fa_num }}</td><td class="muted">{% if x.first %}{{ x.first|jdate:"%m/%d %H:%M" }}{% else %}—{% endif %}</td><td>{% if x.bought %}<span class="badge-ic b-completed">خرید</span>{% else %}—{% endif %}</td><td>{% if x.old %}بله{% else %}—{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted mt-2">هنوز کسی کلیک یا خرید نکرده است.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="edit__side">
+    <section class="card-p"><h2>نتیجهٔ کمپین</h2>
+      <div class="kv"><span>ورود به سایت پس از کلیک</span><strong>{{ r.visits|fa_num }}</strong></div>
+      <div class="kv"><span>بازدید صفحه</span><strong>{{ r.views|fa_num }}</strong></div>
+      <div class="kv"><span>افزودن به سبد</span><strong>{{ r.carts|fa_num }}</strong></div>
+      {% if c.discount %}<div class="kv"><span>خرید با کد تخفیف کمپین</span><strong>{{ r.code_orders|fa_num }} · {{ r.code_sum|toman }} تومان</strong></div>{% endif %}
+      <div class="kv"><span>خرید پس از کلیک</span><strong>{{ r.att_orders|fa_num }} · {{ r.att_sum|toman }} تومان</strong></div>
+      <div class="kv"><span>خرید گیرنده‌ها تا {{ r.week_until|jdate:"%d %B" }}</span><strong>{{ r.week_orders|fa_num }} · {{ r.week_sum|toman }} تومان</strong></div>
+    </section>
+    <section class="card-p"><h2>چطور بخوانیم</h2>
+      <p class="small muted mb-2"><strong>کلیک</strong> فقط با پیوند شخصی ({link} در متن) شمرده می‌شود؛ ربات‌ها و پیش‌نمایش خودکار پیوند کنار گذاشته می‌شوند.</p>
+      <p class="small muted mb-2"><strong>خرید پس از کلیک</strong> سفارشی است که تا ۷ روز بعد از کلیک، در همان مرورگر ثبت شده؛ دقیق است ولی اگر مشتری با دستگاه دیگری خریده باشد دیده نمی‌شود.</p>
+      <p class="small muted mb-0"><strong>خرید گیرنده‌ها در ۷ روز</strong> هر خرید گیرنده‌ها در هفتهٔ بعد از ارسال است، حتی بدون کلیک (مثلاً با تماس تلفنی)؛ ممکن است بخشی از آن بدون پیامک هم انجام می‌شد.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

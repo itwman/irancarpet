@@ -112,6 +112,14 @@ def run_all(out=print):
             log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:  # آمار بازدید: خلاصهٔ روزهای تمام‌شده و پاک کردن ریزهای کهنه
+        from stats.rollup import run as stats_rollup
+
+        n = stats_rollup()
+        if n:
+            done["خلاصهٔ آمار بازدید"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("stats rollup")
     try:  # بازنویسی مقاله‌ها: دریافت از گیت‌هاب و انتشار روزانه
         from blog.rewrite import run as rewrite_run
 

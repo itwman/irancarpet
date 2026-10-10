@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% load fa %}
 {% block og %}<meta property="og:type" content="product">{% if product.image %}<meta property="og:image" content="{{ product.image.absolute_url }}">{% endif %}{% endblock %}
-{% block head %}{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 992px) 100vw, 600px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
+{% block head %}<meta name="ic-pid" content="{{ product.pk }}">{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 992px) 100vw, 600px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
 {% block content %}
 <div class="container">
   {% include "partials/breadcrumbs.html" %}

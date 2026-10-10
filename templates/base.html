@@ -39,6 +39,7 @@
 {% include "partials/footer.html" %}
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
 <script src="{% static 'js/site.js' %}?v={{ ASSET_V }}" defer></script>
+{% if not request.user.is_staff %}<script>(function(){function s(){try{var m=document.querySelector('meta[name="ic-pid"]');fetch('/t/',{method:'POST',keepalive:true,credentials:'same-origin',headers:{'Content-Type':'text/plain'},body:JSON.stringify({p:location.pathname+location.search,r:document.referrer,pid:m?m.content:0})}).catch(function(){})}catch(e){}}if(document.readyState==='complete'){s()}else{addEventListener('load',function(){setTimeout(s,0)})}})();</script>{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

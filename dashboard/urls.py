@@ -7,6 +7,7 @@ from blog import panel as blog_panel
 from crm import customer as crm_customer
 from crm import views as crm_views
 from growth import panel as growth_panel
+from stats import views as stats_views
 
 from .views import crud, home, media, orders, people, products, settings
 
@@ -33,6 +34,8 @@ urlpatterns = [
     path("rewrites/<int:pk>/preview/", blog_panel.preview),
     path("special-offers/preview/", growth_panel.offer_preview),
     path("crm/report/", crm_views.report_view),
+    path("stats/", stats_views.traffic_view),
+    path("crm/campaigns/<int:pk>/report/", stats_views.campaign_view),
     path("crm/segments/", crm_views.segments_view),
     path("crm/segments/<str:key>/", crm_views.segments_view),
     path("crm/customer/<str:mobile>/", crm_customer.customer_view),

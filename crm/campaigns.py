@@ -78,6 +78,22 @@ def extra_vars(campaign):
     return out
 
 
+def link_target(campaign):
+    """مقصد {link} کمپین."""
+    path = (campaign.link_path or "").strip()
+    if path.startswith("/"):
+        return path
+    if campaign.offer_id:
+        return campaign.offer.product.get_absolute_url()
+    return "/"
+
+
+def personal_link(campaign, mobile):
+    from .links import personal
+
+    return personal(link_target(campaign), campaign, mobile, "l", days=max(30, campaign.valid_days or 0))
+
+
 def start(campaign):
     t = threading.Thread(target=_run, args=(campaign.pk,), daemon=True)
     t.start()
@@ -124,7 +140,10 @@ def _run(pk, pause=0.4, limit=None):
             coupon = None
             if camp.discount:
                 coupon = personal_coupon(camp.code_prefix, c["mobile"], camp.title, camp.discount, camp.min_order, camp.valid_days)
-            ok = send(c["mobile"], message(camp.text, c, coupon, footer, **extras), SmsLog.Kind.CAMPAIGN, campaign=camp)
+            mine = dict(extras)
+            if "{link}" in (camp.text or ""):
+                mine["link"] = personal_link(camp, c["mobile"])
+            ok = send(c["mobile"], message(camp.text, c, coupon, footer, **mine), SmsLog.Kind.CAMPAIGN, campaign=camp)
             this_run += 1
             if this_run % 50 == 0:
                 cache.set(lock, 1, 900)

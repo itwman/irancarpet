@@ -139,6 +139,12 @@ class Order(models.Model):
 
     NUMBER_START = 200001
 
+    # منبع ورود (stats): از کجا آمد و کدام کمپین پیامکی (برای گزارش فروش هر منبع)
+    src = models.CharField("منبع ورود", max_length=10, blank=True, db_index=True)
+    src_name = models.CharField("نام منبع", max_length=60, blank=True)
+    utm_campaign = models.CharField("کمپین UTM", max_length=80, blank=True)
+    sms_campaign_id = models.PositiveIntegerField("کمپین پیامکی", null=True, blank=True, db_index=True)
+
     class Meta:
         verbose_name = "سفارش"
         verbose_name_plural = "سفارش‌ها"

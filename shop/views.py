@@ -82,6 +82,9 @@ def cart_add(request):
     if v.is_pair_only and total % 2 == 0 and qty % 2:
         messages.info(request, "این سایز فقط به‌صورت جفت فروخته می‌شود؛ تعداد زوج شد.")
     messages.success(request, f"«{v.product.title}» به سبد اضافه شد.")
+    from stats.track import event
+
+    event(request, "c", v.product_id, v.product.get_absolute_url())
     return redirect("/cart/")
 
 
@@ -211,6 +214,9 @@ def checkout(request):
             from affiliate.track import ref_from_request
 
             order = create_order(request.user, form, summary, shop, installment=inst, ref=ref_from_request(request))
+            from stats.track import attach_order
+
+            attach_order(request, order)
             request.session.pop("coupon", None)
             if not pay_now:
                 Cart(request).clear()

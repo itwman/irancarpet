@@ -90,15 +90,21 @@ register(Resource(
                                                           o.get_status_display())),
              Col("progress", "ارسال", lambda o: f"{fa_num(o.sent)} از {fa_num(o.total)}" + (f" · {fa_num(o.failed)} ناموفق" if o.failed else "")),
              Col("result", "نتیجه", _camp_result),
+             Col("report", "گزارش", lambda o: format_html('<a class="btn btn-light btn-sm" href="/panel/crm/campaigns/{}/report/">گزارش</a>', o.pk)
+                 if o.sent else "—"),
              Col("created_at", "ساخته شده", lambda o: jdate(o.created_at, "%Y/%m/%d"), "created_at")],
     search=["title"], filters=["status", "segment"], ordering=("-created_at",),
-    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "offer", "custom_numbers", "text"], "main"),
+    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "offer", "custom_numbers", "text", "link_path"], "main"),
                ("کد تخفیف شخصی", ["discount", "min_order", "valid_days"], "side")],
-    readonly=[("گیرنده‌ها", _camp_people), ("نتیجه", _camp_result), ("آخرین خطا", lambda o: o.last_error or "—")],
+    readonly=[("گیرنده‌ها", _camp_people), ("نتیجه", _camp_result),
+              ("گزارش کامل", lambda o: format_html('<a href="/panel/crm/campaigns/{}/report/">کلیک، بازدید و خرید گیرنده‌ها</a>', o.pk)
+               if o.sent else "بعد از ارسال"),
+              ("آخرین خطا", lambda o: o.last_error or "—")],
     actions={"start": ("شروع یا ادامهٔ ارسال", _camp_start), "stop": ("توقف ارسال", _camp_stop),
              "test": ("پیامک نمونه به مدیران", _camp_test)},
     help="برای هر گیرنده یک کد تخفیف شخصی ساخته می‌شود که فقط با شمارهٔ موبایل خود او و یک‌بار کار می‌کند؛ پخش شدنش در کانال‌ها بی‌اثر است. "
          "اول با «پیامک نمونه به مدیران» متن را ببینید، بعد «شروع ارسال». متغیرها: {name} {code} {discount} {min} {until} {site} "
+         "{link} (پیوند کوتاه شخصی هر گیرنده؛ کلیک و خرید هر نفر در «گزارش» کمپین دیده می‌شود) "
          "و برای آلبوم: {album} {date}. برای اطلاع افزایش قیمت، «مبلغ تخفیف» را ۰ بگذارید.",
 ))
 

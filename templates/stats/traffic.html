@@ -1,0 +1,68 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}گزارش بازدید و ورودی‌ها{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>گزارش بازدید و ورودی‌ها</h1>
+    <p class="muted">{% if start == end %}{{ start|jdate:"%A %d %B %Y" }}{% else %}{{ start|jdate:"%d %B" }} تا {{ end|jdate:"%d %B %Y" }}{% endif %}؛ بازدید کارمندان و ربات‌ها شمرده نمی‌شود.</p></div>
+</div>
+<nav class="tabs-p" aria-label="بازهٔ زمانی">{% for k, t in periods %}<a href="?p={{ k }}" class="{% if k == p %}on{% endif %}">{{ t }}</a>{% endfor %}</nav>
+
+<div class="tiles">
+  <div class="tile t-ink"><span>ورود به سایت (نشست)</span><strong>{{ r.t.visits|fa_num }}</strong><small>{{ r.t.views|fa_num }} بازدید صفحه · {{ r.t.pages_per_visit|fa_num }} صفحه در هر ورود</small></div>
+  <div class="tile t-teal"><span>بازدیدکنندهٔ یکتا</span><strong>{{ r.t.visitors|fa_num }}</strong><small>{{ r.t.new_pct|fa_num }}٪ تازه · {{ r.t.mobile_pct|fa_num }}٪ با موبایل{% if r.approx_visitors %} · جمع روزانه{% endif %}</small></div>
+  <div class="tile t-saffron"><span>افزودن به سبد</span><strong>{{ r.t.carts|fa_num }}</strong><small>{{ r.t.orders|fa_num }} سفارش ثبت‌شده در سایت</small></div>
+  <a class="tile t-pink" href="/panel/orders/"><span>فروش این بازه</span><strong>{{ r.t.revenue|toman }}</strong><small>تومان · {{ r.t.orders_placed|fa_num }} سفارش · نرخ تبدیل {{ r.t.conv|fa_num }}٪</small></a>
+</div>
+
+<div class="edit__grid">
+  <div class="edit__main">
+    {% if series|length > 1 %}<section class="card-p"><div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">ورود به سایت {% if weekly %}در هر هفته{% else %}در هر روز{% endif %}</h2></div>
+      <div class="bars" role="img" aria-label="نمودار ورود به سایت">{% for s in series %}<div class="bar{% if forloop.last and p != 'yesterday' %} today{% endif %}" tabindex="0" data-tip="{{ s.tip }}"><i style="height:{% if s.visits %}max(3px,{{ s.h }}%){% else %}0{% endif %}"></i></div>{% endfor %}</div>
+      {% with last=series|last %}<div class="bars-axis"><span>{{ series.0.label|fa_num }}</span><span>{{ last.label|fa_num }}</span></div>{% endwith %}
+    </section>{% endif %}
+
+    <section class="card-p"><h2>منبع ورود</h2>
+      {% for g in r.groups %}<div class="hbar"><span>{{ g.label }}</span><div class="hbar__track"><i style="width:{{ g.share }}%"></i></div><strong>{{ g.visits|fa_num }} ورود <small class="muted">({{ g.share|fa_num }}٪)</small>{% if g.orders %}، {{ g.orders|fa_num }} خرید{% endif %}</strong></div>
+      {% empty %}<p class="muted">هنوز بازدیدی ثبت نشده است. آمار از لحظهٔ به‌روزرسانی سایت جمع می‌شود.</p>{% endfor %}
+      <p class="hint mt-2">اپ‌های اینستاگرام، تلگرام و واتساپ اغلب منبع را نمی‌فرستند و آن ورودها «مستقیم یا نامشخص» دیده می‌شوند؛ برای لینک‌هایی که خودتان در این اپ‌ها می‌گذارید از UTM استفاده کنید.</p>
+    </section>
+
+    <section class="card-p"><h2>جزئیات منبع‌ها</h2>
+      {% if r.sources %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>منبع</th><th>ورود</th><th>بازدید صفحه</th><th>بازدیدکننده</th><th>سبد</th><th>خرید</th><th>فروش (تومان)</th><th>تبدیل</th></tr></thead><tbody>
+        {% for s in r.sources %}<tr><td>{{ s.name|default:s.label }}{% if s.name %}<br><small class="muted">{{ s.label }}</small>{% endif %}</td><td>{{ s.visits|fa_num }}</td><td>{{ s.views|fa_num }}</td><td>{{ s.visitors|fa_num }}</td><td>{{ s.carts|fa_num }}</td><td>{{ s.orders|fa_num }}</td><td class="num">{{ s.revenue|toman }}</td><td>{{ s.conv|fa_num }}٪</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">—</p>{% endif %}
+    </section>
+
+    <section class="card-p"><h2>کمپین‌های UTM</h2>
+      {% if r.utm %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>utm_source</th><th>utm_medium</th><th>utm_campaign</th><th>ورود</th><th>سبد</th><th>خرید</th><th>فروش (تومان)</th></tr></thead><tbody>
+        {% for u in r.utm %}<tr><td class="ltr-num">{{ u.source }}</td><td>{{ u.medium_label|default:"—" }}</td><td class="ltr-num">{{ u.campaign|default:"—" }}</td><td>{{ u.visits|fa_num }}</td><td>{{ u.carts|fa_num }}</td><td>{{ u.orders|fa_num }}</td><td class="num">{{ u.revenue|toman }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted mt-2">هنوز ورودی با UTM نیامده است. نمونهٔ پیوند برای استوری اینستاگرام:</p>
+      <p class="ltr-num small"><code>https://irancarpet.net/فرش-جشنواره-ای/?utm_source=instagram&amp;utm_medium=story&amp;utm_campaign=mehr1405</code></p>{% endif %}
+    </section>
+
+    <section class="card-p"><h2>پربازدیدترین فرش‌ها</h2>
+      {% if r.products %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>فرش</th><th>بازدید</th><th>بازدیدکننده</th><th>افزودن به سبد</th><th>نرخ سبد</th><th>فروخته (تخته)</th></tr></thead><tbody>
+        {% for x in r.products %}<tr{% if x.p %} data-href="/panel/products/{{ x.pid }}/edit/"{% endif %}><td>{% if x.p %}{{ x.p.title|fa_num|truncatechars:60 }}{% else %}فرش حذف‌شده{% endif %}</td><td>{{ x.views|fa_num }}</td><td>{{ x.visitors|fa_num }}</td><td>{{ x.carts|fa_num }}</td><td>{{ x.cart_rate|fa_num }}٪</td><td>{{ x.sold|fa_num }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">—</p>{% endif %}
+    </section>
+
+    <section class="card-p"><h2>پربازدیدترین صفحه‌ها</h2>
+      {% if r.pages %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>صفحه</th><th>بازدید</th><th>بازدیدکننده</th><th>صفحهٔ ورود</th></tr></thead><tbody>
+        {% for x in r.pages %}<tr><td><a href="{{ x.path }}" target="_blank" rel="noopener">{{ x.path|truncatechars:70 }}</a></td><td>{{ x.views|fa_num }}</td><td>{{ x.visitors|fa_num }}</td><td>{{ x.entries|fa_num }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">—</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="edit__side">
+    <section class="card-p"><h2>سایت‌هایی که شما را معرفی کرده‌اند</h2>
+      {% for s in r.referrals %}<div class="kv"><span class="ltr-num">{{ s.name }}</span><strong>{{ s.visits|fa_num }} ورود{% if s.orders %} · {{ s.orders|fa_num }} خرید{% endif %}</strong></div>
+      {% empty %}<p class="muted">هنوز ورودی از سایت دیگری نیامده.</p>{% endfor %}
+    </section>
+    <section class="card-p"><h2>راهنما</h2>
+      <p class="small muted mb-2"><strong>ورود</strong> یعنی یک نشست؛ اگر کسی ۳۰ دقیقه کاری نکند و برگردد، ورود تازه حساب می‌شود.</p>
+      <p class="small muted mb-2"><strong>خرید و فروش</strong> سفارش‌های پرداخت‌شده یا در انتظار بررسی اقساط است که در این بازه ثبت شده‌اند؛ هر سفارش به منبع نشست خریدار، یا اگر مستقیم آمده بود، به آخرین منبع غیرمستقیم ۳۰ روز گذشته‌اش نسبت داده می‌شود.</p>
+      <p class="small muted mb-0">ریز بازدیدها ۴۵ روز نگه داشته و بعد در خلاصهٔ روزانه جمع می‌شود. نشانی IP و اطلاعات شخصی ذخیره نمی‌شود.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

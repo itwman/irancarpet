@@ -141,7 +141,10 @@ class Campaign(models.Model):
     min_order = models.PositiveBigIntegerField("حداقل خرید (تومان)", default=40_000_000)
     valid_days = models.PositiveIntegerField("مهلت استفاده (روز)", default=30)
     text = models.TextField("متن پیامک", default=texts.CAMPAIGN,
-                            help_text="{name} نام، {code} کد تخفیف شخصی، {discount} مبلغ تخفیف، {min} حداقل خرید، {until} تاریخ پایان، {site} نشانی سایت")
+                            help_text="{name} نام، {code} کد تخفیف شخصی، {discount} مبلغ تخفیف، {min} حداقل خرید، {until} تاریخ پایان، "
+                                      "{link} پیوند کوتاه شخصی (کلیک هر نفر و خریدش در گزارش کمپین دیده می‌شود)، {site} نشانی سایت (بدون آمار)")
+    link_path = models.CharField("مقصد {link}", max_length=300, blank=True,
+                                 help_text="مسیر صفحه‌ای در سایت، مثل /فرش-جشنواره-ای/ ؛ خالی = صفحهٔ فرش فرصت ویژه (اگر انتخاب شده) یا صفحهٔ اول")
     code_prefix = models.CharField(max_length=8, blank=True, editable=False)
     status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.DRAFT)
     total = models.PositiveIntegerField("گیرنده", default=0)
@@ -211,6 +214,11 @@ class ShortLink(models.Model):
     hits = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
+    # پیوند شخصی کمپین: هر گیرنده یک کد؛ کلیک انسانی (بدون ربات و پیش‌نمایش) جدا شمرده می‌شود
+    campaign = models.ForeignKey("crm.Campaign", null=True, blank=True, on_delete=models.CASCADE, related_name="links")
+    mobile = models.CharField(max_length=11, blank=True, db_index=True)
+    clicks = models.PositiveIntegerField(default=0)
+    first_click_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "پیوند کوتاه"

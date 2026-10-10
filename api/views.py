@@ -573,6 +573,9 @@ def order_create(request):
         first = next(iter(errors.values()))
         return fail(first if len(errors) == 1 else "لطفاً خطاها را برطرف کنید.", errors=errors)
     order = create_order(request.api_user, form, summary, shop, source=app_source(request), installment=inst)
+    from stats.track import attach_order
+
+    attach_order(request, order, source="app")
     if not pay_now:
         from shop import notify
 

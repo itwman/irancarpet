@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "affiliate",
     "market",
     "crm",
+    "stats",
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "affiliate.track.RefMiddleware",
+    "stats.track.CampaignClickMiddleware",  # ?sl= پیوند شخصی کمپین پیامکی
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "seo.middleware.RedirectFallbackMiddleware",
