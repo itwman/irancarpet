@@ -161,7 +161,7 @@ def status_info():
     shop = ShopSettings.load()
     return {
         "sep": bool(config.get("SEP_TERMINAL_ID")), "zarinpal": bool(config.get("ZARINPAL_MERCHANT_ID")),
-        "sms": sms.configured(), "fake": gateways.Fake.available(),
+        "sms": sms.otp_mode(), "fake": gateways.Fake.available(),
         "active": [g.key for g in gateways.enabled(shop)],
     }
 
@@ -236,7 +236,7 @@ def settings_view(request):
             if not mobile:
                 messages.error(request, "شمارهٔ موبایل آزمایشی درست نیست.")
             elif not sms.configured():
-                messages.error(request, "اول کلید API و شمارهٔ قالب کد ورود را ذخیره کنید.")
+                messages.error(request, "اول کلید API و شمارهٔ قالب کد ورود (یا شمارهٔ خط) را ذخیره کنید.")
             elif sms.send_otp(mobile, "12345"):
                 messages.success(request, f"پیامک آزمایشی (کد ۱۲۳۴۵) به {mobile} فرستاده شد.")
             else:

@@ -111,7 +111,7 @@
     <section class="card-p"><h2>وضعیت اتصال‌ها</h2>
       <div class="kv"><span>درگاه سامان</span><strong>{% if info.sep %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
       <div class="kv"><span>زرین‌پال</span><strong>{% if info.zarinpal %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
-      <div class="kv"><span>پیامک sms.ir</span><strong>{% if info.sms %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
+      <div class="kv"><span>پیامک sms.ir</span><strong>{% if info.sms == "template" %}<span class="dot on"></span>تنظیم شده{% elif info.sms == "line" %}<span class="dot on"></span>تنظیم شده <small class="muted">(کد ورود با متن ساده از خط؛ قالب بهتر است)</small>{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
       <div class="kv"><span>درگاه آزمایشی</span><strong>{% if info.fake %}<span class="dot warn"></span>روشن (فقط نسخهٔ آزمایشی){% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
       <div class="kv"><span>درگاه‌های نمایش داده‌شده به مشتری</span><strong>{{ info.active|length|fa_num }}</strong></div>
     </section>

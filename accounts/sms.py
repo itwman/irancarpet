@@ -16,7 +16,17 @@ def _cfg(name):
 
 
 def configured():
-    return bool(_cfg("SMSIR_API_KEY") and _cfg("SMSIR_OTP_TEMPLATE_ID"))
+    """کد ورود فرستاده می‌شود؟ با قالب «ارسال سریع» (بهتر) یا اگر قالب نیست، با متن ساده از خط اختصاصی."""
+    return bool(_cfg("SMSIR_API_KEY") and (_cfg("SMSIR_OTP_TEMPLATE_ID") or _cfg("SMSIR_LINE_NUMBER")))
+
+
+def otp_mode():
+    """«template» | «line» | «» برای نمایش وضعیت در پنل."""
+    if not _cfg("SMSIR_API_KEY"):
+        return ""
+    if _cfg("SMSIR_OTP_TEMPLATE_ID"):
+        return "template"
+    return "line" if _cfg("SMSIR_LINE_NUMBER") else ""
 
 
 def record(mobiles, text, ok, error="", kind="other", order=None):
@@ -69,8 +79,19 @@ def _send_template(mobile, template_id, params):
     return False
 
 
+OTP_TEXT = "کد ورود شما به ایران کارپت: {code}"
+
+
 def send_otp(mobile, code):
-    return send_template(mobile, _cfg("SMSIR_OTP_TEMPLATE_ID"), {"CODE": code}, log_it=False)  # کد ورود ثبت نمی‌شود
+    """کد ورود (ثبت نمی‌شود). اول قالب «ارسال سریع»؛ اگر شمارهٔ قالب خالی است، متن ساده از خط اختصاصی."""
+    tpl = _cfg("SMSIR_OTP_TEMPLATE_ID")
+    if tpl:
+        return send_template(mobile, tpl, {"CODE": code}, log_it=False)
+    ok, msg = _send_bulk([mobile], OTP_TEXT.format(code=code))
+    if not ok:
+        LAST_ERROR["msg"] = msg
+        log.warning("sms.ir کد ورود (خط) نرفت: %s", msg)
+    return ok
 
 
 BULK_API = "https://api.sms.ir/v1/send/bulk"

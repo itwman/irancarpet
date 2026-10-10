@@ -83,3 +83,22 @@ class ContactTests(TestCase):
         self.assertTrue(text.endswith("ایران کارپت"))
         self.client.post(f"/panel/contact-messages/{m.pk}/", {"reply": "فرش موجود است.", "status": "answered", "note": "x"})
         self.assertEqual(send_bulk.call_count, 1)  # همان متن دوباره فرستاده نمی‌شود
+
+
+class OtpLineFallbackTests(TestCase):
+    """بدون شمارهٔ قالب کد ورود، کد با متن ساده از خط اختصاصی فرستاده می‌شود."""
+
+    def test_line_fallback(self):
+        from accounts import sms
+        from shop.models import ShopSettings
+
+        ShopSettings.objects.update_or_create(pk=1, defaults={"smsir_api_key": "KEY", "smsir_otp_template_id": "", "smsir_line_number": "9982007519"})
+        self.assertTrue(sms.configured())
+        self.assertEqual(sms.otp_mode(), "line")
+        with mock.patch("accounts.sms._send_bulk", return_value=(True, "")) as bulk, mock.patch("accounts.sms._send_template") as tpl:
+            r = self.client.post("/my-account/login/", {"action": "otp", "mobile": "09121234567"})
+        self.assertEqual(r.status_code, 302)
+        tpl.assert_not_called()
+        self.assertIn("کد ورود شما به ایران کارپت", bulk.call_args[0][1])
+        ShopSettings.objects.filter(pk=1).update(smsir_otp_template_id="100200")
+        self.assertEqual(sms.otp_mode(), "template")
