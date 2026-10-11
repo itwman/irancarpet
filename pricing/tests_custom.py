@@ -67,3 +67,53 @@ class CustomSizeTests(TestCase):
         html = self.client.get("/custom/").content.decode()
         self.assertIn("data-cz", html)
         self.assertIn("قیمت حدودی فرش با سایز دلخواه", html)
+
+    def test_minimums(self):
+        from .models import PricingSettings
+
+        q = quote(0.4, 1, 1, "700", rates=R)  # طراحی ۱۶۰ هزار و دوخت ۸۰۰ هزار ← حداقل ۱ میلیون
+        lines = dict(q.lines)
+        design = [v for k, v in lines.items() if k.startswith("طراحی")][0]
+        seam = [v for k, v in lines.items() if k.startswith("دوخت")][0]
+        self.assertEqual((design, seam), (1_000_000, 1_000_000))
+        self.assertTrue(any("حداقل هزینهٔ طراحی" in k for k in lines) and any("حداقل هزینهٔ دوخت" in k for k in lines))
+        s = PricingSettings.load()
+        s.design_min, s.seam_min = 2_000_000, 0
+        s.save()
+        cache.clear()
+        lines = dict(quote(0.4, 1, 1, "700", rates=R).lines)
+        self.assertEqual(sorted(v for k, v in lines.items() if not k.startswith("بافت")), [800_000, 2_000_000])
+
+    def test_product_page_calculator(self):
+        s = {x.slug: x for x in Size.objects.all()}
+        a = Album.objects.create(name="فرش 700 شانه آزمایشی", code="T", base_size=s["12-meter"], base_price=Decimal("50000000"),
+                                 profit_percent=Decimal("0"), waste_value=Decimal("2000000"))
+        a.sizes.set([s["12-meter"], s["9-meter"]])
+        from catalog.models import Product
+        from core.models import Media, SiteSettings
+        from pricing.albums import sync_album_variations
+
+        ss = SiteSettings.load()
+        ss.whatsapp = "989125347596"
+        ss.save()
+        img = Media.objects.create(file="x.jpg")
+        p = Product.objects.create(title="فرش 700 شانه نقشه آزمون", slug="t", album=a, status="publish", image=img)
+        sync_album_variations([p])
+        cache.clear()
+        html = self.client.get(p.get_absolute_url()).content.decode()
+        self.assertIn("قیمت این فرش در سایز دلخواه", html)
+        self.assertIn(f'data-product="{p.pk}"', html)
+        self.assertIn('data-reeds="700"', html)
+        self.assertIn("https://wa.me/989125347596", html)
+        self.assertNotIn("<select data-album", html)
+        j = self.client.get("/custom-size/quote/", {"w": "2", "l": "3", "reeds": "700", "product": p.pk}).json()
+        self.assertTrue(j["ok"], j)
+        # ناموجود، بدون آلبوم یا بدون شانه ← بدون ماشین‌حساب
+        Product.objects.filter(pk=p.pk).update(stock_status="outofstock")
+        cache.clear()
+        self.assertNotIn("قیمت این فرش در سایز دلخواه", self.client.get(p.get_absolute_url()).content.decode())
+        q = Product.objects.create(title="فرش نقشه بدون آلبوم", slug="t2", status="publish", image=img)
+        self.assertNotIn("قیمت این فرش در سایز دلخواه", self.client.get(q.get_absolute_url()).content.decode())
+        r = Product.objects.create(title="فرش نقشه بی‌شانه", slug="t3", album=a, status="publish", image=img)
+        sync_album_variations([r])
+        self.assertNotIn("قیمت این فرش در سایز دلخواه", self.client.get(r.get_absolute_url()).content.decode())

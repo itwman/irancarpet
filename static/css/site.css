@@ -1452,3 +1452,18 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .cz__err{color:var(--pink-d);margin:0}
 .cz__note{font-size:.85rem;color:var(--ink-2);margin:1rem 0 0}
 @media (max-width:640px){.cz__form{grid-template-columns:1fr 1fr}.cz__out{grid-template-columns:1fr}.cz__fig{max-width:280px;justify-self:center}}
+/* ماشین‌حساب سایز دلخواه در صفحهٔ فرش */
+.czd{margin:1rem 0;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff}
+.czd>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.7rem .9rem;list-style:none}
+.czd>summary::-webkit-details-marker{display:none}
+.czd>summary span{color:var(--muted);font-size:.85rem}
+.czd>summary span::after{content:"";display:inline-block;width:.45rem;height:.45rem;margin-inline-start:.5rem;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .2s}
+.czd[open]>summary span::after{transform:translateY(1px) rotate(-135deg)}
+.czd>summary:focus-visible{outline:3px solid var(--teal);outline-offset:2px;border-radius:var(--r-sm)}
+.cz--product{margin:0;border-radius:0 0 var(--r-sm) var(--r-sm);padding:1rem .9rem}
+.cz--product .cz__out{grid-template-columns:1fr}
+.cz--product .cz__fig{max-width:260px;justify-self:center}
+.cz--product .cz__lines{list-style:none;padding:0;margin:0 0 .7rem;font-size:.9rem}
+.cz--product .cz__how{margin:.3rem 0 .6rem;padding-inline-start:1.1rem;font-size:.88rem;color:var(--ink-2)}
+.cz__wa{display:flex;justify-content:center;width:100%;margin:.8rem 0 .3rem}
+@media (prefers-reduced-motion:reduce){.czd>summary span::after{transition:none}}

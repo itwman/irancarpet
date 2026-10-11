@@ -39,7 +39,10 @@ class PricingSettings(models.Model):
                                    help_text="فرشی که نیمه‌اش هم روی دستگاه همان شانه جا نشود، با این عرض حساب می‌شود")
     design_per_m2 = models.PositiveBigIntegerField("هزینهٔ طراحی هر متر مربع (تومان)", default=400_000,
                                                    help_text="یک بار برای هر سفارش، بر اساس اندازهٔ واقعی فرش")
+    design_min = models.PositiveBigIntegerField("حداقل هزینهٔ طراحی (تومان)", default=1_000_000,
+                                                help_text="برای سایزهای کوچک که طراحی‌شان از این کمتر می‌شود")
     seam_per_m = models.PositiveBigIntegerField("هزینهٔ دوخت هر متر (تومان)", default=2_000_000)
+    seam_min = models.PositiveBigIntegerField("حداقل هزینهٔ دوخت هر فرش (تومان)", default=1_000_000)
     custom_min_side = models.DecimalField("کمترین ضلع (متر)", max_digits=4, decimal_places=2, default=Decimal("0.40"))
     custom_max_length = models.DecimalField("بیشترین طول (متر)", max_digits=5, decimal_places=2, default=Decimal("15"))
 

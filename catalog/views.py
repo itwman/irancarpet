@@ -313,6 +313,9 @@ def product_detail(request, slug):
         from installments.services import teaser
 
         ctx["inst_teaser"] = teaser(product.min_price)
+    from pricing.custom import product_block
+
+    ctx["custom_calc"] = product_block(request, product)
     if not product.seller_id:
         from shop.season import state
 

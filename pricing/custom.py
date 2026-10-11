@@ -10,6 +10,7 @@
   - قیمت هر تکه = کمترین این دو: سهم تکه از عرض دستگاه با نرخ کامل (۱۲ متری ÷ ۱۲)، یا مساحت واقعی با نرخ پرتی (۹ متری ÷ ۹).
     اگر چند تکه کنار هم در عرض دستگاه جا شوند، هر کدام سهم خودش را از عرض می‌پردازد.
   - طراحی یک بار برای هر سفارش (اندازهٔ واقعی فرش)؛ دوخت = طول درز × نرخ دوخت × تعداد فرش‌های دوخت‌دار.
+    هر دو حداقلی دارند (تنظیمات): طراحی کمتر از «حداقل هزینهٔ طراحی» و دوخت هر فرش کمتر از «حداقل هزینهٔ دوخت» نمی‌شود.
 """
 import math
 from dataclasses import dataclass, field
@@ -95,7 +96,7 @@ def whole_plan(w, l, loom, rates):
     return best
 
 
-def halved_plan(w, l, loom, rates, selvedge=True, seam_rate=0):
+def halved_plan(w, l, loom, rates, selvedge=True, seam_rate=0, seam_min=0):
     """بهترین برش به دو نیمه (با هزینهٔ دوخت در مقایسه). selvedge: ضلع نصف‌شده روی عرض دستگاه و دوخت از کنارهٔ بافت (زیباتر)."""
     best, best_total = None, None
     for split, other in ((w, l), (l, w)):
@@ -108,7 +109,7 @@ def halved_plan(w, l, loom, rates, selvedge=True, seam_rate=0):
             continue
         one, full = piece_cost(across, along, loom, rates)
         cost = one * 2
-        total = cost + seam * seam_rate
+        total = cost + max(seam * seam_rate, seam_min)
         if best is None or total < best_total - EPS:
             best, best_total = Plan(across, along, 2, seam, loom, cost, full, selvedge), total
     return best
@@ -180,12 +181,13 @@ def quote(width, length, qty=1, reeds="700", album=None, rates=None):
     big = float(s.loom_big or 4)
     q = Quote(w, l, qty, reeds, loom, rates)
     whole = whole_plan(w, l, loom, rates)
-    halved = halved_plan(w, l, loom, rates, seam_rate=s.seam_per_m)
+    seam_min = int(s.seam_min or 0)
+    halved = halved_plan(w, l, loom, rates, seam_rate=s.seam_per_m, seam_min=seam_min)
     if halved is None and big > loom:
         loom = big
         q.loom = big
         whole = whole_plan(w, l, loom, rates)
-        halved = halved_plan(w, l, loom, rates, seam_rate=s.seam_per_m)
+        halved = halved_plan(w, l, loom, rates, seam_rate=s.seam_per_m, seam_min=seam_min)
         q.notes.append(f"به‌خاطر اندازهٔ بزرگ، این فرش با دستگاه {fa_num(f'{big:g}')} متری حساب شد؛ ممکن است در قیمت یا دستگاه بافت تغییری لازم شود "
                        "و کارشناس ما هماهنگ می‌کند.")
     if halved is None:
@@ -198,21 +200,25 @@ def quote(width, length, qty=1, reeds="700", album=None, rates=None):
     q.whole, q.halved, q.n_whole, q.n_halved = whole, halved, n_whole, n_halved
 
     carpets = n_whole * (whole.cost if whole else 0) + n_halved * halved.cost
-    design = w * l * s.design_per_m2
-    seam = n_halved * halved.seam * s.seam_per_m
     area = w * l
-    q.lines.append((f"بافت {fa_num(qty)} فرش ({fa_num(f'{area:.2f}'.rstrip('0').rstrip('.'))} متر مربع هر کدام)", carpets))
-    q.lines.append((f"طراحی نقشه برای این اندازه ({fa_num(f'{area:.2f}'.rstrip('0').rstrip('.'))} متر مربع؛ یک بار)", design))
+    design_raw = area * s.design_per_m2
+    design = max(design_raw, int(s.design_min or 0))
+    seam_one = max(halved.seam * s.seam_per_m, seam_min)
+    seam = n_halved * seam_one
+    area_fa = fa_num(f'{area:.2f}'.rstrip('0').rstrip('.'))
+    q.lines.append((f"بافت {fa_num(qty)} فرش ({area_fa} متر مربع هر کدام)", carpets))
+    q.lines.append((f"طراحی نقشه برای این اندازه ({'حداقل هزینهٔ طراحی' if design > design_raw else area_fa + ' متر مربع'}؛ یک بار)", design))
     if seam:
-        q.lines.append((f"دوخت دو نیمه ({fa_num(f'{halved.seam:g}')} متر{' × ' + fa_num(n_halved) + ' فرش' if n_halved > 1 else ''})", seam))
+        what = "حداقل هزینهٔ دوخت" if seam_one > halved.seam * s.seam_per_m else f"{fa_num(f'{halved.seam:g}')} متر"
+        q.lines.append((f"دوخت دو نیمه ({what}{' × ' + fa_num(n_halved) + ' فرش' if n_halved > 1 else ''})", seam))
     q.total = round_up(carpets + design + seam, rates.round_to)
 
     # روش ارزان‌تر بدون ضمانت دوخت
     if n_halved:
-        alt = halved_plan(w, l, loom, rates, selvedge=False, seam_rate=s.seam_per_m)
+        alt = halved_plan(w, l, loom, rates, selvedge=False, seam_rate=s.seam_per_m, seam_min=seam_min)
         if alt:
             alt_total = round_up(n_whole * (whole.cost if whole else 0) + n_halved * alt.cost + design
-                                 + n_halved * alt.seam * s.seam_per_m, rates.round_to)
+                                 + n_halved * max(alt.seam * s.seam_per_m, seam_min), rates.round_to)
             if alt_total < q.total:
                 q.alternative = {"total": alt_total, "saving": q.total - alt_total, "seam": alt.seam}
     # پیشنهاد جفت
@@ -277,4 +283,54 @@ def block(request, title=""):
     return render_to_string("blog/blocks/custom_size.html", {
         "groups": groups, "groups_json": json.dumps(groups, ensure_ascii=False), "min_cm": int(round(float(s.custom_min_side) * 100)),
         "max_len": float(s.custom_max_length),
+    }, request=request)
+
+
+def product_reeds(product):
+    """شانهٔ فرش: از عنوان، وگرنه از ویژگی «شانه»."""
+    import re
+
+    from core.templatetags.fa import reeds_of
+
+    r = reeds_of(product.title or "")
+    if r in REEDS:
+        return r
+    for name in product.specs.filter(attribute__slug="reeds-per-meter").values_list("name", flat=True):
+        d = re.sub(r"\D", "", str(name or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")))
+        if d in REEDS:
+            return d
+    return ""
+
+
+def product_block(request, product):
+    """ماشین‌حساب جمع‌شده زیر جدول سایزهای صفحهٔ فرش؛ فقط برای فرش موجود فروشگاه با آلبوم و قیمت ۱۲ و ۹ متری."""
+    from django.template.loader import render_to_string
+
+    s = settings()
+    if not s.custom_enabled or not product.is_purchasable or product.seller_id or not product.album_id:
+        return ""
+    album = product.album
+    if not album.is_active:
+        return ""
+    reeds = product_reeds(product)
+    if not reeds:
+        return ""
+    try:
+        rates_for(album=album)
+    except QuoteError:
+        return ""
+    except Exception:  # noqa: BLE001  (قیمت آلبوم ناقص؛ ماشین‌حساب نشان داده نمی‌شود)
+        import logging
+
+        logging.getLogger(__name__).warning("custom calc product %s", product.pk, exc_info=True)
+        return ""
+    from django.conf import settings as dj_settings
+
+    from core.context_processors import site
+
+    ss = site(request)["site_settings"]
+    return render_to_string("blog/blocks/custom_size.html", {
+        "product": product, "reeds": reeds, "wa": ss.whatsapp or ss.mobile or "",
+        "page_url": dj_settings.SITE_URL.rstrip("/") + product.get_absolute_url(),
+        "min_cm": int(round(float(s.custom_min_side) * 100)), "max_len": float(s.custom_max_length),
     }, request=request)

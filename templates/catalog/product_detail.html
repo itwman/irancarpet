@@ -106,6 +106,7 @@
         <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
       </form>
       {% endif %}
+      {% if custom_calc %}{{ custom_calc|safe }}{% endif %}
 
       <details class="alert-box"{% if alert_kind == "stock" %} open{% endif %}>
         <summary>{% if alert_kind == "stock" %}<b>موجود شد خبرم کن</b>{% else %}<b>ارزان شد خبرم کن</b>{% endif %}<span>با پیامک</span></summary>
