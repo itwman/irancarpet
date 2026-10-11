@@ -285,3 +285,24 @@ class AlbumAmountAndSizesTests(TestCase):
         self.assertEqual(vs[0].final_price, main.variations.get(size__slug="round-d150").final_price)
         r = self.client.get("/panel/products/")
         self.assertContains(r, 'class="row-edit"')
+
+
+class OfferQuickEndTests(TestCase):
+    def test_end_choices_and_form(self):
+        import datetime
+
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+
+        from growth.panel import offer_end_choices
+
+        n = timezone.make_aware(datetime.datetime(2026, 10, 11, 13, 40))  # ۱۹ مهر
+        c = offer_end_choices(n)
+        self.assertEqual([v for _, v in c], ["۱۴۰۵/۰۷/۳۰ ۲۳:۵۹", "۱۴۰۵/۰۷/۲۶ ۲۳:۵۹", ""])
+        c = offer_end_choices(timezone.make_aware(datetime.datetime(2026, 10, 17, 10, 0)))  # ۲۵ مهر: کمتر از ۷ روز مانده
+        self.assertEqual(c[0][1], "۱۴۰۵/۰۸/۳۰ ۲۳:۵۹")
+        self.assertIn("ماه بعد", c[0][0])
+        self.client.force_login(get_user_model().objects.create_user("st", password="x" * 10, is_staff=True))
+        html = self.client.get("/panel/special-offers/add/").content.decode()
+        self.assertIn("data-quick=", html)
+        self.assertIn("بدون پایان", html)

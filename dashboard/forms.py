@@ -185,7 +185,8 @@ def formfield_for(db_field, ac_urls, **kwargs):
 
     name = db_field.name
     if isinstance(db_field, models.DateTimeField):
-        return JalaliDateTimeField(label=db_field.verbose_name, required=not db_field.blank, help_text=db_field.help_text, with_time=True)
+        return JalaliDateTimeField(label=db_field.verbose_name, required=not db_field.blank, help_text=db_field.help_text, with_time=True,
+                                   initial=db_field.default if db_field.has_default() else None)  # مثلاً «اکنون» برای شروع
     if isinstance(db_field, models.DateField):
         return JalaliDateTimeField(label=db_field.verbose_name, required=not db_field.blank, help_text=db_field.help_text, with_time=False)
     if isinstance(db_field, (models.ForeignKey, models.OneToOneField, models.ManyToManyField)):

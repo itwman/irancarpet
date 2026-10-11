@@ -237,8 +237,39 @@
     });
   }
 
+  // دکمه‌های پر کردن سریع زیر فیلد (مثلاً «پایان» فرصت ویژه)
+  function initQuick(inp) {
+    if (inp.dataset.quickOn) return;
+    inp.dataset.quickOn = "1";
+    var items = [];
+    try { items = JSON.parse(inp.dataset.quick || "[]"); } catch (e) { return; }
+    var box = document.createElement("div");
+    box.className = "quick-fill";
+    function mark() {
+      box.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", toEn(b.dataset.v) === toEn(inp.value.trim())); });
+    }
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = it[0];
+      b.dataset.v = it[1];
+      b.addEventListener("click", function () {
+        inp.value = it[1];
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+        inp.dispatchEvent(new Event("change", { bubbles: true }));
+        mark();
+      });
+      box.appendChild(b);
+    });
+    inp.insertAdjacentElement("afterend", box);
+    inp.addEventListener("input", mark);
+    inp.addEventListener("change", mark);
+    mark();
+  }
+
   function initIn(root) {
     root.querySelectorAll("select[data-ac]").forEach(initAc);
+    root.querySelectorAll("input[data-quick]").forEach(initQuick);
     root.querySelectorAll("textarea.rich").forEach(initEditor);
     root.querySelectorAll("input.money").forEach(initMoney);
   }

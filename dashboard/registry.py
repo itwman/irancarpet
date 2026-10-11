@@ -57,6 +57,7 @@ class Resource:
     initial: Optional[Callable] = None            # مقدارهای پیش‌فرض فرم «افزودن»
     extra_columns: Optional[Callable] = None      # () -> [Col] ستون‌های اختیاری که کاربر می‌تواند نمایش دهد
     badge: Optional[Callable] = None              # () -> int شمارندهٔ کنار نام در منو (مثلاً پیام‌های تازه)
+    quick: dict = field(default_factory=dict)      # نام فیلد -> () -> [(برچسب، مقدار)] دکمه‌های پر کردن سریع زیر فیلد
 
     @property
     def form_fields(self):

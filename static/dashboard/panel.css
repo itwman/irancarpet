@@ -350,3 +350,8 @@ textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-he
 .lib-item:hover{border-color:var(--line)}
 .lib-item.on{border-color:var(--pink);background:#fff;box-shadow:0 0 0 3px rgba(229,57,91,.15)}
 .lib-item:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.quick-fill{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
+.quick-fill button{border:1px solid var(--line,#dfe1ec);background:#fff;color:inherit;border-radius:99px;padding:.15rem .7rem;font:inherit;font-size:.8rem;cursor:pointer}
+.quick-fill button:hover{border-color:var(--teal-d,#0f766e);color:var(--teal-d,#0f766e)}
+.quick-fill button.on{background:var(--teal-d,#0f766e);border-color:var(--teal-d,#0f766e);color:#fff}
+.quick-fill button:focus-visible{outline:3px solid var(--teal-t,#ccfbf1);outline-offset:1px}

@@ -130,6 +130,34 @@ def _end(request, qs):
     return f"{fa_num(n)} فرصت تمام شد."
 
 
+def offer_end_choices(now=None):
+    """دکمه‌های سریع «پایان» فرصت ویژه: آخر ماه شمسی (اگر کمتر از ۷ روز مانده، آخر ماه بعد)، ۷ روز، بدون پایان."""
+    import datetime as _dt
+
+    import jdatetime
+
+    from dashboard.forms import EN2FA, to_jalali_str
+
+    now = _tz.localtime(now or _tz.now())
+
+    def month_end(y, m):
+        y2, m2 = (y + 1, 1) if m == 12 else (y, m + 1)
+        last = jdatetime.date(y2, m2, 1) - jdatetime.timedelta(days=1)
+        g = last.togregorian()
+        return _tz.make_aware(_dt.datetime(g.year, g.month, g.day, 23, 59))
+
+    j = jdatetime.date.fromgregorian(date=now.date())
+    end = month_end(j.year, j.month)
+    label = "تا آخر ماه"
+    if end - now < _tz.timedelta(days=7):
+        end = month_end(*((j.year + 1, 1) if j.month == 12 else (j.year, j.month + 1)))
+        label = "تا آخر ماه بعد"
+    week = (now + _tz.timedelta(days=7)).replace(hour=23, minute=59, second=0, microsecond=0)
+    fmt = lambda d: to_jalali_str(d).translate(EN2FA)  # noqa: E731
+    return [(f"{label} ({fa_num(jdate(end, '%-d %B'))})", fmt(end)),
+            ("۷ روز", fmt(week)), ("بدون پایان", "")]
+
+
 register(Resource(
     key="special-offers", model=SpecialOffer, title="فرصت‌های ویژهٔ خرید", single="فرصت ویژه", group="فروشگاه", icon="tag",
     columns=[Col("product", "فرش", lambda o: format_html('<a href="/panel/products/{}/edit/">{}</a>', o.product_id, fa_num(o.product.title))),
@@ -148,6 +176,7 @@ register(Resource(
               ("قیمت ویژه", lambda o: f"{toman(o.price)} تومان" if o.pk and o.price else "—"),
               ("فروخته‌شده", lambda o: fa_num(o.sold) if o.pk else "—")],
     view_url=lambda o: o.product.get_absolute_url(),
+    quick={"ends_at": offer_end_choices},
     actions={"end": ("پایان همین حالا", _end), "renew": ("تمدید ۲۴ ساعت (برای فرصت‌های زمان‌دار)", _renew)},
     help="تک‌تخته‌های انبار با تخفیف: فرش و سایز را انتخاب کنید (حتی اگر فرش یا آن سایز در سایت «ناموجود» باشد). "
          "قیمت ویژه فقط برای تعدادهایی است که بعد از خرید، تختهٔ تک در انبار نماند (باقی‌مانده صفر یا زوج): "

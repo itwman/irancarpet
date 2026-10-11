@@ -1,3 +1,4 @@
+import json
 import csv
 from functools import partial
 
@@ -322,6 +323,9 @@ def edit_view(request, key, pk=None):
     for _, fs in formsets:
         for f in fs.forms + [fs.empty_form]:
             style_form(f)
+    for name, fn in res.quick.items():
+        if name in form.fields:
+            form.fields[name].widget.attrs["data-quick"] = json.dumps(fn(), ensure_ascii=False)
     groups = []
     for title, names, place in res.fieldsets:
         groups.append({"title": title, "place": place, "fields": [form[n] for n in names if n in form.fields]})
