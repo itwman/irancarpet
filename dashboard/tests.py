@@ -77,6 +77,41 @@ class PanelTests(TestCase):
         self.assertEqual(timezone.localtime(self.p.published_at).hour, 10)
         self.assertTrue(ActivityLog.objects.filter(section="محصولات").exists())
 
+    def test_slug_with_spaces_and_old_url_redirect(self):
+        from seo.models import Redirect
+
+        Product.objects.filter(pk=self.p.pk).update(status="publish")
+        self.client.force_login(self.staff)
+        v = self.p.variations.get()
+        data = {
+            "title": "فرش 1200 شانه نقشه وینتیج", "slug": "فرش 1200 شانه نقشه  وینتیج‌ها / سبز", "english_name": "", "short_description": "",
+            "content": "", "status": "publish", "published_at": "۱۴۰۵/۰۷/۱۲ ۱۰:۳۰", "menu_order": "0", "album": self.album.pk,
+            "custom_base_price": "", "sale_status": "available", "primary_category": "", "brand": "", "image": "", "sku": "",
+            "seo_title": "", "seo_description": "", "focus_keyword": "", "robots": "", "canonical_url": "",
+            "v-TOTAL_FORMS": "1", "v-INITIAL_FORMS": "1", "v-MIN_NUM_FORMS": "0", "v-MAX_NUM_FORMS": "1000",
+            "v-0-id": v.pk, "v-0-product": self.p.pk, "v-0-size": self.s12.pk, "v-0-is_available": "on", "v-0-sale_price": "",
+            "v-0-menu_order": "0", "v-0-override_price": "", "v-0-manual_price": "",
+            "f-TOTAL_FORMS": "0", "f-INITIAL_FORMS": "0", "f-MIN_NUM_FORMS": "0", "f-MAX_NUM_FORMS": "1000", "gallery": "",
+        }
+        r = self.client.post(f"/panel/products/{self.p.pk}/edit/", data)
+        self.assertEqual(r.status_code, 302, r.content.decode()[:2000])
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.slug, "فرش-1200-شانه-نقشه-وینتیج-ها-سبز")
+        rd = Redirect.objects.get(source="product/test-p")
+        self.assertEqual((rd.target, rd.status_code), (self.p.get_absolute_url(), 301))
+        r = self.client.get("/product/test-p/")
+        self.assertEqual(r.status_code, 301)
+
+    def test_media_library_newest_first(self):
+        from django.utils import timezone
+
+        old = Media.objects.create(file="2020/01/old.jpg", title="zzz", mime_type="image/jpeg", created_at=timezone.now() - timezone.timedelta(days=900))
+        new = Media.objects.create(file="2026/10/aaa.jpg", title="aaa", mime_type="image/jpeg")  # بدون تاریخ (مثل آپلود پنل)
+        self.assertIsNotNone(new.created_at)
+        self.client.force_login(self.staff)
+        ids = [int(x["value"]) for x in self.client.get("/panel/media/library/").json()["items"]]
+        self.assertLess(ids.index(new.pk), ids.index(old.pk))
+
     def test_album_percent_bulk_and_log(self):
         self.client.force_login(self.staff)
         self.client.post("/panel/albums/", {"action": "percent", "action_value": "۱۰", "ids": [self.album.pk]})

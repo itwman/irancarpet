@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class SeoFields(models.Model):
@@ -43,6 +44,11 @@ class Media(models.Model):
 
     def __str__(self):
         return self.title or self.file.name
+
+    def save(self, *args, **kwargs):
+        if self.created_at is None:  # بدون تاریخ، فایل تازه ته کتابخانه می‌رفت
+            self.created_at = timezone.now()
+        super().save(*args, **kwargs)
 
     @property
     def url(self):

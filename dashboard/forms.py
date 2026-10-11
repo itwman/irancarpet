@@ -166,6 +166,19 @@ class Editor(forms.Textarea):
 
 
 # -------------------------------------------------------- نگاشت فیلد ← ویجت
+class SlugifyField(forms.SlugField):
+    """نامک: فاصله و نیم‌فاصله و نشانه‌ها خودکار به «-» تبدیل می‌شوند (مثل وردپرس)."""
+
+    def to_python(self, value):
+        from django.utils.text import slugify
+
+        value = super().to_python(value)
+        if not value:
+            return value
+        value = re.sub(r"[\s\u200c\u200f_/]+", "-", value.strip())
+        return re.sub(r"-{2,}", "-", slugify(value, allow_unicode=True)).strip("-")[:self.max_length or 255]
+
+
 def formfield_for(db_field, ac_urls, **kwargs):
     """formfield_callback برای modelform_factory"""
     from .ac import AC
@@ -198,6 +211,7 @@ def formfield_for(db_field, ac_urls, **kwargs):
     if isinstance(db_field, models.TextField) and name in RICH_FIELDS:
         ff.widget = Editor()
     elif isinstance(db_field, models.SlugField):
+        ff = SlugifyField(label=ff.label, max_length=db_field.max_length, allow_unicode=True, help_text=ff.help_text)
         ff.required = False
         ff.help_text = ff.help_text or "خالی بگذارید تا خودکار از عنوان ساخته شود."
         ff.widget.attrs["class"] = "form-control ltr-num"

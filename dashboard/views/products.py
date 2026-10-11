@@ -48,6 +48,9 @@ FaqFS = inlineformset_factory(Product, Faq, fields=["question", "answer", "order
 def product_edit(request, pk=None):
     product = get_object_or_404(Product, pk=pk) if pk else None
     if request.method == "POST":
+        from .crud import _public_url, _redirect_old_url
+
+        old_url = _public_url(product)
         form = style_form(ProductForm(request.POST, instance=product))
         vfs = VariationFS(request.POST, instance=product or Product(), prefix="v")
         ffs = FaqFS(request.POST, instance=product or Product(), prefix="f")
@@ -77,6 +80,7 @@ def product_edit(request, pk=None):
                     sync_album_variations([Product.objects.select_related("album").get(pk=p.pk)])
                 p.refresh_price_cache()
                 save_fp_flags(request, p)
+            _redirect_old_url(old_url, p)
             log(request, "create" if created else "update", "محصولات", p)
             clear_site_cache()
             messages.success(request, f"«{p.title}» ذخیره شد.")

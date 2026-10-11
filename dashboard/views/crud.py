@@ -241,6 +241,34 @@ def list_view(request, key):
 
 
 # ---------------------------------------------------------------- ویرایش
+def _public_url(obj):
+    """نشانی صفحهٔ منتشرشده (برای ریدایرکت خودکار پس از تغییر نامک)."""
+    if obj is None or not getattr(obj, "slug", None) or getattr(obj, "status", "publish") != "publish":
+        return ""
+    try:
+        return obj.get_absolute_url() or ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _redirect_old_url(old_url, obj):
+    """نامکِ صفحهٔ منتشرشده عوض شد ← ریدایرکت ۳۰۱ از نشانی قدیمی (مثل وردپرس) تا رتبهٔ گوگل و پیوندها از دست نرود."""
+    from seo.models import Redirect
+
+    new_url = ""
+    try:
+        new_url = obj.get_absolute_url() or ""
+    except Exception:  # noqa: BLE001
+        return
+    old, new = Redirect.normalize(old_url), Redirect.normalize(new_url)
+    if not old or not new or old == new:
+        return
+    Redirect.objects.filter(source=new, match=Redirect.Match.EXACT).delete()  # نشانی تازه نباید خودش ریدایرکت شود
+    Redirect.objects.filter(target__in=[old_url, "/" + old, "/" + old + "/"]).update(target=new_url)  # زنجیره نسازد
+    Redirect.objects.update_or_create(source=old, match=Redirect.Match.EXACT,
+                                      defaults={"target": new_url, "status_code": 301, "is_active": True, "origin": "old_slug"})
+
+
 def fill_slug(res, obj):
     if res.slug_from and hasattr(obj, "slug") and not obj.slug:
         obj.slug = unique_slug(res.model, getattr(obj, res.slug_from) or "item")
@@ -258,6 +286,7 @@ def edit_view(request, key, pk=None):
     Form = build_form_class(res)
     inlines = [(i, build_inline(res, i)) for i in res.inlines]
     if request.method == "POST":
+        old_url = _public_url(obj)
         form = style_form(Form(request.POST, request.FILES, instance=obj))
         formsets = [(i, FS(request.POST, request.FILES, instance=obj or res.model(), prefix=f"in{n}")) for n, (i, FS) in enumerate(inlines)]
         if form.is_valid() and all(fs.is_valid() for _, fs in formsets):
@@ -272,6 +301,7 @@ def edit_view(request, key, pk=None):
                     fs.save()
                 if res.after_save:
                     res.after_save(request, o, created, form)
+                _redirect_old_url(old_url, o)
             log(request, "create" if created else "update", res.title, o)
             clear_site_cache()
             messages.success(request, f"«{o}» ذخیره شد.")
