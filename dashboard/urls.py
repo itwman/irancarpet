@@ -14,6 +14,7 @@ from .views import crud, home, media, orders, people, products, settings
 urlpatterns = [
     path("", home.home, name="panel"),
     path("search/", home.search),
+    path("dash/traffic/", home.home_traffic),
     path("settings/", settings.settings_view),
     path("settings/rajyar-pricelist.png", settings.rajyar_pricelist_png),
     path("ac/<str:key>/", autocomplete),

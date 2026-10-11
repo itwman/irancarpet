@@ -1,53 +1,136 @@
 {% extends "dashboard/base.html" %}{% load fa %}
 {% block title %}پیشخوان{% endblock %}
 {% block content %}
-<div class="page-top">
-  <div><h1>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h1><p class="muted">خلاصهٔ امروز فروشگاه</p></div>
+<div class="page-top dsh-top">
+  <div>
+    <h1>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h1>
+    <p class="muted">{{ p.label }}{% if p.key != "today" %}: {{ p.start|jdate:"%d %B" }} تا {{ p.end|jdate:"%d %B" }}{% endif %} — {{ p.vs }}</p>
+  </div>
   <div class="page-top__actions">
-    <a class="btn btn-light btn-sm" href="/panel/posts/add/"><svg class="ic"><use href="#i-pen"/></svg> نوشتهٔ تازه</a>
-    <a class="btn btn-light btn-sm" href="/panel/albums/"><svg class="ic"><use href="#i-layers"/></svg> تغییر قیمت آلبوم‌ها</a>
+    <nav class="dsh-seg" aria-label="بازهٔ گزارش">{% for k, label in periods %}<a href="?p={{ k }}"{% if k == p.key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
     <a class="btn btn-pink" href="/panel/products/add/"><svg class="ic"><use href="#i-plus"/></svg> محصول تازه</a>
   </div>
 </div>
 
-<div class="tiles">
-  <a class="tile t-pink" href="/panel/orders/?status=paid"><span>فروش امروز</span><strong>{{ stats.today_amount|toman }}</strong><small>تومان · {{ stats.today_orders|fa_num }} سفارش پرداخت‌شده</small></a>
-  <a class="tile t-teal" href="/panel/payments/?status=ok"><span>دریافتی این ماه (شمسی)</span><strong>{{ stats.month_amount|toman }}</strong><small>تومان</small></a>
-  <a class="tile t-saffron" href="/panel/orders/?status=deposit_paid"><span>منتظر ارسال</span><strong>{{ stats.to_ship|fa_num }}</strong><small>سفارش پرداخت‌شده یا در حال آماده‌سازی</small></a>
-  <a class="tile t-ink" href="/panel/orders/?status=pending"><span>پرداخت‌نشده (۷ روز)</span><strong>{{ stats.pending|fa_num }}</strong><small>سفارش؛ شاید نیاز به تماس</small></a>
+{% if manager %}
+<div class="dsh-kpis">
+  <a class="dsh-kpi dsh-kpi--lead" href="/panel/crm/report/?days={{ p.crm_days }}">
+    <span class="dsh-kpi__k">فروش</span>
+    <strong>{{ money.sales.0 }} <small>{{ money.sales.1 }}</small></strong>
+    {% include "dashboard/_delta.html" with d=sales.d.sales %}
+    <small class="dsh-kpi__note">مبلغ سفارش‌های پرداخت‌شده یا اقساطی ثبت‌شده</small>
+  </a>
+  <a class="dsh-kpi" href="/panel/payments/?status=ok">
+    <span class="dsh-kpi__k">دریافتی</span>
+    <strong>{{ money.received.0 }} <small>{{ money.received.1 }}</small></strong>
+    {% include "dashboard/_delta.html" with d=sales.d.received %}
+    <small class="dsh-kpi__note">پول واقعاً واریزشده (کامل و بیعانه)</small>
+  </a>
+  <a class="dsh-kpi" href="/panel/orders/">
+    <span class="dsh-kpi__k">سفارش</span>
+    <strong>{{ orders_n|fa_num }}</strong>
+    {% include "dashboard/_delta.html" with d=orders_d %}
+    <small class="dsh-kpi__note">بدون سفارش‌های پرداخت‌نشده و لغوشده</small>
+  </a>
+  <div class="dsh-kpi">
+    <span class="dsh-kpi__k">میانگین هر سفارش</span>
+    <strong>{{ money.avg.0 }} <small>{{ money.avg.1 }}</small></strong>
+    {% include "dashboard/_delta.html" with d=sales.d.avg %}
+  </div>
 </div>
+{% endif %}
 
-<div class="edit__grid">
+<div class="edit__grid dsh-grid">
   <div class="edit__main">
+    {% include "dashboard/_dash_todo.html" with where="dsh-todo--top" %}
+    {% if manager %}
     <section class="card-p">
-      <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2"><h2 class="m-0">دریافتی ۳۰ روز اخیر</h2><span class="muted small">جمع: {{ series_total|toman }} تومان</span></div>
-      <div class="bars" role="img" aria-label="نمودار دریافتی روزانه در ۳۰ روز اخیر؛ جمع {{ series_total|toman }} تومان">
-        {% for s in series %}<div class="bar{% if s.is_today %} today{% endif %}" tabindex="0" data-tip="{{ s.label }}: {{ s.value|toman }} تومان"><i style="height:{% if s.value %}max(4px,{{ s.h }}%){% else %}0{% endif %}"></i></div>{% endfor %}
+      <div class="dsh-h"><h2>فروش روزانه</h2><span class="muted small">{% if p.key == "today" %}۷ روز اخیر{% else %}جمع {{ money_total|toman }} تومان{% endif %}</span></div>
+      <div class="bars dsh-bars" role="img" aria-label="نمودار ستونی فروش روزانه">
+        {% for s in money_series %}<div class="bar{% if s.today %} today{% endif %}" tabindex="0" data-tip="{{ s.tip }}"><i style="height:{% if s.value %}max(3px,{{ s.h }}%){% else %}0{% endif %}"></i></div>{% endfor %}
       </div>
-      <div class="bars-axis"><span>{{ series.0.label }}</span><span>امروز</span></div>
+      <div class="bars-axis"><span>{{ money_series.0.day|jdate:"%d %B" }}</span><span>امروز</span></div>
     </section>
+    {% endif %}
+
+    <div id="dshTraffic" data-src="/panel/dash/traffic/?p={{ p.key }}" aria-live="polite">
+      {% if not manager %}<div class="dsh-kpis dsh-kpis--3"><a class="dsh-kpi" href="/panel/orders/"><span class="dsh-kpi__k">سفارش</span><strong>{{ orders_n|fa_num }}</strong>{% include "dashboard/_delta.html" with d=orders_d %}</a></div>{% endif %}
+      <section class="card-p dsh-loading"><p class="muted m-0">آمار بازدید در حال بارگذاری…</p></section>
+    </div>
+
     <section class="card-p">
-      <div class="d-flex justify-content-between align-items-center"><h2 class="m-0">آخرین سفارش‌ها</h2><a href="/panel/orders/" class="small">همه</a></div>
-      {% if recent %}<div class="table-wrap"><table class="tbl mt-2"><tbody>
-        {% for o in recent %}<tr data-href="/panel/orders/{{ o.pk }}/view/"><td>{{ o.number|fa_num }}</td><td>{{ o.full_name }}</td><td class="num">{{ o.items_total|toman }}</td><td><span class="badge-ic b-{{ o.status }}">{{ o.get_status_display }}</span></td><td class="muted">{{ o.created_at|jdate:"%d %B %H:%M" }}</td></tr>{% endfor %}
-      </tbody></table></div>{% else %}<p class="muted mt-2">هنوز سفارشی در سایت تازه ثبت نشده است.</p>{% endif %}
+      <div class="dsh-h"><h2>کمپین‌های پیامکی</h2><a class="small" href="/panel/crm-campaigns/">همهٔ کمپین‌ها</a></div>
+      {% if camps.upcoming or camps.drafts %}
+      <div class="dsh-next">
+        {% for c in camps.upcoming %}<a href="/panel/crm/campaigns/{{ c.pk }}/plan/" class="dsh-next__i">
+          <span class="badge-ic b-{{ c.status }}">{{ c.get_status_display }}</span>
+          <b>{{ c.title|fa_num }}</b>
+          <small class="muted">{% if c.status == "waiting" and c.next_wave_at %}مرحلهٔ {{ c.wave|add:1|fa_num }}: {{ c.next_wave_at|jdate:"%A %d %B، %H:%M"|fa_num }}{% else %}{{ c.sent|fa_num }} از {{ c.total|fa_num }} ارسال شده{% endif %}</small>
+        </a>{% endfor %}
+        {% if camps.drafts %}<a href="/panel/crm-campaigns/?status=draft" class="dsh-next__i"><span class="badge-ic b-draft">پیش‌نویس</span><b>{{ camps.drafts|fa_num }} کمپین آمادهٔ ارسال</b></a>{% endif %}
+      </div>
+      {% endif %}
+      {% if camps.recent %}
+      <div class="table-wrap"><table class="tbl mt-2">
+        <thead><tr><th>کمپین</th><th class="num">ارسال</th><th class="num">کلیک</th><th class="num">سفارش</th>{% if manager %}<th class="num">فروش (تومان)</th>{% endif %}</tr></thead>
+        <tbody>{% for r in camps.recent %}<tr data-href="/panel/crm/campaigns/{{ r.c.pk }}/report/">
+          <td><b>{{ r.c.title|fa_num }}</b><br><small class="muted">{{ r.c.started_at|jdate:"%d %B" }} · {{ r.c.get_status_display }}</small></td>
+          <td class="num">{{ r.c.sent|fa_num }}</td>
+          <td class="num">{{ r.clicks|fa_num }}{% if r.c.sent %} <small class="muted">({{ r.click_rate|fa_dec }}٪)</small>{% endif %}</td>
+          <td class="num">{{ r.orders|fa_num }}</td>
+          {% if manager %}<td class="num">{% if r.sum %}{{ r.sum|toman }}{% else %}—{% endif %}</td>{% endif %}
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="small muted mt-2 mb-0">کلیک = گیرنده‌هایی که روی پیوند شخصی‌شان زده‌اند (بدون ربات). سفارش = سفارشی که پس از کلیک همان پیامک ثبت شده.</p>
+      {% else %}<p class="muted mt-2 mb-0">هنوز کمپینی ارسال نشده است.</p>{% endif %}
+    </section>
+
+    <section class="card-p">
+      <div class="dsh-h"><h2>پرفروش‌های این دوره</h2><a class="small" href="/panel/stats/?p={{ p.stats_key }}#products">گزارش فرش‌ها</a></div>
+      {% if best %}<ol class="dsh-rank">{% for b in best %}<li><a href="/panel/products/{{ b.product_id }}/edit/">{{ b.product__title|fa_num|truncatechars:70 }}</a><span class="num">{{ b.q|fa_num }} تخته{% if manager %} · {{ b.s|toman }}{% endif %}</span></li>{% endfor %}</ol>
+      {% else %}<p class="muted m-0">در این دوره سفارشی ثبت نشده است.</p>{% endif %}
     </section>
   </div>
+
   <div class="edit__side">
-    <section class="card-p"><h2>کارهای مانده</h2>
-      <a class="todo" href="/panel/reviews/?is_approved=0"><span>نظر منتظر تأیید</span><strong>{{ stats.reviews_wait|fa_num }}</strong></a>
-      <a class="todo" href="/panel/comments/?is_approved=0"><span>دیدگاه مجله منتظر تأیید</span><strong>{{ stats.comments_wait|fa_num }}</strong></a>
-      <a class="todo" href="/panel/products/?stock_status=outofstock&status=publish"><span>محصول ناموجود</span><strong>{{ stats.out_of_stock|fa_num }}</strong></a>
-      <a class="todo" href="/panel/notfound/"><span>آدرس خراب (۴۰۴)</span><strong>{{ stats.notfound|fa_num }}</strong></a>
+    {% include "dashboard/_dash_todo.html" with where="dsh-todo--side" %}
+
+    <section class="card-p">
+      <div class="dsh-h"><h2>مشتریان</h2><a class="small" href="/panel/crm/segments/">بخش‌بندی</a></div>
+      <div class="kv"><span>ثبت‌نام تازه</span><strong>{{ cust.cur.joined|fa_num }} {% include "dashboard/_delta.html" with d=cust.d.joined compact=1 %}</strong></div>
+      <div class="kv"><span>خریدار</span><strong>{{ cust.cur.buyers|fa_num }} {% include "dashboard/_delta.html" with d=cust.d.buyers compact=1 %}</strong></div>
+      {% if cust.cur.buyers %}<div class="dsh-split" role="img" aria-label="{{ cust.cur.new|fa_num }} خریدار تازه و {{ cust.cur.returning|fa_num }} خریدار تکراری">
+        <i style="flex:{{ cust.cur.new }}" class="dsh-split__a"></i><i style="flex:{{ cust.cur.returning }}" class="dsh-split__b"></i>
+      </div>
+      <div class="dsh-split__legend"><span><i class="dsh-split__a"></i>تازه {{ cust.cur.new|fa_num }}</span><span><i class="dsh-split__b"></i>تکراری {{ cust.cur.returning|fa_num }}</span></div>{% endif %}
+      {% if cust.cur.cities %}<h3 class="dsh-h3">شهرهای خریدار</h3>
+      {% for c in cust.cur.cities %}<div class="dsh-hbar"><span>{{ c.city }}</span><i><b style="width:{{ c.w }}%"></b></i><strong>{{ c.n|fa_num }}</strong></div>{% endfor %}{% endif %}
     </section>
-    <section class="card-p"><h2>فروشگاه در یک نگاه</h2>
-      <div class="kv"><span>محصول منتشرشده</span><strong>{{ stats.products|fa_num }}</strong></div>
-      <div class="kv"><span>نوشتهٔ مجله</span><strong>{{ posts_count|fa_num }}</strong></div>
-      <div class="kv"><span>مشتری تازه (۳۰ روز)</span><strong>{{ stats.customers_30|fa_num }}</strong></div>
+
+    <section class="card-p">
+      <div class="dsh-h"><h2>آخرین سفارش‌ها</h2><a href="/panel/orders/" class="small">همه</a></div>
+      {% for o in recent %}<a class="dsh-order" href="/panel/orders/{{ o.pk }}/view/">
+        <span><b>{{ o.full_name|default:"—" }}</b><small class="muted">{{ o.number|fa_num }} · {{ o.created_at|jdate:"%d %B %H:%M" }}</small></span>
+        <span class="text-end">{% if manager %}<b class="num">{{ o.items_total|toman }}</b><br>{% endif %}<span class="badge-ic b-{{ o.status }}">{{ o.get_status_display }}</span></span>
+      </a>{% empty %}<p class="muted m-0">هنوز سفارشی ثبت نشده است.</p>{% endfor %}
     </section>
-    {% if top404 %}<section class="card-p"><h2>پربازدیدترین آدرس‌های خراب</h2>
-      {% for n in top404 %}<a class="todo" href="/panel/redirects/add/?source={{ n.path|urlencode }}"><span class="ltr-num small">{{ n.path|truncatechars:38 }}</span><strong>{{ n.hits|fa_num }}</strong></a>{% endfor %}
-    </section>{% endif %}
+
+    <section class="card-p">
+      <h2>سایت در یک نگاه</h2>
+      <div class="kv"><span>فرش منتشرشده</span><strong>{{ counts.products|fa_num }}</strong></div>
+      <div class="kv"><span>نوشتهٔ مجله</span><strong>{{ counts.posts|fa_num }}</strong></div>
+      {% if top404 %}<h3 class="dsh-h3">پربازدیدترین آدرس‌های خراب</h3>
+      {% for n in top404 %}<a class="todo" href="/panel/redirects/add/?source={{ n.path|urlencode }}"><span class="ltr-num small">{{ n.path|truncatechars:34 }}</span><strong>{{ n.hits|fa_num }}</strong></a>{% endfor %}{% endif %}
+    </section>
   </div>
 </div>
 {% endblock %}
+{% block scripts %}<script>
+(function () {
+  var box = document.getElementById("dshTraffic");
+  if (!box) return;
+  fetch(box.dataset.src, { credentials: "same-origin" }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
+    .then(function (h) { box.innerHTML = h; })
+    .catch(function () { var l = box.querySelector(".dsh-loading"); if (l) l.innerHTML = '<p class="muted m-0">آمار بازدید بار نشد؛ صفحه را تازه کنید یا <a href="/panel/stats/">گزارش بازدید</a> را باز کنید.</p>'; });
+})();
+</script>{% endblock %}

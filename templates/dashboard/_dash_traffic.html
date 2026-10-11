@@ -1,0 +1,52 @@
+{% load fa %}{% if not tr %}<section class="card-p"><p class="muted m-0">آمار بازدید فعلاً در دسترس نیست. <a href="/panel/stats/">گزارش بازدید</a></p></section>{% else %}
+<div class="dsh-kpis dsh-kpis--3">
+  <a class="dsh-kpi" href="/panel/stats/?p={{ p.stats_key }}">
+    <span class="dsh-kpi__k">بازدیدکننده</span><strong>{{ tr.t.visitors|fa_num }}</strong>
+    {% include "dashboard/_delta.html" with d=tr.d.visitors %}
+    <small class="dsh-kpi__note">{{ tr.t.mobile_pct|fa_num }}٪ با موبایل{% if tr.approx %} · تقریبی{% endif %}</small>
+  </a>
+  <a class="dsh-kpi" href="/panel/stats/?p={{ p.stats_key }}">
+    <span class="dsh-kpi__k">ورود به سایت</span><strong>{{ tr.t.visits|fa_num }}</strong>
+    {% include "dashboard/_delta.html" with d=tr.d.visits %}
+    <small class="dsh-kpi__note">هر نشست ۳۰ دقیقه‌ای یک ورود</small>
+  </a>
+  <a class="dsh-kpi" href="/panel/stats/?p={{ p.stats_key }}">
+    <span class="dsh-kpi__k">نرخ تبدیل</span><strong>{{ tr.t.conv|fa_dec }}<small>٪</small></strong>
+    {% include "dashboard/_delta.html" with d=tr.d.conv %}
+    <small class="dsh-kpi__note">سفارش به ازای هر ورود</small>
+  </a>
+</div>
+
+<section class="card-p">
+  <div class="dsh-h"><h2>بازدیدکننده‌ها در روز</h2><a class="small" href="/panel/stats/?p={{ p.stats_key }}">گزارش کامل بازدید</a></div>
+  <div class="bars dsh-bars dsh-bars--ink" role="img" aria-label="نمودار ستونی بازدیدکنندهٔ روزانه">
+    {% for s in tr.visitors_series %}<div class="bar{% if s.today %} today{% endif %}" tabindex="0" data-tip="{{ s.tip }}"><i style="height:{% if s.value %}max(3px,{{ s.h }}%){% else %}0{% endif %}"></i></div>{% endfor %}
+  </div>
+  <div class="bars-axis"><span>{{ tr.visitors_series.0.day|jdate:"%d %B" }}</span><span>امروز</span></div>
+</section>
+
+<div class="dsh-two">
+  <section class="card-p">
+    <div class="dsh-h"><h2>قیف فروش</h2></div>
+    <p class="small muted">مشتری کجا ریزش می‌کند؟ عدد کوچک کنار هر مرحله، درصد از مرحلهٔ قبل است.</p>
+    {% for f in tr.funnel %}<div class="dsh-fun">
+      <div class="dsh-fun__l"><span>{{ f.label }}</span><b class="num">{{ f.n|fa_num }}</b>{% if f.of_prev is not None %}<small class="muted">{{ f.of_prev|fa_dec }}٪</small>{% endif %}</div>
+      <i><b style="width:{{ f.w }}%"></b></i>
+    </div>{% endfor %}
+  </section>
+  <section class="card-p">
+    <div class="dsh-h"><h2>از کجا آمده‌اند</h2></div>
+    {% for g in tr.groups %}<div class="dsh-src">
+      <div class="dsh-src__l"><span>{{ g.label }}</span><b class="num">{{ g.visits|fa_num }}</b><small class="muted">{{ g.share|fa_num }}٪</small></div>
+      <i><b style="width:{{ g.w }}%"></b></i>
+      {% if g.orders %}<small class="dsh-src__o">{{ g.orders|fa_num }} سفارش{% if manager %} · {{ g.revenue|toman }} تومان{% endif %}</small>{% endif %}
+    </div>{% empty %}<p class="muted m-0">هنوز ورودی ثبت نشده است.</p>{% endfor %}
+  </section>
+</div>
+
+{% if tr.cold %}<section class="card-p">
+  <div class="dsh-h"><h2>پربازدید ولی بی‌سبد</h2></div>
+  <p class="small muted">فرش‌هایی که زیاد دیده شده‌اند ولی هیچ‌کس به سبد اضافه‌شان نکرده است. قیمت، عکس اول، سایزهای موجود و توضیحشان را بررسی کنید.</p>
+  <ol class="dsh-rank">{% for r in tr.cold %}<li><a href="/panel/products/{{ r.pid }}/edit/">{{ r.p.title|fa_num|truncatechars:70 }}</a><span class="num">{{ r.visitors|fa_num }} بازدیدکننده · ۰ سبد</span></li>{% endfor %}</ol>
+</section>{% endif %}
+{% endif %}

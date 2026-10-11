@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from PIL import Image
 
 from catalog.models import Category, Product, ProductTag, Variation
@@ -306,3 +307,57 @@ class OfferQuickEndTests(TestCase):
         html = self.client.get("/panel/special-offers/add/").content.decode()
         self.assertIn("data-quick=", html)
         self.assertIn("بدون پایان", html)
+
+
+class DashboardTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        from catalog.models import Product
+        from core.models import Media
+        from crm.models import CartSnapshot
+        from shop.models import Order
+
+        U = get_user_model()
+        self.boss = U.objects.create_user("boss", password="x" * 10, is_staff=True, is_superuser=True)
+        self.staff = U.objects.create_user("staff", password="x" * 10, is_staff=True)
+        cust = U.objects.create_user("09120000001", password="x" * 10, first_name="مینا")
+        self.p = Product.objects.create(title="فرش 700 شانه نقشه داشبورد", slug="dash-p", status="publish", image=Media.objects.create(file="d.jpg"))
+        base = dict(first_name="علی", last_name="کاشانی", mobile="09121111111", province="اصفهان", city="کاشان", address="x",
+                    postal_code="1234567890")
+        Order.objects.create(status="paid", items_total=48_000_000, **base)
+        Order.objects.create(status="pending", items_total=30_000_000, **{**base, "mobile": "09122222222"})
+        old = timezone.now() - timezone.timedelta(days=2)
+        CartSnapshot.objects.create(user=cust, data={"1": 1}, updated_at=old)
+
+    def test_manager_sees_money_staff_does_not(self):
+        self.client.force_login(self.boss)
+        html = self.client.get("/panel/").content.decode()
+        self.assertIn("فروش روزانه", html)
+        self.assertIn("۴۸ <small>میلیون</small>", html)
+        self.assertIn("کارهای امروز", html)
+        self.assertIn("/panel/abandoned-carts/?age=14", html)
+        self.client.force_login(self.staff)
+        html = self.client.get("/panel/?p=30").content.decode()
+        self.assertNotIn("فروش روزانه", html)
+        self.assertNotIn("۴۸٬۰۰۰٬۰۰۰", html)
+        self.assertIn("کارهای امروز", html)
+        for p in ("today", "7", "30", "month", "bad"):
+            r = self.client.get(f"/panel/dash/traffic/?p={p}")
+            self.assertEqual(r.status_code, 200)
+            self.assertIn("قیف فروش", r.content.decode())
+
+    def test_periods_and_abandoned_carts_page(self):
+        from dashboard.dash import delta, period, short_money
+
+        for k in ("today", "7", "30", "month"):
+            p = period(k)
+            self.assertLessEqual(p["start"], p["end"])
+            self.assertLess(p["pend"], p["start"])
+        self.assertEqual(period("x")["key"], "7")
+        self.assertEqual(delta(120, 100), {"pct": 20, "up": True, "down": False, "flat": False})
+        self.assertEqual(delta(5, 0), {"new": True})
+        self.assertEqual(short_money(45_200_000), ("۴۵٫۲", "میلیون"))
+        self.client.force_login(self.staff)
+        html = self.client.get("/panel/abandoned-carts/?age=14").content.decode()
+        self.assertIn("مینا", html)

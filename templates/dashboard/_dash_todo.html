@@ -1,0 +1,8 @@
+{% load fa %}    <section class="card-p dsh-todo {{ where }}">
+      <div class="dsh-h"><h2>کارهای امروز</h2>{% if todo.open %}<span class="dsh-count">{{ todo.open|fa_num }}</span>{% endif %}</div>
+      {% for it in todo.items %}{% if it.n or not it.quiet %}
+      <a class="todo{% if it.urgent %} todo--hot{% endif %}{% if not it.n %} todo--zero{% endif %}" href="{{ it.url }}">
+        <span>{{ it.label }}{% if it.n and it.sub %}<small>{{ it.sub }}</small>{% endif %}</span><strong>{{ it.n|fa_num }}</strong>
+      </a>{% endif %}{% endfor %}
+    </section>
+

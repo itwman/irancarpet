@@ -6,7 +6,7 @@ from core.templatetags.fa import fa_num, jdate, toman
 from dashboard.registry import Col, Resource, register
 
 from . import spam
-from .models import AutoCampaign, Campaign, PointRedeem, SmsLog
+from .models import AutoCampaign, Campaign, CartSnapshot, PointRedeem, SmsLog
 
 GROUP = "باشگاه مشتریان"
 
@@ -354,4 +354,89 @@ register(Resource(
     help="پیام‌های فرم «تماس با ما». پاسخ را در کادر «پاسخ با پیامک» بنویسید و «ذخیره» بزنید تا به موبایل فرستنده پیامک شود "
          "(نام او اول و «ایران کارپت» آخر پیامک می‌آید). هر ۷۰ حرف فارسی یک پیامک است. با تلفن جواب دادید؟ "
          "پاسخ را خالی بگذارید و وضعیت را «پاسخ داده شد» کنید. خبر پیام تازه به موبایل مدیران از «تنظیمات ← پیامک سفارش و باشگاه» روشن و خاموش می‌شود.",
+))
+
+
+# ------------------------------------------------------------------ سبدهای رهاشده
+def _cart_items(o):
+    if not hasattr(o, "_cart_memo"):
+        o._cart_memo = _cart_items_calc(o)
+    return o._cart_memo
+
+
+def _cart_list(o):
+    lines = _cart_items(o)[0]
+    return format_html("<br>".join(["{}"] * len(lines)), *lines) if lines else "—"
+
+
+def _cart_items_calc(o):
+    from catalog.models import Variation
+
+    data = {int(k): q for k, q in (o.data or {}).items() if str(k).isdigit()}
+    vs = {v.pk: v for v in Variation.objects.filter(pk__in=list(data)).select_related("product", "size")}
+    lines, total = [], 0
+    for vid, q in data.items():
+        v = vs.get(vid)
+        if not v:
+            continue
+        try:
+            q = int(q)
+        except (TypeError, ValueError):
+            q = 1
+        total += (v.price or 0) * q
+        lines.append(format_html('<a href="/panel/products/{}/edit/">{}</a> <span class="muted">{}{}</span>', v.product_id,
+                                 fa_num(v.product.title)[:60], fa_num(v.size.label) if v.size_id else "",
+                                 f" × {fa_num(q)}" if q > 1 else ""))
+    return lines, total
+
+
+def _cart_who(o):
+    from .club import mobile_of
+
+    m = mobile_of(o.user)
+    name = o.user.get_full_name() or "—"
+    return format_html('{}<br><a href="/panel/crm/customer/{}/">{}</a>', name, m, fa_num(m)) if m else name
+
+
+def _cart_state(o):
+    if o.reminded_at:
+        return format_html('<span class="badge-ic b-processing">یادآوری شد</span><br><small class="muted">{}</small>',
+                           jdate(o.reminded_at, "%d %B %H:%M"))
+    return format_html('<span class="badge-ic b-pending">{}</span>', "منتظر")
+
+
+def _cart_age(qs, v):
+    from django.utils import timezone as _tz
+
+    if v and v.isdigit():
+        return qs.filter(updated_at__gte=_tz.now() - _tz.timedelta(days=int(v)))
+    return qs
+
+
+def _carts_qs(qs):
+    from django.utils import timezone as _tz
+
+    from .models import CrmSettings
+
+    hours = CrmSettings.load().cart_hours or 3
+    return (qs.filter(user__is_active=True, user__is_staff=False, updated_at__lte=_tz.now() - _tz.timedelta(hours=hours))
+            .exclude(data={}).select_related("user", "user__profile"))
+
+
+register(Resource(
+    key="abandoned-carts", model=CartSnapshot, title="سبدهای رهاشده", single="سبد", group="فروش", icon="clock",
+    columns=[Col("user", "مشتری", _cart_who),
+             Col("items", "فرش‌های سبد", _cart_list),
+             Col("value", "ارزش سبد (تومان)", lambda o: toman(_cart_items(o)[1]), cls="num"),
+             Col("updated_at", "آخرین تغییر", lambda o: jdate(o.updated_at, "%Y/%m/%d %H:%M"), "updated_at"),
+             Col("reminded_at", "پیامک یادآوری", _cart_state)],
+    search=["user__first_name", "user__last_name", "user__username", "user__profile__mobile"], ordering=("-updated_at",),
+    custom_filters={"age": ("بازه", [("14", "۱۴ روز اخیر"), ("30", "۳۰ روز اخیر")], _cart_age)},
+    queryset=_carts_qs, can_add=False,
+    fieldsets=[("سبد", ["reminded_at"], "side")],
+    readonly=[("مشتری", _cart_who), ("فرش‌ها", _cart_list),
+              ("ارزش سبد", lambda o: f"{toman(_cart_items(o)[1])} تومان")],
+    help="سبد خرید مشتریانی که وارد حساب شده‌اند و چند ساعت به سبدشان دست نزده‌اند (بعد از ثبت سفارش، سبد خالی و از این فهرست حذف می‌شود). "
+         "سبد مهمان‌ها شماره ندارد و این‌جا نیست؛ تعدادشان در «گزارش بازدید» (افزودن به سبد) دیده می‌شود. "
+         "یادآوری خودکار پیامکی از «تنظیمات ← پیامک سفارش و باشگاه» روشن و خاموش می‌شود. برای تماس، روی شمارهٔ مشتری بزنید.",
 ))
