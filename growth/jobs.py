@@ -112,6 +112,14 @@ def run_all(out=print):
             log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:  # سطل بازیافت رسانه: پاک کردن فایل‌های بیش از ۳۰ روز
+        from core.media_clean import purge
+
+        n = purge()
+        if n:
+            done["پاک شدن از سطل بازیافت رسانه"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("media purge")
     try:  # آمار بازدید: خلاصهٔ روزهای تمام‌شده و پاک کردن ریزهای کهنه
         from stats.rollup import run as stats_rollup
 

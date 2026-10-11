@@ -33,5 +33,7 @@ REVIEW_REWARD = ("{name} عزیز، ممنون از نظر و عکسی که فر
                  "برای خرید بالای {min} تومان، تا {until}.")
 ALBUM = ("{name} عزیز، قیمت فرش‌های «{album}» از {date} افزایش پیدا می‌کند. "
          "اگر فرشی از این مجموعه در نظر دارید، تا پیش از آن با قیمت فعلی سفارش دهید: {site}")
-OFFER = ("{name} عزیز، فرصت ویژهٔ این هفته در ایران کارپت: {product} ({size}) با {percent}٪ تخفیف و آمادهٔ ارسال فوری. "
-         "{left}\n{link}")
+OFFER_OLD = ("{name} عزیز، فرصت ویژهٔ این هفته در ایران کارپت: {product} ({size}) با {percent}٪ تخفیف و آمادهٔ ارسال فوری. "
+             "{left}\n{link}")
+OFFER = "{name} عزیز، فرصت ویژهٔ ایران کارپت:\n{product}\n{percent}٪ تخفیف، {left}\n{link}"
+OFFER_SET = "{name} عزیز، برای ست با فرش {design} خودتان:\n{product}\n{percent}٪ تخفیف، {left}\n{link}"

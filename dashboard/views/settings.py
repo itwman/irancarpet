@@ -87,7 +87,9 @@ FORMS = {
                           "points_since", "birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text",
                           "review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days",
                           "review_reward_text", "album_text", "offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour",
-                          "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text", "calendar_preview",
+                          "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text", "offer_set_text",
+                          "smart_offer", "wave1_per_piece", "wave2_per_piece", "wave_last_all", "wave_gap_hours", "freq_cap_days",
+                          "w_set", "w_design", "w_click", "w_color", "w_reeds", "w_size", "w_recent", "calendar_preview",
                           "vip_total", "vip_orders", "short_links", "marketing_footer"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
@@ -202,7 +204,13 @@ CRM_GROUPS = [
     ("اطلاع افزایش قیمت آلبوم", "از «آلبوم‌های قیمت» آلبوم‌ها را انتخاب کنید و عملیات «پیامک قیمت به‌زودی بالا می‌رود» را بزنید.", ["album_text"]),
     ("پیامک هفتگی فرصت ویژه", "هر هفته یک فرصت ویژه با بیشترین تخفیف (که در دو ماه گذشته فرستاده نشده) با درصد تخفیف، زمان یا تعداد باقی‌مانده و پیوند. "
      "اگر فرصت وسط ارسال تمام شود، ارسال می‌ایستد. متغیرها: {product} {size} {percent} {left} {link}",
-     ["offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour", "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text"]),
+     ["offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour", "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text",
+      "offer_set_text"]),
+    ("ارسال هوشمند و مرحله‌ای فرصت ویژه", "گیرنده‌ها با امتیاز علاقه مرتب می‌شوند و پیامک مرحله‌به‌مرحله می‌رود: مرحلهٔ اول = «گیرنده به ازای هر تخته» × "
+     "تخته‌های باقی‌مانده. اگر تا مرحلهٔ بعد فرش فروخته شود، بقیه پیامک نمی‌گیرند. «برنامهٔ ارسال» هر کمپین ترتیب و دلیل امتیازها را نشان می‌دهد.",
+     ["smart_offer", "wave1_per_piece", "wave2_per_piece", "wave_last_all", "wave_gap_hours", "freq_cap_days"]),
+    ("امتیاز علاقهٔ گیرنده‌ها", "عدد بزرگ‌تر یعنی آن نشانه مهم‌تر است؛ ۰ یعنی آن نشانه حساب نشود.",
+     ["w_set", "w_design", "w_click", "w_color", "w_reeds", "w_size", "w_recent"]),
     ("تقویم کمپین‌ها", "مناسبت‌ها و متن‌هایشان در «باشگاه مشتریان ← تقویم کمپین‌های خودکار» است.", ["calendar_preview"]),
     ("باشگاه مشتریان", "", ["vip_total", "vip_orders", "short_links", "marketing_footer"]),
 ]

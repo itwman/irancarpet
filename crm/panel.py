@@ -26,16 +26,47 @@ def _camp_start(request, qs):
 
     if not _ready():
         return "اول در «تنظیمات ← پیامک» کلید API و شمارهٔ خط اختصاصی را وارد کنید."
+    from django.utils import timezone as _tz
+
+    from .campaigns import next_waves
+
     n = 0
+    waiting = list(qs.filter(status=Campaign.Status.WAITING).values_list("pk", flat=True))
+    if waiting:  # «منتظر مرحلهٔ بعد»: مرحلهٔ بعد همین حالا (اگر فرش هنوز فروخته نشده)
+        Campaign.objects.filter(pk__in=waiting).update(next_wave_at=_tz.now())
+        next_waves()
     for c in qs.exclude(status=Campaign.Status.DONE):
+        c.refresh_from_db()
+        if c.status == Campaign.Status.DONE:
+            continue
         Campaign.objects.filter(pk=c.pk).update(status=Campaign.Status.SENDING, last_error="")
         start(c)
         n += 1
     return f"ارسال {fa_num(n)} کمپین شروع شد؛ پیشرفت را در همین فهرست ببینید (صفحه را تازه کنید)."
 
 
+def _camp_progress(o):
+    txt = f"{fa_num(o.sent)} از {fa_num(o.total)}" + (f" · {fa_num(o.failed)} ناموفق" if o.failed else "")
+    if o.wave:
+        txt += f" · مرحلهٔ {fa_num(o.wave)}"
+    if o.status == Campaign.Status.WAITING and o.next_wave_at:
+        txt += f"؛ بعدی {jdate(o.next_wave_at, '%m/%d %H:%M')}"
+    return txt
+
+
+def _camp_waves(o):
+    if not o.wave:
+        return "مرحله‌ای نیست" if not o.offer_id else "هنوز شروع نشده"
+    rows = [f"مرحلهٔ {fa_num(w.get('wave'))}: تا نفر {fa_num(w.get('quota', 0))}" for w in (o.wave_log or [])]
+    if o.status == Campaign.Status.WAITING and o.next_wave_at:
+        rows.append(f"مرحلهٔ بعد: {jdate(o.next_wave_at, '%A %d %B ساعت %H:%M')} (اگر فرش فروخته نشود)")
+    if o.status == Campaign.Status.DONE and o.ranking and o.sent < len(o.ranking):
+        rows.append(f"صرفه‌جویی: {fa_num(len(o.ranking) - o.sent)} نفر پیامک لازم نداشتند")
+    return format_html("{}", "، ".join(rows))
+
+
 def _camp_stop(request, qs):
-    n = qs.filter(status=Campaign.Status.SENDING).update(status=Campaign.Status.STOPPED)
+    n = qs.filter(status__in=[Campaign.Status.SENDING, Campaign.Status.WAITING]).update(status=Campaign.Status.STOPPED)
     return f"{fa_num(n)} کمپین متوقف شد؛ با «شروع ارسال» از همان‌جا ادامه می‌دهد."
 
 
@@ -86,21 +117,24 @@ register(Resource(
     columns=[Col("title", "عنوان", sort="title"), Col("segment", "گیرنده‌ها", lambda o: o.get_segment_display()),
              Col("discount", "تخفیف", lambda o: f"{toman(o.discount)} از {toman(o.min_order)}" if o.discount else "بدون کد"),
              Col("status", "وضعیت", lambda o: format_html('<span class="badge-ic b-{}">{}</span>',
-                                                          {"sending": "processing", "done": "completed", "stopped": "on_hold"}.get(o.status, o.status),
+                                                          {"sending": "processing", "done": "completed", "stopped": "on_hold", "waiting": "pending"}.get(o.status, o.status),
                                                           o.get_status_display())),
-             Col("progress", "ارسال", lambda o: f"{fa_num(o.sent)} از {fa_num(o.total)}" + (f" · {fa_num(o.failed)} ناموفق" if o.failed else "")),
+             Col("progress", "ارسال", _camp_progress),
              Col("result", "نتیجه", _camp_result),
              Col("report", "گزارش", lambda o: format_html('<a class="btn btn-light btn-sm" href="/panel/crm/campaigns/{}/report/">گزارش</a>', o.pk)
                  if o.sent else "—"),
              Col("created_at", "ساخته شده", lambda o: jdate(o.created_at, "%Y/%m/%d"), "created_at")],
     search=["title"], filters=["status", "segment"], ordering=("-created_at",),
-    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "offer", "custom_numbers", "text", "link_path"], "main"),
+    fieldsets=[("کمپین", ["title", "segment", "inactive_days", "album", "event_date", "offer", "smart", "custom_numbers", "text", "link_path"], "main"),
                ("کد تخفیف شخصی", ["discount", "min_order", "valid_days"], "side")],
     readonly=[("گیرنده‌ها", _camp_people), ("نتیجه", _camp_result),
+              ("مرحله‌ها", _camp_waves),
+              ("برنامهٔ ارسال", lambda o: format_html('<a href="/panel/crm/campaigns/{}/plan/">گیرنده‌ها به ترتیب امتیاز و مرحله‌ها</a>', o.pk)
+               if o.offer_id else "فقط برای کمپین فرصت ویژه"),
               ("گزارش کامل", lambda o: format_html('<a href="/panel/crm/campaigns/{}/report/">کلیک، بازدید و خرید گیرنده‌ها</a>', o.pk)
                if o.sent else "بعد از ارسال"),
               ("آخرین خطا", lambda o: o.last_error or "—")],
-    actions={"start": ("شروع یا ادامهٔ ارسال", _camp_start), "stop": ("توقف ارسال", _camp_stop),
+    actions={"start": ("شروع یا ادامهٔ ارسال (منتظر مرحله: مرحلهٔ بعد همین حالا)", _camp_start), "stop": ("توقف ارسال", _camp_stop),
              "test": ("پیامک نمونه به مدیران", _camp_test)},
     help="برای هر گیرنده یک کد تخفیف شخصی ساخته می‌شود که فقط با شمارهٔ موبایل خود او و یک‌بار کار می‌کند؛ پخش شدنش در کانال‌ها بی‌اثر است. "
          "اول با «پیامک نمونه به مدیران» متن را ببینید، بعد «شروع ارسال». متغیرها: {name} {code} {discount} {min} {until} {site} "

@@ -8,6 +8,7 @@ EXTRA_NAV = {
     "فروش": [("کارمندان", "/panel/customers/?is_staff=1", "shield")],
     "فروشگاه": [("ساخت گروهی فرش", "/panel/products/bulk/", "plus"), ("جایگزینی متن و لینک‌ها", "/panel/content-tools/", "search")],
     "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
+    "رسانه": [("رسانه‌های بی‌استفاده", "/panel/media/unused/", "trash")],
     "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
     "همکاری در فروش": [("تنظیمات همکاری در فروش", "/panel/settings/?tab=affiliate", "settings")],
     "باشگاه مشتریان": [("تنظیمات پیامک سفارش و باشگاه", "/panel/settings/?tab=crm", "settings")],

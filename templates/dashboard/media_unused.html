@@ -1,0 +1,59 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}رسانه‌های بی‌استفاده{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/media/" class="back">‹ کتابخانهٔ رسانه</a><h1>رسانه‌های بی‌استفاده</h1>
+    <p class="muted">{% if st.running %}در حال بررسی… چند دقیقه بعد صفحه را تازه کنید.{% elif st.done %}آخرین بررسی: {{ st.done|ts_jdate }}{% else %}هنوز بررسی نشده است.{% endif %}</p></div>
+  <div class="page-top__actions"><form method="post">{% csrf_token %}<button class="btn btn-pink" name="do" value="scan"{% if st.running %} disabled{% endif %}>بررسی دوباره</button></form></div>
+</div>
+{% if st.error %}<div class="alert alert-danger">بررسی ناموفق بود: {{ st.error }}</div>{% endif %}
+
+<div class="tiles">
+  <a class="tile t-ink" href="?tab=media"><span>ردیف‌های کتابخانه بدون استفاده</span><strong>{{ st.media|length|fa_num }}</strong><small>{{ st.media_size|filesize_fa }}</small></a>
+  <a class="tile t-teal" href="?tab=orphans"><span>فایل‌های اضافه روی دیسک</span><strong>{{ st.orphans|length|fa_num }}</strong><small>{{ st.orphans_size|filesize_fa }} · بیشترشان نسخه‌های کوچک‌شدهٔ وردپرس</small></a>
+  <a class="tile t-saffron" href="?tab=trash"><span>سطل بازیافت</span><strong>{{ tsum.n|default:0|fa_num }}</strong><small>{{ tsum.s|default:0|filesize_fa }} · پس از {{ trash_days|fa_num }} روز پاک می‌شود</small></a>
+</div>
+
+<nav class="tabs-p" aria-label="بخش">
+  <a href="?tab=media" class="{% if tab == 'media' %}on{% endif %}">کتابخانه</a>
+  <a href="?tab=orphans" class="{% if tab == 'orphans' %}on{% endif %}">فایل‌های اضافه</a>
+  <a href="?tab=trash" class="{% if tab == 'trash' %}on{% endif %}">سطل بازیافت</a>
+</nav>
+
+{% if tab == "trash" %}
+<form method="post" class="card-p">{% csrf_token %}
+  {% if trash.object_list %}
+  <div class="table-wrap"><table class="tbl"><thead><tr><th><input type="checkbox" data-check-all aria-label="انتخاب همه"></th><th>فایل</th><th>حجم</th><th>زمان انتقال</th><th>پاک شدن</th></tr></thead><tbody>
+    {% for t in trash %}<tr><td><input type="checkbox" name="trashed" value="{{ t.pk }}" aria-label="انتخاب"></td><td class="ltr-num small">{{ t.path }}</td><td>{{ t.size|filesize_fa }}</td><td class="muted">{{ t.trashed_at|jdate:"%Y/%m/%d %H:%M" }}</td><td class="muted">{{ t.trashed_at|add_days:trash_days|jdate:"%Y/%m/%d" }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <button class="btn btn-light mt-3" name="do" value="restore">برگرداندن انتخاب‌شده‌ها</button>
+  {% include "dashboard/_pager.html" with page=trash base_qs="tab=trash" %}
+  {% else %}<p class="muted m-0">سطل بازیافت خالی است.</p>{% endif %}
+</form>
+{% else %}
+<form method="post" class="card-p">{% csrf_token %}
+  <p class="hint">این فایل‌ها در هیچ فرش، مقاله، برگه، دسته، تنظیمات یا صفحهٔ فرودی استفاده نشده‌اند و در سایت نمایش داده نمی‌شوند؛ حذفشان به سئو آسیبی نمی‌زند. پیش از انتقال، هر فایل دوباره بررسی می‌شود و اگر در این فاصله استفاده شده باشد، نمی‌رود. فایل‌های کمتر از ۷ روز اخیر در فهرست نیستند.</p>
+  {% if page.object_list %}
+  <div class="table-wrap"><table class="tbl"><thead><tr><th><input type="checkbox" data-check-all aria-label="انتخاب همه"></th><th></th><th>فایل</th><th>حجم</th></tr></thead><tbody>
+    {% for x in page %}<tr><td>{% if tab == "media" %}<input type="checkbox" name="media" value="{{ x.id }}" aria-label="انتخاب">{% else %}<input type="checkbox" name="path" value="{{ x.path }}" aria-label="انتخاب">{% endif %}</td>
+      <td class="w-thumb"><a href="{{ media_url }}{{ x.path }}" target="_blank" rel="noopener"><img class="thumb" src="/app-img/240/{{ x.path|urlencode }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></a></td>
+      <td>{% if x.title %}{{ x.title|truncatechars:60 }}<br>{% endif %}<small class="muted ltr-num">{{ x.path }}</small>{% if x.variant_of %}<br><small class="muted">نسخهٔ کوچک‌شدهٔ {{ x.variant_of }}</small>{% endif %}</td>
+      <td>{{ x.size|filesize_fa }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="d-flex gap-2 flex-wrap mt-3">
+    <button class="btn btn-light" name="do" value="trash">انتقال انتخاب‌شده‌ها به سطل بازیافت</button>
+    <button class="btn btn-pink" name="do" value="{% if tab == 'media' %}trash_all_media{% else %}trash_all_orphans{% endif %}" data-confirm-btn="همهٔ {{ page.paginator.count }} فایل این فهرست به سطل بازیافت برود؟ تا {{ trash_days }} روز قابل برگرداندن است.">انتقال همهٔ این فهرست ({{ page.paginator.count|fa_num }} فایل)</button>
+  </div>
+  {% include "dashboard/_pager.html" with page=page base_qs=tab_qs %}
+  {% elif st.done %}<p class="muted m-0">فایل بی‌استفاده‌ای نیست.</p>{% else %}<p class="muted m-0">«بررسی دوباره» را بزنید.</p>{% endif %}
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll("[data-check-all]").forEach(function (c) {
+  c.addEventListener("change", function () { c.closest("table").querySelectorAll("tbody input[type=checkbox]").forEach(function (x) { x.checked = c.checked; }); });
+});
+document.querySelectorAll("[data-confirm-btn]").forEach(function (b) {
+  b.addEventListener("click", function (e) { if (!window.confirm(b.dataset.confirmBtn)) e.preventDefault(); });
+});
+</script>{% endblock %}

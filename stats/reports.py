@@ -188,7 +188,7 @@ def _traffic(start, end):
 
 # ------------------------------------------------------------------ کمپین پیامکی
 def campaign(c):
-    key = f"stats:camp:{c.pk}:{c.sent}"
+    key = f"stats:camp:{c.pk}:{c.sent}:{c.status}"
     out = cache.get(key)
     if out is None:
         out = _campaign(c)
@@ -244,6 +244,8 @@ def _campaign(c):
     week_buyers = set(week_orders.values_list("mobile", flat=True))
     code_n, code_sum = results(c) if c.discount else (0, 0)
 
+    sold_early = bool(c.ranking and c.status == "done" and "فرصت ویژه" in (c.last_error or ""))
+
     def seg(ms):
         n = len(ms)
         cl = len(ms & clicked)
@@ -266,6 +268,9 @@ def _campaign(c):
         "week_orders": wk["n"], "week_sum": wk["s"] or 0, "week_buyers": len(week_buyers), "week_until": week,
         "code_orders": code_n, "code_sum": code_sum,
         "old": seg(ok & buyers_before), "new": seg(ok - buyers_before), "people": people,
+        "waves": c.wave_log or [], "ranked": len(c.ranking or []),
+        "saved": max(len(c.ranking or []) - len(ok), 0) if sold_early else 0,
+        "saved_sms": max(len(c.ranking or []) - len(ok), 0) * max(round(parts / len(ok)), 1) if sold_early and ok else 0,
         "funnel": [("پیامک رسیده به sms.ir", len(ok)), ("کلیک (بدون ربات)", len(clicked)), ("افزودن به سبد", carts),
                    ("خرید پس از کلیک", att["n"])] if personal else [],
     }

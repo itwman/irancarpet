@@ -210,3 +210,21 @@ class SiteSettings(models.Model):
     def socials(self):
         """پیام‌رسان‌های گفتگو + صفحه‌ها و کانال‌ها"""
         return list(self.messengers) + self.follows
+
+
+class TrashedFile(models.Model):
+    """فایلی که از «رسانه‌های بی‌استفاده» به سطل بازیافت رفته؛ تا ۳۰ روز برمی‌گردد و بعد برای همیشه پاک می‌شود."""
+
+    path = models.CharField("مسیر", max_length=500)
+    size = models.PositiveBigIntegerField("حجم", default=0)
+    media = models.JSONField(null=True, blank=True)  # اطلاعات ردیف کتابخانه برای برگرداندن
+    by = models.ForeignKey("auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    trashed_at = models.DateTimeField("زمان انتقال", auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "فایل سطل بازیافت"
+        verbose_name_plural = "سطل بازیافت رسانه"
+        ordering = ["-trashed_at"]
+
+    def __str__(self):
+        return self.path

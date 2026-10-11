@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}برنامهٔ ارسال {{ c.title }}{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/crm-campaigns/{{ c.pk }}/" class="back">‹ کمپین</a>
+    <h1>برنامهٔ ارسال «{{ c.title|fa_num }}»</h1>
+    <p class="muted">{{ c.offer.product.title|fa_num }} · {{ p.remaining|fa_num }} تخته · فاصلهٔ مرحله‌ها {{ p.gap|fa_num }} ساعت</p></div>
+  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/settings/?tab=crm#smart">تنظیمات ارسال هوشمند</a></div>
+</div>
+{% if not c.smart %}<div class="alert alert-warning">«ارسال هوشمند و مرحله‌ای» برای این کمپین خاموش است؛ همه یک‌جا پیامک می‌گیرند. این صفحه فقط ترتیب امتیاز را نشان می‌دهد.</div>{% endif %}
+<div class="tiles">
+  <div class="tile t-ink"><span>گیرنده‌ها</span><strong>{{ p.ranked|length|fa_num }}</strong><small>از {{ p.total|fa_num }}؛ {{ p.capped|fa_num }} نفر اخیراً پیامک تبلیغاتی گرفته‌اند</small></div>
+  <div class="tile t-teal"><span>با نشانهٔ علاقه</span><strong>{{ scored|fa_num }}</strong><small>امتیاز بیشتر از صفر</small></div>
+  <div class="tile t-saffron"><span>خریداران همین نقشه (ست)</span><strong>{{ sets|fa_num }}</strong><small>متن «ست» می‌گیرند</small></div>
+  <div class="tile t-pink"><span>مرحلهٔ اول</span><strong>{{ p.waves.0|default:0|fa_num }}</strong><small>نفر؛ بقیه فقط اگر فرش فروخته نشود</small></div>
+</div>
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p"><h2>۲۰۰ نفر اول به ترتیب امتیاز</h2>
+      <div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>#</th><th>موبایل</th><th>امتیاز</th><th>دلیل</th><th>مرحله</th></tr></thead><tbody>
+        {% for r in rows %}<tr data-href="/panel/crm/customer/{{ r.mobile }}/"><td>{{ r.i|fa_num }}</td><td class="ltr-num">{{ r.mobile|fa_num }}</td><td>{{ r.score|fa_num }}</td><td>{% if r.set %}<span class="badge-ic b-completed">ست</span> {% endif %}{{ r.why|default:"—" }}</td><td>{% if r.wave %}{{ r.wave|fa_num }}{% else %}—{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>مرحله‌ها</h2>
+      {% for w, a, b, n in bounds %}<div class="kv"><span>مرحلهٔ {{ w|fa_num }}{% if not forloop.first %} (اگر فروخته نشد){% endif %}</span><strong>{{ n|fa_num }} نفر · ردیف {{ a|fa_num }} تا {{ b|fa_num }}</strong></div>{% empty %}<p class="muted">گیرنده‌ای نیست.</p>{% endfor %}
+      <p class="hint mt-2">اندازهٔ هر مرحله = «گیرنده به ازای هر تخته» × تعداد تخته‌های باقی‌مانده. اگر فرش در هر مرحله فروخته شود، مرحله‌های بعد فرستاده نمی‌شوند.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

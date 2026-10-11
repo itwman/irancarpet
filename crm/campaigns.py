@@ -58,16 +58,14 @@ def recipients(campaign):
 
 
 def offer_vars(o):
-    """متغیرهای پیامک یک فرصت ویژه."""
-    from .links import shorten
+    """متغیرهای پیامک یک فرصت ویژه؛ {product} نام کوتاه است تا پیامک کم‌تکه بماند."""
+    from content.render import design_of
 
-    if o.ends_at:
-        left = f"فقط تا {jdate(o.ends_at, '%A %d %B')}."
-    elif o.remaining == 1:
-        left = "فقط یک تخته باقی مانده."
-    else:
-        left = f"فقط {fa_num(o.remaining)} تخته باقی مانده."
-    return {"product": o.product.title, "size": o.size.label, "percent": fa_num(o.off_percent), "left": left,
+    from .links import shorten
+    from .smart import offer_label, offer_left
+
+    return {"product": offer_label(o), "product_full": o.product.title, "size": o.size.label, "percent": fa_num(o.off_percent),
+            "left": offer_left(o), "design": fa_num(design_of(o.product)),
             "link": shorten(o.product.get_absolute_url(), "l", days=30)}
 
 
@@ -107,6 +105,27 @@ def run_sync(pk):
 LOCK = "crm:camp:lock:{}"
 
 
+def is_smart(camp):
+    from .models import CrmSettings
+
+    return bool(camp.offer_id and camp.smart and CrmSettings.load().smart_offer)
+
+
+def _start_waves(camp, people, s):
+    """بار اول: رتبه‌بندی گیرنده‌ها و سهم مرحلهٔ اول."""
+    from .models import Campaign
+    from .smart import plan
+
+    p = plan(camp, people, s)
+    ranking = [m for m, _, _, _ in p["ranked"]]
+    sets = [m for m, _, _, is_set in p["ranked"] if is_set]
+    camp.ranking, camp.set_mobiles, camp.wave = ranking, sets, 1
+    camp.wave_quota = p["waves"][0] if p["waves"] else 0
+    camp.wave_log = [{"wave": 1, "at": timezone.now().isoformat(), "quota": camp.wave_quota, "capped": p["capped"]}]
+    Campaign.objects.filter(pk=camp.pk).update(ranking=ranking, set_mobiles=sets, wave=1, wave_quota=camp.wave_quota,
+                                               wave_log=camp.wave_log, total=len(ranking))
+
+
 def _run(pk, pause=0.4, limit=None):
     """ارسال (یا ادامهٔ ارسال) یک کمپین. limit: حداکثر پیامک در همین اجرا (کارهای دوره‌ای)؛ کمپین «در حال ارسال» می‌ماند."""
     from django.core.cache import cache
@@ -119,15 +138,29 @@ def _run(pk, pause=0.4, limit=None):
     close_old_connections()
     try:
         camp = Campaign.objects.select_related("offer__product", "offer__size").get(pk=pk)
-        footer = CrmSettings.load().marketing_footer
+        s = CrmSettings.load()
+        footer = s.marketing_footer
         extras = extra_vars(camp)
         people = recipients(camp)
-        Campaign.objects.filter(pk=pk).update(total=len(people), status=Campaign.Status.SENDING,
-                                              started_at=camp.started_at or timezone.now())
+        smart = is_smart(camp)
+        sets, capped = set(), set()
+        if smart:
+            if not camp.ranking:
+                _start_waves(camp, people, s)
+            by_mobile = {c["mobile"]: c for c in people}
+            people = [by_mobile.get(m) or {"mobile": m} for m in camp.ranking]
+            people = people[:camp.wave_quota]
+            sets = set(camp.set_mobiles or [])
+            from .smart import recently_messaged
+
+            capped = recently_messaged(s.freq_cap_days, exclude_campaign=camp)
+        else:
+            Campaign.objects.filter(pk=pk).update(total=len(people))
+        Campaign.objects.filter(pk=pk).update(status=Campaign.Status.SENDING, started_at=camp.started_at or timezone.now())
         done = set(SmsLog.objects.filter(campaign=camp, ok=True).values_list("mobile", flat=True))
         sent, failed, fails_in_row, this_run = len(done), camp.failed, 0, 0
         for c in people:
-            if c["mobile"] in done:
+            if c["mobile"] in done or c["mobile"] in capped:
                 continue
             if limit is not None and this_run >= limit:
                 return  # بقیه در اجرای بعدی
@@ -141,9 +174,12 @@ def _run(pk, pause=0.4, limit=None):
             if camp.discount:
                 coupon = personal_coupon(camp.code_prefix, c["mobile"], camp.title, camp.discount, camp.min_order, camp.valid_days)
             mine = dict(extras)
-            if "{link}" in (camp.text or ""):
+            text = camp.text
+            if c["mobile"] in sets and s.offer_set_text and extras.get("design"):
+                text = s.offer_set_text
+            if "{link}" in (text or ""):
                 mine["link"] = personal_link(camp, c["mobile"])
-            ok = send(c["mobile"], message(camp.text, c, coupon, footer, **mine), SmsLog.Kind.CAMPAIGN, campaign=camp)
+            ok = send(c["mobile"], message(text, c, coupon, footer, **mine), SmsLog.Kind.CAMPAIGN, campaign=camp)
             this_run += 1
             if this_run % 50 == 0:
                 cache.set(lock, 1, 900)
@@ -161,6 +197,18 @@ def _run(pk, pause=0.4, limit=None):
             Campaign.objects.filter(pk=pk).update(sent=sent, failed=failed)
             if pause:
                 time.sleep(pause)
+        if smart:
+            from .smart import has_next_wave
+
+            camp.refresh_from_db()
+            if has_next_wave(camp, len(camp.ranking), s):
+                log_ = list(camp.wave_log or [])
+                if log_:
+                    log_[-1]["sent"] = sent
+                nxt = timezone.now() + timezone.timedelta(hours=s.wave_gap_hours)
+                Campaign.objects.filter(pk=pk).update(status=Campaign.Status.WAITING, sent=sent, failed=failed, next_wave_at=nxt,
+                                                      wave_log=log_)
+                return
         Campaign.objects.filter(pk=pk).update(status=Campaign.Status.DONE, sent=sent, failed=failed, finished_at=timezone.now())
     except Exception:  # noqa: BLE001
         log.exception("crm campaign %s", pk)
@@ -168,6 +216,29 @@ def _run(pk, pause=0.4, limit=None):
     finally:
         cache.delete(lock)
         close_old_connections()
+
+
+def next_waves(now=None):
+    """کمپین‌های «منتظر مرحلهٔ بعد» که وقتشان رسیده: اگر فرش هنوز فروخته نشده، مرحلهٔ بعد؛ وگرنه پایان (و صرفه‌جویی)."""
+    from .models import Campaign, CrmSettings
+    from .smart import quota_for
+
+    now = now or timezone.now()
+    s = CrmSettings.load()
+    n = 0
+    for camp in Campaign.objects.filter(status=Campaign.Status.WAITING, next_wave_at__lte=now).select_related("offer"):
+        if not camp.offer_id or not _offer_live(camp.offer_id):
+            Campaign.objects.filter(pk=camp.pk).update(
+                status=Campaign.Status.DONE, finished_at=now, next_wave_at=None,
+                last_error=f"فرصت ویژه فروخته شد؛ {fa_num(max(len(camp.ranking) - camp.sent, 0))} نفر بعدی پیامک لازم نداشتند")
+            continue
+        wave = camp.wave + 1
+        quota = quota_for(wave, camp, len(camp.ranking), s)
+        log_ = list(camp.wave_log or []) + [{"wave": wave, "at": now.isoformat(), "quota": quota}]
+        Campaign.objects.filter(pk=camp.pk).update(status=Campaign.Status.SENDING, wave=wave, wave_quota=quota, next_wave_at=None,
+                                                   wave_log=log_)
+        n += 1
+    return n
 
 
 def _offer_live(pk):
@@ -181,6 +252,7 @@ def resume_sending(limit=300):
     """کمپین‌های «در حال ارسال» که اجرایشان قطع شده (یا کمپین‌های خودکار): هر بار تا limit پیامک."""
     from .models import Campaign
 
+    next_waves()
     n = 0
     for pk in Campaign.objects.filter(status=Campaign.Status.SENDING).values_list("pk", flat=True):
         _run(pk, pause=0.15, limit=limit)

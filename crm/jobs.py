@@ -220,7 +220,7 @@ def weekly_offer(now=None):
         return 0
     o = sorted(pool, key=lambda x: (-x.off_percent, x.price))[0]
     Campaign.objects.create(title=f"فرصت ویژهٔ هفته: {o.product.title}"[:120], segment=s.offer_sms_segment, discount=0,
-                            text=s.offer_sms_text, offer=o, status=Campaign.Status.SENDING, started_at=now)
+                            text=s.offer_sms_text, offer=o, smart=s.smart_offer, status=Campaign.Status.SENDING, started_at=now)
     return 1
 
 

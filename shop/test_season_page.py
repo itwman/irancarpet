@@ -121,7 +121,7 @@ class OffersPageAndSeasonTests(TestCase):
         self.assertEqual((camp.status, camp.sent), ("done", 3))
         text = sms.call_args[0][1]
         self.assertIn("٪", text)
-        self.assertIn("یک تخته", text)
+        self.assertIn("فقط ۱ تخته", text)
         # تقویم
         import jdatetime
 

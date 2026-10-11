@@ -67,6 +67,14 @@
     var up = document.createElement("label");
     up.className = "btn btn-light btn-sm mb-0";
     up.innerHTML = 'آپلود تصویر تازه<input type="file" accept="image/*" hidden>';
+    var libBtn = document.createElement("button");
+    libBtn.type = "button";
+    libBtn.className = "btn btn-light btn-sm";
+    libBtn.textContent = "انتخاب از کتابخانه";
+    libBtn.addEventListener("click", function () {
+      openLibrary({ multi: false, onPick: function (items) { var m = items[0]; ts.addOption({ value: m.value, text: m.text, thumb: m.thumb }); ts.setValue(m.value); } });
+    });
+    el.parentNode.appendChild(libBtn);
     el.parentNode.appendChild(up);
     el.parentNode.appendChild(wrap);
     function show() {
@@ -101,6 +109,94 @@
       .catch(function () { note.innerHTML = "<li class='error'>آپلود ناموفق بود.</li>"; });
   }
 
+
+  /* --------------------------------------------- کتابخانهٔ رسانه (پنجرهٔ انتخاب) */
+  var LIB = null;
+  function openLibrary(opts) {
+    opts = opts || {};
+    if (!window.bootstrap) return;
+    if (!LIB) {
+      document.body.insertAdjacentHTML("beforeend",
+        '<div class="modal fade lib-modal" id="mediaLib" tabindex="-1" aria-labelledby="mediaLibT" aria-hidden="true"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">' +
+        '<div class="modal-header gap-2 flex-wrap"><h2 class="modal-title h5 m-0" id="mediaLibT">کتابخانهٔ رسانه</h2>' +
+        '<input type="search" class="form-control lib-q" placeholder="جستجو در نام یا متن جایگزین…" aria-label="جستجو">' +
+        '<label class="btn btn-light btn-sm mb-0">آپلود تصویر<input type="file" accept="image/*" multiple hidden class="lib-up"></label>' +
+        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button></div>' +
+        '<div class="modal-body"><div class="lib-drop">برای آپلود، تصویرها را اینجا رها کنید</div><div class="lib-grid" role="listbox" aria-multiselectable="true"></div>' +
+        '<div class="text-center mt-3"><button type="button" class="btn btn-light btn-sm lib-more" hidden>تصویرهای بیشتر</button></div></div>' +
+        '<div class="modal-footer"><span class="muted small lib-count"></span><button type="button" class="btn btn-pink lib-ok" disabled>انتخاب</button></div>' +
+        '</div></div></div>');
+      var el = document.getElementById("mediaLib");
+      LIB = { el: el, modal: new bootstrap.Modal(el), grid: el.querySelector(".lib-grid"), q: el.querySelector(".lib-q"), more: el.querySelector(".lib-more"),
+              ok: el.querySelector(".lib-ok"), count: el.querySelector(".lib-count"), page: 1, sel: [], items: {}, opts: {} };
+      var t = null;
+      LIB.q.addEventListener("input", function () { clearTimeout(t); t = setTimeout(function () { libLoad(true); }, 300); });
+      LIB.more.addEventListener("click", function () { LIB.page += 1; libLoad(false); });
+      LIB.grid.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-id]");
+        if (!b) return;
+        var id = b.dataset.id, i = LIB.sel.indexOf(id);
+        if (!LIB.opts.multi) { LIB.sel = i >= 0 ? [] : [id]; }
+        else if (i >= 0) { LIB.sel.splice(i, 1); } else { LIB.sel.push(id); }
+        libMark();
+        if (!LIB.opts.multi && LIB.sel.length && e.detail === 2) LIB.ok.click();
+      });
+      LIB.ok.addEventListener("click", function () {
+        var picked = LIB.sel.map(function (id) { return LIB.items[id]; }).filter(Boolean);
+        LIB.modal.hide();
+        if (picked.length && LIB.opts.onPick) LIB.opts.onPick(picked);
+      });
+      var up = function (files) {
+        upload(files, function (fs) {
+          libLoad(true, function () {
+            fs.forEach(function (f) { if (LIB.opts.multi || !LIB.sel.length) { if (LIB.sel.indexOf(f.value) < 0) LIB.sel.push(f.value); } });
+            if (!LIB.opts.multi) LIB.sel = fs.length ? [fs[0].value] : LIB.sel;
+            libMark();
+          });
+        });
+      };
+      el.querySelector(".lib-up").addEventListener("change", function () { up(this.files); this.value = ""; });
+      var drop = el.querySelector(".modal-body");
+      ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("drag"); }); });
+      ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("drag"); }); });
+      drop.addEventListener("drop", function (e) { up(e.dataTransfer.files); });
+    }
+    LIB.opts = opts;
+    LIB.sel = [];
+    LIB.el.querySelector(".modal-title").textContent = opts.multi ? "کتابخانهٔ رسانه (چند تصویر را انتخاب کنید)" : "کتابخانهٔ رسانه";
+    LIB.q.value = "";
+    libLoad(true);
+    LIB.modal.show();
+    setTimeout(function () { LIB.q.focus(); }, 300);
+  }
+  function libLoad(reset, then) {
+    if (reset) { LIB.page = 1; LIB.grid.innerHTML = ""; }
+    fetch("/panel/media/library/?q=" + encodeURIComponent(toEn(LIB.q.value)) + "&page=" + LIB.page, { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (reset) LIB.grid.innerHTML = "";
+        (j.items || []).forEach(function (m) {
+          LIB.items[m.value] = m;
+          LIB.grid.insertAdjacentHTML("beforeend", '<button type="button" class="lib-item" role="option" data-id="' + esc(m.value) + '" title="' + esc(m.text) + '">' +
+            '<img src="' + esc(m.thumb) + '" alt="" loading="lazy"><span>' + esc(m.text) + "</span></button>");
+        });
+        if (!LIB.grid.children.length) LIB.grid.innerHTML = '<p class="muted">تصویری پیدا نشد.</p>';
+        LIB.more.hidden = !j.more;
+        libMark();
+        if (then) then();
+      });
+  }
+  function libMark() {
+    LIB.grid.querySelectorAll(".lib-item").forEach(function (b) {
+      var on = LIB.sel.indexOf(b.dataset.id) >= 0;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    LIB.ok.disabled = !LIB.sel.length;
+    LIB.count.textContent = LIB.sel.length ? LIB.sel.length.toLocaleString("fa-IR") + " تصویر انتخاب شده" : "";
+  }
+  window.openMediaLibrary = openLibrary;
+
   /* --------------------------------------------------------- ویرایشگر متن */
   function initEditor(t) {
     if (t.dataset.on || !window.Jodit) return;
@@ -109,7 +205,13 @@
       language: "fa", direction: "rtl", height: 380, minHeight: 200, toolbarAdaptive: true, askBeforePasteHTML: false,
       askBeforePasteFromWord: false, defaultActionOnPaste: "insert_clear_html", showCharsCounter: false, showWordsCounter: true,
       showXPathInStatusbar: false, beautifyHTML: false, sourceEditor: "area",
-      buttons: "paragraph,bold,italic,underline,|,ul,ol,|,link,image,table,|,align,brush,|,undo,redo,|,source,fullsize",
+      buttons: ["paragraph", "bold", "italic", "underline", "|", "ul", "ol", "|", "link", "image",
+        { name: "library", text: "کتابخانه", tooltip: "درج تصویر از کتابخانهٔ رسانه", exec: function (ed) {
+          openLibrary({ multi: true, onPick: function (items) {
+            items.forEach(function (m) { ed.s.insertHTML('<img src="' + esc(m.url) + '" alt="' + esc(m.alt || "") + '"' + (m.w ? ' width="' + Math.min(m.w, 800) + '"' : "") + ">"); });
+          } });
+        } },
+        "table", "|", "align", "brush", "|", "undo", "redo", "|", "source", "fullsize"],
       uploader: {
         url: "/panel/media/upload/", headers: { "X-CSRFToken": csrf() }, format: "json",
         filesVariableName: function () { return "file"; },
@@ -280,6 +382,10 @@
     if (window.Sortable) Sortable.create(gal, { animation: 150, onSort: save });
     gal.addEventListener("click", function (e) { if (e.target.closest(".x")) { e.target.closest("figure").remove(); save(); } });
     var pick = document.getElementById("galleryPick");
+    var galLib = document.getElementById("galleryLib");
+    if (galLib) galLib.addEventListener("click", function () {
+      openLibrary({ multi: true, onPick: function (items) { items.forEach(function (m) { add(m.value, m.thumb); }); } });
+    });
     if (pick) {
       document.addEventListener("DOMContentLoaded", function () {
         var ts = pick.tomselect;

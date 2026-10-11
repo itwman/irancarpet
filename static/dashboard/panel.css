@@ -336,3 +336,17 @@ textarea[name=body]{min-height:420px;line-height:2}textarea[name=bullets]{min-he
 .sms-log__st{margin-inline-start:auto}
 .sms-log p{margin:0;font-size:.88rem;line-height:1.8;color:var(--ink);overflow-wrap:anywhere}
 .side__badge{display:inline-block;min-width:1.4em;padding:0 .4em;margin-inline-start:.35rem;border-radius:999px;background:#e5395b;color:#fff;font-size:.75rem;font-weight:700;line-height:1.5;text-align:center;vertical-align:middle}
+.sms-prev__text{white-space:pre-wrap;font-family:inherit;background:var(--soft);border-radius:12px;padding:.8rem 1rem;margin:0;font-size:.95rem;line-height:1.9}
+/* کتابخانهٔ رسانه */
+.lib-modal .modal-header .lib-q{flex:1;min-width:180px;max-width:420px}
+.lib-modal .modal-body{position:relative;min-height:50vh}
+.lib-modal .modal-body.drag{outline:3px dashed var(--teal);outline-offset:-10px}
+.lib-drop{display:none}
+.lib-modal .modal-body.drag .lib-drop{display:flex;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(255,255,255,.85);font-weight:700;z-index:2}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem}
+.lib-item{display:flex;flex-direction:column;gap:.3rem;padding:.35rem;border:2px solid transparent;border-radius:12px;background:var(--soft);text-align:start;cursor:pointer}
+.lib-item img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#fff}
+.lib-item span{font-size:.72rem;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-item:hover{border-color:var(--line)}
+.lib-item.on{border-color:var(--pink);background:#fff;box-shadow:0 0 0 3px rgba(229,57,91,.15)}
+.lib-item:focus-visible{outline:3px solid var(--teal);outline-offset:2px}

@@ -63,7 +63,8 @@
           {% for m in gallery %}<figure data-id="{{ m.pk }}"><img src="{{ m.url }}" alt=""><button type="button" class="x" aria-label="برداشتن">×</button></figure>{% endfor %}
         </div>
         <div class="gallery-add">
-          <select class="ac" data-ac="/panel/ac/media/" data-ac-media="1" id="galleryPick"><option value="">انتخاب از کتابخانه…</option></select>
+          <button type="button" class="btn btn-light btn-sm" id="galleryLib"><svg class="ic"><use href="#i-image"/></svg> کتابخانهٔ رسانه</button>
+          <select class="ac" data-ac="/panel/ac/media/" data-ac-media="1" id="galleryPick"><option value="">جستجوی نام تصویر…</option></select>
           <label class="btn btn-light btn-sm mb-0"><svg class="ic"><use href="#i-plus"/></svg> آپلود تصویر<input type="file" accept="image/*" multiple hidden data-upload-to="gallery"></label>
         </div>
         <p class="hint mt-2">برای تغییر ترتیب، تصویرها را بکشید. اولین تصویر اگر «تصویر اصلی» خالی باشد، تصویر اصلی می‌شود.</p>

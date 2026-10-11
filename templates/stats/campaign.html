@@ -44,6 +44,11 @@
       <div class="kv"><span>خرید پس از کلیک</span><strong>{{ r.att_orders|fa_num }} · {{ r.att_sum|toman }} تومان</strong></div>
       <div class="kv"><span>خرید گیرنده‌ها تا {{ r.week_until|jdate:"%d %B" }}</span><strong>{{ r.week_orders|fa_num }} · {{ r.week_sum|toman }} تومان</strong></div>
     </section>
+    {% if r.waves %}<section class="card-p"><h2>ارسال مرحله‌ای</h2>
+      {% for w in r.waves %}<div class="kv"><span>مرحلهٔ {{ w.wave|fa_num }}</span><strong>تا نفر {{ w.quota|fa_num }}{% if w.sent %} · {{ w.sent|fa_num }} پیامک{% endif %}</strong></div>{% endfor %}
+      {% if c.status == "waiting" and c.next_wave_at %}<div class="kv"><span>مرحلهٔ بعد</span><strong>{{ c.next_wave_at|jdate:"%A %d %B ساعت %H:%M" }}</strong></div>{% endif %}
+      {% if r.saved %}<p class="hint mt-2 mb-0">فرش فروخته شد و {{ r.saved|fa_num }} نفر دیگر (حدود {{ r.saved_sms|fa_num }} پیامک) لازم نشد.</p>{% endif %}
+    </section>{% endif %}
     <section class="card-p"><h2>چطور بخوانیم</h2>
       <p class="small muted mb-2"><strong>کلیک</strong> فقط با پیوند شخصی ({link} در متن) شمرده می‌شود؛ ربات‌ها و پیش‌نمایش خودکار پیوند کنار گذاشته می‌شوند.</p>
       <p class="small muted mb-2"><strong>خرید پس از کلیک</strong> سفارشی است که تا ۷ روز بعد از کلیک، در همان مرورگر ثبت شده؛ دقیق است ولی اگر مشتری با دستگاه دیگری خریده باشد دیده نمی‌شود.</p>

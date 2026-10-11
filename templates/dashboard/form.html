@@ -40,6 +40,14 @@
       </section>
       {% endfor %}
 
+      {% if res.key == "crm-campaigns" %}
+      <section class="card-p sms-prev" id="smsPreview" aria-live="polite"><h2>پیش‌نمایش پیامک</h2>
+        <pre class="sms-prev__text" data-text>…</pre>
+        <div class="stat-row mt-2"><div><span>حرف</span><strong data-chars>—</strong></div><div><span>پیامک برای هر نفر</span><strong data-parts>—</strong></div>
+          <div><span>گیرنده</span><strong data-n>—</strong></div><div><span>جمع پیامک</span><strong data-total>—</strong></div></div>
+        <p class="hint mt-2 mb-0" data-hint>هر پیامک فارسی تا ۷۰ حرف یک پیامک است و بلندتر از آن هر ۶۷ حرف یکی؛ متن بیش از ۲ پیامک پرهزینه است.</p>
+      </section>
+      {% endif %}
       {% if res.key == "special-offers" %}
       <section class="card-p offer-preview" id="offerPreview" aria-live="polite"><h2>قیمتی که مشتری می‌بیند</h2>
         <p class="muted mb-0" data-msg>فرش و سایز را انتخاب کنید تا قیمت نشان داده شود.</p>
@@ -65,7 +73,30 @@
 </form>
 {% endblock %}
 {% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% endblock %}
-{% block scripts %}{% if res.key == "special-offers" %}<script>
+{% block scripts %}{% if res.key == "crm-campaigns" %}<script>
+(function () {
+  var box = document.getElementById("smsPreview"), form = box && box.closest("form");
+  if (!form) return;
+  var names = ["text", "offer", "segment", "inactive_days", "album", "custom_numbers", "discount", "min_order", "valid_days", "smart"], timer = null;
+  var q = function (s) { return box.querySelector(s); }, fa = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
+  function val(n) { var el = form.elements[n]; if (!el) return ""; return el.type === "checkbox" ? (el.checked ? "1" : "0") : (el.value || ""); }
+  function run() {
+    var p = new URLSearchParams();
+    names.forEach(function (n) { p.set(n === "custom_numbers" ? "custom" : n, val(n)); });
+    fetch("/panel/crm/sms-preview/?" + p.toString(), {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
+      q("[data-text]").textContent = d.text || "";
+      q("[data-chars]").textContent = fa(d.chars || 0);
+      q("[data-parts]").textContent = fa(d.parts || 0);
+      q("[data-parts]").className = d.parts > 2 ? "text-danger" : "";
+      q("[data-n]").textContent = d.recipients != null ? fa(d.recipients) : "—";
+      q("[data-total]").textContent = d.total_sms != null ? fa(d.total_sms) + (d.wave1 != null ? " (مرحلهٔ اول " + fa(d.wave1_sms) + ")" : "") : "—";
+    }).catch(function () {});
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(run, 400); }
+  names.forEach(function (n) { var el = form.elements[n]; if (el) { el.addEventListener("input", later); el.addEventListener("change", later); } });
+  run();
+})();
+</script>{% endif %}{% if res.key == "special-offers" %}<script>
 (function () {
   var box = document.getElementById("offerPreview"), form = box && box.closest("form");
   if (!form) return;

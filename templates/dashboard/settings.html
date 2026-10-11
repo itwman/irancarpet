@@ -20,7 +20,7 @@
       {% elif tab == "crm" %}
         {% if not line %}<div class="alert alert-warning">شمارهٔ خط اختصاصی sms.ir هنوز در زبانهٔ <a href="?tab=sms">پیامک</a> وارد نشده؛ تا آن را وارد نکنید هیچ‌کدام از این پیامک‌ها فرستاده نمی‌شود.</div>{% endif %}
         {% for title, hint, fields in crm_groups %}
-          <h2{% if not forloop.first %} class="mt-4"{% endif %}>{{ title }}</h2>{% if hint %}<p class="hint">{{ hint }}</p>{% endif %}
+          <h2{% if not forloop.first %} class="mt-4"{% endif %}{% if "هوشمند" in title %} id="smart"{% endif %}>{{ title }}</h2>{% if hint %}<p class="hint">{{ hint }}</p>{% endif %}
           {% for f in fields %}{% include "dashboard/_field.html" %}{% endfor %}
         {% endfor %}
       {% else %}
@@ -185,3 +185,28 @@
 </div>
 {% endblock %}
 {% block scripts_before %}{% if tab == "site" %}{% include "dashboard/_editor_assets.html" %}{% endif %}{% endblock %}
+{% block scripts %}{% if tab == "crm" %}<script>
+(function () {
+  var fa = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
+  ["offer_sms_text", "offer_set_text"].forEach(function (name) {
+    var ta = document.querySelector('textarea[name="' + name + '"]');
+    if (!ta) return;
+    var box = document.createElement("div");
+    box.className = "sms-prev mt-2";
+    box.innerHTML = '<pre class="sms-prev__text"></pre><p class="hint mt-1 mb-0"></p>';
+    ta.parentNode.appendChild(box);
+    var timer = null;
+    function run() {
+      var p = new URLSearchParams({text: ta.value, kind: "offer", discount: "0"});
+      fetch("/panel/crm/sms-preview/?" + p.toString(), {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
+        box.querySelector("pre").textContent = d.text || "";
+        var h = box.querySelector("p");
+        h.textContent = "نمونه با " + (d.offer || "یک فرصت ویژه") + ": " + fa(d.chars) + " حرف، " + fa(d.parts) + " پیامک برای هر نفر" + (d.parts > 2 ? " (پرهزینه؛ کوتاه‌ترش کنید)" : "");
+        h.className = "hint mt-1 mb-0" + (d.parts > 2 ? " text-danger" : "");
+      }).catch(function () {});
+    }
+    ta.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 400); });
+    run();
+  });
+})();
+</script>{% endif %}{% endblock %}

@@ -140,3 +140,39 @@ def thumb(media, w=480):
     sizes = (240, 480, 960)
     w = min(sizes, key=lambda x: abs(x - int(w or 480)))
     return f"/app-img/{w}/{quote(f.name)}"
+
+
+@register.filter
+def filesize_fa(n):
+    """حجم فایل به فارسی: ۲٫۴ مگابایت"""
+    try:
+        n = float(n or 0)
+    except (TypeError, ValueError):
+        return ""
+    for unit, size in (("گیگابایت", 1024 ** 3), ("مگابایت", 1024 ** 2), ("کیلوبایت", 1024)):
+        if n >= size:
+            return fa_num(f"{n / size:.1f}".rstrip("0").rstrip(".")) + " " + unit
+    return fa_num(int(n)) + " بایت"
+
+
+@register.filter
+def ts_jdate(ts, fmt="%Y/%m/%d %H:%M"):
+    """زمان یونیکس ← تاریخ شمسی"""
+    import datetime
+
+    from django.utils import timezone as tz
+
+    try:
+        return jdate(datetime.datetime.fromtimestamp(float(ts), tz=datetime.timezone.utc).astimezone(tz.get_current_timezone()), fmt)
+    except (TypeError, ValueError, OSError):
+        return ""
+
+
+@register.filter
+def add_days(dt, n):
+    import datetime
+
+    try:
+        return dt + datetime.timedelta(days=int(n))
+    except (TypeError, ValueError):
+        return dt

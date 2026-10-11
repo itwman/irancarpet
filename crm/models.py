@@ -74,7 +74,29 @@ class CrmSettings(models.Model):
         ("all", "همه (خریداران، سفارش ناتمام و ثبت‌نامی‌ها)"), ("buyers", "همهٔ خریداران"), ("active", "خریداران فعال"),
         ("at_risk", "در خطر ریزش"), ("registered", "ثبت‌نام‌کرده بدون سفارش")])
     offer_sms_min_percent = models.PositiveSmallIntegerField("کمترین تخفیف برای ارسال (٪)", default=5)
-    offer_sms_text = models.TextField("متن پیامک فرصت ویژه", default=texts.OFFER)
+    offer_sms_text = models.TextField("متن پیامک فرصت ویژه", default=texts.OFFER,
+                                      help_text="{name} نام، {product} نام کوتاه فرش (نقشه، رنگ، شانه، سایز)، {percent} درصد تخفیف، "
+                                                "{left} تعداد یا زمان باقی‌مانده، {link} پیوند شخصی، {product_full} عنوان کامل (بلند و پرهزینه)")
+    offer_set_text = models.TextField("متن فرصت ویژه برای خریداران همان نقشه", default=texts.OFFER_SET,
+                                      help_text="برای کسی که همین نقشه را با سایز دیگری خریده؛ {design} نام نقشه")
+
+    smart_offer = models.BooleanField("ارسال هوشمند و مرحله‌ای فرصت ویژه", default=True,
+                                      help_text="گیرنده‌ها با علاقه‌شان (نقشه، رنگ، شانه، سایز، کلیک‌های قبلی) مرتب می‌شوند و پیامک مرحله‌به‌مرحله "
+                                                "می‌رود؛ اگر فرش فروخته شود، مرحله‌های بعد فرستاده نمی‌شوند.")
+    wave1_per_piece = models.PositiveIntegerField("مرحلهٔ اول: گیرنده به ازای هر تخته", default=150)
+    wave2_per_piece = models.PositiveIntegerField("مرحلهٔ دوم: گیرنده به ازای هر تخته", default=300,
+                                                  help_text="۰ یعنی مرحلهٔ دوم نداریم")
+    wave_last_all = models.BooleanField("مرحلهٔ آخر: همهٔ گیرنده‌های باقی‌مانده", default=True)
+    wave_gap_hours = models.PositiveIntegerField("فاصلهٔ مرحله‌ها (ساعت)", default=48)
+    freq_cap_days = models.PositiveIntegerField("هر نفر حداکثر یک پیامک تبلیغاتی در چند روز", default=7,
+                                                help_text="کسی که در این مدت پیامک کمپین دیگری گرفته، کنار گذاشته می‌شود؛ ۰ یعنی بدون محدودیت")
+    w_set = models.PositiveSmallIntegerField("امتیاز: همان نقشه را با سایز دیگر خریده (ست)", default=10)
+    w_design = models.PositiveSmallIntegerField("امتیاز: همان نقشه در سبد، بازدید یا سفارش ناتمام", default=8)
+    w_click = models.PositiveSmallIntegerField("امتیاز: روی پیامک‌های قبلی کلیک کرده", default=6)
+    w_color = models.PositiveSmallIntegerField("امتیاز: همان رنگ زمینه (خرید یا علاقه)", default=4)
+    w_reeds = models.PositiveSmallIntegerField("امتیاز: همان شانه را خریده", default=3)
+    w_size = models.PositiveSmallIntegerField("امتیاز: همان سایز (خرید یا علاقه)", default=3)
+    w_recent = models.PositiveSmallIntegerField("امتیاز: فعالیت در ۹۰ روز اخیر", default=2)
 
     calendar_preview = models.BooleanField("پیش‌نمایش کمپین‌های تقویم برای مدیران", default=True,
                                            help_text="یک روز پیش از هر کمپین خودکار، متن و تعداد گیرنده‌ها برای مدیران پیامک می‌شود تا اگر خواستند خاموشش کنند")
@@ -127,6 +149,7 @@ class Campaign(models.Model):
         DONE = "done", "ارسال شد"
         STOPPED = "stopped", "متوقف شد"
         FAILED = "failed", "ناموفق"
+        WAITING = "waiting", "منتظر مرحلهٔ بعد"
 
     title = models.CharField("عنوان", max_length=120)
     segment = models.CharField("گیرنده‌ها", max_length=12, choices=Segment.choices, default=Segment.BUYERS)
@@ -154,6 +177,16 @@ class Campaign(models.Model):
     created_at = models.DateTimeField("ساخته شده", default=timezone.now)
     started_at = models.DateTimeField("شروع ارسال", null=True, blank=True)
     finished_at = models.DateTimeField("پایان ارسال", null=True, blank=True)
+    # ارسال هوشمند و مرحله‌ای (فقط کمپین‌های فرصت ویژه)
+    smart = models.BooleanField("ارسال هوشمند و مرحله‌ای", default=True,
+                                help_text="فقط وقتی «فرصت ویژه» انتخاب شده: اول برای علاقه‌مندان همان نقشه، رنگ و سایز، و اگر فرش فروخته نشد، "
+                                          "مرحلهٔ بعد. اندازهٔ مرحله‌ها و فاصله‌شان در «تنظیمات ← پیامک سفارش و باشگاه».")
+    wave = models.PositiveSmallIntegerField("مرحله", default=0, editable=False)
+    wave_quota = models.PositiveIntegerField(default=0, editable=False)  # تا چندمین نفر فهرست مرتب‌شده در این مرحله
+    next_wave_at = models.DateTimeField("مرحلهٔ بعد", null=True, blank=True, editable=False)
+    ranking = models.JSONField(default=list, blank=True, editable=False)    # موبایل‌ها به ترتیب امتیاز
+    set_mobiles = models.JSONField(default=list, blank=True, editable=False)  # خریداران همان نقشه با سایز دیگر (متن «ست»)
+    wave_log = models.JSONField(default=list, blank=True, editable=False)
 
     class Meta:
         verbose_name = "کمپین"
