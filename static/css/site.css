@@ -1419,3 +1419,36 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .ct-ok{background:#e9f7ec;border-radius:var(--r-sm);padding:.75rem 1rem;margin:0 0 1rem;color:#1d5e2f}
 .ct-hp{position:absolute;inset-inline-start:-9999px;width:1px;height:1px;overflow:hidden}
 @media (max-width:575.98px){.ct-form__grid{grid-template-columns:1fr}.ct-form__foot .btn-ic{width:100%}}
+/* ---- ماشین‌حساب سایز دلخواه ---- */
+.cz{max-width:100%;overflow:hidden;margin:1.5rem 0 2rem;padding:1.3rem clamp(1rem,3vw,1.6rem);border-radius:var(--r-lg);background:var(--soft)}
+.prose .cz__t{margin:0 0 .2rem;font-size:1.3rem}
+.cz__lead{margin:0 0 1rem;color:var(--ink-2);font-size:.93rem}
+.cz__form{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;align-items:end}
+.cz__reeds{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.4rem;border:0;padding:0;margin:0}
+.cz__reeds legend{font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:.35rem;float:none;width:auto}
+.cz__reeds label{position:relative}
+.cz__reeds input{position:absolute;opacity:0;inset:0}
+.cz__reeds span{display:inline-block;padding:.45rem 1.1rem;border-radius:999px;background:#fff;box-shadow:0 0 0 1.5px var(--line);font-weight:900;cursor:pointer}
+.cz__reeds input:checked+span{background:var(--ink);color:#fff;box-shadow:none}
+.cz__reeds input:focus-visible+span{outline:3px solid var(--teal);outline-offset:2px}
+.cz__f{display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:700;color:var(--ink-2);min-width:0}
+.cz__f--wide{grid-column:1/-1}
+.cz__f input,.cz__f select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:.55rem .8rem}
+.cz__f input:focus,.cz__f select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-t)}
+.cz__out{display:grid;grid-template-columns:220px 1fr;gap:1.2rem;margin-top:1.2rem;align-items:start}
+.cz__fig{width:100%;height:auto;background:#fff;border-radius:var(--r-md)}
+.cz__rug{fill:var(--pink-t);stroke:var(--pink-d);stroke-width:1.5}
+.cz__seam{stroke:var(--ink);stroke-width:2;stroke-dasharray:5 4}
+.cz__dim{font-size:10px;fill:var(--ink-2);text-anchor:middle;font-family:inherit}
+.cz__total{margin:0 0 .6rem;font-size:1rem}
+.cz__total strong{font-size:clamp(1.5rem,4vw,1.9rem);font-weight:900;color:var(--pink-d)}
+.cz__total small{display:block;color:var(--muted);font-size:.85rem}
+.prose .cz__lines{list-style:none;padding:0;margin:0 0 .7rem;font-size:.9rem}
+.cz__lines li{display:flex;justify-content:space-between;gap:1rem;padding:.3rem 0;border-bottom:1px dashed var(--line)}
+.prose .cz__how{margin:.3rem 0 .6rem;padding-inline-start:1.1rem;font-size:.88rem;color:var(--ink-2)}
+.cz__tip{background:var(--teal-t);border-radius:var(--r-sm);padding:.6rem .85rem;font-size:.9rem;margin:.5rem 0}
+.cz__alt{background:#fff;border-radius:var(--r-sm);padding:.6rem .85rem;font-size:.85rem;color:var(--ink-2);margin:.5rem 0}
+.cz__src{font-size:.78rem;color:var(--muted);margin:.4rem 0 0}
+.cz__err{color:var(--pink-d);margin:0}
+.cz__note{font-size:.85rem;color:var(--ink-2);margin:1rem 0 0}
+@media (max-width:640px){.cz__form{grid-template-columns:1fr 1fr}.cz__out{grid-template-columns:1fr}.cz__fig{max-width:280px;justify-self:center}}

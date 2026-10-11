@@ -36,7 +36,7 @@ SIZE_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(size_prices|size_faq)\s+([\w-]+)(?:\s+
 SIZE_SLUGS = ["12-meter", "9-meter", "6-meter"]
 
 
-MISC_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(price_table|city_notice|reeds_links|contact_info|contact_form)\](?:\s*</p>)?")
+MISC_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(price_table|city_notice|reeds_links|contact_info|contact_form|custom_size_calc)\](?:\s*</p>)?")
 CMP_RE = re.compile(r"(?:<p[^>]*>\s*)?\[reeds_compare((?:\s+\d{3,4}){2,4})\s*\](?:\s*</p>)?")
 CITY_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(shipping_info|city_faq)(?:\s+([^\]\[<>]{1,40}))?\](?:\s*</p>)?")
 
@@ -557,7 +557,8 @@ def render(content, request, title=""):
             from crm import contact
 
             fn = {"price_table": block_price_table, "city_notice": block_city_notice,
-                  "reeds_links": block_reeds_links, "contact_info": contact.block_info, "contact_form": contact.block_form}[m.group(1)]
+                  "reeds_links": block_reeds_links, "contact_info": contact.block_info, "contact_form": contact.block_form,
+                  "custom_size_calc": __import__("pricing.custom", fromlist=["block"]).block}[m.group(1)]
             html = fn(request, title)
         except Exception:  # noqa: BLE001
             import logging

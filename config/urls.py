@@ -46,6 +46,7 @@ urlpatterns = [
     path("o/<str:token>/", growth_views.quickpay),
     path("s/<str:code>/", crm_links.view),
     path("t/", stats_track.beacon),
+    path("custom-size/quote/", pricing_views.custom_quote),
     path("review/<str:token>/", growth_views.review_invite),
     path("alerts/", growth_views.alert),
     path("farsh-yab/", finder_views.page),

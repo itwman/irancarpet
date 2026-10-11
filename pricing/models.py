@@ -29,6 +29,20 @@ class PricingSettings(models.Model):
     round_method = models.CharField("روش گرد کردن", max_length=10, choices=RoundMethod.choices, default=RoundMethod.UP)
     show_size_table = models.BooleanField("نمایش جدول قیمت سایزها در صفحهٔ محصول", default=True)
 
+    # ماشین‌حساب سایز دلخواه
+    custom_enabled = models.BooleanField("ماشین‌حساب قیمت سایز دلخواه", default=True)
+    loom_700 = models.DecimalField("عرض دستگاه ۷۰۰ شانه (متر)", max_digits=4, decimal_places=2, default=Decimal("3"))
+    loom_1000 = models.DecimalField("عرض دستگاه ۱۰۰۰ شانه (متر)", max_digits=4, decimal_places=2, default=Decimal("3"))
+    loom_1200 = models.DecimalField("عرض دستگاه ۱۲۰۰ شانه (متر)", max_digits=4, decimal_places=2, default=Decimal("4"))
+    loom_1500 = models.DecimalField("عرض دستگاه ۱۵۰۰ شانه (متر)", max_digits=4, decimal_places=2, default=Decimal("4"))
+    loom_big = models.DecimalField("عرض بزرگ‌ترین دستگاه (متر)", max_digits=4, decimal_places=2, default=Decimal("4"),
+                                   help_text="فرشی که نیمه‌اش هم روی دستگاه همان شانه جا نشود، با این عرض حساب می‌شود")
+    design_per_m2 = models.PositiveBigIntegerField("هزینهٔ طراحی هر متر مربع (تومان)", default=400_000,
+                                                   help_text="یک بار برای هر سفارش، بر اساس اندازهٔ واقعی فرش")
+    seam_per_m = models.PositiveBigIntegerField("هزینهٔ دوخت هر متر (تومان)", default=2_000_000)
+    custom_min_side = models.DecimalField("کمترین ضلع (متر)", max_digits=4, decimal_places=2, default=Decimal("0.40"))
+    custom_max_length = models.DecimalField("بیشترین طول (متر)", max_digits=5, decimal_places=2, default=Decimal("15"))
+
     class Meta:
         verbose_name = "تنظیمات قیمت‌گذاری"
         verbose_name_plural = "تنظیمات قیمت‌گذاری"

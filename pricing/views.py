@@ -220,3 +220,31 @@ def album_detail(request, slug, page=1):
                "list_url": pricelist.PRICE_LIST_PATH,
                "jsonld": json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)},
     )
+
+
+def custom_quote(request):
+    """قیمت حدودی سایز دلخواه (JSON) برای ماشین‌حساب صفحه‌ها."""
+    from django.http import JsonResponse
+
+    from catalog.models import Product
+
+    from . import custom
+
+    g = request.GET
+    album = None
+    pid = (g.get("product") or "").strip()
+    if pid.isdigit():
+        p = Product.objects.filter(pk=int(pid), status="publish").select_related("album").first()
+        album = p.album if p and p.album_id and p.album.is_active else None
+    aid = (g.get("album") or "").strip()
+    if album is None and aid.isdigit():
+        from .models import Album
+
+        album = Album.objects.filter(pk=int(aid), is_active=True).first()
+    try:
+        q = custom.quote(g.get("w"), g.get("l"), g.get("q") or 1, g.get("reeds") or "700", album=album)
+    except custom.QuoteError as e:
+        return JsonResponse({"ok": False, "error": str(e)})
+    resp = JsonResponse(custom.as_dict(q))
+    resp["Cache-Control"] = "public, max-age=300"
+    return resp

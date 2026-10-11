@@ -1,0 +1,71 @@
+{% load fa %}<section class="cz" data-cz data-groups='{{ groups_json }}' aria-labelledby="cz-t">
+  <h2 id="cz-t" class="cz__t">قیمت حدودی فرش با سایز دلخواه</h2>
+  <p class="cz__lead">طول و عرض فرش را به متر بنویسید؛ قیمت با روش واقعی بافت حساب می‌شود.</p>
+  <div class="cz__form">
+    <fieldset class="cz__reeds"><legend>شانه</legend>
+      {% for g in groups %}<label><input type="radio" name="cz-reeds" value="{{ g.reeds }}"{% if forloop.first %} checked{% endif %}><span>{{ g.reeds|fa_num }}</span></label>{% endfor %}
+    </fieldset>
+    <label class="cz__f cz__f--wide">لیست قیمت<select data-album><option value="">میانگین همهٔ لیست‌های این شانه</option></select></label>
+    <label class="cz__f">عرض (متر)<input data-w inputmode="decimal" placeholder="مثلاً ۲٫۵" autocomplete="off"></label>
+    <label class="cz__f">طول (متر)<input data-l inputmode="decimal" placeholder="مثلاً ۴" autocomplete="off"></label>
+    <label class="cz__f">تعداد<input data-q inputmode="numeric" value="1" autocomplete="off"></label>
+  </div>
+  <div class="cz__out" aria-live="polite">
+    <svg class="cz__fig" data-fig viewBox="0 0 220 160" role="img" aria-label="شکل فرش"></svg>
+    <div class="cz__res" data-res><p class="muted m-0">اندازه را بنویسید (کمترین ضلع {{ min_cm|fa_num }} سانتی‌متر، بیشترین طول {{ max_len|floatformat:"0"|fa_num }} متر).</p></div>
+  </div>
+  <p class="cz__note">این قیمت <strong>حدودی</strong> است. پس از ثبت درخواست، کارشناسان ما برای هماهنگی نقشه، رنگ و هر تغییر لازم با شما تماس می‌گیرند.</p>
+</section>
+<script>
+(function () {
+  var box = document.currentScript.previousElementSibling;
+  if (!box || !box.hasAttribute("data-cz")) return;
+  var groups = JSON.parse(box.dataset.groups || "[]"), album = box.querySelector("[data-album]"), res = box.querySelector("[data-res]"), fig = box.querySelector("[data-fig]");
+  var W = box.querySelector("[data-w]"), L = box.querySelector("[data-l]"), Q = box.querySelector("[data-q]"), t = null, last = "";
+  function fa(s) { return String(s).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); }
+  function en(s) { return String(s || "").replace(/[۰-۹]/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹".indexOf(d); }).replace(/[٠-٩]/g, function (d) { return "٠١٢٣٤٥٦٧٨٩".indexOf(d); }).replace(/[٫،]/g, "."); }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+  function reeds() { var r = box.querySelector("input[name=cz-reeds]:checked"); return r ? r.value : "700"; }
+  function fillAlbums() {
+    var g = groups.find(function (x) { return x.reeds === reeds(); }) || { albums: [] };
+    album.innerHTML = '<option value="">میانگین همهٔ لیست‌های این شانه</option>' + g.albums.map(function (a) { return '<option value="' + a.id + '">' + esc(fa(a.title)) + "</option>"; }).join("");
+  }
+  function draw(d) {
+    var w = d ? d.width : 0, l = d ? d.length : 0;
+    if (!w || !l) { fig.innerHTML = ""; return; }
+    var s = Math.min(170 / l, 112 / w), rw = l * s, rh = w * s, x = 30 + (170 - rw) / 2, y = 10 + (112 - rh) / 2;
+    var h = '<rect x="' + x + '" y="' + y + '" width="' + rw + '" height="' + rh + '" rx="3" class="cz__rug"/>';
+    if (d.seam_dir === "h") h += '<line x1="' + x + '" y1="' + (y + rh / 2) + '" x2="' + (x + rw) + '" y2="' + (y + rh / 2) + '" class="cz__seam"/>';
+    if (d.seam_dir === "v") h += '<line x1="' + (x + rw / 2) + '" y1="' + y + '" x2="' + (x + rw / 2) + '" y2="' + (y + rh) + '" class="cz__seam"/>';
+    h += '<text x="' + (x + rw / 2) + '" y="' + (y + rh + 16) + '" class="cz__dim">' + fa(l) + " متر</text>";
+    h += '<text x="' + (x - 5) + '" y="' + (y + rh / 2) + '" class="cz__dim" text-anchor="end" dominant-baseline="middle">' + fa(w) + "</text>";
+    fig.innerHTML = h;
+  }
+  function run() {
+    var w = en(W.value).trim(), l = en(L.value).trim(), q = en(Q.value).trim() || "1";
+    if (!w || !l) { draw(null); return; }
+    var p = new URLSearchParams({ w: w, l: l, q: q, reeds: reeds(), album: album.value });
+    if (box.dataset.product) p.set("product", box.dataset.product);
+    var key = p.toString();
+    if (key === last) return;
+    last = key;
+    fetch("/custom-size/quote/?" + key).then(function (r) { return r.json(); }).then(function (d) {
+      if (key !== last) return;
+      if (!d.ok) { res.innerHTML = '<p class="cz__err">' + esc(d.error) + "</p>"; draw(null); return; }
+      d.seam_dir = d.split === "length" ? "v" : (d.split === "width" ? "h" : "");
+      draw(d);
+      var h = '<p class="cz__total"><span>حدود</span> <strong>' + d.total_fa + "</strong> تومان" + (d.each_fa ? '<small>هر عدد حدود ' + d.each_fa + " تومان</small>" : "") + "</p>";
+      h += '<ul class="cz__lines">' + d.lines.map(function (x) { return "<li><span>" + esc(x.label) + "</span><b>" + x.amount + "</b></li>"; }).join("") + "</ul>";
+      h += '<ul class="cz__how">' + d.how.concat(d.notes).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+      if (d.pair) h += '<p class="cz__tip"><strong>پیشنهاد:</strong> اگر ' + fa(d.pair.qty) + " عدد سفارش دهید، دوخت لازم نیست و هر عدد حدود " + d.pair.each_fa + " تومان می‌شود (الان هر عدد " + d.pair.each_now_fa + ").</p>";
+      if (d.alternative) h += '<p class="cz__alt">روش اقتصادی‌تر هم هست (حدود ' + d.alternative.total_fa + " تومان): دو تکه از سمت طول بافت دوخته می‌شوند که زیبایی و دقت کمتری دارد و <strong>دوختش ضمانت ندارد</strong>. فقط با هماهنگی کارشناس.</p>";
+      h += '<p class="cz__src">مبنای قیمت: ' + esc(fa(d.source)) + "</p>";
+      res.innerHTML = h;
+    }).catch(function () {});
+  }
+  function later() { clearTimeout(t); t = setTimeout(run, 350); }
+  box.addEventListener("input", later);
+  box.addEventListener("change", function (e) { if (e.target.name === "cz-reeds") fillAlbums(); later(); });
+  fillAlbums();
+})();
+</script>
