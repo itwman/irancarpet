@@ -1,3 +1,4 @@
+import datetime
 import math
 
 from django.conf import settings
@@ -27,6 +28,13 @@ class ShopSettings(models.Model):
     admin_mobiles = models.CharField(
         "موبایل مدیران برای اطلاع از سفارش", max_length=200, blank=True, help_text="با ویرگول جدا کنید",
     )
+    # اتصال به مانیکس پلاس (حسابداری): مانیکس با این کلید سفارش‌ها را می‌خواند (API سازگار با ووکامرس)
+    manix_enabled = models.BooleanField("اتصال مانیکس پلاس فعال باشد", default=False)
+    manix_key = models.CharField("کلید مانیکس پلاس", max_length=64, blank=True, editable=False)
+    manix_secret_hash = models.CharField(max_length=128, blank=True, editable=False)
+    manix_start = models.DateField("سفارش‌ها از این تاریخ به بعد", default=datetime.date(2025, 3, 21),
+                                   help_text="سفارش‌های پیش از این تاریخ به مانیکس پلاس داده نمی‌شوند (پیش‌فرض: اول ۱۴۰۴)")
+    manix_last_access = models.DateTimeField(null=True, blank=True, editable=False)
     # درگاه‌ها
     sep_terminal_id = models.CharField("شمارهٔ ترمینال سامان", max_length=30, blank=True)
     zarinpal_merchant_id = models.CharField("مرچنت‌کد زرین‌پال", max_length=64, blank=True)
@@ -136,6 +144,7 @@ class Order(models.Model):
     review_invited_at = models.DateTimeField("دعوت به ثبت نظر", null=True, blank=True, editable=False)
     created_at = models.DateTimeField("تاریخ ثبت", default=timezone.now, db_index=True)
     paid_at = models.DateTimeField("تاریخ پرداخت", null=True, blank=True)
+    updated_at = models.DateTimeField("آخرین تغییر", default=timezone.now, db_index=True, editable=False)
 
     NUMBER_START = 200001
 
@@ -154,6 +163,10 @@ class Order(models.Model):
         return f"سفارش {self.number}"
 
     def save(self, *args, **kwargs):
+        # زمان آخرین تغییر (مانیکس پلاس سفارش‌های تغییرکرده را با همین می‌خواند)
+        self.updated_at = timezone.now()
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = list(set(kwargs["update_fields"]) | {"updated_at"})
         if not self.number:
             with transaction.atomic():
                 last = Order.objects.select_for_update().filter(number__gte=self.NUMBER_START).order_by("-number").first()
@@ -267,6 +280,10 @@ class Payment(models.Model):
         from .gateways import GATEWAY_NAMES
 
         return GATEWAY_NAMES.get(self.gateway, self.gateway)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        Order.objects.filter(pk=self.order_id).update(updated_at=timezone.now())
 
     @property
     def res_num(self):

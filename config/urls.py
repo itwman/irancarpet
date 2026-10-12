@@ -16,6 +16,7 @@ from finder import views as finder_views
 from crm import links as crm_links
 from stats import track as stats_track
 from shop import offers_page as shop_offers_page
+from shop import wc_api as shop_wc_api
 from growth import views as growth_views
 from installments import views as installments_views
 from landing import views as landing_views
@@ -29,6 +30,9 @@ urlpatterns = [
     path("", core_views.home, name="home"),
     # فید ترب (همان آدرس افزونهٔ وردپرس)
     re_path(r"^wp-json/torob/products/?$", torob_views.products),
+    re_path(r"^wp-json/wc/v3/?$", shop_wc_api.index),
+    re_path(r"^wp-json/wc/v3/orders/?$", shop_wc_api.orders),
+    re_path(r"^wp-json/wc/v3/orders/(?P<number>\d+)/?$", shop_wc_api.order_detail),
     re_path(r"^wp-json/emalls_ext/v1/products/?$", torob_emalls.products),
     # اپلیکیشن موبایل
     path("api/app/v1/", include("api.urls")),

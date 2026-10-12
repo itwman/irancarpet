@@ -155,6 +155,17 @@
     <section class="card-p"><h2>فایل‌های هوش مصنوعی</h2>
       <p class="hint"><a dir="ltr" href="/llms.txt" target="_blank" rel="noopener">{{ SITE_URL }}/llms.txt</a> — خلاصهٔ فروشگاه، قیمت‌های روز و روش‌های خرید برای ChatGPT، Claude، Gemini و Perplexity. خودکار با قیمت‌ها به‌روز می‌شود.</p>
     </section>{% endif %}
+    {% if tab == "manix" %}<section class="card-p"><h2>اتصال به مانیکس پلاس</h2>
+      <p class="hint">مانیکس پلاس هر چند دقیقه سفارش‌های پرداخت‌شده را از این‌جا می‌خواند و برایشان مشتری، کالا (به تفکیک سایز)، فاکتور فروش و دریافت می‌سازد. اطلاعات مستقیم از این سرور به سرور مانیکس می‌رود.</p>
+      <div class="kv"><span>آدرس سایت (در مانیکس پلاس)</span><strong dir="ltr">{{ manix_url }}</strong></div>
+      <div class="kv"><span>کلید فعلی</span><strong dir="ltr">{% if manix.manix_key %}{{ manix.manix_key|truncatechars:14 }}{% else %}ساخته نشده{% endif %}</strong></div>
+      <div class="kv"><span>آخرین خواندن مانیکس</span><strong>{% if manix.manix_last_access %}{{ manix.manix_last_access|jdate:"%d %B %H:%M" }}{% else %}هنوز نخوانده{% endif %}</strong></div>
+      {% if manix_new %}<div class="alert alert-warning mt-3"><b>کلید و رمز را همین حالا در مانیکس پلاس (فروشگاه‌های آنلاین ← ایران کارپت) وارد کنید؛ رمز دیگر نشان داده نمی‌شود.</b>
+        <div class="kv"><span>کلید (Consumer key)</span><code dir="ltr" class="user-select-all">{{ manix_new.0 }}</code></div>
+        <div class="kv"><span>رمز (Consumer secret)</span><code dir="ltr" class="user-select-all">{{ manix_new.1 }}</code></div></div>{% endif %}
+      {% if user.is_superuser %}<form method="post" class="mt-3" onsubmit="return {% if manix.manix_key %}confirm('کلید قبلی باطل می‌شود و باید کلید تازه را در مانیکس پلاس هم عوض کنید. ادامه؟'){% else %}true{% endif %}">{% csrf_token %}<input type="hidden" name="tab" value="manix">
+        <button class="btn btn-ink" name="do" value="manix_keys">{% if manix.manix_key %}ساخت کلید تازه{% else %}ساخت کلید{% endif %}</button></form>{% endif %}
+    </section>{% endif %}
     {% if tab == "torob" %}<section class="card-p"><h2>آدرس فید برای پنل ترب</h2><p class="hint">همان آدرس قبلی است و نیازی به تغییر در پنل ترب نیست:</p><p dir="ltr"><code>https://irancarpet.net/wp-json/torob/products/?page=1</code></p><p class="hint">محصول آلبومی با قیمت سایز ۱۲ متری در ترب نمایش داده می‌شود، مثل سایت قبلی.</p></section>{% endif %}
     {% if tab == "crm" %}<section class="card-p"><h2>آزمایش پیوند کوتاه</h2>
       <p class="hint">این پیوند باید صفحهٔ باشگاه مشتریان سایت را باز کند. اگر باز نشد، دامنهٔ کوتاه روی سرور راه‌اندازی نشده؛ تا آن موقع «پیوند کوتاه در پیامک‌ها» را خاموش کنید.</p>

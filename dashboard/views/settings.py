@@ -46,6 +46,7 @@ TABS = [
     ("affiliate", "همکاری در فروش"),
     ("market", "مارکت‌پلیس"),
     ("crm", "پیامک سفارش و باشگاه"),
+    ("manix", "مانیکس پلاس (حسابداری)"),
 ]
 
 FORMS = {
@@ -93,6 +94,7 @@ FORMS = {
                           "smart_offer", "wave1_per_piece", "wave2_per_piece", "wave_last_all", "wave_gap_hours", "freq_cap_days",
                           "w_set", "w_design", "w_click", "w_color", "w_reeds", "w_size", "w_recent", "calendar_preview",
                           "vip_total", "vip_orders", "short_links", "marketing_footer"]),
+    "manix": (ShopSettings, ["manix_enabled", "manix_start"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
 }
 
@@ -314,6 +316,17 @@ def settings_view(request):
             log(request, "action", "IndexNow", None, f"ارسال {len(urls)} نشانی")
             (messages.success if ok else messages.error)(request, f"IndexNow: {msg} ({len(urls)} نشانی).")
             return redirect("/panel/settings/?tab=seo")
+        if request.POST.get("do") == "manix_keys":
+            if not request.user.is_superuser:
+                messages.error(request, "ساخت کلید فقط با حساب مدیر کل.")
+            else:
+                from shop.wc_api import new_keys
+
+                key, secret = new_keys()
+                request.session["manix_new"] = [key, secret]  # فقط یک بار نشان داده می‌شود
+                log(request, "action", "مانیکس پلاس", None, "ساخت کلید تازه")
+                messages.success(request, "کلید تازه ساخته شد؛ کلید قبلی دیگر کار نمی‌کند.")
+            return redirect("/panel/settings/?tab=manix")
         if request.POST.get("do", "").startswith("fp_"):
             return farshplus_action(request, request.POST["do"])
         model, _ = FORMS[tab]
@@ -361,6 +374,9 @@ def settings_view(request):
         "line": ShopSettings.load().smsir_line_number if tab == "crm" else "",
         "short_test": __import__("crm.links", fromlist=["shorten"]).shorten("/my-account/club/", "k") if tab == "crm" else "",
         "rj_next": __import__("rajyar.auto", fromlist=["next_runs"]).next_runs(RajyarSettings.load()) if tab == "rajyar" else [], "SITE_URL": django_settings.SITE_URL,
+        "manix": ShopSettings.load() if tab == "manix" else None,
+        "manix_new": request.session.pop("manix_new", None) if tab == "manix" else None,
+        "manix_url": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
         "callback_zp": request.build_absolute_uri("/pay/zarinpal/callback/"),
     })
