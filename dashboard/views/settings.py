@@ -84,7 +84,7 @@ FORMS = {
     "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "contact_admin_sms", "paid_text", "admin_paid_text",
                           "status_sms", "shipped_text", "completed_text", "cancelled_text",
                           "remind_enabled", "remind_hours", "remind_text_1", "remind_text_2", "remind_text_3",
-                          "cart_enabled", "cart_hours", "cart_text",
+                          "cart_enabled", "cart_hours", "cart_text", "manix_pay_text",
                           "winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text",
                           "points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days",
                           "points_since", "birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text",
@@ -188,6 +188,8 @@ def rajyar_pricelist_png(request):
 CRM_GROUPS = [
     ("ثبت سفارش", "به مشتری و شماره‌های مدیر (زبانهٔ «فروش و ارسال» ← موبایل مدیران) از خط اختصاصی sms.ir.",
      ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text"]),
+    ("لینک پرداخت فاکتور تلفنی (مانیکس پلاس)", "وقتی در مانیکس پلاس «لینک پرداخت» را با پیامک بزنید، فقط همین یک پیامک برای مشتری می‌رود "
+     "(نه پیامک ثبت سفارش و نه یادآوری). لینک ۳۰ روز اعتبار دارد.", ["manix_pay_text"]),
     ("پیام تماس با ما", "وقتی کسی فرم «تماس با ما» را بفرستد، به شماره‌های مدیر خبر داده می‌شود؛ پاسخ از «فروش ← پیام‌های تماس با ما».",
      ["contact_admin_sms"]),
     ("پرداخت موفق", "اگر قالب پیامک سفارش در زبانهٔ «پیامک» خالی باشد، این متن‌ها فرستاده می‌شوند.", ["paid_text", "admin_paid_text"]),

@@ -10,7 +10,7 @@ def due_word(order):
 
 def options(order, shop=None):
     """[{mode, label, amount, note, on}] — فقط برای سفارش غیراقساطیِ منتظر پرداخت؛ کمتر از دو گزینه یعنی انتخابی نیست."""
-    if order.is_installment or not order.can_pay:
+    if order.is_installment or not order.can_pay or order.is_phone:  # مبلغ فاکتور تلفنی را مانیکس تعیین می‌کند
         return []
     shop = shop or ShopSettings.load()
     total = order.items_total

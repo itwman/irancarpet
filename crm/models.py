@@ -53,6 +53,10 @@ class CrmSettings(models.Model):
     birthday_valid_days = models.PositiveIntegerField("مهلت کد تولد (روز)", default=14)
     birthday_text = models.TextField("متن پیامک تولد", default=texts.BIRTHDAY)
 
+    manix_pay_text = models.TextField(
+        "پیامک لینک پرداخت فاکتور (مانیکس پلاس)",
+        default="{name} عزیز، فاکتور شمارهٔ {number} ایران کارپت به مبلغ {amount} تومان آمادهٔ پرداخت است:\n{pay_link}",
+        help_text="فقط همین یک پیامک برای فاکتور تلفنی فرستاده می‌شود. متغیرها: {name} {number} {amount} {total} {pay_link}")
     cart_enabled = models.BooleanField("یادآوری سبد خرید رهاشده", default=True,
                                        help_text="برای مشتری واردشده‌ای که فرش در سبد گذاشته و سفارش نداده؛ یک‌بار")
     cart_hours = models.PositiveSmallIntegerField("چند ساعت بعد از آخرین تغییر سبد", default=3)

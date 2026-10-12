@@ -33,6 +33,8 @@ urlpatterns = [
     re_path(r"^wp-json/wc/v3/?$", shop_wc_api.index),
     re_path(r"^wp-json/wc/v3/orders/?$", shop_wc_api.orders),
     re_path(r"^wp-json/wc/v3/orders/(?P<number>\d+)/?$", shop_wc_api.order_detail),
+    re_path(r"^wp-json/wc/v3/manix/catalog/?$", shop_wc_api.catalog),
+    re_path(r"^wp-json/wc/v3/manix/orders/?$", shop_wc_api.manix_order),
     re_path(r"^wp-json/emalls_ext/v1/products/?$", torob_emalls.products),
     # اپلیکیشن موبایل
     path("api/app/v1/", include("api.urls")),

@@ -19,10 +19,10 @@ def order_paid(order, amount):
         try:
             from crm.notify import order_paid as crm_paid
 
-            crm_paid(order, amount, customer=not tpl_customer, admin=not tpl_admin)
+            crm_paid(order, amount, customer=not tpl_customer and not order.is_phone, admin=not tpl_admin)
         except Exception:  # noqa: BLE001
             pass
-    if config.get('SMSIR_ORDER_TEMPLATE_ID'):
+    if config.get('SMSIR_ORDER_TEMPLATE_ID') and not order.is_phone:  # فاکتور تلفنی: فقط پیامک لینک پرداخت
         send_template(order.mobile, config.get('SMSIR_ORDER_TEMPLATE_ID'), {"ORDER": order.number, "AMOUNT": f"{amount:,}"},
                       kind="paid", order=order)
     if config.get('SMSIR_ADMIN_TEMPLATE_ID'):

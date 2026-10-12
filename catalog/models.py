@@ -219,6 +219,8 @@ class Product(SeoFields):
     review_status = models.CharField("بررسی", max_length=10, blank=True, db_index=True, choices=[
         ("pending", "در انتظار بررسی"), ("approved", "تأیید شد"), ("rejected", "رد شد")])
     review_note = models.CharField("پیام بررسی به فروشنده", max_length=300, blank=True)
+    manix_draft = models.BooleanField("پیش‌نویس از مانیکس پلاس", default=False, db_index=True,
+                                      help_text="از فاکتور تلفنی مانیکس ساخته شده؛ آلبوم قیمت و تصویرش را کامل کنید")
     sale_status = models.CharField("وضعیت فروش", max_length=20, choices=SALE_STATUS_CHOICES, default="available", db_index=True)
 
     # کش برای فهرست و مرتب‌سازی

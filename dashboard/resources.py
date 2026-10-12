@@ -145,7 +145,7 @@ register(Resource(
              Col("stock_status", "موجودی", badge("stock_status"), "stock_status"),
              Col("status", "وضعیت", badge("status"), "status"),
              Col("published_at", "انتشار", jd("published_at"), "published_at")],
-    search=["title", "sku", "slug", "=id"], filters=["status", "stock_status", "sale_status", "album", "brand", "categories", "tags", "specs"],
+    search=["title", "sku", "slug", "=id"], filters=["status", "stock_status", "sale_status", "manix_draft", "album", "brand", "categories", "tags", "specs"],
     date_filter="published_at", ordering=("-published_at",),
     queryset=lambda qs: qs.select_related("image", "album", "brand", "primary_category").prefetch_related("tags", "categories", "specs__attribute"),
     extra_columns=lambda: _product_extra_columns(),

@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta
 
 import jdatetime
 from django.core.cache import cache
-from django.db.models import Count, F, Sum
+from django.db.models import Count, F, Q, Sum
 from django.utils import timezone
 
 from core.templatetags.fa import fa_num, jdate
@@ -194,6 +194,10 @@ def todo(manager):
          "sub": "، ".join(fa_num(o.product.title)[:40] for o in offers_soon[:2])},
         {"label": "فرصت ویژهٔ فروخته‌شده (هنوز فعال)", "n": len(offers_done), "url": "/panel/special-offers/?is_active=1",
          "sub": "می‌توانید غیرفعالش کنید یا تخته اضافه کنید" if offers_done else ""},
+        {"label": "فرش تازه از مانیکس (آلبوم و تصویر لازم)",
+         "n": Product.objects.filter(manix_draft=True).exclude(status="trash").filter(
+             Q(album__isnull=True) | Q(image__isnull=True)).count(),
+         "url": "/panel/products/?manix_draft=1", "hot": True},
         {"label": "فرش منتشرشدهٔ ناموجود", "n": Product.objects.filter(status="publish", stock_status="outofstock").count(),
          "url": "/panel/products/?stock_status=outofstock&status=publish", "quiet": True},
         {"label": "آدرس خراب (۴۰۴)", "n": NotFoundLog.objects.count(), "url": "/panel/notfound/", "quiet": True},
@@ -294,11 +298,13 @@ def traffic(p):
         series_src = cur["series"]
     rows = {r["day"]: r["visitors"] for r in series_src}
     visitors = _bars(s, e, rows, lambda v: f"{fa_num(v)} بازدیدکننده")
-    placed = t["orders_placed"]
+    from shop.coupons import PLACED
     from shop.models import Order
 
     a, b = _rng(p["start"], p["end"])
-    paid = Order.objects.filter(created_at__gte=a, created_at__lt=b, status__in=Order.PAID_STATUSES).count()
+    web = Order.objects.filter(created_at__gte=a, created_at__lt=b).exclude(src="phone")  # فروش تلفنی بازدیدی ندارد
+    placed = web.filter(status__in=PLACED).count()
+    paid = web.filter(status__in=Order.PAID_STATUSES).count()
     steps = [("ورود به سایت", t["visits"]), ("افزودن به سبد", t["carts"]), ("ثبت سفارش", placed), ("پرداخت (کامل یا بیعانه)", paid)]
     top = steps[0][1] or 1
     funnel = []

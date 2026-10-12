@@ -149,6 +149,7 @@ class Order(models.Model):
     NUMBER_START = 200001
 
     # منبع ورود (stats): از کجا آمد و کدام کمپین پیامکی (برای گزارش فروش هر منبع)
+    manix_ref = models.CharField("فاکتور مانیکس پلاس", max_length=40, null=True, blank=True, unique=True, editable=False)
     src = models.CharField("منبع ورود", max_length=10, blank=True, db_index=True)
     src_name = models.CharField("نام منبع", max_length=60, blank=True)
     utm_campaign = models.CharField("کمپین UTM", max_length=80, blank=True)
@@ -207,7 +208,14 @@ class Order(models.Model):
         return self.is_paid or self.status == self.Status.ON_HOLD
 
     @property
+    def is_phone(self):
+        """سفارش تلفنی/حضوری که از فاکتور مانیکس پلاس آمده."""
+        return self.src == "phone"
+
+    @property
     def can_pay(self):
+        if self.is_phone:  # لینک پرداخت فاکتور: مانده را هم می‌شود پرداخت کرد
+            return self.status in (self.Status.PENDING, self.Status.DEPOSIT_PAID) and self.online_amount > 0 and self.remaining > 0
         return self.status == self.Status.PENDING and self.online_amount > 0
 
     @property
@@ -219,9 +227,13 @@ class Order(models.Model):
     def mark_paid(self, amount):
         self.paid_amount += amount
         self.paid_at = self.paid_at or timezone.now()
-        if self.status == self.Status.PENDING:
+        if self.status == self.Status.PENDING or (self.is_phone and self.status == self.Status.DEPOSIT_PAID):
             self.status = self.Status.PAID if self.paid_amount >= self.grand_total else self.Status.DEPOSIT_PAID
-        self.save(update_fields=["paid_amount", "paid_at", "status"])
+        fields = ["paid_amount", "paid_at", "status"]
+        if self.is_phone:  # لینک پرداخت یک‌بار مصرف است؛ برای مانده، لینک تازه از مانیکس ساخته می‌شود
+            self.online_amount = 0
+            fields.append("online_amount")
+        self.save(update_fields=fields)
 
 
 class OrderItem(models.Model):

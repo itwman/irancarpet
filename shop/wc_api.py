@@ -1,11 +1,12 @@
-"""API فقط‌خواندنیِ سفارش‌ها با همان شکل ووکامرس (wp-json/wc/v3) برای مانیکس پلاس.
+"""API سفارش‌ها با همان شکل ووکامرس (wp-json/wc/v3) برای مانیکس پلاس.
 
 چرا شکل ووکامرس: مانیکس پلاس برای سایت‌های وردپرسی هم همین همگام‌ساز را دارد؛ ایران کارپت
 هم مثل یک فروشگاه ووکامرس دیده می‌شود و یک کد برای همه کار می‌کند.
 
 امنیت: کلید و رمز را مدیر در «تنظیمات ← مانیکس پلاس» می‌سازد (رمز فقط یک بار نشان داده می‌شود و
 فقط هش آن ذخیره می‌شود). احراز هویت مثل ووکامرس: Basic Auth روی HTTPS یا consumer_key/consumer_secret.
-فقط سفارش‌های پس از «تاریخ شروع» داده می‌شوند؛ هیچ نوشتنی انجام نمی‌شود.
+فقط سفارش‌های پس از «تاریخ شروع» داده می‌شوند. تنها نوشتن: manix/orders (فاکتور تلفنی مانیکس ← سفارش سایت،
+با لینک پرداخت) که پیش‌نویس فرش تازه هم می‌تواند بسازد (shop/manix.py).
 
 پرداخت‌ها: ووکامرس پرداخت جزئی ندارد؛ پرداخت‌های تأییدشده (بیعانه، تسویه، ثبت دستی) در
 meta_data با کلید «_manix_payments» می‌آیند تا هر کدام با تاریخ خودش «دریافت» شود.
@@ -19,7 +20,8 @@ from datetime import timezone as dt_timezone
 
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 
 STATUS = {"pending": "pending", "on_hold": "on-hold", "deposit_paid": "processing", "paid": "processing",
           "processing": "processing", "shipped": "completed", "completed": "completed",
@@ -101,13 +103,20 @@ def _parse_dt(v):
     return dt if timezone.is_aware(dt) else timezone.make_aware(dt)
 
 
-def item_sku(item):
-    v, p = item.variation, item.product
+def variation_sku(v, product=None):
+    """کد کالای هر سایز: کد خود سایز، وگرنه «کد فرش-نامک سایز» (ثابت و یکتا)."""
     if v is not None and v.sku:
         return v.sku
-    base = (p.sku if p is not None else "") or (f"P{item.product_id}" if item.product_id else "")
+    p = product if product is not None else (v.product if v is not None else None)
+    base = (p.sku if p is not None else "") or (f"P{p.pk}" if p is not None else "")
     size = v.size.slug if v is not None and v.size_id else ""
     return f"{base}-{size}" if base and size else base
+
+
+def item_sku(item):
+    if item.variation is not None:
+        return variation_sku(item.variation, item.product)
+    return variation_sku(None, item.product) if item.product is not None else ""
 
 
 def item_name(item):
@@ -129,7 +138,7 @@ def serialize(o):
     pays = [{"id": p.pk, "amount": p.amount, "date": _iso(p.verified_at or p.created_at),
              "date_gmt": _iso_gmt(p.verified_at or p.created_at), "gateway": p.gateway,
              "gateway_title": GATEWAY_NAMES.get(p.gateway, p.gateway), "ref": p.ref_id or ""}
-            for p in o.payments.all() if p.status == "ok"]
+            for p in o.payments.all() if p.status == "ok" and p.gateway != "manix"]  # پرداخت‌های خود مانیکس برنمی‌گردند
     return {
         "id": o.number, "number": str(o.number), "status": STATUS.get(o.status, o.status), "local_status": o.status,
         "local_status_label": o.status_label, "currency": "IRT",
@@ -145,7 +154,7 @@ def serialize(o):
         "shipping": {"first_name": o.first_name, "last_name": o.last_name, "address_1": o.address, "city": o.city,
                      "state": o.province, "postcode": o.postal_code, "country": "IR"},
         "line_items": items,
-        "meta_data": [{"key": "_manix_payments", "value": pays}, {"key": "_paid_amount", "value": o.paid_amount},
+        "meta_data": [{"key": "_manix_payments", "value": pays}, {"key": "_manix_ref", "value": o.manix_ref or ""}, {"key": "_paid_amount", "value": o.paid_amount},
                       {"key": "_payable_total", "value": o.grand_total}],
     }
 
@@ -219,5 +228,56 @@ def index(request):
     if err:
         return err
     return JsonResponse({"namespace": "wc/v3", "store": "irancarpet", "orders_since": str(s.manix_start or ""),
-                         "routes": ["/wc/v3/orders", "/wc/v3/orders/<id>"]}, json_dumps_params={"ensure_ascii": False})
+                         "routes": ["/wc/v3/orders", "/wc/v3/orders/<id>", "/wc/v3/manix/catalog", "/wc/v3/manix/orders"]},
+                        json_dumps_params={"ensure_ascii": False})
+
+
+@require_GET
+def catalog(request):
+    """فرش‌های منتشرشده × سایزها با قیمت روز (برای انتخاب کالا در فاکتور مانیکس)."""
+    from .manix import catalog_rows
+
+    s, err = _authorized(request)
+    if err:
+        return err
+    rows = catalog_rows()
+    try:
+        per = max(1, min(int(request.GET.get("per_page") or 500), 1000))
+        page = max(1, int(request.GET.get("page") or 1))
+    except ValueError:
+        return _err("rest_invalid_param", "page یا per_page نامعتبر است.", 400)
+    resp = JsonResponse(rows[(page - 1) * per: page * per], safe=False, json_dumps_params={"ensure_ascii": False})
+    resp["X-WP-Total"] = str(len(rows))
+    resp["X-WP-TotalPages"] = str(max(1, -(-len(rows) // per)))
+    resp["Cache-Control"] = "no-store"
+    return resp
+
+
+@csrf_exempt
+@require_POST
+def manix_order(request):
+    """فاکتور مانیکس ← سفارش تلفنی سایت (+ لینک پرداخت و پیامک آن، اگر خواسته شده)."""
+    import json
+
+    from .manix import ManixError, pay_urls, send_pay_sms, upsert_order
+
+    s, err = _authorized(request)
+    if err:
+        return err
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except ValueError:
+        return _err("rest_invalid_json", "بدنهٔ درخواست JSON نیست.", 400)
+    try:
+        order, lines = upsert_order(data)
+    except ManixError as e:
+        return _err("manix_invalid", str(e), 400)
+    out = {"id": order.number, "status": STATUS.get(order.status, order.status), "local_status": order.status,
+           "local_status_label": order.status_label, "paid": order.paid_amount, "total": order.items_total, "items": lines,
+           "pay_url": "", "short_url": "", "sms": False}
+    if data.get("pay_link") is not None and order.can_pay:
+        out["pay_url"], out["short_url"] = pay_urls(order)
+        if data.get("send_sms"):
+            out["sms"] = bool(send_pay_sms(order))
+    return JsonResponse(out, json_dumps_params={"ensure_ascii": False})
 

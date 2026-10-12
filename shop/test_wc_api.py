@@ -69,3 +69,104 @@ class WcApiTests(TestCase):
         self.assertIn("cs_", html)
         self.assertNotIn("cs_", self.client.get("/panel/settings/?tab=manix").content.decode())  # فقط یک بار
         self.assertEqual(self.client.get("/wp-json/wc/v3/orders", **self.auth()).status_code, 401)  # کلید قبلی باطل شد
+
+
+class ManixPhoneOrderTests(TestCase):
+    def setUp(self):
+        from crm.models import CrmSettings
+
+        seed_sizes()
+        s = ShopSettings.load()
+        s.manix_enabled = True
+        s.save()
+        CrmSettings.load()
+        self.key, self.secret = new_keys()
+        img = Media.objects.create(file="h.jpg")
+        self.p = Product.objects.create(title="فرش 1200 شانه نقشه هریس زمینه سرمه‌ای", slug="h", status="publish", image=img)
+        self.v9 = Variation.objects.create(product=self.p, size=Size.objects.get(slug="9-meter"))
+        self.v12 = Variation.objects.create(product=self.p, size=Size.objects.get(slug="12-meter"))
+        self.auth = {"HTTP_AUTHORIZATION": "Basic " + base64.b64encode(f"{self.key}:{self.secret}".encode()).decode()}
+
+    def post(self, data):
+        import json
+
+        return self.client.post("/wp-json/wc/v3/manix/orders", json.dumps(data), content_type="application/json", **self.auth)
+
+    def payload(self, **kw):
+        d = {"ref": "inv-1", "number": 15, "customer": {"name": "مینا رضایی", "mobile": "۰۹۱۲۳۳۳۴۴۴۴", "city": "کاشان"},
+             "items": [{"name": "فرش ۱۲۰۰ شانه هریس سرمه ای - ۹ متری", "qty": 1, "price": 30_000_000},
+                       {"name": "فرش 700 شانه نقشه آیناز زمینه کرم، ۱۲ متری", "qty": 2, "price": 20_000_000}],
+             "discount": 1_000_000, "total": 69_000_000, "payments": [{"id": "t1", "amount": 9_000_000, "date": "2026-10-10T10:00:00"}]}
+        d.update(kw)
+        return d
+
+    def test_matching_and_normalization(self):
+        from shop.manix import key, match_item, parse_size, split_name
+
+        self.assertEqual(key("سرمه ای"), key("سرمه‌ای"))
+        self.assertEqual(key("سرمه اي"), key("سرمه‌ای"))
+        self.assertEqual(split_name("فرش هریس - ۹ متری")[1].slug, "9-meter")
+        self.assertEqual(parse_size("۳ × ۲").slug, "6-meter")
+        self.assertEqual(parse_size("کناره ۳ متری").slug, "runner-3x1")
+        self.assertEqual(parse_size("۱۲ متری (۴ × ۳)").slug, "12-meter")
+        v, p, s = match_item("فرش 1200 شانه نقشه هریس زمینه سرمه‌اي، ۱۲ متری")
+        self.assertEqual((v, p), (self.v12, self.p))
+
+    def test_phone_order_with_pay_link_one_sms(self):
+        from unittest import mock
+
+        from catalog.models import Product
+        from crm.models import SmsLog
+
+        with mock.patch("accounts.sms.send_bulk", return_value=(True, "")) as sent:
+            r = self.post(self.payload(pay_link={"amount": 0}, send_sms=True))
+        self.assertEqual(r.status_code, 200, r.content.decode())
+        j = r.json()
+        o = Order.objects.get(manix_ref="inv-1")
+        self.assertEqual((o.src, o.status, o.items_total, o.paid_amount, o.online_amount), ("phone", "deposit_paid", 69_000_000, 9_000_000, 60_000_000))
+        self.assertTrue(j["short_url"] and "/o/" in j["pay_url"])
+        self.assertTrue(j["sms"])
+        self.assertEqual(sent.call_count, 1)
+        self.assertEqual(SmsLog.objects.filter(order=o).count(), 1)
+        self.assertIn("آمادهٔ پرداخت", SmsLog.objects.get(order=o).text)
+        items = list(o.items.order_by("pk"))
+        self.assertEqual(items[0].variation, self.v9)                     # «سرمه ای» با فاصله پیدا شد
+        draft = Product.objects.get(manix_draft=True)                    # «آیناز» در سایت نبود ← پیش‌نویس
+        self.assertEqual((draft.status, items[1].product, items[1].variation.size.slug), ("draft", draft, "12-meter"))
+        self.assertTrue(o.can_pay)
+        # اجرای دوباره: تکراری نمی‌سازد؛ پرداخت دوم مانیکس ← پرداخت کامل
+        self.post(self.payload(payments=[{"id": "t1", "amount": 9_000_000}, {"id": "t2", "amount": 60_000_000}]))
+        o.refresh_from_db()
+        self.assertEqual((Order.objects.filter(manix_ref="inv-1").count(), o.status, o.paid_amount), (1, "paid", 69_000_000))
+        self.assertEqual(Product.objects.filter(manix_draft=True).count(), 1)
+        self.assertFalse(o.can_pay)
+        # پرداخت‌های مانیکس در API خواندن برنمی‌گردند (حلقه نمی‌سازد)
+        q = f"consumer_key={self.key}&consumer_secret={self.secret}"
+        row = self.client.get(f"/wp-json/wc/v3/orders/{o.number}/?{q}").json()
+        meta = {m["key"]: m["value"] for m in row["meta_data"]}
+        self.assertEqual((meta["_manix_payments"], meta["_manix_ref"]), ([], "inv-1"))
+
+    def test_paying_link_marks_paid_and_no_customer_sms(self):
+        from unittest import mock
+
+        self.post(self.payload(payments=[], pay_link={"amount": 10_000_000}))
+        o = Order.objects.get(manix_ref="inv-1")
+        self.assertEqual((o.status, o.online_amount), ("pending", 10_000_000))
+        from shop import paymode
+
+        self.assertEqual(paymode.options(o), [])                         # مشتری مبلغ را عوض نمی‌کند
+        o.mark_paid(10_000_000)
+        o.refresh_from_db()
+        self.assertEqual((o.status, o.online_amount, o.can_pay), ("deposit_paid", 0, False))
+        with mock.patch("crm.notify.send", return_value=True) as sent:
+            from crm.notify import order_paid_now
+
+            order_paid_now(o, 10_000_000, customer=not o.is_phone, admin=False)
+        self.assertEqual(sent.call_count, 0)
+
+    def test_errors_and_catalog(self):
+        self.assertEqual(self.post({"ref": "x", "customer": {"mobile": "123"}, "items": [{"name": "a", "qty": 1}]}).status_code, 400)
+        r = self.client.get("/wp-json/wc/v3/manix/catalog", **self.auth).json()
+        names = {x["name"] for x in r}
+        self.assertIn("فرش 1200 شانه نقشه هریس زمینه سرمه‌ای - ۹ متری مستطیل (۳.۵ × ۲.۵)", names)
+        self.assertEqual(len(r), 2)

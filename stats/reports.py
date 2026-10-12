@@ -179,7 +179,8 @@ def _traffic(start, end):
     return {
         "t": {**t, "mobile_pct": _pct(t["mobile"], t["views"]), "new_pct": _pct(t["new_visitors"], t["visitors"]),
               "pages_per_visit": round(t["views"] / t["visits"], 1) if t["visits"] else 0,
-              "orders_placed": revenue["n"], "revenue": revenue["s"] or 0, "conv": _rate(revenue["n"], t["visits"])},
+              "orders_placed": revenue["n"], "revenue": revenue["s"] or 0,
+              "conv": _rate(orders.exclude(src="phone").count(), t["visits"])},  # فروش تلفنی بازدیدی پشتش ندارد
         "series": series, "groups": group_rows, "sources": rows[:60], "utm": utm_rows[:40], "pages": page_rows,
         "products": product_rows, "referrals": [r for r in rows if r["src"] == "referral"][:30],
         "approx_visitors": bool(old),

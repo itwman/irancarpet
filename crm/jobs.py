@@ -27,7 +27,8 @@ def remind_unpaid(now=None):
     from django.db.models import Q
 
     qs = Order.objects.filter(Q(created_at__gte=now - window) | Q(reminded_at__gte=now - window),
-                              status="pending", online_amount__gt=0, wp_id__isnull=True, reminded_count__lt=len(steps))
+                              status="pending", online_amount__gt=0, wp_id__isnull=True, reminded_count__lt=len(steps)).exclude(
+        src="phone")  # فاکتور تلفنی مانیکس: فقط همان یک پیامک لینک پرداخت
     sent = 0
     for o in qs:
         step = o.reminded_count
