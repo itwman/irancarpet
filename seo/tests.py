@@ -130,6 +130,37 @@ class LegacyUrlTests(TestCase):
             self.assertEqual(r.status_code, 301, src)
             self.assertEqual(unquote(r["Location"]), dst, src)
 
+    def test_search_console_fixes(self):
+        from urllib.parse import unquote
+
+        from blog.models import BlogTag, Post
+        from catalog.models import Brand
+
+        Brand.objects.create(name="شاه‌پسند", slug="shahpasand-carpet")
+        Post.objects.create(title="تحویل فرش", slug="تحویل-فرش-درب-منزل", content="<p>x</p>", status="publish")
+        Post.objects.create(title="خمینی شهر", slug="خرید-فرش-در-خمینی-شهر-با-قیمت-ارزان-و-به-صرفه", content="<p>x</p>", status="publish")
+        BlogTag.objects.create(name="بافت فرش", slug="بافت-فرش")
+        Product.objects.create(title="بید مجنون", slug="فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمینه-کرم", status="publish")
+        cases = {
+            "/برند/shahpasand-carpet/page/46/": "/brand/shahpasand-carpet/",
+            "/product/فرش-۷۰۰-شانه-نقشه-تلناز/": "/product/فرش-700-شانه-نقشه-تلناز/",
+            "/tag/بافت-فرش\u200c/": "/tag/بافت-فرش/",
+            "/1397/05/08/تحویل-فرش-درب-منزل/": "/تحویل-فرش-درب-منزل/",
+            "/product/فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمین/": "/product/فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمینه-کرم/",
+            "/خرید-فرش-در-خمینی-شهر-با-قیمت-ارزان-و-به/": "/خرید-فرش-در-خمینی-شهر-با-قیمت-ارزان-و-به-صرفه/",
+        }
+        for src, dst in cases.items():
+            r = self.client.get(src)
+            self.assertEqual(r.status_code, 301, src)
+            self.assertEqual(unquote(r["Location"]), dst, src)
+
+    def test_gone_and_ambiguous(self):
+        self.assertEqual(self.client.get("/2379160/").status_code, 410)
+        self.assertEqual(self.client.get("/فرش*/").status_code, 410)
+        Product.objects.create(title="a", slug="فرش-700-شانه-نقشه-آیناز-زمینه-کرم", status="publish")
+        Product.objects.create(title="b", slug="فرش-700-شانه-نقشه-آیناز-زمینه-سرمه", status="publish")
+        self.assertEqual(self.client.get("/product/فرش-700-شانه-نقشه-آیناز-زمینه/").status_code, 404)  # دو تا ← حدس نمی‌زنیم
+
     def test_unknown_stays_404(self):
         self.assertEqual(self.client.get("/post=1/چیزی-که-نیست/").status_code, 404)
         self.assertEqual(self.client.get("/product/نیست/comment-page-1/").status_code, 404)

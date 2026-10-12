@@ -77,6 +77,8 @@ class RedirectFallbackMiddleware:
                 target += "?" + request.META["QUERY_STRING"]
             cls = HttpResponsePermanentRedirect if redirect.status_code == 301 else HttpResponseRedirect
             return cls(target)
+        if self.GONE.match(unquote(request.path)):
+            return HttpResponseGone()
         if request.method in ("GET", "HEAD"):
             target = self.legacy_target(request, source)
             if target:
@@ -84,49 +86,113 @@ class RedirectFallbackMiddleware:
         self.log(request, source)
         return response
 
-    # نشانی‌های فرعی وردپرس که گوگل هنوز دارد: صفحهٔ دیدگاه، فید، صفحهٔ چندم، پیوند پیوست، ساختار قدیمی post=123
-    LEGACY = [
+    # نشانی‌های قدیمی وردپرس که گوگل هنوز دارد. اول «پیشوند» عوض می‌شود (برند، تاریخ، post=…)، بعد «پسوند» برداشته
+    # می‌شود (دیدگاه، فید، صفحهٔ چندم، پیوست). هر نشانی جایگزین فقط وقتی ریدایرکت می‌شود که واقعاً صفحه داشته باشد.
+    PREFIX = [
         (re.compile(r"^/post=tag/(.+)$"), r"/tag/\1"),
         (re.compile(r"^/post=\d+/(.+)$"), r"/\1"),
         (re.compile(r"^/product_brand/(.+)$"), r"/brand/\1"),
+        (re.compile(r"^/برند/(.+)$"), r"/brand/\1"),
         (re.compile(r"^/key/(.+)$"), r"/tag/\1"),
+        (re.compile(r"^/\d{4}/\d{1,2}/\d{1,2}/([^/]+)/?$"), r"/\1/"),  # ساختار تاریخ‌دار قدیمی
+    ]
+    SUFFIX = [
         (re.compile(r"^(/.+?)/(?:comment-page-\d+|feed|amp|embed|jpe?g|png|webp|attachment/[^/]+)/?$"), r"\1/"),
         (re.compile(r"^(/.+?)/page/\d+/?$"), r"\1/"),
-        # /slug/چیز-اضافه/ ← /slug/ (فقط اگر /slug/ یک نوشته باشد؛ پایین بررسی می‌شود)
-        (re.compile(r"^(/[^/]+)/[^/]+/?$"), r"\1/"),
     ]
+    POST_PARENT = re.compile(r"^(/[^/]+)/[^/]+/?$")  # /نوشته/چیز-اضافه/ ← /نوشته/ (فقط اگر نوشته باشد)
+    GONE = re.compile(r"^/(?:\d{5,}|.*\*.*)/?$")      # فقط‌عدد (لینک اسپم) یا ستاره‌دار: هیچ‌وقت صفحه نبوده‌اند
+
+    @staticmethod
+    def normalize_path(path):
+        """ارقام فارسی ← لاتین، و نیم‌فاصله/فاصله/خط‌تیرهٔ اضافهٔ ابتدا و انتهای هر بخش برداشته می‌شود."""
+        path = path.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+        parts = [re.sub(r"^[\s\u200c\u200f\-]+|[\s\u200c\u200f\-]+$", "", seg) for seg in path.split("/")]
+        return "/".join(parts)
+
+    def _try(self, request, cand):
+        """(نشانی نهایی یا None) اگر cand صفحه داشته باشد یا به صفحه‌ای ریدایرکت شود."""
+        hit = self.find(Redirect.normalize(cand))
+        if hit and hit.status_code in (301, 302) and hit.match != Redirect.Match.REGEX:
+            return hit.target
+        sub = copy.copy(request)
+        sub.path = sub.path_info = cand
+        sub.GET = request.GET.copy()
+        try:
+            resp = self.get_response(sub)
+        except Exception:  # noqa: BLE001
+            return None
+        if resp.status_code == 200:
+            return cand
+        if resp.status_code in (301, 302) and resp.get("Location"):
+            loc = resp["Location"]
+            return loc if urlsplit(loc).netloc in ("", request.get_host()) else None
+        return None
 
     def legacy_target(self, request, source):
         """اولین نشانی جایگزینی که واقعاً صفحه دارد (۲۰۰) یا به صفحه‌ای ریدایرکت می‌شود."""
         path = unquote(request.path)
-        tried = set()
-        for rx, repl in self.LEGACY:
-            if not rx.search(path):
-                continue
-            cand = rx.sub(repl, path, count=1)
-            if not cand.endswith("/"):
-                cand += "/"
-            if cand in tried or cand == path or cand == "/":
-                continue
-            tried.add(cand)
-            if rx is self.LEGACY[-1][0] and not self._is_post(cand):
-                continue
-            hit = self.find(Redirect.normalize(cand))
-            if hit and hit.status_code in (301, 302) and hit.match != Redirect.Match.REGEX:
-                return hit.target
-            sub = copy.copy(request)
-            sub.path = sub.path_info = cand
-            sub.GET = request.GET.copy()
-            try:
-                resp = self.get_response(sub)
-            except Exception:  # noqa: BLE001
-                continue
-            if resp.status_code == 200:
-                return cand
-            if resp.status_code in (301, 302) and resp.get("Location"):
-                loc = resp["Location"]
-                return loc if urlsplit(loc).netloc in ("", request.get_host()) else None
+        bases = []
+
+        def add(p):
+            if p and not p.endswith("/"):
+                p += "/"
+            if p and p != "/" and p not in bases:
+                bases.append(p)
+
+        add(path)
+        add(self.normalize_path(path))
+        for b in list(bases):
+            for rx, repl in self.PREFIX:
+                if rx.search(b):
+                    add(rx.sub(repl, b, count=1))
+        tried = {path if path.endswith("/") else path + "/"}
+        for b in bases:
+            cands = [b] + [rx.sub(repl, b, count=1) for rx, repl in self.SUFFIX if rx.search(b)]
+            m = self.POST_PARENT.search(b)
+            if m and self._is_post(m.group(1) + "/"):
+                cands.append(m.group(1) + "/")
+            for cand in cands:
+                if not cand.endswith("/"):
+                    cand += "/"
+                if cand in tried or cand == "/":
+                    continue
+                tried.add(cand)
+                target = self._try(request, cand)
+                if target:
+                    return target
+        for b in bases:  # نامک بریده‌شده: فقط اگر دقیقاً یک فرش یا نوشته با همین شروع باشد
+            for cand in (rx.sub(repl, b, count=1) for rx, repl in self.SUFFIX if rx.search(b)):
+                target = self.truncated(cand)
+                if target:
+                    return target
+            target = self.truncated(b)
+            if target:
+                return target
         return None
+
+    @staticmethod
+    def truncated(path):
+        from blog.models import Page, Post
+        from catalog.models import Product
+
+        m = re.match(r"^/product/([^/]+)/?$", path)
+        if m:
+            qs, prefix = Product.objects.filter(status="publish"), m.group(1)
+        else:
+            m = re.match(r"^/([^/]+)/?$", path)
+            if not m:
+                return None
+            qs, prefix = None, m.group(1)
+        if len(prefix) < 15:
+            return None
+        if qs is not None:
+            hits = list(qs.filter(slug__startswith=prefix).exclude(slug=prefix)[:2])
+            return hits[0].get_absolute_url() if len(hits) == 1 else None
+        hits = list(Post.objects.filter(status="publish", slug__startswith=prefix).exclude(slug=prefix)[:2])
+        if not hits:
+            hits = list(Page.objects.filter(status="publish", slug__startswith=prefix).exclude(slug=prefix)[:2])
+        return hits[0].get_absolute_url() if len(hits) == 1 else None
 
     @staticmethod
     def _is_post(path):
