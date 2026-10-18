@@ -159,7 +159,7 @@ def checkout(request):
     shop = ShopSettings.load()
     if not summary["lines"]:
         return redirect("/cart/")
-    gws = gateways.enabled(shop)
+    gws = gateways.enabled(shop, amount=summary["total"])
     modes = [m for m in ("full", "deposit") if getattr(shop, f"allow_{m}")]
     plans = active_plans(summary["total"])
     if plans:
@@ -201,6 +201,8 @@ def checkout(request):
         gw = next((g for g in gws if g.key == form["gateway"]), None)
         if pay_now and not gw:
             errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
+        elif pay_now and gw.full_only and form["payment_mode"] != "full":
+            errors["gateway"] = f"{gw.title} فقط برای پرداخت کامل است؛ «پرداخت کامل» یا درگاه دیگری را انتخاب کنید."
         if summary["has_problem"]:
             errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
         from .season import pause_error
@@ -320,6 +322,12 @@ def app_return_url(order, source, paid, msg=""):
 
 
 def start_payment(request, order, gw, source="web"):
+    if gw.full_only and (order.payment_mode != "full" or order.online_amount != order.items_total):
+        msg = f"{gw.title} فقط برای پرداخت کامل سفارش است."
+        if source.startswith("app"):
+            return redirect(app_return_url(order, source, False, msg))
+        messages.error(request, msg)
+        return redirect(web_return_url(order, source, False))
     payment = Payment.objects.create(order=order, gateway=gw.key, amount=order.online_amount)
     callback = request.build_absolute_uri(f"/pay/{gw.key}/callback/")
     try:
@@ -346,11 +354,12 @@ def order_pay(request, number):
     order = get_object_or_404(Order, number=number, user=request.user)
     if not order.can_pay:
         return redirect(order.get_absolute_url())
-    gw = next((g for g in gateways.enabled(ShopSettings.load()) if g.key == request.POST.get("gateway")), None)
+    paymode.switch(order, gateways.mode_for(request.POST.get("gateway"), request.POST.get("mode")))
+    gw = next((g for g in gateways.enabled(ShopSettings.load(), amount=order.items_total, mode=order.payment_mode)
+               if g.key == request.POST.get("gateway")), None)
     if not gw:
-        messages.error(request, "درگاه پرداخت را انتخاب کنید.")
+        messages.error(request, "درگاه پرداخت را انتخاب کنید (درگاه‌های قسطی فقط برای پرداخت کامل‌اند).")
         return redirect(order.get_absolute_url())
-    paymode.switch(order, request.POST.get("mode"))
     return start_payment(request, order, gw)
 
 
@@ -359,7 +368,9 @@ def callback(request, gateway):
     gw = gateways.ALL.get(gateway)
     if not gw:
         raise Http404
-    params = request.POST if request.method == "POST" else request.GET
+    params = request.GET.copy()
+    if request.method == "POST":
+        params.update(request.POST)
     payment = gw.find_payment(params)
     if not payment:
         log.warning("callback without payment %s %s", gateway, dict(params.items()))
@@ -419,7 +430,8 @@ def order_detail(request, number):
     return render(request, "shop/order_detail.html", {
         "meta": {**META, "title": f"سفارش {order.number}"}, "order": order,
         "just_paid": bool(request.GET.get("paid") or request.GET.get("placed")),
-        "gateways": gateways.enabled(ShopSettings.load()) if order.can_pay else [], "shop": ShopSettings.load(),
+        "gateways": gateways.for_order(order) if order.can_pay else [],
+        "shop": ShopSettings.load(),
         "modes": paymode.options(order),
         "seller_orders": order.seller_orders.select_related("seller").prefetch_related("items"),
     })

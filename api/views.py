@@ -117,7 +117,7 @@ def config(request):
         "socials": [{"key": k, "name": n, "url": u} for k, n, u in site.socials],
         "shop": {"deposit_percent": shop.deposit_percent, "free_shipping_min": shop.free_shipping_min,
                  "allow_full": shop.allow_full, "allow_deposit": shop.allow_deposit, "note": S.plain(shop.checkout_note)},
-        "gateways": [{"key": g.key, "name": gateways.GATEWAY_NAMES.get(g.key, g.key)} for g in gateways.enabled(shop)],
+        "gateways": [{"key": g.key, "name": g.title, "note": g.note, "full_only": g.full_only} for g in gateways.enabled(shop)],
         "sorts": [{"key": k, "label": v[1]} for k, v in SORTS.items()],
         "provinces": PROVINCES,
         "installment": _installment_config(request),

@@ -29,7 +29,8 @@ from ..auth import clear_site_cache, staff_required
 from ..forms import formfield_for, style_form
 from ..models import log
 
-SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key"}  # api_key: فرش پلاس و رج‌یار
+SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key", "torobpay_client_secret", "torobpay_password",
+                 "digipay_client_secret", "digipay_password"}  # api_key: فرش پلاس و رج‌یار
 
 TABS = [
     ("site", "سایت و تماس"),
@@ -59,7 +60,12 @@ FORMS = {
     "shop": (ShopSettings, ["allow_full", "allow_deposit", "deposit_percent", "free_shipping_min", "checkout_note", "admin_mobiles",
                             "busy_enabled", "busy_from", "busy_to", "busy_message", "pause_enabled", "pause_from", "pause_to", "pause_message",
                             "referral_enabled", "referral_percent", "referral_max", "referral_min_order", "referral_reward"]),
-    "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox"]),
+    "gateways": (ShopSettings, ["sep_enabled", "sep_terminal_id", "zarinpal_enabled", "zarinpal_merchant_id", "zarinpal_sandbox",
+                                 "torobpay_enabled", "torobpay_client_id", "torobpay_client_secret", "torobpay_username",
+                                 "torobpay_password", "torobpay_widget",
+                                 "digipay_ipg", "digipay_wallet", "digipay_credit", "digipay_bnpl", "digipay_ccard",
+                                 "digipay_client_id", "digipay_client_secret", "digipay_username", "digipay_password",
+                                 "digipay_sandbox", "digipay_credit_min", "digipay_credit_max", "digipay_seller_id"]),
     "sms": (ShopSettings, ["smsir_api_key", "smsir_otp_template_id", "smsir_order_template_id", "smsir_admin_template_id",
                             "smsir_line_number"]),
     "pricing": (PricingSettings, ["markup_percent", "shipping_fixed", "round_to", "round_method", "show_size_table",

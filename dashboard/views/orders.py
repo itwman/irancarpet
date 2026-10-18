@@ -60,6 +60,10 @@ def order_view(request, pk):
                 from crm.notify import status_changed
 
                 status_changed(order, old_status)
+                from shop.bnpl import on_status
+
+                for ok, m in on_status(order, old_status):
+                    (messages.success if ok else messages.warning)(request, m)
                 log(request, "update", "سفارش‌ها", order, "وضعیت: " + order.get_status_display())
                 messages.success(request, "سفارش ذخیره شد.")
                 return redirect(request.path)

@@ -24,7 +24,7 @@
       {% include "shop/_paymodes.html" %}
       {% if modes|length > 1 %}<p class="small fw-bold mb-2">درگاه پرداخت</p>{% endif %}
       <div class="choice" role="radiogroup" aria-label="درگاه پرداخت">
-        {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong></span></label>{% endfor %}
+        {% for g in gateways %}<label{% if g.full_only %} data-full-only{% endif %}><input type="radio" name="gateway" value="{{ g.key }}"{% if forloop.first %} checked{% endif %}><span><strong>{{ g.title }}</strong>{% if g.note %}<small>{{ g.note }}</small>{% endif %}</span></label>{% endfor %}
       </div>
       <button class="btn-ic btn-ic--pink mt-3" type="submit">پرداخت آنلاین</button>
     </form>

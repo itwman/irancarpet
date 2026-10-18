@@ -1526,3 +1526,7 @@ body.has-app-bar{padding-bottom:64px}
 .fpg-msg.is-err{background:var(--pink-t);color:var(--pink-d)}
 .fpg-terms h2{font-size:1.05rem}
 .fpg-terms ul{color:var(--ink-2);font-size:.92rem;padding-inline-start:1.2rem}
+
+/* --- ترب‌پی زیر قیمت --- */
+.torob-line{display:flex;align-items:center;gap:.5rem;margin:.6rem 0 0;padding:.5rem .8rem;border-radius:12px;background:var(--soft);font-size:.9rem;line-height:1.7;color:var(--ink-2)}
+.torob-line b{color:#d6232c;font-weight:900;white-space:nowrap}

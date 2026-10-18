@@ -112,6 +112,14 @@ def run_all(out=print):
             log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:  # ترب‌پی: پرداخت‌های تأییدشده‌ای که هنوز قطعی (settle) نشده‌اند
+        from shop.bnpl import retry_settles
+
+        n = retry_settles()
+        if n:
+            done["قطعی شدن پرداخت ترب‌پی"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("torobpay settle")
     try:  # سطل بازیافت رسانه: پاک کردن فایل‌های بیش از ۳۰ روز
         from core.media_clean import purge
 

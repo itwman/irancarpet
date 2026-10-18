@@ -83,7 +83,7 @@
       <h2 class="mt-4">درگاه پرداخت</h2>
       {% if gateways %}
       <div class="choice">
-        {% for g in gateways %}<label><input type="radio" name="gateway" value="{{ g.key }}"{% if form.gateway == g.key or not form.gateway and forloop.first %} checked{% endif %}><span><strong>{% if g.key == "sep" %}بانک سامان (سپ){% elif g.key == "zarinpal" %}زرین‌پال{% else %}درگاه آزمایشی{% endif %}</strong>{% if g.key == "fake" %}<small>فقط برای آزمایش؛ پول واقعی جابه‌جا نمی‌شود.</small>{% endif %}</span></label>{% endfor %}
+        {% for g in gateways %}<label{% if g.full_only %} data-full-only{% endif %}><input type="radio" name="gateway" value="{{ g.key }}"{% if form.gateway == g.key or not form.gateway and forloop.first %} checked{% endif %}><span><strong>{{ g.title }}</strong>{% if g.note %}<small>{{ g.note }}</small>{% endif %}</span></label>{% endfor %}
       </div>
       {% if errors.gateway %}<div class="alert-ic">{{ errors.gateway }}</div>{% endif %}
       {% else %}
@@ -125,6 +125,11 @@
     n.hidden = own === 0;
     n.className = "ship-note " + (free ? "free" : "cod");
     n.textContent = free ? "ارسال رایگان است." : "هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).";
+    f.querySelectorAll("[data-full-only]").forEach(function (l) {
+      var off = m !== "full", r = l.querySelector("input");
+      l.hidden = off; r.disabled = off;
+      if (off && r.checked) { r.checked = false; var first = f.querySelector("input[name=gateway]:not(:disabled)"); if (first) first.checked = true; }
+    });
     var needGw = !(m === "installment" && now === 0);
     if (gw) gw.hidden = !needGw;
     if (btn) {

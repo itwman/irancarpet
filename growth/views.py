@@ -32,11 +32,12 @@ def quickpay(request, token):
     from shop.views import start_payment
 
     order = _order_from(token, QUICKPAY_SALT, 30)
-    gws = gateways.enabled(ShopSettings.load())
+    gws = gateways.for_order(order)
     if request.method == "POST" and order.can_pay:
-        gw = next((g for g in gws if g.key == request.POST.get("gateway")), None)
+        paymode.switch(order, gateways.mode_for(request.POST.get("gateway"), request.POST.get("mode")))
+        gw = next((g for g in gateways.enabled(ShopSettings.load(), amount=order.items_total, mode=order.payment_mode)
+                   if g.key == request.POST.get("gateway")), None)
         if gw:
-            paymode.switch(order, request.POST.get("mode"))
             return start_payment(request, order, gw, source="quickpay")
         messages.error(request, "درگاه پرداخت را انتخاب کنید.")
     return render(request, "growth/quickpay.html", {

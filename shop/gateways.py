@@ -1,4 +1,4 @@
-"""درگاه‌های پرداخت: سامان (سپ)، زرین‌پال و درگاه آزمایشی.
+"""درگاه‌های پرداخت: سامان (سپ)، زرین‌پال، ترب‌پی، دیجی‌پی (پنج حالت) و درگاه آزمایشی.
 
 مبالغ در سایت به تومان است و به درگاه‌ها به ریال فرستاده می‌شود.
 """
@@ -12,37 +12,11 @@ from . import config
 
 log = logging.getLogger(__name__)
 
-GATEWAY_NAMES = {"sep": "بانک سامان (سپ)", "zarinpal": "زرین‌پال", "fake": "درگاه آزمایشی", "manual": "ثبت دستی", "wordpress": "سایت قبلی (وردپرس)"}
-
-
-class GatewayError(Exception):
-    pass
-
-
-def post_json(url, data, timeout=20):
-    req = urllib.request.Request(url, data=json.dumps(data).encode(), method="POST", headers={
-        "Content-Type": "application/json", "Accept": "application/json", "User-Agent": "irancarpet",
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode() or "{}")
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="ignore")
-        try:
-            return json.loads(body)
-        except ValueError:
-            raise GatewayError(f"HTTP {e.code}") from e
-    except Exception as e:  # noqa: BLE001
-        raise GatewayError(str(e)) from e
-
-
-class Result:
-    def __init__(self, ok, ref_id="", card="", message="", raw=None):
-        self.ok, self.ref_id, self.card, self.message, self.raw = ok, ref_id, card, message, raw or {}
+from .gwbase import GATEWAY_NAMES, Base, GatewayError, Result, http, post_json  # noqa: F401,E402
 
 
 # ----------------------------------------------------------------- سامان
-class Sep:
+class Sep(Base):
     key = "sep"
     TOKEN_URL = "https://sep.shaparak.ir/onlinepg/onlinepg"
     PAY_URL = "https://sep.shaparak.ir/OnlinePG/OnlinePG"
@@ -105,7 +79,7 @@ class Sep:
 
 
 # --------------------------------------------------------------- زرین‌پال
-class Zarinpal:
+class Zarinpal(Base):
     key = "zarinpal"
 
     @staticmethod
@@ -155,8 +129,9 @@ class Zarinpal:
 
 
 # ------------------------------------------------------------- آزمایشی
-class Fake:
+class Fake(Base):
     key = "fake"
+    note = "فقط برای آزمایش؛ پول واقعی جابه‌جا نمی‌شود."
 
     @staticmethod
     def available():
@@ -178,15 +153,40 @@ class Fake:
         return Result(False, message="پرداخت آزمایشی لغو شد.", raw=dict(params.items()))
 
 
-ALL = {g.key: g for g in (Sep(), Zarinpal(), Fake())}
+from .bnpl import DIGIPAY_MODES, Digipay, TorobPay  # noqa: E402
+
+ALL = {g.key: g for g in (Sep(), Zarinpal(), TorobPay(), *(Digipay(k) for k in DIGIPAY_MODES), Fake())}
 
 
-def enabled(shop_settings):
+def enabled(shop_settings, amount=None, mode=None):
+    """درگاه‌های فعال. amount (تومان): درگاهی که این مبلغ را نمی‌پذیرد کنار می‌رود.
+    mode: اگر «پرداخت کامل» نیست، درگاه‌های قسطی کنار می‌روند."""
     out = []
     if shop_settings.sep_enabled and Sep.available():
         out.append(ALL["sep"])
     if shop_settings.zarinpal_enabled and Zarinpal.available():
         out.append(ALL["zarinpal"])
+    out += [g for g in ALL.values() if isinstance(g, (TorobPay, Digipay)) and g.is_on(shop_settings)]
     if Fake.available():
         out.append(ALL["fake"])
+    if mode and mode != "full":
+        out = [g for g in out if not g.full_only]
+    if amount:
+        out = [g for g in out if g.eligible(amount)]
     return out
+
+
+def for_order(order):
+    """درگاه‌های صفحهٔ پرداختِ یک سفارش ثبت‌شده (قسطی‌ها فقط اگر «پرداخت کامل» ممکن است)."""
+    from .models import ShopSettings
+    from .paymode import options
+
+    shop = ShopSettings.load()
+    full_ok = order.payment_mode == "full" or any(o["mode"] == "full" for o in options(order, shop))
+    return enabled(shop, amount=order.items_total, mode=None if full_ok else order.payment_mode)
+
+
+def mode_for(gateway_key, mode):
+    """انتخاب درگاه قسطی یعنی «پرداخت کامل» (کل مبلغ را همان درگاه می‌دهد)."""
+    g = ALL.get(gateway_key or "")
+    return "full" if g is not None and g.full_only else mode

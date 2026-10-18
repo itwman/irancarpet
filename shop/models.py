@@ -39,6 +39,30 @@ class ShopSettings(models.Model):
     sep_terminal_id = models.CharField("شمارهٔ ترمینال سامان", max_length=30, blank=True)
     zarinpal_merchant_id = models.CharField("مرچنت‌کد زرین‌پال", max_length=64, blank=True)
     zarinpal_sandbox = models.BooleanField("زرین‌پال در حالت آزمایشی (sandbox)", default=False)
+    # ترب‌پی: خرید ۴ قسطی (کل مبلغ را ترب‌پی می‌پردازد؛ فقط برای «پرداخت کامل»)
+    torobpay_enabled = models.BooleanField("ترب‌پی (خرید ۴ قسطی) فعال باشد", default=False)
+    torobpay_client_id = models.CharField("ترب‌پی: شناسهٔ پذیرنده (client id)", max_length=120, blank=True)
+    torobpay_client_secret = models.CharField("ترب‌پی: کلید (client secret)", max_length=200, blank=True)
+    torobpay_username = models.CharField("ترب‌پی: نام کاربری", max_length=120, blank=True)
+    torobpay_password = models.CharField("ترب‌پی: رمز عبور", max_length=200, blank=True)
+    torobpay_widget = models.BooleanField("نمایش «۴ قسط با ترب‌پی» زیر قیمت فرش", default=True)
+    # دیجی‌پی (UPG): هر حالت جدا روشن می‌شود و باید در قرارداد دیجی‌پی هم فعال باشد
+    digipay_client_id = models.CharField("دیجی‌پی: client id", max_length=120, blank=True)
+    digipay_client_secret = models.CharField("دیجی‌پی: client secret", max_length=200, blank=True)
+    digipay_username = models.CharField("دیجی‌پی: نام کاربری", max_length=120, blank=True)
+    digipay_password = models.CharField("دیجی‌پی: رمز عبور", max_length=200, blank=True)
+    digipay_sandbox = models.BooleanField("دیجی‌پی در حالت آزمایشی (UAT)", default=False)
+    digipay_ipg = models.BooleanField("دیجی‌پی: پرداخت با کارت (IPG)", default=False)
+    digipay_wallet = models.BooleanField("دیجی‌پی: کیف پول", default=False)
+    digipay_credit = models.BooleanField("دیجی‌پی: خرید اعتباری", default=False)
+    digipay_bnpl = models.BooleanField("دیجی‌پی: خرید اقساطی (BNPL)", default=False)
+    digipay_ccard = models.BooleanField("دیجی‌پی: کارت اعتباری", default=False)
+    digipay_credit_min = models.PositiveBigIntegerField("دیجی‌پی اعتباری/اقساطی: حداقل مبلغ (تومان)", default=0,
+                                                        help_text="۰ یعنی بدون حداقل؛ از قرارداد دیجی‌پی")
+    digipay_credit_max = models.PositiveBigIntegerField("دیجی‌پی اعتباری/اقساطی: حداکثر مبلغ (تومان)", default=0,
+                                                        help_text="۰ یعنی بدون سقف؛ بالاتر از این، گزینه نشان داده نمی‌شود")
+    digipay_seller_id = models.CharField("دیجی‌پی: شناسهٔ فروشنده در سبد (sellerId)", max_length=60, blank=True,
+                                         help_text="اگر دیجی‌پی شناسهٔ خاصی داده، اینجا بنویسید؛ خالی = irancarpet")
     # پیامک sms.ir
     referral_enabled = models.BooleanField("کد معرفی دوستان فعال باشد", default=False,
                                            help_text="هر مشتری یک کد اختصاصی می‌گیرد؛ دوستش با آن تخفیف می‌گیرد و خودش بعد از خرید دوست، کد هدیه.")

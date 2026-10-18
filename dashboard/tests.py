@@ -138,12 +138,14 @@ class PanelTests(TestCase):
     def test_settings_gateways_and_secret_kept(self):
         self.client.force_login(self.staff)
         self.client.post("/panel/settings/", {"tab": "gateways", "sep_enabled": "on", "sep_terminal_id": "۱۲۳۴۵۶۷۸",
-                                              "zarinpal_enabled": "on", "zarinpal_merchant_id": "abc-merchant"})
+                                              "zarinpal_enabled": "on", "zarinpal_merchant_id": "abc-merchant",
+                                              "digipay_credit_min": "0", "digipay_credit_max": "0"})
         self.assertTrue(gateways.Sep.available())
         self.assertEqual(config.get("ZARINPAL_MERCHANT_ID"), "abc-merchant")
         # ذخیرهٔ دوباره با مرچنت خالی، مقدار قبلی را پاک نمی‌کند
         self.client.post("/panel/settings/", {"tab": "gateways", "sep_enabled": "on", "sep_terminal_id": "12345678",
-                                              "zarinpal_enabled": "on", "zarinpal_merchant_id": ""})
+                                              "zarinpal_enabled": "on", "zarinpal_merchant_id": "",
+                                              "digipay_credit_min": "0", "digipay_credit_max": "0"})
         self.assertEqual(ShopSettings.load().zarinpal_merchant_id, "abc-merchant")
         self.client.post("/panel/settings/", {"tab": "sms", "smsir_api_key": "KEY", "smsir_otp_template_id": "100200",
                                               "smsir_order_template_id": "", "smsir_admin_template_id": ""})

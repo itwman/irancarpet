@@ -103,6 +103,7 @@
           <span class="inst-teaser__go">محاسبه</span>
         </a>
         {% endif %}
+        {% if torob %}<p class="torob-line" id="torobLine" data-max="{{ torob.max }}" data-each-max="{{ torob.show_each }}"><b>ترب‌پی</b> <span>{% if torob.each %}۴ قسط {{ torob.each|toman }} تومان، بدون چک و ضامن{% else %}خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی{% endif %}</span></p>{% endif %}
         <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
       </form>
       {% endif %}
@@ -174,6 +175,19 @@
 </div>
 {% endblock %}
 {% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}<script>
+(function () {
+  var l = document.getElementById("torobLine"), f = document.getElementById("buyForm");
+  if (!l || !f) return;
+  var FA = "۰۱۲۳۴۵۶۷۸۹", s = l.querySelector("span");
+  function fa(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, function (d) { return FA[d]; }); }
+  function upd(p) {
+    if (!p) return;
+    l.hidden = p > +l.dataset.max;
+    s.textContent = p <= +l.dataset.eachMax ? "۴ قسط " + fa(Math.ceil(p / 4)) + " تومان، بدون چک و ضامن" : "خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی";
+  }
+  f.addEventListener("change", function (e) { if (e.target.name === "variation") upd(+e.target.dataset.price); });
+  var c = f.querySelector("input[name=variation]:checked"); if (c) upd(+c.dataset.price);
+})();
 (function () {
   var t = document.getElementById("instTeaser"), f = document.getElementById("buyForm");
   if (!t || !f || !t.dataset.base) return;
