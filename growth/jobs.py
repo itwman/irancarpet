@@ -163,6 +163,14 @@ def run_all(out=print):
             done["پورسانت همکاران"] = n
     except Exception:  # noqa: BLE001
         log.exception("affiliate resync")
+    try:
+        from core.viewcount import flush
+
+        n = flush()
+        if n:
+            done["شمارش بازدید"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("view count flush")
     if cache.add("jobs:landing", 1, 6 * 3600):
         try:
             from landing.build import sync

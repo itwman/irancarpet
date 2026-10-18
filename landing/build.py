@@ -188,10 +188,11 @@ def candidates():
 
 def refresh(lp, save=True):
     qs = products_of(lp)
+    before = (lp.count, lp.min_price, lp.max_price)
     lp.count = qs.count()
     lp.min_price, lp.max_price = price_range(lp, qs) if lp.count else (None, None)
     lp.synced_at = timezone.now()
-    if save:
+    if save and (lp.count, lp.min_price, lp.max_price) != before:  # بدون تغییر، نوشتن بی‌فایده (و binlog) نه
         lp.save(update_fields=["count", "min_price", "max_price", "synced_at"])
     return lp
 

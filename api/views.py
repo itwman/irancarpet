@@ -342,7 +342,9 @@ def product(request, pk):
         cat = p.primary_category or p.categories.first()
         related = list(card_queryset(Product.objects.published().filter(categories=cat).exclude(pk=p.pk)
                                      .exclude(stock_status="outofstock").order_by("-views"))[:10])
-    Product.objects.filter(pk=p.pk).update(views=p.views + 1)
+    from core.viewcount import hit
+
+    hit("p", p.pk, request)
     data = S.product_detail(p, gallery, variations, [{"name": k, "value": "، ".join(v)} for k, v in specs.items()],
                             reviews, faqs, related)
     data["in_wishlist"] = bool(request.api_user and Wishlist.objects.filter(user=request.api_user, product=p).exists())

@@ -282,7 +282,9 @@ def product_detail(request, slug):
     from .related import related_products
 
     related = related_products(product, cat)
-    Product.objects.filter(pk=product.pk).update(views=F("views") + 1)
+    from core.viewcount import hit
+
+    hit("p", product.pk, request)
 
     from content.render import build as build_doc, color_siblings, design_of
 

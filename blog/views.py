@@ -57,7 +57,9 @@ def post_detail(request, post, preview=False):
     if post.status != "publish" and not request.user.is_staff:
         raise Http404
     if not preview:
-        Post.objects.filter(pk=post.pk).update(views=F("views") + 1)
+        from core.viewcount import hit
+
+        hit("b", post.pk, request)
     cat = post.primary_category or post.categories.first()
     crumbs = [("مجله", "/blog/")] + ([(cat.name, cat.get_absolute_url())] if cat else []) + [(post.title, post.get_absolute_url())]
     related = Post.objects.published().filter(categories=cat).exclude(pk=post.pk).select_related("image")[:3] if cat else []

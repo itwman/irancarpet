@@ -7,9 +7,11 @@ echo "== دریافت آخرین نسخه"
 git pull --ff-only
 echo "== کتابخانه‌ها"
 venv/bin/pip install -q --no-index --find-links /tmp/ic-wheels -r requirements.txt 2>/dev/null || venv/bin/pip install -q --timeout 60 -r requirements.txt || true
+echo "== پوشهٔ خصوصی و کش فایلی (قبل از migrate، تا فایل‌های کشی که root می‌سازد برای www-data هم خواندنی باشد)"
+mkdir -p private/cache
+chgrp -R www-data private && chmod 2770 private private/cache
 echo "== جدول‌ها"
 venv/bin/python manage.py migrate --noinput
-venv/bin/python manage.py createcachetable
 echo "== اجازهٔ نوشتن در پوشهٔ تصاویر (برای آپلود از پنل)"
 UP=$(grep '^MEDIA_ROOT=' .env | cut -d= -f2-)
 if [ -n "$UP" ] && [ -d "$UP" ]; then
@@ -24,7 +26,7 @@ chgrp www-data private && chmod 2770 private
 echo "== فایل‌های استاتیک"
 venv/bin/python manage.py collectstatic --noinput -v0
 chown -R root:www-data . && chmod -R g+rX .
-chmod -R g+w private && chmod -R o-rwx private
+chmod -R g+rw private && chmod -R o-rwx private
 echo "== کارهای دوره‌ای (هر ۱۰ دقیقه)"
 for U in irancarpet-jobs.service irancarpet-jobs.timer; do
   cmp -s "deploy/$U" "/etc/systemd/system/$U" || cp "deploy/$U" "/etc/systemd/system/$U"

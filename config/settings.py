@@ -6,6 +6,7 @@
 """
 from pathlib import Path
 import os
+import sys
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -131,7 +132,13 @@ PASSWORD_HASHERS = [
 ]
 
 # کش مشترک بین همهٔ پردازه‌های gunicorn (تا تغییرات پنل فوراً همه‌جا دیده شود)
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "django_cache"}}
+# کش فایلی (core/cache.py): بدون کوئری و بدون نوشتن در binlog مای‌اسکیوال. در آزمون‌ها حافظه‌ای، تا اجراها به هم نچسبند.
+_TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"} if _TESTING else {
+    "BACKEND": "core.cache.SharedFileCache",
+    "LOCATION": os.environ.get("CACHE_DIR") or str(Path(os.environ.get("PRIVATE_ROOT", BASE_DIR / "private")) / "cache"),
+    "OPTIONS": {"MAX_ENTRIES": 3000, "CULL_FREQUENCY": 3},
+}}
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
 FILE_UPLOAD_PERMISSIONS = 0o664
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o2775
