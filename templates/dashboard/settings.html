@@ -17,6 +17,31 @@
         {% with f=form.zarinpal_merchant_id %}{% include "dashboard/_field.html" %}{% endwith %}
         {% with f=form.zarinpal_sandbox %}{% include "dashboard/_field.html" %}{% endwith %}
         <p class="hint">آدرس بازگشت: <code class="ltr-num">{{ callback_zp }}</code></p>
+        <h2 class="mt-4">ترب‌پی (خرید ۴ قسطی)</h2>
+        <p class="hint">چهار مقدار زیر را از پنل پذیرندگی ترب‌پی بردارید. ترب‌پی کل مبلغ را می‌پردازد و فقط برای «پرداخت کامل» نشان داده می‌شود؛ اگر برای مبلغ سبد فعال نباشد، خودبه‌خود پنهان می‌شود.</p>
+        {% with f=form.torobpay_enabled %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.torobpay_client_id %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.torobpay_client_secret %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.torobpay_username %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.torobpay_password %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.torobpay_widget %}{% include "dashboard/_field.html" %}{% endwith %}
+        <h2 class="mt-4">دیجی‌پی</h2>
+        <p class="hint">هر حالت را فقط وقتی روشن کنید که در قرارداد دیجی‌پی شما فعال است. اعتباری و اقساطی فقط برای «پرداخت کامل»‌اند و با «ارسال شد» در سفارش، تحویل خودکار به دیجی‌پی اعلام می‌شود.</p>
+        {% with f=form.digipay_ipg %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_wallet %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_credit %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_bnpl %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_ccard %}{% include "dashboard/_field.html" %}{% endwith %}
+        <h3 class="h6 mt-3">اطلاعات اتصال</h3>
+        {% with f=form.digipay_client_id %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_client_secret %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_username %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_password %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_sandbox %}{% include "dashboard/_field.html" %}{% endwith %}
+        <h3 class="h6 mt-3">محدودهٔ مبلغ اعتباری و اقساطی</h3>
+        {% with f=form.digipay_credit_min %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_credit_max %}{% include "dashboard/_field.html" %}{% endwith %}
+        {% with f=form.digipay_seller_id %}{% include "dashboard/_field.html" %}{% endwith %}
       {% elif tab == "crm" %}
         {% if not line %}<div class="alert alert-warning">شمارهٔ خط اختصاصی sms.ir هنوز در زبانهٔ <a href="?tab=sms">پیامک</a> وارد نشده؛ تا آن را وارد نکنید هیچ‌کدام از این پیامک‌ها فرستاده نمی‌شود.</div>{% endif %}
         {% for title, hint, fields in crm_groups %}
@@ -111,6 +136,8 @@
     <section class="card-p"><h2>وضعیت اتصال‌ها</h2>
       <div class="kv"><span>درگاه سامان</span><strong>{% if info.sep %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
       <div class="kv"><span>زرین‌پال</span><strong>{% if info.zarinpal %}<span class="dot on"></span>تنظیم شده{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
+      <div class="kv"><span>ترب‌پی</span><strong>{% if info.torobpay %}<span class="dot on"></span>روشن{% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
+      <div class="kv"><span>دیجی‌پی</span><strong>{% if info.digipay %}<span class="dot on"></span>{{ info.digipay|length|fa_num }} حالت روشن{% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
       <div class="kv"><span>پیامک sms.ir</span><strong>{% if info.sms == "template" %}<span class="dot on"></span>تنظیم شده{% elif info.sms == "line" %}<span class="dot on"></span>تنظیم شده <small class="muted">(کد ورود با متن ساده از خط؛ قالب بهتر است)</small>{% else %}<span class="dot off"></span>تنظیم نشده{% endif %}</strong></div>
       <div class="kv"><span>درگاه آزمایشی</span><strong>{% if info.fake %}<span class="dot warn"></span>روشن (فقط نسخهٔ آزمایشی){% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
       <div class="kv"><span>درگاه‌های نمایش داده‌شده به مشتری</span><strong>{{ info.active|length|fa_num }}</strong></div>

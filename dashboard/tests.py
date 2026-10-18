@@ -363,3 +363,22 @@ class DashboardTests(TestCase):
         self.client.force_login(self.staff)
         html = self.client.get("/panel/abandoned-carts/?age=14").content.decode()
         self.assertIn("مینا", html)
+
+
+def _test_bnpl_fields_rendered_and_saved(self):
+    """فیلدهای ترب‌پی و دیجی‌پی در زبانهٔ درگاه‌ها دیده و با همان فرم ذخیره می‌شوند."""
+    self.client.force_login(self.staff)
+    r = self.client.get("/panel/settings/?tab=gateways")
+    for name in ("torobpay_enabled", "torobpay_password", "digipay_bnpl", "digipay_credit_max", "digipay_sandbox"):
+        self.assertContains(r, f'name="{name}"')
+    r = self.client.post("/panel/settings/", {"tab": "gateways", "sep_enabled": "on", "torobpay_enabled": "on",
+                                              "torobpay_client_id": "c", "torobpay_client_secret": "s",
+                                              "torobpay_username": "u", "torobpay_password": "p", "digipay_bnpl": "on",
+                                              "digipay_credit_min": "0", "digipay_credit_max": "50000000"})
+    self.assertEqual(r.status_code, 302)
+    s = ShopSettings.load()
+    self.assertTrue(s.torobpay_enabled and s.digipay_bnpl)
+    self.assertEqual((s.torobpay_password, s.digipay_credit_max), ("p", 50_000_000))
+
+
+PanelTests.test_bnpl_fields_rendered_and_saved = _test_bnpl_fields_rendered_and_saved

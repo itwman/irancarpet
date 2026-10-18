@@ -177,6 +177,8 @@ def status_info():
         "sep": bool(config.get("SEP_TERMINAL_ID")), "zarinpal": bool(config.get("ZARINPAL_MERCHANT_ID")),
         "sms": sms.otp_mode(), "fake": gateways.Fake.available(),
         "active": [g.key for g in gateways.enabled(shop)],
+        "torobpay": gateways.TorobPay.is_on(shop),
+        "digipay": [k for k, g in gateways.ALL.items() if k.startswith("dp_") and g.is_on(shop)],
     }
 
 
