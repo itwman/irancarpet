@@ -239,7 +239,16 @@ def checkout(request):
         "free_shipping": own_total(summary["lines"]) >= shop.free_shipping_min, "has_sellers": has_sellers,
         "own_total": own_total(summary["lines"]),
         "seller_groups": seller_groups(summary["lines"]) if has_sellers else [],
+        "gw_hidden": _hidden_for_staff(request, shop, gws, summary["total"]),
     })
+
+
+def _hidden_for_staff(request, shop, gws, amount):
+    if not request.user.is_staff:
+        return []
+    from .bnpl import hidden_reasons
+
+    return hidden_reasons(shop, gws, amount)
 
 
 @transaction.atomic

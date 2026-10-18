@@ -203,3 +203,20 @@ class BnplTests(TestCase):
         r = self.client.get(self.p.get_absolute_url())
         self.assertContains(r, "torobLine")
         self.assertContains(r, "۴ قسط ۲٬۵۰۰٬۰۰۰ تومان")
+
+    def test_staff_note_and_diagnose(self):
+        from accounts.models import Profile
+
+        user = Profile.objects.get(mobile="09121234567").user
+        user.is_staff = True
+        user.save()
+        self.client.post("/cart/add/", {"variation": self.v12.pk, "qty": 3})  # بالای ۱۰۰ میلیون
+        fh = self.torob_routes()
+        with mock.patch.object(bnpl, "http", fh):
+            r = self.client.get("/checkout/")
+            self.assertNotContains(r, 'value="torobpay"')
+            self.assertContains(r, "سقف")
+            self.assertFalse(any("/eligible" in c[1] for c in fh.calls))  # بالای سقف، بی‌پرسش
+            out = bnpl.diagnose()
+        self.assertTrue(out[0][0])
+        self.assertTrue(any("فعال است" in m for ok, m in out))

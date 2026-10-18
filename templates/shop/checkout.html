@@ -86,6 +86,7 @@
         {% for g in gateways %}<label{% if g.full_only %} data-full-only{% endif %}><input type="radio" name="gateway" value="{{ g.key }}"{% if form.gateway == g.key or not form.gateway and forloop.first %} checked{% endif %}><span><strong>{{ g.title }}</strong>{% if g.note %}<small>{{ g.note }}</small>{% endif %}</span></label>{% endfor %}
       </div>
       {% if errors.gateway %}<div class="alert-ic">{{ errors.gateway }}</div>{% endif %}
+      {% if gw_hidden %}<div class="alert-ic alert-ic--warn small">فقط مدیر می‌بیند — درگاه‌های روشنی که اینجا نیامده‌اند:<br>{% for m in gw_hidden %}{{ m|fa_num }}<br>{% endfor %}درگاه‌های قسطی فقط با «پرداخت کامل آنلاین» نشان داده می‌شوند.</div>{% endif %}
       {% else %}
       <div class="alert-ic alert-ic--warn">درگاه پرداخت هنوز فعال نشده است. برای ثبت سفارش با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
       {% endif %}

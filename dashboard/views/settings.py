@@ -266,6 +266,12 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do") == "bnpl_check":
+            from shop.bnpl import diagnose
+
+            for ok, m in diagnose():
+                (messages.success if ok else messages.warning)(request, m)
+            return redirect("/panel/settings/?tab=gateways")
         if request.POST.get("do") == "crm_test":
             from crm import notify as crm_notify
 

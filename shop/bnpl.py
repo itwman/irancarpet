@@ -100,6 +100,8 @@ class TorobPay(Base):
 
     # ── واجد بودن ──
     def eligible(self, amount):
+        if not TOROB_MIN <= amount <= TOROB_MAX:  # بازهٔ مجاز خود ترب‌پی؛ بی‌پرسش
+            return False
         key = f"torobpay:elig:{int(amount)}"
         v = cache.get(key)
         if v is None:
@@ -424,3 +426,69 @@ def retry_settles():
             p.save(update_fields=["raw"])
             n += 1
     return n
+
+
+# ════════════════════════════════════════════════════════════════════ بررسی اتصال (پنل)
+def diagnose():
+    """[(ok، پیام)] برای دکمهٔ «بررسی اتصال» در پنل؛ هیچ پرداختی ساخته نمی‌شود."""
+    s = _shop()
+    out = []
+    # ترب‌پی
+    missing = [n for f, n in (("torobpay_client_id", "شناسهٔ پذیرنده"), ("torobpay_client_secret", "کلید"),
+                              ("torobpay_username", "نام کاربری"), ("torobpay_password", "رمز")) if not getattr(s, f)]
+    if not s.torobpay_enabled:
+        out.append((False, "ترب‌پی: خاموش است."))
+    elif missing:
+        out.append((False, "ترب‌پی: این‌ها خالی است: " + "، ".join(missing)))
+    else:
+        tp = TorobPay()
+        try:
+            tp._token(s, fresh=True)
+            out.append((True, "ترب‌پی: ورود موفق بود."))
+            for amount in (10_000_000, 100_000_000):
+                code, data = tp.api("GET", "api/online/offer/v1/eligible", params={
+                    "amount": _rial(amount), "payment_price_parity": "equal"}, timeout=8)
+                r = data.get("response") or {}
+                if data.get("successful") and r.get("eligible"):
+                    out.append((True, f"ترب‌پی برای سبد {amount:,} تومانی فعال است.".replace(",", "٬")))
+                else:
+                    out.append((False, f"ترب‌پی برای سبد {amount:,} تومانی فعال نیست: ".replace(",", "٬")
+                                + (tp.error(data, "") or r.get("description") or f"پاسخ {code}")))
+            cache.delete_many([f"torobpay:elig:{a}" for a in (10_000_000, 100_000_000)])
+        except GatewayError as e:
+            out.append((False, f"ترب‌پی: {e}"))
+        out.append((True, f"سقف هر سفارش در ترب‌پی {TOROB_MAX:,} تومان است؛ سبد بزرگ‌تر گزینهٔ ترب‌پی ندارد.".replace(",", "٬")))
+    # دیجی‌پی
+    modes = [k for k, (t, flag, c, n) in DIGIPAY_MODES.items() if getattr(s, flag)]
+    missing = [n for f, n in (("digipay_client_id", "client id"), ("digipay_client_secret", "client secret"),
+                              ("digipay_username", "نام کاربری"), ("digipay_password", "رمز عبور")) if not getattr(s, f)]
+    if not modes:
+        out.append((False, "دیجی‌پی: هیچ حالتی روشن نیست."))
+    elif missing:
+        out.append((False, "دیجی‌پی: این‌ها خالی است و تا پر نشود دیجی‌پی در سبد خرید نمی‌آید: " + "، ".join(missing)))
+    else:
+        try:
+            Digipay._token(s, fresh=True)
+            out.append((True, f"دیجی‌پی ({'آزمایشی UAT' if s.digipay_sandbox else 'اصلی'}): ورود موفق بود."))
+        except GatewayError as e:
+            out.append((False, f"دیجی‌پی ({'آزمایشی UAT' if s.digipay_sandbox else 'اصلی'}): {e}"))
+    return out
+
+
+def hidden_reasons(shop, shown, amount):
+    """برای مدیر در صفحهٔ پرداخت: چرا درگاهی که روشن است نشان داده نشد."""
+    keys = {g.key for g in shown}
+    out = []
+    if shop.torobpay_enabled and "torobpay" not in keys:
+        if not TorobPay.is_on(shop):
+            out.append("ترب‌پی: اطلاعات اتصال کامل نیست.")
+        elif amount > TOROB_MAX:
+            out.append(f"ترب‌پی: مبلغ سبد بیشتر از سقف {TOROB_MAX:,} تومانی ترب‌پی است.".replace(",", "٬"))
+        else:
+            out.append("ترب‌پی: برای این مبلغ فعال نیست یا اتصال برقرار نشد (پنل ← درگاه‌ها ← بررسی اتصال).")
+    for k, (t, flag, credit, n) in DIGIPAY_MODES.items():
+        if getattr(shop, flag) and k not in keys:
+            g = Digipay(k)
+            why = "اطلاعات اتصال (نام کاربری/رمز…) کامل نیست" if not g.creds(shop) else "مبلغ بیرون از حداقل/حداکثر تعیین‌شده است"
+            out.append(f"{g.title}: {why}.")
+    return out

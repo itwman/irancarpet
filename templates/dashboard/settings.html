@@ -72,6 +72,13 @@
       <p class="hint mt-2">همگام‌سازی خودکار هر ۵ دقیقه روی سرور اجرا می‌شود؛ تغییر قیمت، موجودی، عنوان و تصویر محصولات خودش به فرش پلاس می‌رود.</p>
     </section>
     {% endif %}
+    {% if tab == "gateways" %}
+    <section class="card-p">
+      <h2>بررسی اتصال ترب‌پی و دیجی‌پی</h2>
+      <p class="hint">بعد از ذخیرهٔ تنظیمات بزنید؛ ورود به هر دو و فعال بودن ترب‌پی برای چند مبلغ را بررسی می‌کند. هیچ پرداختی ساخته نمی‌شود.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="tab" value="gateways"><button class="btn btn-ink" name="do" value="bnpl_check">بررسی اتصال</button></form>
+    </section>
+    {% endif %}
     {% if tab == "rajyar" %}
     <section class="card-p">
       <h2>بررسی اتصال</h2>
