@@ -90,6 +90,10 @@ class AppNotification(models.Model):
         return self.title
 
 
+APP_URL = "https://cafebazaar.ir/app/net.irancarpet.app"
+FINDER_URL = "https://cafebazaar.ir/app/net.irancarpet.finder"
+
+
 class AppSettings(models.Model):
     latest_version = models.CharField("آخرین نسخه", max_length=20, default="1.0.0")
     min_version = models.CharField("کمترین نسخهٔ قابل استفاده", max_length=20, default="1.0.0",
@@ -97,6 +101,11 @@ class AppSettings(models.Model):
     update_url = models.CharField("لینک دریافت اپ", max_length=300, blank=True, help_text="صفحهٔ اپ در کافه‌بازار")
     update_note = models.TextField("توضیح نسخهٔ تازه", blank=True)
     home_notice = models.CharField("پیام بالای صفحهٔ اول اپ", max_length=200, blank=True)
+    finder_url = models.CharField("لینک اپ فرش‌یاب", max_length=300, blank=True, default=FINDER_URL,
+                                  help_text="صفحهٔ فرش‌یاب در کافه‌بازار؛ خالی = در سایت معرفی نشود")
+    promote_home = models.BooleanField("معرفی اپ‌ها در صفحهٔ اول سایت", default=True)
+    promote_bar = models.BooleanField("نوار نصب اپ برای موبایل‌های اندرویدی", default=True,
+                                      help_text="پایین صفحه؛ با یک ضربه بسته می‌شود و تا ۳۰ روز دوباره نمی‌آید")
 
     class Meta:
         verbose_name = verbose_name_plural = "تنظیمات اپلیکیشن"
@@ -109,3 +118,21 @@ class AppSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+        from django.core.cache import cache
+
+        cache.delete("apps_promo")
+
+    @property
+    def app_url(self):
+        return self.update_url or APP_URL
+
+    def promo(self):
+        """اپ‌هایی که در سایت معرفی می‌شوند (برای قالب‌ها؛ در کش)."""
+        from core.qr import svg
+
+        apps = [{"key": "app", "name": "اپ ایران کارپت", "text": "خرید فرش، پرداخت قسطی و پیگیری سفارش در گوشی؛ با اعلان فرصت‌های ویژه.",
+                 "url": self.app_url, "qr": svg(self.app_url)}]
+        if self.finder_url:
+            apps.append({"key": "finder", "name": "فرش‌یاب", "text": "بگو چه فرشی می‌خواهی یا عکس فرشت را بفرست؛ مشابهش را پیدا می‌کنیم.",
+                         "url": self.finder_url, "qr": svg(self.finder_url)})
+        return {"home": self.promote_home, "bar": self.promote_bar, "apps": apps}

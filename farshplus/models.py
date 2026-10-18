@@ -21,6 +21,17 @@ class FarshPlusSettings(models.Model):
     max_images = models.PositiveSmallIntegerField("حداکثر تصویر هر محصول", default=5)
     categories = models.ManyToManyField("catalog.Category", blank=True, verbose_name="فقط این دسته‌ها",
                                         help_text="خالی = همهٔ دسته‌ها")
+    # هدیهٔ «اپ فرش پلاس را نصب کن و پیج ما را دنبال کن» (کد شخصی، فقط با موبایل خود مشتری، یک بار)
+    gift_enabled = models.BooleanField("هدیهٔ دنبال‌کردن در فرش پلاس فعال باشد", default=True)
+    gift_amount = models.PositiveBigIntegerField("مبلغ هدیه (تومان)", default=1_000_000)
+    gift_min_order = models.PositiveBigIntegerField("حداقل خرید برای استفاده (تومان)", default=10_000_000)
+    gift_valid_days = models.PositiveSmallIntegerField("اعتبار کد (روز)", default=30)
+    gift_require_app = models.BooleanField("فقط اگر با اپ (نه وب) وارد فرش پلاس شده باشد", default=True)
+    gift_app_url = models.CharField("لینک اپ فرش پلاس", max_length=300, default="https://cafebazaar.ir/app/ir.farshplus.farshplus")
+    gift_page_url = models.CharField("پیج ایران کارپت در فرش پلاس", max_length=300, default="https://farshplus.com/@irancarpet/")
+    gift_text = models.TextField("پیامک کد هدیه", default="ایران کارپت | ممنون که در فرش پلاس همراه ما شدید.\n"
+                                 "کد هدیه {discount} تومانی شما: {code}\nبرای خرید بالای {min} تومان، تا {until}\n{site}",
+                                 help_text="{code} {discount} {min} {until} {site}")
     rate_limited_until = models.DateTimeField("توقف تا", null=True, blank=True)
     connection = models.JSONField(default=dict, blank=True)
     checked_at = models.DateTimeField(null=True, blank=True)

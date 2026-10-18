@@ -162,3 +162,79 @@ class PriorityTests(FarshPlusTests):
         sync.queue(upd, "auto")
         sync.run(limit=1, out=lambda m: None)
         self.assertEqual(self.fake.calls[0][1]["external_id"], "9")
+
+
+class GiftTests(TestCase):
+    """هدیهٔ «نصب اپ + دنبال‌کردن پیج» در فرش پلاس."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        s = FarshPlusSettings.load()
+        s.api_key = "fpk_x"
+        s.save()
+        self.state = {"follows": True, "app": True}
+        self.sms = []
+        test = self
+
+        class C:
+            def follower(self, mobile):
+                return dict(test.state)
+
+        self.client_obj = C()
+        p1 = mock.patch("farshplus.sync.client", lambda s=None: test.client_obj)
+        p3 = mock.patch("accounts.sms.send_bulk", lambda mobiles, text, **kw: (test.sms.append((mobiles, text)) or (True, "")))
+        for p in (p1, p3):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def post(self, mobile):
+        return self.client.post("/farshplus-gift/", {"mobile": mobile}).json()
+
+    def test_flow(self):
+        from shop.models import Coupon
+
+        self.assertEqual(self.client.get("/farshplus-gift/").status_code, 200)
+        self.state = {"follows": False, "app": False}
+        r = self.post("09121112233")
+        self.assertFalse(r["ok"])
+        self.assertIn("دنبال نشده", r["msg"])
+        self.state = {"follows": True, "app": False}
+        self.assertIn("اپ فرش پلاس", self.post("09121112233")["msg"])
+        self.state = {"follows": True, "app": True}
+        r = self.post("۰۹۱۲۱۱۱۲۲۳۳")
+        self.assertTrue(r["ok"], r)
+        c = Coupon.objects.get(for_mobile="09121112233")
+        self.assertTrue(c.code.startswith("FP-"))
+        self.assertEqual((c.value, c.min_order, c.usage_limit), (1_000_000, 10_000_000, 1))
+        self.assertEqual(len(self.sms), 1)
+        self.assertIn(c.code, self.sms[0][1])
+        self.assertNotIn(c.code, r["msg"])  # کد فقط پیامک می‌شود، روی صفحه نه
+        # بار دوم: کد تازه ساخته نمی‌شود و پیامک تکراری هم نمی‌رود
+        self.assertTrue(self.post("09121112233")["ok"])
+        self.assertEqual(Coupon.objects.filter(for_mobile="09121112233").count(), 1)
+        self.assertEqual(len(self.sms), 1)
+
+    def test_used_or_expired_cannot_reclaim(self):
+        from shop.models import Coupon
+
+        self.assertTrue(self.post("09121112233")["ok"])
+        Coupon.objects.filter(for_mobile="09121112233").update(ends_at=timezone.now() - timedelta(days=1))
+        r = self.post("09121112233")
+        self.assertFalse(r["ok"])
+        self.assertIn("قبلاً", r["msg"])
+
+    def test_api_down_and_disabled(self):
+        def boom(mobile):
+            raise ApiError("x", 0, True)
+
+        self.client_obj.follower = boom
+        self.assertIn("دسترسی نداریم", self.post("09121112233")["msg"])
+        s = FarshPlusSettings.load()
+        s.gift_enabled = False
+        s.save()
+        self.assertEqual(self.client.get("/farshplus-gift/").status_code, 404)
+
+    def test_bad_mobile(self):
+        self.assertEqual(self.client.post("/farshplus-gift/", {"mobile": "123"}).status_code, 400)

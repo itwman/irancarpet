@@ -12,6 +12,7 @@ from seo import sitemaps
 from seo import views as seo_views
 from api import views as api_views
 from finder import api as finder_api
+from farshplus import views as farshplus_views
 from finder import views as finder_views
 from crm import links as crm_links
 from stats import track as stats_track
@@ -56,6 +57,7 @@ urlpatterns = [
     path("review/<str:token>/", growth_views.review_invite),
     path("alerts/", growth_views.alert),
     path("farsh-yab/", finder_views.page),
+    path("farshplus-gift/", farshplus_views.gift_page, name="farshplus_gift"),
     path("product/<str:slug>/review/", growth_views.product_review),
     path("llms.txt", seo_views.llms_txt),
     re_path(r"^(?P<key>[0-9a-f]{32})\.txt$", seo_views.indexnow_key),

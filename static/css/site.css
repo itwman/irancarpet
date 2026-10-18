@@ -1467,3 +1467,62 @@ a.lp-size:hover{border-color:var(--pink);color:var(--ink)}
 .cz--product .cz__how{margin:.3rem 0 .6rem;padding-inline-start:1.1rem;font-size:.88rem;color:var(--ink-2)}
 .cz__wa{display:flex;justify-content:center;width:100%;margin:.8rem 0 .3rem}
 @media (prefers-reduced-motion:reduce){.czd>summary span::after{transition:none}}
+
+/* --- اپ‌ها در صفحهٔ اول --- */
+.apps-sec .sec-lead{margin-bottom:1.5rem}
+.apps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}
+.app-card{display:grid;grid-template-columns:auto 1fr auto;gap:1.1rem;align-items:center;padding:1.4rem;border-radius:var(--r-lg);background:var(--soft)}
+.app-card__icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;background:var(--pink);color:#fff}
+.app-card__icon svg{width:40px;height:40px}
+.app-card--finder .app-card__icon{background:var(--teal)}
+.app-card h3{font-size:1.15rem;margin:0 0 .2rem}
+.app-card p{margin:0 0 .8rem;color:var(--ink-2);font-size:.95rem;line-height:1.8}
+.app-card__qr{border-radius:12px;background:#fff;padding:4px}
+@media(max-width:991px){.apps{grid-template-columns:1fr}}
+@media(max-width:767px){.app-card{grid-template-columns:auto 1fr}.app-card__qr{display:none}.app-card__icon{width:52px;height:52px;align-self:start}}
+
+/* --- نوار نصب اپ (اندروید) --- */
+.app-bar{position:fixed;inset-inline:0;bottom:0;z-index:60;display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem .6rem 1rem;background:var(--ink);color:#fff;font-size:.9rem;line-height:1.6;box-shadow:0 -10px 30px -12px rgba(34,38,90,.5)}
+.app-bar[hidden]{display:none}
+.app-bar__text{flex:1;min-width:0}
+.app-bar__go{background:var(--pink);color:#fff;font-weight:800;padding:.45rem 1rem;border-radius:10px;white-space:nowrap}
+.app-bar__go:hover{color:#fff;background:var(--pink-d)}
+.app-bar__x{background:none;border:0;color:#c9cbe6;font-size:1.5rem;line-height:1;padding:.2rem .4rem;cursor:pointer}
+body.has-app-bar{padding-bottom:64px}
+
+/* --- هدیهٔ فرش پلاس --- */
+.fp-band{display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center;margin:0 0 2.5rem;padding:1rem 1.25rem;border-radius:var(--r-md);background:#2d3170;color:#e6e7f6;border:2px dashed rgba(255,178,30,.55)}
+.fp-band:hover{background:#343982;color:#fff}
+.fp-band__amount{color:var(--saffron);font-weight:800;white-space:nowrap}
+.fp-band__amount b{font-size:1.35rem;font-weight:900}
+.fp-band__text{font-size:.93rem;line-height:1.8}
+.fp-band__go{background:var(--saffron);color:var(--ink);font-weight:800;padding:.5rem 1.1rem;border-radius:10px;white-space:nowrap}
+@media(max-width:767px){.fp-band{grid-template-columns:1fr;gap:.5rem;text-align:center}.fp-band__go{justify-self:center}}
+.fp-cart{display:block;margin:.2rem 0 1rem;padding:.6rem .8rem;border-radius:12px;background:var(--saffron-t);color:#7a4f00;font-size:.88rem;line-height:1.7}
+.fp-cart:hover{color:var(--ink)}
+.fpg{max-width:980px}
+.fpg-hero{display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center;padding:1.5rem 0 2rem}
+.fpg-hero h1{font-size:clamp(1.5rem,3.2vw,2.3rem);margin:0 0 .8rem;line-height:1.5}
+.fpg-hero p{color:var(--ink-2);margin:0;max-width:34em}
+.fpg-ticket{position:relative;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:1.4rem 2rem;border-radius:18px;background:var(--saffron);color:var(--ink);transform:rotate(-3deg);
+  -webkit-mask:radial-gradient(circle 12px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;
+  mask:radial-gradient(circle 12px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat}
+.fpg-ticket__amount{font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.2}
+.fpg-ticket__unit{font-weight:800}
+.fpg-ticket__rule{font-size:.8rem;margin-top:.4rem;padding-top:.4rem;border-top:2px dashed rgba(34,38,90,.35)}
+.fpg-steps{list-style:none;padding:0;margin:0 0 2rem;display:grid;gap:1rem;counter-reset:s}
+.fpg-steps>li{counter-increment:s;position:relative;padding:1.3rem 4.2rem 1.3rem 1.3rem;border-radius:var(--r-lg);background:var(--soft)}
+.fpg-steps>li::before{content:counter(s,persian);position:absolute;inset-inline-start:1.3rem;top:1.15rem;width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;font-weight:900}
+.fpg-steps h2{font-size:1.1rem;margin:0 0 .3rem}
+.fpg-steps p{margin:0 0 .8rem;color:var(--ink-2);font-size:.95rem}
+.fpg-step__act{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.fpg-qr{border-radius:10px;background:#fff;padding:4px}
+@media(max-width:767px){.fpg-qr{display:none}.fpg-hero{grid-template-columns:1fr}.fpg-ticket{justify-self:center}}
+.fpg-form{display:flex;gap:.5rem;flex-wrap:wrap}
+.fpg-form input{flex:1 1 200px;max-width:280px;border:2px solid var(--line);border-radius:var(--r-sm);padding:.55rem .9rem;font:inherit;background:#fff}
+.fpg-form input:focus{border-color:var(--teal);outline:0}
+.fpg-msg{margin:.8rem 0 0;padding:.6rem .9rem;border-radius:12px;font-weight:600}
+.fpg-msg.is-ok{background:var(--teal-t);color:var(--teal-d)}
+.fpg-msg.is-err{background:var(--pink-t);color:var(--pink-d)}
+.fpg-terms h2{font-size:1.05rem}
+.fpg-terms ul{color:var(--ink-2);font-size:.92rem;padding-inline-start:1.2rem}

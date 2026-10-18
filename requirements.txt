@@ -7,3 +7,4 @@ django-unfold>=0.40
 Pillow>=10.0
 gunicorn>=22.0
 bcrypt
+segno>=1.6

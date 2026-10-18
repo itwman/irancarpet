@@ -68,7 +68,40 @@ def site(request):
         "menu_more": tops[7:],
         "bing_verification": _bing(),
         "footer_sizes": _footer_sizes(),
+        "apps_promo": _apps_promo(request),
+        "fp_gift": _fp_gift(),
     }
+
+
+def _fp_gift():
+    """نوار «هدیهٔ فرش پلاس» در فوتر و سبد خرید."""
+    v = cache.get("fp_gift")
+    if v is None:
+        try:
+            from farshplus.gift import info
+
+            v = info() or {}
+        except Exception:  # noqa: BLE001
+            v = {}
+        cache.set("fp_gift", v, 300)
+    return v or None
+
+
+def _apps_promo(request):
+    """معرفی اپ‌ها در کافه‌بازار؛ داخل خود اپ (وب‌ویو) نشان داده نمی‌شود."""
+    ua = request.headers.get("User-Agent", "")
+    if "; wv)" in ua or request.headers.get("X-Requested-With", "").startswith("net.irancarpet"):
+        return None
+    v = cache.get("apps_promo")
+    if v is None:
+        try:
+            from api.models import AppSettings
+
+            v = AppSettings.load().promo()
+        except Exception:  # noqa: BLE001
+            v = {}
+        cache.set("apps_promo", v, 600)
+    return v or None
 
 
 def _footer_sizes():

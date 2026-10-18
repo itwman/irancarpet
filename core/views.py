@@ -23,6 +23,56 @@ REVIEW_GOOD = ("عالی", "زیبا", "قشنگ", "کیفیت", "راضی", "م
 REVIEW_SKIP = ("؟", "?", "موجود", "لینک", "نقص", "ایراد", "مشکل", "دیر", "ولی", "اما")
 
 
+POOL_TOP, POOL_NEW, HOME_PER_REEDS = 24, 8, 4
+
+
+def _design(p):
+    """نام نقشه بدون رنگ («فرش شاه پسند زمینه سرمه‌ای» ← «فرش شاه پسند»)."""
+    return re.split(r"\s(?:رنگ|زمینه|کد)\s", " " + (p.title or "") + " ")[0].strip() or p.pk
+
+
+def _one_per_design(items, n, skip=()):
+    out, seen = [], set()
+    for p in items:
+        key = _design(p)
+        if p.pk in skip or key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+        if len(out) == n:
+            break
+    return out
+
+
+def reeds_pool(qs):
+    """استخر ویترین یک شانه: پربازدیدها + تازه‌ها، از هر نقشه یکی (تا رنگ‌های یک نقشه کنار هم نیایند).
+    هر بار باز شدن صفحه چند تا به‌تصادف از همین استخر نشان داده می‌شود؛ خود استخر ۱۰ دقیقه کش است."""
+    top = _one_per_design(catalog_views.card_queryset(qs.order_by("-views"))[:POOL_TOP * 3], POOL_TOP)
+    new = _one_per_design(catalog_views.card_queryset(qs.order_by("-published_at"))[:POOL_NEW * 3], POOL_NEW,
+                         skip={p.pk for p in top})
+    return top + new
+
+
+def pick(pool, n, rng=None):
+    """n تا از استخر به‌تصادف: بدون دو کارت از یک نقشه، و تا جای ممکن هر کارت از یک برند."""
+    import random
+
+    items = list(pool)
+    (rng or random).shuffle(items)
+    out, designs, brands = [], set(), set()
+    for strict in (True, False):
+        for p in items:
+            if len(out) == n:
+                return out
+            d, b = _design(p), (p.brand_id if p.brand_id is not None else -p.pk - 1)
+            if p in out or d in designs or (strict and b in brands):
+                continue
+            out.append(p)
+            designs.add(d)
+            brands.add(b)
+    return out
+
+
 def _home_data():
     """داده‌های صفحهٔ اصلی (۱۰ دقیقه کش می‌شود)."""
     from django.db.models import Avg, Count
@@ -37,8 +87,7 @@ def _home_data():
         term = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", slug=reeds).first()
         if not term:
             continue
-        items = list(catalog_views.card_queryset(base.filter(specs=term).order_by("-views"))[:4])
-        groups.append({"term": term, "products": items})
+        groups.append({"term": term, "pool": reeds_pool(base.filter(specs=term))})
         # نمایش در «گره‌ها» و «چیدمان اتاق»: پربازدیدترین محصولی که هر سه سایز را دارد
         for p in base.filter(specs=term).select_related("image").order_by("-views")[:12]:
             prices = {}
@@ -109,9 +158,11 @@ def home(request):
     from django.core.cache import cache
 
     data = cache.get("home_data")
-    if data is None:
+    if data is None or (data.get("groups") and "pool" not in data["groups"][0]):
         data = _home_data()
         cache.set("home_data", data, 600)
+    # هر بار صفحه باز شود، فرش‌های بخش شانه عوض می‌شوند (از استخر کش‌شده؛ بدون پرس‌وجوی تازه)
+    data = {**data, "groups": [{"term": g["term"], "products": pick(g["pool"], HOME_PER_REEDS)} for g in data["groups"]]}
     page = Page.objects.filter(template="home").first()
     posts = Post.objects.published().select_related("image")[:4]
     cats = Category.objects.filter(parent=None).order_by("order")[:12]

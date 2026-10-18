@@ -37,6 +37,11 @@
 {% block content %}{% endblock %}
 </main>
 {% include "partials/footer.html" %}
+{% if apps_promo.bar and apps_promo.apps %}{% with a=apps_promo.apps.0 %}<div class="app-bar" id="appBar" hidden>
+  <span class="app-bar__text"><b>{{ a.name }}</b> را نصب کنید؛ خرید و پیگیری سفارش راحت‌تر است.</span>
+  <a class="app-bar__go" href="{{ a.url }}" target="_blank" rel="noopener">نصب</a>
+  <button type="button" class="app-bar__x" aria-label="بستن">×</button>
+</div>{% endwith %}{% endif %}
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
 <script src="{% static 'js/site.js' %}?v={{ ASSET_V }}" defer></script>
 {% if not request.user.is_staff %}<script>(function(){function s(){try{var m=document.querySelector('meta[name="ic-pid"]');fetch('/t/',{method:'POST',keepalive:true,credentials:'same-origin',headers:{'Content-Type':'text/plain'},body:JSON.stringify({p:location.pathname+location.search,r:document.referrer,pid:m?m.content:0})}).catch(function(){})}catch(e){}}if(document.readyState==='complete'){s()}else{addEventListener('load',function(){setTimeout(s,0)})}})();</script>{% endif %}

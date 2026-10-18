@@ -163,3 +163,24 @@ class ImageOptimizeTests(TestCase):
         small = io.BytesIO()
         Image.new("RGB", (800, 600), (200, 30, 60)).save(small, "JPEG", quality=85)
         self.assertFalse(optimize_bytes(small.getvalue(), "x.jpg")[4])  # تصویر کوچک دست نمی‌خورد
+
+
+class HomeShuffleTests(TestCase):
+    def test_pick_random_distinct_designs(self):
+        import random
+        from types import SimpleNamespace as N
+
+        from core.views import pick
+
+        pool = [N(pk=i, title=f"فرش نقشه{i // 2} رنگ {i}", brand_id=i % 3) for i in range(20)]
+        seen = set()
+        for seed in range(30):
+            got = pick(pool, 4, random.Random(seed))
+            self.assertEqual(len(got), 4)
+            self.assertEqual(len({p.title.split(" رنگ ")[0] for p in got}), 4)  # دو رنگ از یک نقشه کنار هم نه
+            self.assertEqual(len({p.brand_id for p in got[:3]}), 3)  # تا جای ممکن برند متفاوت
+            seen.update(p.pk for p in got)
+        self.assertGreater(len(seen), 12)  # واقعاً عوض می‌شوند
+
+    def test_home_renders_with_apps(self):
+        self.assertContains(self.client.get("/"), "ایران کارپت در گوشی شما")

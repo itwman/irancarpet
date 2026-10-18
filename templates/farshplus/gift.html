@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<div class="container fpg">
+  {% include "partials/breadcrumbs.html" %}
+  <section class="fpg-hero">
+    <div class="fpg-hero__text">
+      <h1>ایران کارپت را در فرش پلاس دنبال کنید، {{ g.amount|toman }} تومان هدیه بگیرید</h1>
+      <p>فرش پلاس شبکهٔ اجتماعی فرش و دکور است. اپش را نصب کنید، پیج ما را دنبال کنید و یک کد تخفیف شخصی برای خرید از ایران کارپت بگیرید.</p>
+    </div>
+    <div class="fpg-ticket" aria-hidden="true">
+      <span class="fpg-ticket__amount">{{ g.amount|toman }}</span>
+      <span class="fpg-ticket__unit">تومان تخفیف</span>
+      <span class="fpg-ticket__rule">برای خرید بالای {{ g.min_order|toman }} تومان</span>
+    </div>
+  </section>
+
+  <ol class="fpg-steps">
+    <li>
+      <h2>اپ فرش پلاس را نصب کنید</h2>
+      <p>از کافه‌بازار نصب کنید و با شمارهٔ موبایل خودتان وارد شوید.</p>
+      <div class="fpg-step__act">
+        <a class="btn-ic btn-ic--ink btn-ic--sm" href="{{ g.app_url }}" target="_blank" rel="noopener">دریافت از کافه‌بازار</a>
+        {% if g.app_qr %}<img class="fpg-qr" src="{{ g.app_qr }}" width="96" height="96" alt="کد QR دانلود اپ فرش پلاس" loading="lazy">{% endif %}
+      </div>
+    </li>
+    <li>
+      <h2>پیج ایران کارپت را دنبال کنید</h2>
+      <p>در اپ، پیج <b dir="ltr">@irancarpet</b> را باز کنید و «دنبال کردن» را بزنید.</p>
+      <div class="fpg-step__act"><a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ g.page_url }}" target="_blank" rel="noopener">باز کردن پیج ایران کارپت</a></div>
+    </li>
+    <li>
+      <h2>کد هدیه را بگیرید</h2>
+      <p>همان شماره‌ای را بنویسید که با آن وارد فرش پلاس شده‌اید؛ کد به همان شماره پیامک می‌شود.</p>
+      <form class="fpg-form" method="post" data-fpg>{% csrf_token %}
+        <label class="sr-only" for="fpgMobile">شمارهٔ موبایل</label>
+        <input id="fpgMobile" name="mobile" inputmode="numeric" autocomplete="tel" dir="ltr" class="ltr-num" placeholder="۰۹۱۲۱۲۳۴۵۶۷" required
+               value="{% if user.is_authenticated %}{{ user.profile.mobile|default:'' }}{% endif %}">
+        <button class="btn-ic btn-ic--pink btn-ic--sm" type="submit">گرفتن کد هدیه</button>
+      </form>
+      <p class="fpg-msg" role="status" aria-live="polite" hidden></p>
+    </li>
+  </ol>
+
+  <section class="fpg-terms">
+    <h2>شرایط</h2>
+    <ul>
+      <li>کد فقط با همان شمارهٔ موبایل کار می‌کند؛ موقع خرید با همین شماره وارد ایران کارپت شوید.</li>
+      <li>برای خریدهای بالای {{ g.min_order|toman }} تومان، یک بار و تا {{ g.days|fa_num }} روز پس از دریافت.</li>
+      <li>هر شماره یک بار هدیه می‌گیرد.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+(function(){var f=document.querySelector('[data-fpg]');if(!f)return;var m=f.parentNode.querySelector('.fpg-msg');
+f.addEventListener('submit',function(e){e.preventDefault();var b=f.querySelector('button');b.disabled=true;m.hidden=true;
+fetch(location.pathname,{method:'POST',body:new FormData(f),credentials:'same-origin'}).then(function(r){return r.json()})
+.then(function(d){m.textContent=d.msg;m.className='fpg-msg '+(d.ok?'is-ok':'is-err');m.hidden=false})
+.catch(function(){m.textContent='ارتباط برقرار نشد؛ دوباره امتحان کنید.';m.className='fpg-msg is-err';m.hidden=false})
+.finally(function(){b.disabled=false})});})();
+</script>{% endblock %}

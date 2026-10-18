@@ -191,14 +191,15 @@ def price_list(request):
 
 @endpoint()
 def home(request):
-    from core.views import HOME_REEDS
+    from core.views import HOME_REEDS, pick, reeds_pool
 
     base = card_queryset(Product.objects.published().exclude(stock_status="outofstock").filter(image__isnull=False))
     reeds = []
     for r in HOME_REEDS:
         term = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", slug=r).first()
         if term:
-            items = list(base.filter(specs=term).order_by("-views")[:10])
+            items = pick(reeds_pool(Product.objects.published().exclude(stock_status="outofstock")
+                                    .filter(image__isnull=False, specs=term)), 10)
             if items:
                 reeds.append({"term_id": term.pk, "slug": term.slug, "name": term.name, "products": [S.card(p) for p in items]})
     site = SiteSettings.load()

@@ -148,6 +148,28 @@
 </section>
 {% endif %}
 
+{% if apps_promo.home and apps_promo.apps %}
+<section class="sec apps-sec" aria-labelledby="appsTitle">
+  <div class="container">
+    <h2 class="sec-title" id="appsTitle">ایران کارپت در گوشی شما</h2>
+    <p class="sec-lead">هر دو اپ رایگان‌اند و برای اندروید از کافه‌بازار نصب می‌شوند.</p>
+    <div class="apps">
+      {% for a in apps_promo.apps %}
+      <article class="app-card app-card--{{ a.key }}">
+        <span class="app-card__icon" aria-hidden="true">{% if a.key == "finder" %}<svg viewBox="0 0 48 48"><rect x="6" y="9" width="26" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 15h16M11 33h16" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3"/><circle cx="32" cy="27" r="8" fill="#fff" stroke="currentColor" stroke-width="3"/><path d="m38 33 6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>{% else %}<svg viewBox="0 0 48 48"><rect x="12" y="4" width="24" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="3"/><rect x="17" y="11" width="14" height="20" rx="1.5" fill="currentColor" opacity=".25"/><path d="M20 15h8M20 27h8M24 18l3 3-3 3-3-3z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="24" cy="38" r="1.8" fill="currentColor"/></svg>{% endif %}</span>
+        <div class="app-card__body">
+          <h3>{{ a.name }}</h3>
+          <p>{{ a.text }}</p>
+          <a class="btn-ic {% if a.key == 'finder' %}btn-ic--teal{% else %}btn-ic--pink{% endif %} btn-ic--sm" href="{{ a.url }}" target="_blank" rel="noopener">دریافت از کافه‌بازار</a>
+        </div>
+        {% if a.qr %}<img class="app-card__qr" src="{{ a.qr }}" width="104" height="104" alt="کد QR دانلود {{ a.name }}" loading="lazy">{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% if reviews %}
 <section class="sec sec--teal">
   <div class="container">

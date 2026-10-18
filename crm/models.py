@@ -226,6 +226,7 @@ class SmsLog(models.Model):
         BULK = "bulk", "پیامک گروهی"
         MANUAL = "manual", "پیامک دستی"
         CONTACT = "contact", "پاسخ تماس با ما"
+        FPGIFT = "fpgift", "هدیهٔ فرش پلاس"
         OTHER = "other", "سایر"
 
     mobile = models.CharField("موبایل", max_length=11, db_index=True)

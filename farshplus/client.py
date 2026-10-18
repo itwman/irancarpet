@@ -92,6 +92,10 @@ class Client:
                 return {"ok": True, "not_found": True}
             raise
 
+    def follower(self, mobile):
+        """{"follows": bool, "app": bool} — آیا این موبایل پیج ما را دنبال می‌کند و با اپ آمده؟"""
+        return self.request("GET", f"follower/?mobile={urllib.parse.quote(mobile)}", timeout=10)
+
     def get_statuses(self, external_ids):
         ids = ",".join(urllib.parse.quote(str(i), safe="") for i in external_ids)
         return self.request("GET", f"products/?external_ids={ids}")

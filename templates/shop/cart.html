@@ -43,6 +43,7 @@
         {% else %}{% if coupon_error %}<p class="small text-danger mb-1">{{ coupon_error }}</p>{% endif %}
         <input name="coupon" placeholder="کد تخفیف" autocomplete="off" dir="ltr" class="ltr-num" value="{{ coupon_code }}"><button class="pill" type="submit" name="go" value="coupon">اعمال</button>{% endif %}
       </div>
+      {% if fp_gift and not coupon %}<a class="fp-cart" href="{{ fp_gift.url }}" target="_blank" rel="noopener">کد تخفیف ندارید؟ با دنبال کردن ما در فرش پلاس <b>{{ fp_gift.amount|toman }} تومان</b> هدیه بگیرید</a>{% endif %}
       <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.</p>
       {% if has_problem %}<div class="alert-ic mt-3 mb-0">کالاهای ناموجود را حذف کنید تا بتوانید ادامه دهید.</div>{% endif %}
       {% if pause_error %}<div class="alert-ic mt-3 mb-0">{{ pause_error|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژهٔ آمادهٔ ارسال</a></div>

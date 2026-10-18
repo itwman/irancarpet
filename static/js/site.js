@@ -141,3 +141,23 @@ document.addEventListener("submit", function (e) {
     tick();
   }
 })();
+
+/* نوار نصب اپ: فقط اندروید، نه داخل خود اپ، نه در سبد و پرداخت؛ بسته شد تا ۳۰ روز نمی‌آید */
+(function () {
+  var bar = document.getElementById("appBar");
+  if (!bar) return;
+  var ua = navigator.userAgent || "";
+  if (!/Android/i.test(ua) || /; wv\)/.test(ua)) return;
+  if (/^\/(cart|checkout|my-account|panel|seller|pay|o|farshplus-gift)\//.test(location.pathname)) return;
+  var KEY = "ic-appbar-off", MONTH = 30 * 864e5;
+  try { if (Date.now() - (+localStorage.getItem(KEY) || 0) < MONTH) return; } catch (e) {}
+  bar.hidden = false;
+  document.body.classList.add("has-app-bar");
+  function off() {
+    bar.hidden = true;
+    document.body.classList.remove("has-app-bar");
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+  }
+  bar.querySelector(".app-bar__x").addEventListener("click", off);
+  bar.querySelector(".app-bar__go").addEventListener("click", off);
+})();

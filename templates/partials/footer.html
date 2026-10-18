@@ -1,6 +1,13 @@
 {% load static fa %}
 <footer class="site-footer">
   <div class="container">
+    {% if fp_gift %}
+    <a class="fp-band" href="{{ fp_gift.url }}">
+      <span class="fp-band__amount"><b>{{ fp_gift.amount|toman }}</b> تومان هدیه</span>
+      <span class="fp-band__text">اپ فرش پلاس را نصب کنید و ایران کارپت را آنجا دنبال کنید؛ کد تخفیف شخصی‌تان پیامک می‌شود.</span>
+      <span class="fp-band__go">دریافت هدیه</span>
+    </a>
+    {% endif %}
     <div class="row g-4">
       <div class="col-lg-4">
         <a href="/" class="brand brand--light mb-3"><img class="brand-mark brand-mark--tile" src="{% static 'img/logo-tile.svg' %}" alt="" width="56" height="56"><span class="brand-text"><img class="brand-word" src="{% static 'img/wordmark-light.svg' %}" alt="{{ site_settings.site_name }}" width="124" height="31"><small>{{ site_settings.tagline }}</small></span></a>
