@@ -15,7 +15,7 @@ ok=0
 if [ ! -d /tmp/ic-wheels ]; then git clone -q --depth 1 -b wheels "$(git remote get-url origin)" /tmp/ic-wheels 2>/dev/null || true; fi
 [ -d /tmp/ic-wheels ] && try "بسته‌های آماده" --no-index --find-links /tmp/ic-wheels && ok=1
 # ۲) میرورهای داخلی، ۳) خود PyPI
-for IDX in https://mirror-pypi.runflare.com/simple https://package-mirror.liara.ir/repository/pypi/simple https://pypi.org/simple; do
+for IDX in https://package-mirror.liara.ir/repository/pypi/simple https://pypi.org/simple; do  # رانفلر پولی شده (402)
   [ $ok = 1 ] && break
   try "$IDX" -i "$IDX" && ok=1
 done

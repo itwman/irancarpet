@@ -62,6 +62,19 @@ def clean(v, n):
     return (str(v or "")).strip()[:n]
 
 
+def suspicious_wp_user(u):
+    """حساب‌های مخفی‌ای که بدافزارهای وردپرس می‌سازند: تاریخ ثبت پیش از ۲۰۰۰ (مثل 1979-01-01) و بدون ایمیل."""
+    reg = u.get("user_registered")
+    year = getattr(reg, "year", None)
+    if year is None:
+        try:
+            year = int(str(reg)[:4])
+        except (TypeError, ValueError):
+            year = 0
+    login = (u.get("user_login") or "").lower()
+    return (year < 2000 and not (u.get("user_email") or "").strip()) or login.startswith(("wpcrona", "wp_update-"))
+
+
 class CommerceImporter:
     """با Importer اصلی استفاده می‌شود (self.wp و self.log از آن می‌آید)."""
 
@@ -93,8 +106,12 @@ class CommerceImporter:
         taken_usernames = set(User.objects.values_list("username", flat=True))
         created = updated = no_mobile = 0
         admins = []
+        skipped = []
         with transaction.atomic():
             for u in users:
+                if suspicious_wp_user(u):  # حساب‌های ساختهٔ بدافزار وردپرس (تاریخ ثبت جعلی، بدون ایمیل)
+                    skipped.append(u["user_login"])
+                    continue
                 m = meta.get(u["ID"], {})
                 mobile = ""
                 for k in ("digits_phone", "digits_phone_no", "billing_phone", "mobile", "phone", "user_phone"):
@@ -143,6 +160,8 @@ class CommerceImporter:
         self.log(f"مشتریان: {created} تازه، {updated} به‌روز، {no_mobile} بدون موبایل معتبر")
         if admins:
             self.log(f"  مدیران وردپرس (دسترسی پنل خودکار داده نشد): {', '.join(admins[:15])}")
+        if skipped:
+            self.log(f"  حساب‌های مشکوک بدافزار وارد نشدند: {', '.join(skipped[:15])}")
 
     # -------------------------------------------------------------- سفارش‌ها
     def hpos(self):
