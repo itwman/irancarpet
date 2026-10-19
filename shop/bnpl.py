@@ -29,6 +29,13 @@ def _basic(user, secret):
     return "Basic " + base64.b64encode(f"{user}:{secret}".encode()).decode()
 
 
+def _clean(v):
+    """کلیدها لاتین‌اند؛ ارقام فارسی/عربی (اگر از صفحهٔ فارسی کپی شده) و فاصله‌های اضافه درست می‌شوند."""
+    from accounts.utils import latin_digits
+
+    return latin_digits((v or "").strip().replace("\u200c", ""))
+
+
 def _rial(toman):
     return int(toman) * 10
 
@@ -71,9 +78,9 @@ class TorobPay(Base):
         if tok:
             return tok
         body = urllib.parse.urlencode({"grant_type": "password", "scope": "online-merchant",
-                                       "username": s.torobpay_username, "password": s.torobpay_password}).encode()
+                                       "username": _clean(s.torobpay_username), "password": _clean(s.torobpay_password)}).encode()
         code, data = http("POST", self.BASE + "api/online/v1/oauth/token", body, {
-            **self._headers(s), "Authorization": _basic(s.torobpay_client_id, s.torobpay_client_secret),
+            **self._headers(s), "Authorization": _basic(_clean(s.torobpay_client_id), _clean(s.torobpay_client_secret)),
             "Content-Type": "application/x-www-form-urlencoded"})
         tok = data.get("access_token")
         if not tok:
@@ -232,7 +239,8 @@ class Digipay(Base):
 
     @staticmethod
     def creds(shop):
-        return bool(shop.digipay_client_id and shop.digipay_client_secret and shop.digipay_username and shop.digipay_password)
+        # نام کاربری/رمز اختیاری است: پنل تازهٔ دیجی‌پی فقط شناسه و رمز محرمانه (client id/secret) می‌دهد
+        return bool(shop.digipay_client_id and shop.digipay_client_secret)
 
     def is_on(self, shop):
         return bool(getattr(shop, self.flag) and self.creds(shop))
@@ -257,18 +265,33 @@ class Digipay(Base):
         tok = None if fresh else cache.get(key)
         if tok:
             return tok
-        boundary = "dp" + uuid.uuid4().hex
-        parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'
-                 for k, v in (("username", s.digipay_username), ("password", s.digipay_password), ("grant_type", "password"))]
-        body = ("".join(parts) + f"--{boundary}--\r\n").encode()
-        code, data = http("POST", Digipay.base(s) + "/oauth/token", body, {
-            "Authorization": _basic(s.digipay_client_id, s.digipay_client_secret),
-            "Content-Type": f"multipart/form-data; boundary={boundary}"})
-        tok = data.get("access_token")
-        if not tok:
-            raise GatewayError("ورود به دیجی‌پی ناموفق بود؛ اطلاعات اتصال را در پنل بررسی کنید.")
-        cache.set(key, tok, max(int(data.get("expires_in") or 1800) - 60, 60))
-        return tok
+        cid, secret = _clean(s.digipay_client_id), _clean(s.digipay_client_secret)
+        user, pw = _clean(s.digipay_username), _clean(s.digipay_password)
+        # اول password grant (اگر نام کاربری داده شده)، بعد client_credentials؛ هر دو با Basic(client id:secret)
+        grants = ([{"username": user, "password": pw, "grant_type": "password"}] if user and pw else []) + \
+            [{"grant_type": "client_credentials"}]
+        errors = []
+        for fields in grants:
+            for multipart in (True, False):
+                if multipart:
+                    boundary = "dp" + uuid.uuid4().hex
+                    body = ("".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'
+                                    for k, v in fields.items()) + f"--{boundary}--\r\n").encode()
+                    ctype = f"multipart/form-data; boundary={boundary}"
+                else:
+                    body, ctype = urllib.parse.urlencode(fields).encode(), "application/x-www-form-urlencoded"
+                code, data = http("POST", Digipay.base(s) + "/oauth/token", body, {
+                    "Authorization": _basic(cid, secret), "Content-Type": ctype})
+                tok = data.get("access_token")
+                if tok:
+                    cache.set(key, tok, max(int(data.get("expires_in") or 1800) - 60, 60))
+                    return tok
+                why = data.get("error_description") or data.get("error") or (data.get("result") or {}).get("message") \
+                    or data.get("message") or data.get("_raw") or ""
+                errors.append(f"{fields['grant_type']}: HTTP {code} {str(why)[:120]}".strip())
+                if code not in (400, 415):  # فقط اگر قالب بدنه را نپذیرفت، قالب دیگر را امتحان کن
+                    break
+        raise GatewayError("ورود به دیجی‌پی ناموفق بود — پاسخ دیجی‌پی: " + " | ".join(errors))
 
     @staticmethod
     def api(path, body=None, ticket_type=0, timeout=20):
@@ -452,16 +475,18 @@ def diagnose():
                 if data.get("successful") and r.get("eligible"):
                     out.append((True, f"ترب‌پی برای سبد {amount:,} تومانی فعال است.".replace(",", "٬")))
                 else:
-                    out.append((False, f"ترب‌پی برای سبد {amount:,} تومانی فعال نیست: ".replace(",", "٬")
-                                + (tp.error(data, "") or r.get("description") or f"پاسخ {code}")))
+                    why = tp.error(data, "") or r.get("description") or f"پاسخ {code}"
+                    if "contract" in why.lower():
+                        why += " — یعنی قرارداد پذیرندگی شما در ترب‌پی هنوز فعال نشده؛ از پنل یا پشتیبانی ترب‌پی فعالش کنید."
+                    out.append((False, f"ترب‌پی برای سبد {amount:,} تومانی فعال نیست: ".replace(",", "٬") + why))
             cache.delete_many([f"torobpay:elig:{a}" for a in (10_000_000, 100_000_000)])
         except GatewayError as e:
             out.append((False, f"ترب‌پی: {e}"))
         out.append((True, f"سقف هر سفارش در ترب‌پی {TOROB_MAX:,} تومان است؛ سبد بزرگ‌تر گزینهٔ ترب‌پی ندارد.".replace(",", "٬")))
     # دیجی‌پی
     modes = [k for k, (t, flag, c, n) in DIGIPAY_MODES.items() if getattr(s, flag)]
-    missing = [n for f, n in (("digipay_client_id", "client id"), ("digipay_client_secret", "client secret"),
-                              ("digipay_username", "نام کاربری"), ("digipay_password", "رمز عبور")) if not getattr(s, f)]
+    missing = [n for f, n in (("digipay_client_id", "شناسهٔ محرمانه (client id)"),
+                              ("digipay_client_secret", "رمز محرمانه (client secret)")) if not getattr(s, f)]
     if not modes:
         out.append((False, "دیجی‌پی: هیچ حالتی روشن نیست."))
     elif missing:
@@ -489,6 +514,6 @@ def hidden_reasons(shop, shown, amount):
     for k, (t, flag, credit, n) in DIGIPAY_MODES.items():
         if getattr(shop, flag) and k not in keys:
             g = Digipay(k)
-            why = "اطلاعات اتصال (نام کاربری/رمز…) کامل نیست" if not g.creds(shop) else "مبلغ بیرون از حداقل/حداکثر تعیین‌شده است"
+            why = "شناسه یا رمز محرمانهٔ دیجی‌پی وارد نشده" if not g.creds(shop) else "مبلغ بیرون از حداقل/حداکثر تعیین‌شده است"
             out.append(f"{g.title}: {why}.")
     return out

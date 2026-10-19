@@ -47,10 +47,11 @@ class ShopSettings(models.Model):
     torobpay_password = models.CharField("ترب‌پی: رمز عبور", max_length=200, blank=True)
     torobpay_widget = models.BooleanField("نمایش «۴ قسط با ترب‌پی» زیر قیمت فرش", default=True)
     # دیجی‌پی (UPG): هر حالت جدا روشن می‌شود و باید در قرارداد دیجی‌پی هم فعال باشد
-    digipay_client_id = models.CharField("دیجی‌پی: client id", max_length=120, blank=True)
-    digipay_client_secret = models.CharField("دیجی‌پی: client secret", max_length=200, blank=True)
-    digipay_username = models.CharField("دیجی‌پی: نام کاربری", max_length=120, blank=True)
-    digipay_password = models.CharField("دیجی‌پی: رمز عبور", max_length=200, blank=True)
+    digipay_client_id = models.CharField("دیجی‌پی: شناسهٔ محرمانه (client_id)", max_length=120, blank=True)
+    digipay_client_secret = models.CharField("دیجی‌پی: رمز عبور محرمانه (client_secret)", max_length=200, blank=True)
+    digipay_username = models.CharField("دیجی‌پی: نام کاربری (اختیاری)", max_length=120, blank=True,
+                                        help_text="فقط اگر دیجی‌پی جدا از شناسه و رمز محرمانه، نام کاربری و رمز داده؛ وگرنه خالی بگذارید")
+    digipay_password = models.CharField("دیجی‌پی: رمز عبور (اختیاری)", max_length=200, blank=True)
     digipay_sandbox = models.BooleanField("دیجی‌پی در حالت آزمایشی (UAT)", default=False)
     digipay_ipg = models.BooleanField("دیجی‌پی: پرداخت با کارت (IPG)", default=False)
     digipay_wallet = models.BooleanField("دیجی‌پی: کیف پول", default=False)

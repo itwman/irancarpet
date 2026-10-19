@@ -220,3 +220,27 @@ class BnplTests(TestCase):
             out = bnpl.diagnose()
         self.assertTrue(out[0][0])
         self.assertTrue(any("فعال است" in m for ok, m in out))
+
+    def test_digipay_token_fallback_to_client_credentials(self):
+        calls = []
+
+        def token(url, body):
+            calls.append(body)
+            if "client_credentials" in str(body):
+                return 200, {"access_token": "CC", "expires_in": 600}
+            return 401, {"error": "unauthorized", "error_description": "Bad credentials"}
+
+        fh = self.dp_routes(**{"/oauth/token": token})
+        s = ShopSettings.load()
+        s.digipay_client_secret = "۱T۰x"  # ارقام فارسیِ کپی‌شده
+        s.save()
+        with mock.patch.object(bnpl, "http", fh):
+            self.assertEqual(bnpl.Digipay._token(s, fresh=True), "CC")
+        auth = [c for c in fh.calls if c[1].endswith("/oauth/token")][0][3]["Authorization"]
+        import base64
+        self.assertEqual(base64.b64decode(auth.split()[1]).decode(), "dcid:1T0x")
+        self.assertIn("password", str(calls[0]))
+        fh.routes["/oauth/token"] = (401, {"error_description": "Bad client credentials"})
+        with mock.patch.object(bnpl, "http", fh):
+            msgs = bnpl.diagnose()
+        self.assertTrue(any("Bad client credentials" in m for ok, m in msgs))
