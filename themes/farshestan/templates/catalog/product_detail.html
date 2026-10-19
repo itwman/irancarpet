@@ -1,0 +1,201 @@
+{% extends "base.html" %}{% load fa %}{# قالب فرشستان: همان منطق صفحهٔ محصول ایران کارپت با چیدمان گالری؛ شناسه‌های gMain، buyForm و... برای site.js دست نخورده‌اند #}
+{% block og %}<meta property="og:type" content="product">{% if product.image %}<meta property="og:image" content="{{ product.image.absolute_url }}">{% endif %}{% endblock %}
+{% block head %}<meta name="ic-pid" content="{{ product.pk }}">{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 992px) 100vw, 600px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <div class="fs-pd product">
+    <div class="fs-pd__gallery">
+      <div class="gallery fs-gallery">
+        <div class="gallery__stage">
+          <div class="gallery__main" id="gMain"{% if gallery|length > 1 %} tabindex="0" role="region" aria-label="تصاویر محصول؛ برای دیدن بقیه بکشید"{% endif %}>
+            {% for m in gallery %}<figure class="gallery__slide"><img src="{{ m|thumb:960 }}" srcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" sizes="(max-width: 992px) 100vw, 600px" alt="{{ m.alt|default:product.title }}"{% if m.width %} width="{{ m.width }}" height="{{ m.height }}"{% endif %}{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}></figure>{% empty %}<span class="noimg"></span>{% endfor %}
+          </div>
+          {% if gallery|length > 1 %}<div class="gallery__dots" aria-hidden="true">{% for m in gallery %}<i{% if forloop.first %} class="on"{% endif %}></i>{% endfor %}</div>
+          <span class="gallery__count" aria-hidden="true"><b id="gIdx">۱</b> / {{ gallery|length|fa_num }}</span>{% endif %}
+        </div>
+        {% if gallery|length > 1 %}
+        <div class="gallery__thumbs">{% for m in gallery %}<button type="button" data-i="{{ forloop.counter0 }}" class="{% if forloop.first %}on{% endif %}" aria-label="تصویر {{ forloop.counter|fa_num }}"><img src="{{ m|thumb:240 }}" alt="" loading="lazy"></button>{% endfor %}</div>
+        {% endif %}
+        <div class="p-tools">
+          {% if product.image %}<button type="button" class="p-tool" id="roomBtn" data-img="{{ product.image.url }}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 10l9-6 9 6v10H3z M8 20v-5h8v5"/></svg>ببین در اتاق خودت</button>{% endif %}
+          {% if video %}<button type="button" class="p-tool" id="videoBtn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>ویدیوی فرش</button>{% endif %}
+        </div>
+        {% if video %}
+        <div class="p-video" id="pVideo" hidden data-kind="{{ video.kind }}" data-src="{% if video.kind == 'aparat' %}{{ video.embed }}{% elif video.kind == 'file' %}{{ video.src }}{% else %}{{ video.page }}{% endif %}" data-poster="{{ video.poster }}"></div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="fs-pd__info">
+      {% if product.brand %}<a class="product__brand" href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}
+      {% with r=product.title|reeds_of %}{% if r %}<span class="fs-eyebrow">{{ r|fa_num }} شانه</span>{% endif %}{% endwith %}
+      <h1 class="product__title">{{ product.title|fa_num }}</h1>
+      <div class="product__meta">
+        {% if product.rating_count %}{% stars product.rating_avg %} <a href="#reviews">{{ product.rating_count|fa_num }} نظر</a>{% endif %}
+        {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}
+      </div>
+
+      {% if product.seller_id %}{% with sl=product.seller %}
+      <div class="p-seller"><span>فروشنده: <b><a href="{{ sl.get_absolute_url }}">{{ sl.name }}</a></b></span><span class="muted">· ارسال از {{ sl.city }} · {{ sl.shipping_label }} · آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری</span></div>
+      {% endwith %}{% endif %}
+
+      {% if specs %}
+      <ul class="spec-chips">
+        {% for t in specs %}<li><span>{{ t.attribute.label }}</span>{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}<strong>{{ t.name|fa_num }}</strong>{% endif %}</li>{% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if siblings %}
+      <div class="swatches fs-variants"><p class="swatches__label">رنگ‌های دیگر نقشهٔ {{ design }}</p>
+        <div class="swatches__row">{% for s in siblings %}<a class="swatch{% if s.current %} on{% endif %}" href="{{ s.product.get_absolute_url }}"{% if s.current %} aria-current="page"{% endif %} title="{{ s.product.title|fa_num }}">{% if s.thumb %}<img src="{{ s.thumb }}" alt="" loading="lazy" width="64" height="64">{% else %}<span class="noimg"></span>{% endif %}<span>{{ s.color }}</span></a>{% endfor %}</div>
+      </div>
+      {% endif %}
+
+      {% if product.sale_status != "available" %}
+        <div class="status-note status-note--{{ product.sale_status }}">{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این محصول فقط با استعلام قیمت قابل سفارش است.{% endif %}</div>
+      {% endif %}
+
+      {% for o in offers %}
+      <div class="offer-box">
+        <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span>{% if o.ends_at %}<span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span>{% elif o.remaining == 1 %}<span class="offer-box__clock">آخرین تخته</span>{% endif %}</div>
+        <p class="offer-box__what"><strong>{{ o.size.label|fa_num }}</strong> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
+        <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان{% if o.remaining > 1 %} هر تخته{% endif %}</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
+        <form method="post" action="/cart/add/" class="offer-box__buy">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="offer" value="1">
+          {% for q in o.allowed %}<button class="btn-ic {% if forloop.first %}btn-ic--pink{% else %}btn-ic--ink{% endif %}" type="submit" name="qty" value="{{ q }}">{% if q == 1 %}خرید یک تخته{% elif q == 2 %}خرید جفت (۲ تخته){% else %}خرید {{ q|fa_num }} تخته{% endif %}</button>{% endfor %}</form>
+        <p class="offer-box__note">{% if o.allowed|length == 1 and o.allowed.0 == 2 %}این دو تخته فقط با هم فروخته می‌شوند.{% else %}قیمت ویژه برای خرید {{ o.allowed_label }} تخته است.{% endif %}</p>
+      </div>
+      {% endfor %}
+
+      {% if variations and pricing.show_size_table %}
+      <form class="size-table fs-sizes" method="post" action="/cart/add/" id="buyForm">
+        {% csrf_token %}
+        <h2 class="fs-opt-title">ابعاد و قیمت</h2>
+        <table>
+          <thead><tr><th></th><th>سایز</th><th>ابعاد</th><th>قیمت (تومان)</th></tr></thead>
+          <tbody>
+          {% for v in variations %}
+            {% with ok=v.is_available %}
+            <tr class="{% if not ok or product.stock_status == 'outofstock' %}na{% endif %}">
+              <td><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}" {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %} aria-label="{{ v.size.label|default:'انتخاب' }}"></td>
+              <td>{% if v.size %}{{ v.size.label }}{% elif product.seller_id %}{{ v.sku|default:"—"|fa_num }}{% else %}—{% endif %}{% if v.stock_qty is not None and v.stock_qty <= 3 and ok %} <span class="tag tag--warn">فقط {{ v.stock_qty|fa_num }} عدد</span>{% endif %}{% if v.size and product.album and v.size.pk == product.album.base_size_id %} <span class="tag">پایه</span>{% endif %}
+                {% for a in v.attributes.all %}<span class="tag">{{ a.name }}</span>{% endfor %}
+                {% if v.is_pair_only %}<span class="tag tag--warn">فقط زوج</span>{% endif %}{% if v.pk in offer_vids %}<span class="tag offer-tag">فرصت ویژه</span>{% endif %}</td>
+              <td class="muted">{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} <small>(شامل پرتی)</small>{% endif %}</td>
+              <td class="num">
+                {% if not ok or product.stock_status == 'outofstock' %}<span class="muted">{% if v.pk in offer_vids %}قیمت ویژه در کادر بالا{% else %}ناموجود{% endif %}</span>
+                {% elif v.on_sale %}<del>{{ v.final_price|toman }}</del> <strong>{{ v.sale_price|toman }}</strong> <span class="off">٪{% percent_off v.sale_price v.final_price %}</span>
+                {% elif v.final_price %}<strong>{{ v.final_price|toman }}</strong>
+                {% else %}<span class="muted">استعلام</span>{% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+          </tbody>
+        </table>
+        <div class="buy-row">
+          <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
+          <button class="btn-ic btn-ic--pink flex-grow-1" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
+        </div>
+        {% if season.paused %}<p class="alert-ic small mt-2 mb-0">{{ season.paused|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></p>{% elif season.busy %}<p class="small muted mt-2 mb-0">{{ season.busy }}</p>{% endif %}
+        {% if inst_teaser %}
+        <a class="inst-teaser" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}">
+          <span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>خرید اقساطی</strong> {% if inst_teaser.down_percent %}{{ inst_teaser.down_percent|fa_num }}٪ پیش‌پرداخت، {% else %}بدون پیش‌پرداخت، {% endif %}قسط از {{ inst_teaser.installment|toman }} تومان</span>
+          <span class="inst-teaser__go">محاسبه</span>
+        </a>
+        {% endif %}
+        {% if torob %}<p class="torob-line" id="torobLine" data-max="{{ torob.max }}" data-each-max="{{ torob.show_each }}"><b>ترب‌پی</b> <span>{% if torob.each %}۴ قسط {{ torob.each|toman }} تومان، بدون چک و ضامن{% else %}خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی{% endif %}</span></p>{% endif %}
+        <p class="small muted mt-2">برای سایزهای «فقط زوج» تعداد سفارش باید زوج باشد. برای سایزهای خاص با ما تماس بگیرید.</p>
+      </form>
+      {% endif %}
+      {% if custom_calc %}{{ custom_calc|safe }}{% endif %}
+
+      <details class="alert-box"{% if alert_kind == "stock" %} open{% endif %}>
+        <summary>{% if alert_kind == "stock" %}<b>موجود شد خبرم کن</b>{% else %}<b>ارزان شد خبرم کن</b>{% endif %}<span>با پیامک</span></summary>
+        <form method="post" action="/alerts/">{% csrf_token %}
+          <input type="hidden" name="product" value="{{ product.pk }}"><input type="hidden" name="kind" value="{{ alert_kind }}">
+          {% if not user.is_authenticated %}<input name="mobile" inputmode="tel" placeholder="شمارهٔ موبایل" required class="ltr-num">{% endif %}
+          <button class="pill" type="submit">{% if user.is_authenticated %}خبرم کن{% else %}ثبت{% endif %}</button>
+        </form>
+      </details>
+      {% if doc.bullets %}<div class="prose small mt-3 p-summary">{{ doc.bullets|safe }}</div>{% endif %}
+    </div>
+  </div>
+
+  <nav class="tabs-nav fs-tabs"><a href="#desc">توضیحات</a>{% if faqs %}<a href="#faq">پرسش‌ها</a>{% endif %}<a href="#reviews">نظرات ({{ product.rating_count|fa_num }})</a></nav>
+  <section id="desc" class="prose product-desc">{{ doc.html|safe }}</section>
+  {% if doc.blocks %}
+  <section class="info-blocks" aria-label="ارسال، پرداخت و ضمانت">
+    {% for b in doc.blocks %}<details{% if b.open %} open{% endif %}><summary>{{ b.title }}</summary><div class="prose">{{ b.html|safe }}</div></details>{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if faqs %}
+  <section id="faq" class="faq"><h2>پرسش‌های متداول</h2>
+    {% for f in faqs %}<details><summary>{{ f.question }}</summary><div class="prose">{{ f.answer|safe }}</div></details>{% endfor %}
+  </section>
+  {% endif %}
+
+  <section id="reviews" class="reviews">
+    <h2>نظرات خریداران</h2>
+    {% if review_photos %}<div class="rv-wall"><h3>فرش در خانهٔ مشتری‌ها</h3><div class="rv-photos">{% for ph in review_photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس مشتری از {{ product.title }}" loading="lazy" width="120" height="120"></a>{% endfor %}</div></div>{% endif %}
+    <details class="rv-form">
+      <summary>نظر یا عکس فرش خودتان را بفرستید</summary>
+      {% if user.is_authenticated %}
+      <form method="post" action="/product/{{ product.slug }}/review/" enctype="multipart/form-data">{% csrf_token %}
+        <fieldset class="rv-stars"><legend>امتیاز شما</legend>{% for n in "54321" %}<input type="radio" name="rating" value="{{ n }}" id="st{{ n }}"><label for="st{{ n }}" title="{{ n }} ستاره">★</label>{% endfor %}</fieldset>
+        <textarea name="text" rows="3" placeholder="تجربه‌تان از این فرش: کیفیت، رنگ، ارسال…"></textarea>
+        <label class="rv-file">عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ثبت نظر</button>
+      </form>
+      {% else %}<p class="muted">برای ثبت نظر <a href="/my-account/login/?next={{ request.path }}%23reviews">وارد شوید</a>.</p>{% endif %}
+    </details>
+    {% for r in reviews %}
+      <article class="review">
+        <header><strong>{{ r.author_name }}</strong>{% if r.rating %} {% stars r.rating %}{% endif %}<time datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|jdate }}</time></header>
+        {% if r.verified %}<span class="rv-verified">خریدار این فرش</span>{% endif %}
+        <p>{{ r.content|linebreaksbr }}</p>
+        {% if r.photos.all %}<div class="rv-photos">{% for ph in r.photos.all %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس {{ product.title }} در خانهٔ مشتری" loading="lazy" width="96" height="96"></a>{% endfor %}</div>{% endif %}
+        {% for rep in r.replies.all %}<div class="review review--reply"><header><strong>{{ rep.author_name }}</strong></header><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
+      </article>
+    {% empty %}
+      <p class="muted">هنوز نظری ثبت نشده است.</p>
+    {% endfor %}
+  </section>
+
+  {% if landing_links %}
+  <nav class="lp-related" aria-label="جستجوهای مرتبط"><h2>جستجوهای مرتبط</h2>
+    <div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+  </nav>
+  {% endif %}
+  {% if related %}
+  <section class="fs-sec"><div class="fs-sec__head"><h2>طرح‌های هم‌خانواده</h2></div>
+    <div class="fs-grid">{% for p in related %}{% include "partials/product_card.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}<script>
+(function () {
+  var l = document.getElementById("torobLine"), f = document.getElementById("buyForm");
+  if (!l || !f) return;
+  var FA = "۰۱۲۳۴۵۶۷۸۹", s = l.querySelector("span");
+  function fa(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, function (d) { return FA[d]; }); }
+  function upd(p) {
+    if (!p) return;
+    l.hidden = p > +l.dataset.max;
+    s.textContent = p <= +l.dataset.eachMax ? "۴ قسط " + fa(Math.ceil(p / 4)) + " تومان، بدون چک و ضامن" : "خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی";
+  }
+  f.addEventListener("change", function (e) { if (e.target.name === "variation") upd(+e.target.dataset.price); });
+  var c = f.querySelector("input[name=variation]:checked"); if (c) upd(+c.dataset.price);
+})();
+(function () {
+  var t = document.getElementById("instTeaser"), f = document.getElementById("buyForm");
+  if (!t || !f || !t.dataset.base) return;
+  f.addEventListener("change", function (e) {
+    if (e.target.name === "variation" && +e.target.dataset.price) t.href = t.dataset.base + "?amount=" + e.target.dataset.price;
+  });
+  var c = f.querySelector("input[name=variation]:checked");
+  if (c && +c.dataset.price) t.href = t.dataset.base + "?amount=" + c.dataset.price;
+})();
+</script>{% endblock %}

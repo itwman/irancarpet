@@ -6,6 +6,7 @@
 from django.core.cache import cache
 
 from core.templatetags.fa import fa_num, toman
+from core import brand
 
 KEY = "home:direct"
 
@@ -65,8 +66,8 @@ def _build(stamp):
 
 def faq(d, plans):
     rows = d["rows"]
-    out = [("ایران کارپت خود کارخانه است یا واسطه؟",
-            "ایران کارپت فروشگاه فرش ماشینی در کاشان است و فرش‌ها را مستقیم از کارخانه‌های فرش ماشینی کاشان تهیه می‌کند؛ "
+    out = [(f"{brand.name()} خود کارخانه است یا واسطه؟",
+            f"{brand.name()} فروشگاه فرش ماشینی در کاشان است و فرش‌ها را مستقیم از کارخانه‌های فرش ماشینی کاشان تهیه می‌کند؛ "
             "بدون عمده‌فروش و مغازهٔ واسطه. فرش از کاشان بسته‌بندی و به نشانی شما فرستاده می‌شود.")]
     if rows:
         lo = min(rows, key=lambda r: r["price"])

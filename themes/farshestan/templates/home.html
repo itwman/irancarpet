@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load static fa shop_theme %}
+{% block body_class %}home{% endblock %}
+{% block content %}
+{% latest_products 10 as gallery %}{% reeds_categories as rc %}{% color_categories 8 as cc %}
+<section class="fs-hero">
+  <div class="container fs-hero__grid">
+    <div class="fs-hero__txt">
+      <span class="fs-eyebrow">گالری فرش ماشینی</span>
+      <h1 class="fs-hero__title"><span>فرشی که خانه را</span> <span>آرام می‌کند</span></h1>
+      <p class="fs-hero__lead">هر طرح را مثل یک تابلو ببینید: رنگ زمینه، حاشیه و تراکم بافت را کنار هم بگذارید و سایز مناسب خانه‌تان را انتخاب کنید.</p>
+      <div class="fs-hero__cta"><a class="fs-btn fs-btn--primary" href="/shop/">دیدن همهٔ فرش‌ها</a><a class="fs-btn fs-btn--ghost" href="/carpets-price-list/">لیست قیمت امروز</a></div>
+      {% if rc %}<dl class="fs-stats">
+        {% for x in rc|slice:":4" %}<div><dt>{{ x.reeds|fa_num }} شانه</dt><dd>{{ x.count|fa_num }} طرح</dd></div>{% endfor %}
+      </dl>{% endif %}
+    </div>
+    <figure class="fs-wall" aria-label="طرح‌های تازهٔ گالری">
+      {% with a=gallery.0 b=gallery.1 %}
+      {% if a and a.image %}<a class="fs-wall__rug fs-wall__rug--a" href="{{ a.get_absolute_url }}"><img src="{{ a.image|thumb:960 }}" alt="{{ a.title }}" fetchpriority="high" decoding="async"{% if a.image.width %} width="{{ a.image.width }}" height="{{ a.image.height }}"{% endif %}></a>{% endif %}
+      {% if b and b.image %}<a class="fs-wall__rug fs-wall__rug--b" href="{{ b.get_absolute_url }}"><img src="{{ b.image|thumb:480 }}" alt="{{ b.title }}" loading="lazy" decoding="async"{% if b.image.width %} width="{{ b.image.width }}" height="{{ b.image.height }}"{% endif %}></a>{% endif %}
+      {% if a %}<figcaption>{{ a.title|short_title|fa_num }}</figcaption>{% endif %}
+      {% endwith %}
+    </figure>
+  </div>
+</section>
+
+{% if rc %}
+<section class="container fs-sec" aria-labelledby="hReeds">
+  <div class="fs-sec__head"><h2 id="hReeds">انتخاب بر اساس تراکم بافت</h2></div>
+  <div class="fs-tiles">{% for x in rc %}<a class="fs-tile" href="{{ x.url }}"><b>{{ x.reeds|fa_num }}</b><span>شانه</span><small>{{ x.count|fa_num }} طرح</small></a>{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if offers %}
+<section class="container fs-sec" aria-labelledby="hOffers">
+  <div class="fs-sec__head"><div><span class="fs-eyebrow">آماده در انبار</span><h2 id="hOffers">فرصت‌های ویژهٔ خرید</h2></div><a href="/فرش-جشنواره-ای/">همهٔ فرصت‌ها ←</a></div>
+  <div class="offer-grid fs-offers">{% for o in offers %}{% include "shop/_offer_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if gallery %}
+<section class="container fs-sec" aria-labelledby="hNew">
+  <div class="fs-sec__head"><div><span class="fs-eyebrow">تازه‌های گالری</span><h2 id="hNew">طرح‌هایی که تازه به دیوار آمدند</h2></div><a href="/shop/">همهٔ طرح‌ها ←</a></div>
+  <div class="fs-grid">{% for p in gallery|slice:"2:10" %}{% include "partials/product_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if cc %}
+<section class="fs-band" aria-labelledby="hColors">
+  <div class="container fs-band__in">
+    <div class="fs-band__txt"><h2 id="hColors">از رنگ اتاق شروع کنید</h2><p>رنگ زمینهٔ فرش را با مبلمان و دیوار هماهنگ کنید؛ طرح‌ها بر اساس رنگ زمینه کنار هم چیده شده‌اند.</p></div>
+    <div class="fs-swatches">{% for c in cc %}<a class="fs-sw" href="{{ c.url }}"><i style="background:{{ c.hex }}"></i>{{ c.name }}<small>{{ c.count|fa_num }} طرح</small></a>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if direct and direct.rows %}
+<section class="container fs-sec fs-direct" aria-labelledby="hDirect">
+  <div class="fs-sec__head"><div><span class="fs-eyebrow">قیمت امروز</span><h2 id="hDirect">ارزان‌ترین طرح‌های هر لیست</h2></div><a href="/carpets-price-list/">لیست قیمت کامل ←</a></div>
+  <ul class="fs-direct__list">{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
+  {% if direct.faq %}<div class="fs-faq">{% for q, a in direct.faq %}<details><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}</div>{% endif %}
+</section>
+{% endif %}
+
+{% if posts %}
+<section class="container fs-sec" aria-labelledby="hMag">
+  <div class="fs-sec__head"><h2 id="hMag">مجلهٔ {% brand %}</h2><a href="/blog/">همهٔ نوشته‌ها ←</a></div>
+  <div class="fs-journal">{% for post in posts|slice:":3" %}<a href="{{ post.get_absolute_url }}"><span class="fs-eyebrow">{% if post.primary_category %}{{ post.primary_category.name }}{% else %}مجله{% endif %}</span><b>{{ post.title|fa_num }}</b>{% if post.excerpt %}<span>{{ post.excerpt|striptags|truncatewords:22 }}</span>{% endif %}</a>{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if about_html %}
+<section class="container fs-sec fs-about"><details><summary>دربارهٔ {% brand %}</summary><div class="prose">{{ about_html|safe }}</div></details></section>
+{% endif %}
+{% endblock %}

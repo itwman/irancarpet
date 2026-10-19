@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% load fa shop_theme %}
+{% block content %}
+<div class="container fs-archive">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="fs-archive__head">
+    <h1>{{ heading|fa_num }}</h1>
+    <p class="muted">{{ page_obj.paginator.count|fa_num }} طرح{% if page_obj.number > 1 %} — صفحهٔ {{ page_obj.number|fa_num }}{% endif %}</p>
+  </header>
+  {% block above_list %}{% if ainfo and ainfo_lead %}<div class="prose fs-archive__lead">{{ ainfo.lead|safe }}</div>{% endif %}{% endblock %}
+  <div class="fs-archive__layout">
+    <aside class="fs-filters" aria-label="پالایش">
+      <button class="fs-btn fs-btn--ghost fs-btn--sm d-lg-none w-100" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="filters">پالایش طرح‌ها</button>
+      <form id="filters" class="collapse d-lg-block" method="get">
+        {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+        {% for k, v in active.items %}{% if k != "instock" %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}{% if request.GET.sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+        <label class="fs-check"><input type="checkbox" name="instock" value="1" {% if active.instock %}checked{% endif %} onchange="this.form.submit()"> فقط طرح‌های موجود</label>
+        {% for f in facets %}<fieldset><legend>{{ f.attr.label }}</legend>
+          <div class="fs-chips">{% for t in f.terms %}{% if f.active == t.slug %}<a class="fs-chip on" href="{% query_replace f.attr.slug '' %}" rel="nofollow" aria-pressed="true" title="حذف این پالایش">{% if f.attr.slug == "color" %}<i style="background:{{ t.name|swatch }}"></i>{% endif %}{{ t.name|fa_num }}</a>{% else %}<a class="fs-chip" href="{% query_replace f.attr.slug t.slug %}" rel="nofollow">{% if f.attr.slug == "color" %}<i style="background:{{ t.name|swatch }}"></i>{% endif %}{{ t.name|fa_num }}</a>{% endif %}{% endfor %}</div></fieldset>{% endfor %}
+        {% if active %}<a href="{{ base_path }}" class="fs-clear">حذف همهٔ پالایش‌ها</a>{% endif %}
+      </form>
+    </aside>
+    <div class="fs-archive__main">
+      <div class="fs-sortbar"><span>مرتب‌سازی</span>
+        {% for key, label in sorts %}<a href="{% query_replace sort=key %}" class="{% if sort == key %}on{% endif %}" rel="nofollow">{{ label }}</a>{% endfor %}
+      </div>
+      {% if products %}
+        <div class="fs-grid fs-grid--3">{% for p in products %}{% include "partials/product_card.html" with eager=True %}{% endfor %}</div>
+      {% else %}
+        <div class="fs-empty">طرحی با این پالایش پیدا نشد.</div>
+      {% endif %}
+      {% include "partials/pagination.html" %}
+    </div>
+  </div>
+  {% block below_list %}{% if article_hits %}<section class="fs-sec" aria-labelledby="aHits">
+    <div class="fs-sec__head"><h2 id="aHits">مقاله‌های مرتبط با «{{ q }}»</h2><a href="/blog/search/?q={{ q|urlencode }}">همهٔ مقاله‌ها ←</a></div>
+    <div class="post-grid post-grid--3">{% for post in article_hits %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  </section>{% endif %}{% if ainfo %}
+  {% if ainfo.size_rows %}<section class="fs-sec" aria-labelledby="aSizes">
+    <h2 id="aSizes" class="fs-h2">قیمت {{ ainfo.title }} بر اساس سایز</h2>
+    <div class="lp-sizes" role="table" aria-label="قیمت {{ ainfo.title }} بر اساس سایز">{% for r in ainfo.size_rows %}<div class="lp-size"><span>{{ r.label|fa_num }}</span><strong>{% if r.lo != r.hi %}<small>از</small> {% endif %}{{ r.lo|toman }}</strong><small>{% if r.lo != r.hi %}تا {{ r.hi|toman }} · {% endif %}{{ r.n|fa_num }} طرح</small></div>{% endfor %}</div>
+  </section>{% endif %}
+  {% if ainfo.faqs %}<section class="fs-sec fs-faq"><h2 class="fs-h2">پرسش‌های پرتکرار دربارهٔ {{ ainfo.title }}</h2>{% for f in ainfo.faqs %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}</section>{% endif %}
+  {% endif %}{% if landing_links %}
+  <nav class="fs-sec" aria-label="بر اساس سایز و رنگ">
+    <h2 class="fs-h2">{{ heading|fa_num }} بر اساس سایز و رنگ</h2>
+    <div class="fs-chips">{% for x in landing_links %}<a class="fs-chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+  </nav>{% endif %}{% endblock %}
+  {% if intro %}<section class="prose fs-archive__intro">{{ intro|safe }}</section>{% endif %}
+</div>
+{% endblock %}

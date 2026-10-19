@@ -16,6 +16,7 @@ from shop.models import Order, Payment
 
 from .models import ActivityLog
 from .registry import Col, Inline, Resource, badge, register, thumb, yesno
+from core import brand
 
 SEO = ("سئو (عنوان و توضیح در گوگل)", ["seo_title", "seo_description", "focus_keyword", "robots", "canonical_url"], "side")
 
@@ -314,7 +315,7 @@ def _review_after_save(request, obj, created, form=None):
 
     reply = (request.POST.get("reply") or "").strip()
     if reply:
-        Review.objects.create(product=obj.product, parent=obj, author_name="ایران کارپت", content=reply, is_approved=True, rating=0)
+        Review.objects.create(product=obj.product, parent=obj, author_name=brand.name(), content=reply, is_approved=True, rating=0)
     recompute(obj.product)
 
 
@@ -575,7 +576,7 @@ register(Resource(
 def _comment_after_save(request, obj, created, form=None):
     reply = (request.POST.get("reply") or "").strip()
     if reply:
-        Comment.objects.create(post=obj.post, parent=obj, author_name="ایران کارپت", content=reply, is_approved=True)
+        Comment.objects.create(post=obj.post, parent=obj, author_name=brand.name(), content=reply, is_approved=True)
 
 
 register(Resource(

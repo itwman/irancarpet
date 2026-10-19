@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .models import Coupon, Order, ShopSettings
+from core import brand
 
 PLACED = Order.PAID_STATUSES | {"on_hold"}
 
@@ -119,7 +120,7 @@ def reward_referrer(order):
     try:
         from accounts.sms import send_bulk
 
-        send_bulk([mobile], f"دوست شما با کد معرفی‌تان از ایران کارپت خرید کرد. کد هدیهٔ شما: {gift_code} "
+        send_bulk([mobile], f"دوست شما با کد معرفی‌تان از {brand.name()} خرید کرد. کد هدیهٔ شما: {gift_code} "
                             f"({s.referral_reward:,} تومان تخفیف، تا ۶ ماه).")
     except Exception:  # noqa: BLE001
         pass

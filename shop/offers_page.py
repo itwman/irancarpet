@@ -8,6 +8,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from .offers import live_offers
+from core import brand
 
 PATH = "/فرش-جشنواره-ای/"
 PER_PAGE = 24
@@ -27,6 +28,10 @@ FAQ = [
     ("تخفیف تا کی می‌ماند؟",
      "بعضی فرصت‌ها شمارندهٔ معکوس دارند و بعضی تا فروش آخرین تخته باقی‌اند. فرصت‌های پرطرفدار معمولاً چند روزه تمام می‌شوند."),
 ]
+
+
+def faq_items():
+    return [(brand.fix(q), brand.fix(a)) for q, a in FAQ]
 
 
 def _reeds(o):
@@ -90,7 +95,7 @@ def offers_page(request):
     filtered = bool(size or reed or sort != "off")
     title = "فرش جشنواره‌ای و زیر قیمت؛ فرش استوک کاشان با تخفیف"
     meta = {
-        "title": f"{title} | ایران کارپت" + (f" — صفحهٔ {page}" if page > 1 else ""),
+        "title": f"{title} | {brand.name()}" + (f" — صفحهٔ {page}" if page > 1 else ""),
         "description": (f"{len(offers)} فرش ماشینی نو و آمادهٔ ارسال از انبار کاشان با تا {best}٪ تخفیف: فرش جشنواره‌ای، زیر قیمت و استوک "
                         "۷۰۰ تا ۱۵۰۰ شانه. تعداد محدود، ارسال فوری.") if offers else
                        "فرش جشنواره‌ای، زیر قیمت و استوک ایران کارپت: تک‌تخته‌های نو و آمادهٔ ارسال انبار کاشان با تخفیف.",
@@ -103,7 +108,7 @@ def offers_page(request):
              {"@type": "ListItem", "position": i + 1, "url": site + o.product.get_absolute_url(), "name": o.product.title}
              for i, o in enumerate(page_obj.object_list)]}},
         {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}}
-                                            for q, a in FAQ]},
+                                            for q, a in faq_items()]},
     ]}
     return render(request, "shop/offers.html", {
         "meta": meta, "jsonld": json.dumps(jsonld, ensure_ascii=False), "crumbs": [("فرصت‌های ویژهٔ خرید", PATH)],
@@ -111,7 +116,7 @@ def offers_page(request):
         "sizes": [(s, label, url(size="" if size == s else s, page="")) for s, label, _ in sizes], "size": size,
         "reeds_opts": [(r, url(reeds="" if reed == r else r, page="")) for r in reeds], "reed": reed,
         "sorts": [(k, v, url(sort="" if k == "off" else k, page="")) for k, v in SORTS.items()], "sort": sort,
-        "clear_url": PATH if (size or reed) else "", "faq": FAQ, "first_page": page == 1 and not filtered,
+        "clear_url": PATH if (size or reed) else "", "faq": faq_items(), "first_page": page == 1 and not filtered,
         "prev_url": url(page=page - 1) if page_obj.has_previous() else "",
         "next_url": url(page=page + 1) if page_obj.has_next() else "",
         "page_links": [(n, url(page=n) if n != "…" else "") for n in pag.get_elided_page_range(page, on_each_side=2, on_ends=1)],

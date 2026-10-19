@@ -32,5 +32,17 @@ def domain():
     return host[4:] if host.startswith("www.") else host
 
 
+def fix(text):
+    """«ایران کارپت» و irancarpet.net در متن‌های ثابت را با نام و دامنهٔ همین سایت عوض می‌کند (روی ایران کارپت بی‌اثر)."""
+    if not text:
+        return text
+    n, d = name(), domain()
+    if n != DEFAULT_BRAND:
+        text = text.replace("ایران کارپت", n).replace("ایران‌کارپت", n)
+    if d and d != "irancarpet.net":
+        text = text.replace("irancarpet.net", d)
+    return text
+
+
 def clear():
     cache.delete_many(["brand_name", "features_off"])

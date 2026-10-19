@@ -169,12 +169,22 @@ def shop(request, page=1, page_obj_cms=None):
     from blog.models import Page
 
     cms = page_obj_cms or Page.objects.filter(template="shop").first()
-    meta = {"obj": cms, "kind": "page", "path": "/store/"} if cms else {"kind": "home"}
+    path = store_path(cms)
+    meta = {"obj": cms, "kind": "page", "path": path} if cms else {"kind": "home"}
     return product_listing(
-        request, Product.objects.all(), page=page, path="/store/", meta=meta,
+        request, Product.objects.all(), page=page, path=path, meta=meta,
         heading=cms.title if cms else "فروشگاه", intro=cms.content if cms else "",
-        crumbs=[("فروشگاه", "/store/")],
+        crumbs=[("فروشگاه", path)],
     )
+
+
+def store_path(cms=None):
+    """نشانی برگهٔ «همهٔ محصولات»: روی ایران کارپت /store/ و روی سایت‌های دیگر نامک برگهٔ فروشگاه خودشان (مثل /shop/)."""
+    if cms is None:
+        from blog.models import Page
+
+        cms = Page.objects.filter(template="shop").only("slug").first()
+    return f"/{cms.slug}/" if cms and cms.slug else "/store/"
 
 
 def category_detail(request, path, page=1):

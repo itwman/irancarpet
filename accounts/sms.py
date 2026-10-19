@@ -2,6 +2,7 @@
 import json
 import logging
 import urllib.request
+from core import brand
 
 
 log = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def _send_template(mobile, template_id, params):
     return False
 
 
-OTP_TEXT = "کد ورود شما به ایران کارپت: {code}"
+OTP_TEXT = "کد ورود شما به {brand}: {code}"
 
 
 def send_otp(mobile, code):
@@ -87,7 +88,7 @@ def send_otp(mobile, code):
     tpl = _cfg("SMSIR_OTP_TEMPLATE_ID")
     if tpl:
         return send_template(mobile, tpl, {"CODE": code}, log_it=False)
-    ok, msg = _send_bulk([mobile], OTP_TEXT.format(code=code))
+    ok, msg = _send_bulk([mobile], OTP_TEXT.format(brand=brand.name(), code=code))
     if not ok:
         LAST_ERROR["msg"] = msg
         log.warning("sms.ir کد ورود (خط) نرفت: %s", msg)

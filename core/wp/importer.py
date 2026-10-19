@@ -52,6 +52,28 @@ def to_dec(v, default=None):
         return default
 
 
+LOCAL_SIZE_RULES = [  # ویژگی محلی «ابعاد فرش» (مثل فرشستان): متن مقدار ← نامک قدیمی سایز استاندارد
+    (r"^12\s*متری", "12"), (r"^9\s*متری", "9"), (r"^6\s*متری", "6"),
+    (r"کناره\s*4\s*[*×x]\s*1", "کناره-41"), (r"کناره\s*3\s*[*×x]\s*1", "کناره-31"), (r"کناره\s*2\s*[*×x]\s*1", "کناره-21"),
+    (r"قالیچه\s*2[.٫]25", "ghalicheh"), (r"قالیچه\s*1[.٫]5", "قالیچه-1x1-50"), (r"پادری", "پادری"),
+]
+
+
+def local_size_legacy(meta):
+    """سایز تنوع از ویژگی محلی ووکامرس (attribute_ابعاد-فرش)؛ برای وردپرس‌هایی که ویژگی سراسری pa_carpet-size ندارند."""
+    for key, val in meta.items():
+        if not key.startswith("attribute_") or key.startswith("attribute_pa_") or not val:
+            continue
+        name = unquote(key[len("attribute_"):])
+        if "ابعاد" not in name and "سایز" not in name and "اندازه" not in name:
+            continue
+        text = str(val).replace("ي", "ی").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")).strip()
+        for pattern, legacy in LOCAL_SIZE_RULES:
+            if re.search(pattern, text):
+                return legacy
+    return None
+
+
 def norm_name(name):
     s = (name or "").replace("ي", "ی").replace("ك", "ک").replace("‌", "")
     s = re.sub(r"فرش|[0-9۰-۹\s\-_]", "", s)
@@ -378,6 +400,9 @@ class Importer:
             s = m.get("attribute_pa_carpet-size")
             if s:
                 return ("carpet-size", slug(s))
+            legacy = local_size_legacy(m)
+            if legacy:
+                return ("carpet-size", legacy)
             w, l = m.get("attribute_pa_width"), m.get("attribute_pa_length")
             if w and l:
                 return ("cut", f"{slug(w)}x{slug(l)}")

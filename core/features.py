@@ -11,7 +11,7 @@ FEATURES = {
     "market": ("sell/", "seller/", "vendor/"),
     "finder": ("farsh-yab/",),
     "farshplus": ("farshplus-gift/",),
-    "app": ("api/app/v1/", "app-img/", "app/return/"),
+    "app": ("api/app/v1/", "app/return/"),  # app-img/ نه: تصویرهای کوچک سایت هم از همین مسیرند
     "torob": ("wp-json/torob/", "wp-json/emalls_ext/"),
     "manix": ("wp-json/wc/v3/",),
 }

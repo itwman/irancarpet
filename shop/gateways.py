@@ -13,6 +13,7 @@ from . import config
 log = logging.getLogger(__name__)
 
 from .gwbase import GATEWAY_NAMES, Base, GatewayError, Result, http, post_json  # noqa: F401,E402
+from core import brand
 
 
 # ----------------------------------------------------------------- سامان
@@ -97,7 +98,7 @@ class Zarinpal(Base):
             meta["email"] = o.email
         data = post_json(self.base + "/pg/v4/payment/request.json", {
             "merchant_id": config.get('ZARINPAL_MERCHANT_ID'), "amount": payment.amount * 10, "currency": "IRR",
-            "callback_url": callback_url, "description": f"سفارش {o.number} ایران کارپت", "metadata": meta,
+            "callback_url": callback_url, "description": f"سفارش {o.number} {brand.name()}", "metadata": meta,
         })
         payment.raw = {"request": data}
         d = data.get("data") or {}

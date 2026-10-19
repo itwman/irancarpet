@@ -1,0 +1,66 @@
+{% load static fa %}
+<div class="fs-topbar"><div class="container"><span>{{ site_settings.tagline|default:"خرید مستقیم فرش از کارخانه، به صورت آنلاین" }}</span>{% if site_settings.phone or site_settings.mobile %}<a href="tel:{% if site_settings.phone %}{{ site_settings.phone|cut:'-' }}{% else %}{{ site_settings.mobile }}{% endif %}">مشاورهٔ خرید: <bdi>{% if site_settings.phone %}{{ site_settings.phone|fa_num }}{% else %}{{ site_settings.mobile|fa_num }}{% endif %}</bdi></a>{% endif %}</div></div>
+<header class="fs-hdr">
+  <div class="container fs-hdr__row">
+    <button class="fs-icon d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="باز کردن منو">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </button>
+    <a href="/" class="fs-brand" aria-label="{{ site_settings.site_name }}، صفحهٔ اصلی">
+      <img src="{% static 'img/logo.svg' %}" alt="" width="34" height="41">
+      <span><img class="fs-brand__word" src="{% static 'img/wordmark.svg' %}" alt="{% brand %}" width="104" height="26"><small>گالری فرش ماشینی</small></span>
+    </a>
+    <nav class="fs-nav d-none d-lg-block" aria-label="منوی اصلی">
+      <ul>
+        <li><a href="/shop/">همهٔ فرش‌ها</a></li>
+        {% for c in menu_categories|slice:":4" %}
+          <li class="{% if c.children.all %}has-sub{% endif %}"><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a>
+            {% if c.children.all %}<ul class="sub">{% for ch in c.children.all %}<li><a href="{{ ch.get_absolute_url }}">{{ ch.name|fa_num }}</a></li>{% endfor %}</ul>{% endif %}</li>
+        {% endfor %}
+        {% if menu_more or menu_categories|length > 4 %}<li class="has-sub"><a href="/shop/">بیشتر</a><ul class="sub sub--cols">{% for c in menu_categories|slice:"4:" %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a></li>{% endfor %}{% for c in menu_more %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a></li>{% endfor %}</ul></li>{% endif %}
+        <li><a href="/carpets-price-list/">لیست قیمت</a></li>
+        <li><a href="/blog/">مجله</a></li>
+      </ul>
+    </nav>
+    <div class="fs-tools">
+      <form class="fs-search" action="/search/" method="get" role="search">
+        <label class="sr-only" for="q">جستجو در فرش‌ها</label>
+        <input id="q" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="جستجوی نام طرح…">
+        <button type="submit" aria-label="جستجو"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </form>
+      {% with ms=site_settings.messengers %}{% if ms %}
+      <div class="dropdown">
+        <button class="fs-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="گفتگو با کارشناس">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg>
+        </button>
+        <ul class="dropdown-menu msg-menu">
+          <li class="msg-menu__head">گفتگو با کارشناس</li>
+          {% for key, name, url in ms %}<li><a class="dropdown-item soc--{{ key }}" href="{{ url }}" target="_blank" rel="noopener">{% include "partials/_sico.html" %}<span>{{ name }}</span></a></li>{% endfor %}
+          {% if site_settings.mobile %}<li><a class="dropdown-item soc--phone" href="tel:{{ site_settings.mobile }}">{% include "partials/_sico.html" with key="phone" %}<span>تماس <bdi>{{ site_settings.mobile|fa_num }}</bdi></span></a></li>{% endif %}
+        </ul>
+      </div>{% endif %}{% endwith %}
+      <a class="fs-icon" href="{% if user.is_authenticated %}/my-account/{% else %}/my-account/login/{% endif %}" rel="nofollow" aria-label="{% if user.is_authenticated %}حساب کاربری{% else %}ورود یا ثبت‌نام{% endif %}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      </a>
+      <a class="fs-icon fs-icon--fill" href="/cart/" rel="nofollow" aria-label="سبد خرید{% if cart_count %}، {{ cart_count|fa_num }} کالا{% endif %}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1.5 12h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        {% if cart_count %}<span class="fs-count">{{ cart_count|fa_num }}</span>{% endif %}
+      </a>
+    </div>
+  </div>
+</header>
+<div class="offcanvas offcanvas-end fs-offcanvas" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavTitle">
+  <div class="offcanvas-header"><span id="mobileNavTitle" class="fs-brand"><img src="{% static 'img/logo.svg' %}" alt="" width="28" height="34"><img src="{% static 'img/wordmark.svg' %}" alt="{% brand %}" width="96" height="24"></span><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="بستن"></button></div>
+  <div class="offcanvas-body">
+    <ul class="fs-mnav">
+      <li><a href="/shop/">همهٔ فرش‌ها</a></li>
+      {% for c in menu_categories %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a>
+        {% if c.children.all %}<ul>{% for ch in c.children.all %}<li><a href="{{ ch.get_absolute_url }}">{{ ch.name|fa_num }}</a></li>{% endfor %}</ul>{% endif %}</li>{% endfor %}
+      {% for c in menu_more %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a></li>{% endfor %}
+      <li><a href="/carpets-price-list/">لیست قیمت</a></li>
+      <li><a href="/blog/">مجله</a></li>
+      <li><a href="/track-order/">پیگیری سفارش</a></li>
+      {% if site_settings.phone %}<li><a href="tel:{{ site_settings.phone|cut:'-' }}">تماس: <bdi>{{ site_settings.phone|fa_num }}</bdi></a></li>{% endif %}
+    </ul>
+    {% if site_settings.socials %}<div class="socials socials--nav">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
+  </div>
+</div>

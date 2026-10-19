@@ -12,6 +12,7 @@ from core.templatetags.fa import fa_num, toman
 
 from . import pricelist
 from .models import Album
+from core import brand
 
 
 def pricelist_strip(html):
@@ -45,9 +46,9 @@ def _faq(data, plans_text, guide=None):
             continue
         cheapest = min((a for a in g["albums"] if a["base_price"]), key=lambda a: a["base_price"])
         if g["min_base"] == g["max_base"]:
-            ans = f"قیمت فرش ماشینی {fa_num(g['reeds'])} شانه ۱۲ متری در لیست قیمت {month} {year} ایران کارپت {toman(g['min_base'])} تومان است."
+            ans = f"قیمت فرش ماشینی {fa_num(g['reeds'])} شانه ۱۲ متری در لیست قیمت {month} {year} {brand.name()} {toman(g['min_base'])} تومان است."
         else:
-            ans = (f"در لیست قیمت {month} {year} ایران کارپت، فرش ماشینی {fa_num(g['reeds'])} شانه ۱۲ متری از "
+            ans = (f"در لیست قیمت {month} {year} {brand.name()}، فرش ماشینی {fa_num(g['reeds'])} شانه ۱۲ متری از "
                    f"{toman(g['min_base'])} تا {toman(g['max_base'])} تومان است. ارزان‌ترین آن «{fa_num(cheapest['title'])}» است.")
         out.append({"q": f"قیمت فرش {fa_num(g['reeds'])} شانه ۱۲ متری چند است؟", "a": ans})
     if data["updated"]:
@@ -61,7 +62,7 @@ def _faq(data, plans_text, guide=None):
     if guide.get("cheapest"):
         c = guide["cheapest"]
         out.append({"q": "ارزان‌ترین فرش ماشینی ۱۲ متری چند است؟",
-                    "a": f"در لیست قیمت {month} {year}، ارزان‌ترین فرش ماشینی ۱۲ متری ایران کارپت {fa_num(c['group'])} است "
+                    "a": f"در لیست قیمت {month} {year}، ارزان‌ترین فرش ماشینی ۱۲ متری {brand.name()} {fa_num(c['group'])} است "
                          f"با قیمت {toman(c['price'])} تومان (لیست «{fa_num(c['album'])}»)."})
     for slug, q in (("9-meter", "قیمت فرش ماشینی ۹ متری چند است؟"), ("6-meter", "قیمت فرش ماشینی ۶ متری چند است؟")):
         parts = [f"{fa_num(g['title'])} از {toman(g['size_min'][slug]['min'])}" for g in data["groups"] if slug in g.get("size_min", {})]
@@ -200,7 +201,7 @@ def album_detail(request, slug, page=1):
         desc = seo.render(album.seo_description, {**vars_, "title": album.title, "sitename": s.site_name})
     else:
         sizes = "، ".join(f"{r['size'].label} {toman(r['price'])}" for r in rows[:4])
-        desc = f"لیست قیمت {album.title} به‌روز {vars_['currentdate']}: {sizes} تومان. خرید مستقیم و اقساطی از ایران کارپت."
+        desc = f"لیست قیمت {album.title} به‌روز {vars_['currentdate']}: {sizes} تومان. خرید مستقیم و اقساطی از {brand.name()}."
     teaser = None
     if base:
         try:

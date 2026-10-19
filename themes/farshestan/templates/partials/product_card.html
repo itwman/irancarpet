@@ -1,0 +1,12 @@
+{% load fa %}{% with r=p.title|reeds_of %}
+<article class="fs-card{% if p.stock_status == 'outofstock' %} is-out{% endif %}"{% if reeds_attr %} data-reeds="{{ reeds_attr }}" data-rank="{{ forloop.counter0 }}"{% endif %}>
+  <a class="fs-card__frame" href="{{ p.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+    {% if p.image %}<img src="{{ p.image|thumb:480 }}" srcset="{{ p.image|thumb:480 }} 480w, {{ p.image|thumb:960 }} 960w" sizes="(max-width: 600px) 46vw, 280px" alt=""{% if eager and forloop.counter0 < 2 %}{% if forloop.first %} fetchpriority="high"{% endif %}{% else %} loading="lazy"{% endif %} decoding="async"{% if p.image.width %} width="{{ p.image.width }}" height="{{ p.image.height }}"{% endif %}>{% else %}<span class="noimg"></span>{% endif %}
+    {% if p.offer %}<span class="fs-card__badge">فرصت ویژه · ٪{{ p.offer.off_percent|fa_num }}</span>{% elif p.stock_status == 'outofstock' %}<span class="fs-card__badge fs-card__badge--out">ناموجود</span>{% endif %}
+  </a>
+  <div class="fs-card__body">
+    <h3 class="fs-card__title"><a href="{{ p.get_absolute_url }}">{{ p.title|short_title|fa_num }}</a></h3>
+    <p class="fs-card__spec">{% if r %}{{ r|fa_num }} شانه{% endif %}{% if p.brand %}{% if r %} · {% endif %}{{ p.brand.name }}{% endif %}</p>
+    <p class="fs-card__price">{% if p.stock_status == 'outofstock' and not p.offer %}<span class="muted">ناموجود</span>{% elif p.min_price %}<small>از</small> {{ p.min_price|toman }} <small>تومان</small>{% else %}<span class="muted">استعلام قیمت</span>{% endif %}{% if p.rating_count %} {% stars p.rating_avg %}{% endif %}</p>
+  </div>
+</article>{% endwith %}

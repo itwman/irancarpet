@@ -6,6 +6,7 @@ from django.utils.html import strip_tags
 
 from .models import SiteSettings
 from .templatetags.fa import fa_num
+from core import brand
 
 VAR_RE = re.compile(r"%\s*([a-z_]+)%")
 
@@ -87,8 +88,8 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
 
     if kind == "blog":
         sep = ctx["sep"]
-        title = f"مجلهٔ ایران کارپت؛ راهنمای خرید، شناخت و نگهداری فرش {ctx['page']} {sep} {s.site_name}"
-        desc = ("مقاله‌های ایران کارپت دربارهٔ قیمت و خرید فرش ماشینی، تفاوت شانه‌ها و جنس نخ، شست‌وشو و نگهداری، "
+        title = f"مجلهٔ {brand.name()}؛ راهنمای خرید، شناخت و نگهداری فرش {ctx['page']} {sep} {s.site_name}"
+        desc = (f"مقاله‌های {brand.name()} دربارهٔ قیمت و خرید فرش ماشینی، تفاوت شانه‌ها و جنس نخ، شست‌وشو و نگهداری، "
                 "طرح‌های فرش کاشان و خرید اقساطی.") + (f" {ctx['page']}" if page and page > 1 else "")
         return dict(title=re.sub(r"\s+", " ", title).strip(), description=desc, robots="",
                     canonical=settings.SITE_URL + "/blog/" + (f"page/{page}/" if page and page > 1 else ""))

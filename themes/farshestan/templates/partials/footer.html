@@ -1,0 +1,28 @@
+{% load static fa shop_theme %}{% reeds_categories as rc %}
+<footer class="fs-foot">
+  <div class="container fs-foot__cols">
+    <div class="fs-foot__about">
+      <a href="/" class="fs-brand fs-brand--light"><img src="{% static 'img/logo-tile.svg' %}" alt="" width="44" height="44"><img class="fs-brand__word" src="{% static 'img/wordmark-light.svg' %}" alt="{% brand %}" width="112" height="28"></a>
+      <p>{{ site_settings.tagline|default:"گالری آنلاین فرش ماشینی؛ خرید مستقیم از کارخانه." }}</p>
+      <ul class="fs-foot__contact">
+        {% if site_settings.phone %}<li>تلفن: <a href="tel:{{ site_settings.phone|cut:'-' }}"><bdi>{{ site_settings.phone|fa_num }}</bdi></a></li>{% endif %}
+        {% if site_settings.mobile %}<li>موبایل: <a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a></li>{% endif %}
+        {% if site_settings.email %}<li>ایمیل: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
+        {% if site_settings.address %}<li>{{ site_settings.address|fa_num }}</li>{% endif %}
+        {% if site_settings.has_store and site_settings.store_hours %}<li>ساعت کاری: {{ site_settings.store_hours }}</li>{% endif %}
+      </ul>
+      {% if site_settings.socials %}<div class="socials">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener me" class="soc soc--{{ key }}">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
+    </div>
+    <nav aria-labelledby="fShop"><h2 id="fShop">فرش‌ها</h2>
+      <ul><li><a href="/shop/">همهٔ فرش‌ها</a></li>{% for x in rc %}<li><a href="{{ x.url }}">{{ x.reeds|fa_num }} شانه</a></li>{% endfor %}{% for c in menu_categories|slice:":2" %}<li><a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a></li>{% endfor %}</ul>
+    </nav>
+    <nav aria-labelledby="fHelp"><h2 id="fHelp">راهنما</h2>
+      <ul><li><a href="/carpets-price-list/">لیست قیمت</a></li><li><a href="/track-order/">پیگیری سفارش</a></li><li><a href="/blog/">مجله</a></li>{% if footer_sizes %}{% for t, u in footer_sizes|slice:":3" %}<li><a href="{{ u }}">{{ t }}</a></li>{% endfor %}{% endif %}<li><a href="/license/">مجوزها</a></li></ul>
+    </nav>
+    <div class="fs-foot__trust"><h2>نماد اعتماد</h2>
+      <a href="/license/" class="fs-trust" title="مجوزها و نماد اعتماد الکترونیکی">{% if site_settings.trust_badge %}<img src="{{ site_settings.trust_badge.url }}" alt="نماد اعتماد الکترونیکی {{ site_settings.site_name }}" width="96" height="96" loading="lazy" decoding="async">{% else %}<span>دیدن مجوزها</span>{% endif %}</a>
+      {{ site_settings.footer_html|safe }}
+    </div>
+  </div>
+  <div class="fs-foot__copy"><div class="container">© {% jyear %} {{ site_settings.site_name }} · {% site_domain %}</div></div>
+</footer>

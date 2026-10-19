@@ -8,6 +8,7 @@ from django.core.cache import cache
 from django.db.models import Count, Max, Min
 
 from .templatetags.fa import fa_num
+from core import brand
 
 MIN_LEN, MAX_LEN = 120, 160
 MILLION = 1_000_000
@@ -83,7 +84,7 @@ def product(p):
     tail = ["خرید نقدی و اقساطی با ارسال مستقیم از کاشان.", "خرید نقدی و اقساطی از کاشان.", "ارسال به سراسر ایران."]
     if getattr(p, "seller_id", None):  # کالای فروشندهٔ مارکت‌پلیس: ارسال از شهر خود فروشنده، بدون اقساط
         city = p.seller.city
-        tail = [f"فروشنده: {p.seller.name}، ارسال از {city}، پرداخت امن در ایران کارپت.", f"ارسال از {city}، پرداخت امن.",
+        tail = [f"فروشنده: {p.seller.name}، ارسال از {city}، پرداخت امن در {brand.name()}.", f"ارسال از {city}، پرداخت امن.",
                 "ارسال به سراسر ایران."]
     desc = ""
     for specs in spec_sets:
@@ -115,7 +116,7 @@ def listing(obj, products_qs, kind_label="", name=None):
         n=Count("pk", distinct=True), lo=Min("min_price"), hi=Max("max_price"))
     n, lo, hi = agg["n"] or 0, agg["lo"], agg["hi"]
     title = name if name.startswith("فرش") else f"فرش {name}"
-    parts = [f"خرید {fa_num(title)} از ایران کارپت" + (f"؛ {fa_num(n)} طرح موجود" if n else "") + "."]
+    parts = [f"خرید {fa_num(title)} از {brand.name()}" + (f"؛ {fa_num(n)} طرح موجود" if n else "") + "."]
     if lo and hi and hi > lo:
         parts.append(f"قیمت از {short_price(lo)} تا {short_price(hi)} تومان.")
     elif lo:

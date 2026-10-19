@@ -11,6 +11,7 @@ from catalog.models import Attribute, AttributeTerm, Category, Product
 
 from . import seo
 from .models import SiteSettings
+from core import brand as site_brand
 
 PAGED = re.compile(r"^(?P<path>.*?)/?page/(?P<page>\d+)$")
 
@@ -175,7 +176,7 @@ def home(request):
 
     site = SiteSettings.load()
     org = {
-        "@context": "https://schema.org", "@type": "OnlineStore", "name": "ایران کارپت",
+        "@context": "https://schema.org", "@type": "OnlineStore", "name": site_brand.name(),
         "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.png",
         "sameAs": [url for _, _, url in site.follows],
     }
