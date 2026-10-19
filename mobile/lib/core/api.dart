@@ -10,7 +10,7 @@ import 'flavor.dart';
 
 export 'flavor.dart';
 
-const kSite = String.fromEnvironment('SITE', defaultValue: 'https://irancarpet.net');
+const kSite = String.fromEnvironment('SITE', defaultValue: kHouse ? 'https://farshestan.ir' : 'https://irancarpet.net');
 const kApi = '$kSite/api/app/v1';
 
 typedef Json = Map<String, dynamic>;
@@ -25,7 +25,7 @@ class ApiError implements Exception {
   String toString() => message;
 }
 
-/// ارتباط با سایت ایران کارپت.
+/// ارتباط با سایت (ایران کارپت یا فرشستان).
 class Api {
   Api._();
   static final Api i = Api._();
@@ -50,6 +50,7 @@ class Api {
         'X-Install-Id': installId,
         'X-App-Version': kAppVersion,
         if (kIsFinder) 'X-App': 'finder',
+        if (kHouse) 'X-App': 'farshestan',
         'X-Device-Model': kIsWeb ? 'web' : defaultTargetPlatform.name,
         if (token != null) 'Authorization': 'Token $token',
       };

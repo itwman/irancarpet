@@ -210,7 +210,7 @@ def home(request):
     return ok({
         "notice": AppSettings.load().home_notice,
         "trust_points": [{"title": t[0], "subtitle": t[1]} for t in (site.trust_points or []) if t],
-        "categories": [{"id": c.pk, "name": c.name, "image": S.thumb_url(c.image, 240)} for c in cats],
+        "categories": [{"id": c.pk, "name": c.name, **S.cat_image(c)} for c in cats],
         "reeds": reeds,
         "newest": [S.card(p) for p in base.order_by("-published_at")[:10]],
         "popular": [S.card(p) for p in base.order_by("-views")[:10]],
@@ -234,7 +234,7 @@ def categories(request):
         for c in by_parent.get(pid, []):
             children, ids = tree(c.pk)
             ids = ids | own.get(c.pk, set())
-            out.append(({"id": c.pk, "name": c.name, "count": len(ids), "image": S.thumb_url(c.image, 240),
+            out.append(({"id": c.pk, "name": c.name, "count": len(ids), **S.cat_image(c, ids),
                          "children": children}, ids))
         return [x for x, _ in out], set().union(*[i for _, i in out]) if out else set()
 
@@ -643,7 +643,10 @@ def app_source(request):
     return "app-finder" if "finder" in (request.headers.get("X-App") or request.GET.get("app") or "") else "app"
 
 
-APPS = {"finder": ("farshyab", "net.irancarpet.finder", "فرش‌یاب"), "": ("irancarpet", "net.irancarpet.app", "ایران کارپت")}
+# اپ پیش‌فرض هر سایت: روی فرشستان اپ خودش (ir.farshestan.app با پیوند farshestan://)
+_STORE_APPS = {"farshestan": ("farshestan", "ir.farshestan.app", "فرشستان")}
+APPS = {"finder": ("farshyab", "net.irancarpet.finder", "فرش‌یاب"),
+        "": _STORE_APPS.get(settings.SITE_THEME, ("irancarpet", "net.irancarpet.app", "ایران کارپت"))}
 
 
 def app_return(request, number):

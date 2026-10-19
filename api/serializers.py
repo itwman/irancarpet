@@ -23,6 +23,28 @@ def thumb_url(m, w=480):
     return f"{settings.SITE_URL}/app-img/{w}/{quote(m.file.name)}"
 
 
+def crop(m):
+    """کادر خود فرش در عکس ([x, y, w, h, نسبت] به درصد) — فقط روی سایت‌هایی که قالب خودشان را دارند (اپ فرشستان)."""
+    if not settings.SITE_THEME or not m or not getattr(m, "file", None):
+        return None
+    from core.templatetags.shop_theme import rug_crop
+
+    c = rug_crop(m)
+    return [c["x"], c["y"], c["w"], c["h"], c["ar"]] if c else None
+
+
+def cat_image(c, ids=None):
+    """تصویر دسته؛ روی سایت‌های قالب‌دار (اپ فرشستان) اگر دسته عکس ندارد، عکس پربازدیدترین فرش موجودش + کادر فرش"""
+    if c.image_id or not settings.SITE_THEME:
+        return {"image": thumb_url(c.image, 240), "crop": crop(c.image) if c.image_id else None}
+    from catalog.models import Product
+
+    qs = Product.objects.published().exclude(stock_status="outofstock").filter(image__isnull=False)
+    qs = qs.filter(pk__in=ids) if ids is not None else qs.filter(categories__in=c.descendant_ids())
+    p = qs.select_related("image").order_by("-views", "-pk").first()
+    return {"image": thumb_url(p.image, 480), "crop": crop(p.image)} if p else {"image": "", "crop": None}
+
+
 def plain(html, limit=0):
     t = re.sub(r"\s+", " ", unescape(strip_tags(html or ""))).strip()
     return (t[:limit] + "…") if limit and len(t) > limit else t
@@ -34,6 +56,7 @@ def card(p):
         "id": p.pk,
         "title": p.title,
         "image": thumb_url(p.image, 480),
+        "crop": crop(p.image),
         "price": p.min_price or 0,
         "price_is_from": not p.album_id,
         "in_stock": p.stock_status != "outofstock" and p.sale_status not in ("unavailable",),
@@ -97,7 +120,8 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "purchasable": p.is_purchasable,
         "sale_status": p.sale_status,
         "album": p.album.name if p.album_id else "",
-        "images": [{"full": media_url(m), "thumb": thumb_url(m, 960), "w": m.width or 0, "h": m.height or 0} for m in gallery],
+        "images": [{"full": media_url(m), "thumb": thumb_url(m, 960), "w": m.width or 0, "h": m.height or 0,
+                    "crop": crop(m)} for m in gallery],
         "short_description": to_text(doc["bullets"]),
         "content_html": (doc["html"] or "") + blocks_html,
         "content_text": full_text(doc)[:6000],

@@ -9,6 +9,8 @@ import 'account.dart';
 import 'cart.dart';
 import 'catalog.dart';
 import 'home.dart';
+import '../house/categories.dart';
+import '../house/home.dart';
 
 /// رفتن به یک زبانه از هر جای اپ (پوستهٔ ایران کارپت یا فرش‌یاب خودش را ثبت می‌کند).
 void Function(int)? tabGo;
@@ -23,7 +25,9 @@ class Shell extends StatefulWidget {
 class _ShellState extends State<Shell> {
   int _i = 0;
   bool _checkedUpdate = false;
-  final _pages = const [HomeTab(), CategoriesTab(), CartScreen(), WishlistTab(), AccountTab()];
+  final _pages = kHouse
+      ? const [HouseHome(), HouseCategories(), CartScreen(), WishlistTab(), AccountTab()]
+      : const [HomeTab(), CategoriesTab(), CartScreen(), WishlistTab(), AccountTab()];
 
   void go(int i) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -59,7 +63,7 @@ class _ShellState extends State<Shell> {
       builder: (c) => PopScope(
         canPop: !force,
         child: AlertDialog(
-          title: const Text('نسخهٔ تازهٔ ایران کارپت'),
+          title: Text('نسخهٔ تازهٔ $kAppName'),
           content: Text((d['update_note'] as String?)?.isNotEmpty == true ? d['update_note'] as String : 'نسخهٔ $latest آماده است.'),
           actions: [
             if (!force) TextButton(onPressed: () => Navigator.pop(c), child: const Text('بعداً')),
@@ -90,13 +94,13 @@ class _ShellState extends State<Shell> {
           ),
           child: NavigationBar(
             height: 66,
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            backgroundColor: kHouse ? C.soft : Colors.white,
+            surfaceTintColor: kHouse ? C.soft : Colors.white,
             selectedIndex: _i,
             onDestinationSelected: go,
             destinations: [
               const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded, color: C.pink), label: 'خانه'),
-              const NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view_rounded, color: C.pink), label: 'دسته‌ها'),
+              const NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view_rounded, color: C.pink), label: kHouse ? 'تالارها' : 'دسته‌ها'),
               NavigationDestination(
                 icon: Badge(isLabelVisible: count > 0, label: Text('$count'), backgroundColor: C.pink, child: const Icon(Icons.shopping_bag_outlined)),
                 selectedIcon: Badge(isLabelVisible: count > 0, label: Text('$count'), backgroundColor: C.ink, child: const Icon(Icons.shopping_bag_rounded, color: C.pink)),

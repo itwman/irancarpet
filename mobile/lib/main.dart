@@ -12,6 +12,9 @@ import 'core/theme.dart';
 import 'finder/requests.dart';
 import 'finder/shell.dart';
 import 'finder/state.dart';
+import 'house/planner.dart';
+import 'house/product.dart';
+import 'house/splash.dart';
 import 'screens/account.dart';
 import 'screens/cart.dart';
 import 'screens/catalog.dart';
@@ -42,8 +45,8 @@ class _SnackCleaner extends NavigatorObserver {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: Colors.white));
-  await Api.i.init();
+      statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: kHouse ? C.soft : Colors.white));
+  await Future.wait([Api.i.init(), if (kHouse) _loadNastaliq()]);
   final auth = Auth(), cart = Cart(), wish = Wishlist(), config = AppConfig(), finder = FinderData();
   await Future.wait([auth.load(), cart.load(), wish.load()]);
   runApp(MultiProvider(
@@ -61,6 +64,15 @@ Future<void> main() async {
   if (kIsFinder) finder.load();
   onNotificationTap = _openPayload;
   setupNotifications().catchError((_) {});
+}
+
+/// فونت نستعلیق فقط در اپ فرشستان (دارایی مخصوص همین flavor)
+Future<void> _loadNastaliq() async {
+  try {
+    await (FontLoader(kNast)..addFont(rootBundle.load('assets/house/IranNastaliq.ttf'))).load();
+  } catch (_) {
+    // اگر نبود، تیترها با وزیرمتن نمایش داده می‌شوند
+  }
 }
 
 void _openPayload(String payload) {
@@ -131,13 +143,14 @@ class _IranCarpetAppState extends State<IranCarpetApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const Splash(),
+      home: kHouse ? const HouseSplash() : const Splash(),
       onGenerateRoute: (s) {
         final a = s.arguments;
         Widget page = switch (s.name) {
           '/home' => kIsFinder ? const FinderShell() : const Shell(),
           '/requests' => const RequestsScreen(),
-          '/product' => ProductScreen(id: a as int),
+          '/product' => kHouse ? HouseProductScreen(id: a as int) : ProductScreen(id: a as int),
+          '/plan' => HousePlannerScreen(args: a as Map<String, dynamic>),
           '/products' => ProductListScreen(
               title: (a as Map)['title'] as String, query: ((a['query'] as Map?) ?? {}).cast<String, dynamic>()),
           '/search' => const SearchScreen(),

@@ -45,7 +45,7 @@ class AccountTab extends StatelessWidget {
                       Text(faDigits(auth.user?['mobile'] ?? ''), style: TextStyle(color: Colors.white.withValues(alpha: .7))),
                     ])
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('به ایران کارپت خوش آمدید', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                      Text('به $kAppName خوش آمدید', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 8),
                       FilledButton(
                         style: FilledButton.styleFrom(minimumSize: const Size(10, 42)),
@@ -79,12 +79,12 @@ class AccountTab extends StatelessWidget {
         if ((cfg['phone'] as String? ?? '').isNotEmpty)
           tile(Icons.call_outlined, 'تماس با فروشگاه', () => launchUrl(Uri.parse('tel:${(cfg['phone'] as String).replaceAll(RegExp(r'[^\d+]'), '')}')),
               sub: faDigits(cfg['phone'])),
-        tile(Icons.public, 'سایت ایران کارپت', () => launchUrl(Uri.parse(kSite), mode: LaunchMode.externalApplication)),
+        tile(Icons.public, 'سایت $kAppName', () => launchUrl(Uri.parse(kSite), mode: LaunchMode.externalApplication)),
         tile(Icons.verified_user_outlined, 'مجوزها و نماد اعتماد',
             () => launchUrl(Uri.parse(cfg['license_url'] as String? ?? '$kSite/license/'), mode: LaunchMode.externalApplication),
             sub: 'نماد اعتماد الکترونیکی (اینماد)'),
         for (final s in socials(context, followsOnly: true))
-          tile(socialIcon(s['key'] as String), s['name'] as String, () => openUrl(s['url'] as String), sub: 'ایران کارپت'),
+          tile(socialIcon(s['key'] as String), s['name'] as String, () => openUrl(s['url'] as String), sub: kAppName),
         if (auth.loggedIn) tile(Icons.logout_rounded, 'خروج از حساب', () => auth.logout(), color: C.pinkDark),
         const SizedBox(height: 16),
         Center(child: Text('نسخهٔ ${faDigits(kAppVersion)}', style: const TextStyle(color: C.muted, fontSize: 12))),
@@ -204,7 +204,7 @@ class _WishlistTabState extends State<WishlistTab> {
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: .54),
+                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: kHouse ? .45 : .54),
                   itemCount: items.length,
                   itemBuilder: (_, i) => ProductCard(items[i]),
                 ),

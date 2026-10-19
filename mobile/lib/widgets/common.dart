@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
+import '../house/cards.dart';
 import '../state/app_state.dart';
 import 'knots.dart';
 
@@ -72,6 +73,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kHouse) return NicheCard(p, width: width, match: match);
     final id = p['id'] as int;
     final inStock = p['in_stock'] as bool? ?? true;
     final wish = context.watch<Wishlist>();

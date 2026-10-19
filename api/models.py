@@ -92,6 +92,9 @@ class AppNotification(models.Model):
 
 APP_URL = "https://cafebazaar.ir/app/net.irancarpet.app"
 FINDER_URL = "https://cafebazaar.ir/app/net.irancarpet.finder"
+# اپ فروشگاهی هر سایت (قالب SITE_THEME): تا صفحهٔ کافه‌بازارش آماده شود، فایل نصبی روی خود سایت
+# (پس از انتشار، «لینک دریافت اپ» را در پنل بگذارید)
+STORE_APP_URLS = {"farshestan": "/wp-content/uploads/app/farshestan.apk"}
 
 
 class AppSettings(models.Model):
@@ -124,15 +127,22 @@ class AppSettings(models.Model):
 
     @property
     def app_url(self):
-        return self.update_url or APP_URL
+        if self.update_url:
+            return self.update_url
+        from django.conf import settings
+
+        url = STORE_APP_URLS.get(settings.SITE_THEME, APP_URL)
+        return settings.SITE_URL + url if url.startswith("/") else url
 
     def promo(self):
         """اپ‌هایی که در سایت معرفی می‌شوند (برای قالب‌ها؛ در کش)."""
         from core.qr import svg
 
-        apps = [{"key": "app", "name": "اپ ایران کارپت", "text": "خرید فرش، پرداخت قسطی و پیگیری سفارش در گوشی؛ با اعلان فرصت‌های ویژه.",
+        from core import brand, features
+
+        apps = [{"key": "app", "name": f"اپ {brand.name()}", "text": "خرید فرش، پرداخت قسطی و پیگیری سفارش در گوشی؛ با اعلان فرصت‌های ویژه.",
                  "url": self.app_url, "qr": svg(self.app_url)}]
-        if self.finder_url:
+        if self.finder_url and features.is_on("finder"):
             apps.append({"key": "finder", "name": "فرش‌یاب", "text": "بگو چه فرشی می‌خواهی یا عکس فرشت را بفرست؛ مشابهش را پیدا می‌کنیم.",
                          "url": self.finder_url, "qr": svg(self.finder_url)})
         return {"home": self.promote_home, "bar": self.promote_bar, "apps": apps}

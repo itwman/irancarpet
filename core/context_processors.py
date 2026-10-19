@@ -90,7 +90,7 @@ def _fp_gift():
 def _apps_promo(request):
     """معرفی اپ‌ها در کافه‌بازار؛ داخل خود اپ (وب‌ویو) نشان داده نمی‌شود."""
     ua = request.headers.get("User-Agent", "")
-    if "; wv)" in ua or request.headers.get("X-Requested-With", "").startswith("net.irancarpet"):
+    if "; wv)" in ua or request.headers.get("X-Requested-With", "").startswith(("net.irancarpet", "ir.farshestan")):
         return None
     v = cache.get("apps_promo")
     if v is None:

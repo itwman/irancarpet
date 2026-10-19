@@ -11,6 +11,11 @@ val keyProps = Properties().apply {
     val f = rootProject.file("key.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
+// فرشستان کلید امضای خودش را دارد (android/key-farshestan.properties)
+val fsKeyProps = Properties().apply {
+    val f = rootProject.file("key-farshestan.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
 
 android {
     namespace = "net.irancarpet.app"
@@ -42,23 +47,7 @@ android {
         resValues = true
     }
 
-    // دو اپ از یک کد: «ایران کارپت» (فروشگاه) و «فرش‌یاب» (پیدا کردن فرش بر اساس نیاز)
-    flavorDimensions += "app"
-    productFlavors {
-        create("store") {
-            dimension = "app"
-            applicationId = "net.irancarpet.app"
-            resValue("string", "app_name", "ایران کارپت")
-            manifestPlaceholders["appScheme"] = "irancarpet"
-        }
-        create("finder") {
-            dimension = "app"
-            applicationId = "net.irancarpet.finder"
-            resValue("string", "app_name", "فرش‌یاب")
-            manifestPlaceholders["appScheme"] = "farshyab"
-        }
-    }
-
+    // سه اپ از یک کد: «ایران کارپت» (فروشگاه)، «فرش‌یاب» (پیدا کردن فرش بر اساس نیاز) و «فرشستان»
     signingConfigs {
         create("release") {
             if (keyProps.isNotEmpty()) {
@@ -68,11 +57,45 @@ android {
                 keyPassword = keyProps.getProperty("keyPassword")
             }
         }
+        create("farshestan") {
+            if (fsKeyProps.isNotEmpty()) {
+                storeFile = file(fsKeyProps.getProperty("storeFile"))
+                storePassword = fsKeyProps.getProperty("storePassword")
+                keyAlias = fsKeyProps.getProperty("keyAlias")
+                keyPassword = fsKeyProps.getProperty("keyPassword")
+            }
+        }
+    }
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("store") {
+            dimension = "app"
+            applicationId = "net.irancarpet.app"
+            resValue("string", "app_name", "ایران کارپت")
+            manifestPlaceholders["appScheme"] = "irancarpet"
+            signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+        }
+        create("finder") {
+            dimension = "app"
+            applicationId = "net.irancarpet.finder"
+            resValue("string", "app_name", "فرش‌یاب")
+            manifestPlaceholders["appScheme"] = "farshyab"
+            signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+        }
+        // فرشستان: همان کد، ظاهر «خانهٔ ایرانی» (با --dart-define=APP=farshestan بسازید)
+        create("farshestan") {
+            dimension = "app"
+            applicationId = "ir.farshestan.app"
+            resValue("string", "app_name", "فرشستان")
+            manifestPlaceholders["appScheme"] = "farshestan"
+            signingConfig = if (fsKeyProps.isNotEmpty()) signingConfigs.getByName("farshestan") else signingConfigs.getByName("debug")
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            // امضا از هر flavor می‌آید (ایران کارپت و فرش‌یاب: key.properties؛ فرشستان: key-farshestan.properties)
         }
     }
 }

@@ -71,7 +71,7 @@ Future<List<Map<String, dynamic>>> checkNotifications({bool show = true}) async 
       payload: payload,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails('deals', 'تخفیف‌ها و فرش‌های تازه',
-            channelDescription: 'اعلان تخفیف و فرش‌های تازهٔ ایران کارپت', importance: Importance.high, priority: Priority.high,
+            channelDescription: 'اعلان تخفیف و فرش‌های تازه', importance: Importance.high, priority: Priority.high,
             color: Color(0xFF740601)),
       ),
     );

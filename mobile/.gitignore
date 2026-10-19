@@ -49,5 +49,6 @@ app.*.map.json
 
 # کلید امضا هرگز در مخزن نرود
 android/key.properties
+android/key-*.properties
 *.jks
 *.keystore

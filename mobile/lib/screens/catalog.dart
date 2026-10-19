@@ -296,7 +296,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: .54),
+                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: kHouse ? .45 : .54),
                   itemCount: _items.length + (_page < _pages ? 1 : 0),
                   itemBuilder: (_, i) => i < _items.length ? ProductCard(_items[i]) : const Center(child: Loading()),
                 ),

@@ -113,7 +113,7 @@ class _RoomScreenState extends State<RoomScreen> with WidgetsBindingObserver {
       final data = await img.toByteData(format: ui.ImageByteFormat.png);
       await SharePlus.instance.share(ShareParams(
         text: '${_p!['title']}\n${_p!['url']}',
-        files: [XFile.fromData(data!.buffer.asUint8List(), mimeType: 'image/png', name: 'irancarpet-room.png')],
+        files: [XFile.fromData(data!.buffer.asUint8List(), mimeType: 'image/png', name: '$kScheme-room.png')],
       ));
     } catch (_) {
       if (mounted) toast(context, 'ذخیرهٔ تصویر ممکن نشد.');

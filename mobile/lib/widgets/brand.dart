@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../core/flavor.dart';
+import '../core/theme.dart';
+
 /// نشان رسمی ایران کارپت (assets/brand). نسبت پهنا به بلندی نشان ۰٫۸۳۷ است.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, this.size = 48, this.tile = false});
@@ -12,6 +15,9 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kHouse) {
+      return Image.asset('assets/house/farshestan_tile.png', height: size, width: size, semanticLabel: tile ? null : kAppName);
+    }
     final img = Image.asset('assets/brand/logo.png',
         height: tile ? size * .78 : size, filterQuality: FilterQuality.medium, semanticLabel: tile ? null : 'ایران کارپت');
     if (!tile) return img;
@@ -32,7 +38,11 @@ class Wordmark extends StatelessWidget {
   final bool light;
 
   @override
-  Widget build(BuildContext context) => Image.asset(
+  Widget build(BuildContext context) => kHouse
+      ? Text(kAppName,
+          style: TextStyle(fontFamily: kNast, fontFamilyFallback: const [kFont], fontSize: height * 1.25, height: 1.5,
+              color: light ? C.cream : C.lapis))
+      : Image.asset(
         light ? 'assets/brand/wordmark_white.png' : 'assets/brand/wordmark.png',
         height: height,
         filterQuality: FilterQuality.medium,
