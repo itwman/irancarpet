@@ -1,7 +1,7 @@
 {% load fa %}{% if rec_kind != "buy" and aff_box %}<section class="post-aff" aria-labelledby="postAff">
   <div>
     <h2 id="postAff">این مطلب به کارتان آمد؟ با معرفی فرش درآمد داشته باشید</h2>
-    <p>در همکاری در فروش ایران کارپت، پیوند یا کد تخفیف اختصاصی می‌گیرید. هر خریدی که تا {{ aff_box.days|fa_num }} روز با پیوند شما انجام شود{% if aff_box.top %} تا {{ aff_box.top }}٪{% endif %} پورسانت دارد؛ ثبت‌نام رایگان است و به مغازه یا سرمایه نیاز ندارد.</p>
+    <p>در همکاری در فروش {% brand %}، پیوند یا کد تخفیف اختصاصی می‌گیرید. هر خریدی که تا {{ aff_box.days|fa_num }} روز با پیوند شما انجام شود{% if aff_box.top %} تا {{ aff_box.top }}٪{% endif %} پورسانت دارد؛ ثبت‌نام رایگان است و به مغازه یا سرمایه نیاز ندارد.</p>
   </div>
   <a class="btn-ic btn-ic--pink" href="/affiliate/">آشنایی و ثبت‌نام</a>
 </section>{% endif %}

@@ -27,7 +27,7 @@
       <p class="mb-2">پیوندها، کد تخفیف اختصاصی و پورسانت‌هایتان در پنل همکاری است.</p>
       <a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/affiliate/">پنل همکاری در فروش</a>
       {% else %}
-      <h2>همکار فروش ایران کارپت شوید</h2>
+      <h2>همکار فروش {% brand %} شوید</h2>
       <p class="mb-2">فرش‌ها را به دیگران معرفی کنید و از هر خرید پورسانت پله‌ای بگیرید.</p>
       <a class="btn-ic btn-ic--teal btn-ic--sm" href="/affiliate/">آشنایی و ثبت‌نام</a>
       {% endif %}
@@ -43,7 +43,7 @@
       <h2>دوستانتان را دعوت کنید</h2>
       <p>دوستتان با کد شما در اولین خرید {{ shop.referral_percent|fa_num }}٪ تخفیف می‌گیرد (تا {{ shop.referral_max|toman }} تومان) و بعد از خریدش، یک کد هدیهٔ {{ shop.referral_reward|toman }} تومانی برای شما فرستاده می‌شود.</p>
       <div class="ref-code"><code dir="ltr" id="refCode">{{ referral.code }}</code><button class="pill" type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ referral.code }}');this.textContent='کپی شد'">کپی کد</button>
-        <a class="pill" href="https://wa.me/?text={{ 'کد تخفیف ایران کارپت برای اولین خرید فرش: '|urlencode }}{{ referral.code }}%20{{ SITE_URL|urlencode }}" target="_blank" rel="noopener">فرستادن در واتساپ</a></div>
+        <a class="pill" href="https://wa.me/?text={% brand as BR %}{{ 'کد تخفیف '|add:BR|add:' برای اولین خرید فرش: '|urlencode }}{{ referral.code }}%20{{ SITE_URL|urlencode }}" target="_blank" rel="noopener">فرستادن در واتساپ</a></div>
       {% endif %}
       {% if gifts %}<h3 class="h6 mt-3">کدهای هدیهٔ شما</h3><ul class="mb-0">{% for g in gifts %}<li><code dir="ltr">{{ g.code }}</code> — {{ g.label }}{% if g.ends_at %} (تا {{ g.ends_at|jdate }}){% endif %}</li>{% endfor %}</ul>{% endif %}
     </section>

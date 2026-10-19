@@ -784,7 +784,10 @@ class Importer:
         if any(s in steps for s in ("pricing", "products", "icap")):
             from .icap import import_icap
 
-            import_icap(self.wp, self.log)
+            if self.wp.option("icap_standard_sizes"):
+                import_icap(self.wp, self.log)
+            else:  # سایت‌هایی مثل فرشستان افزونهٔ آلبومی ICSD ندارند؛ قیمت از نرخ‌های mnswmc ساخته شده است
+                self.log("افزونهٔ آلبومی (icap) در این وردپرس نیست؛ قیمت‌ها از نرخ‌های mnswmc ساخته شد.")
         if "reviews" in steps:
             if not hasattr(self, "product_map"):
                 self.product_map = dict(Product.objects.exclude(wp_id=None).values_list("wp_id", "pk"))

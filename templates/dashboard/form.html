@@ -59,7 +59,7 @@
       {% if res.key == "reviews" or res.key == "comments" %}
       <section class="card-p"><h2>پاسخ فروشگاه</h2>
         {% for rep in obj.replies.all %}<div class="reply-old"><strong>{{ rep.author_name }}</strong><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
-        <div class="fld"><label for="reply">پاسخ تازه</label><textarea id="reply" name="reply" rows="3" class="form-control" placeholder="پاسخ با نام «ایران کارپت» زیر همین {{ res.single }} نمایش داده می‌شود."></textarea></div>
+        <div class="fld"><label for="reply">پاسخ تازه</label><textarea id="reply" name="reply" rows="3" class="form-control" placeholder="پاسخ با نام «{% brand %}» زیر همین {{ res.single }} نمایش داده می‌شود."></textarea></div>
       </section>
       {% endif %}
     </div>

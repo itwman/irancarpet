@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from django.utils import timezone
+from core import brand
 
 log = logging.getLogger(__name__)
 td = timezone.timedelta
@@ -59,9 +60,9 @@ def run_alerts(now=None):
             continue
         url = settings.SITE_URL + p.get_absolute_url()
         if a.kind == "stock" and p.is_purchasable:
-            text = f"«{p.title}» دوباره در ایران کارپت موجود شد: {url}"
+            text = f"«{p.title}» دوباره در {brand.name()} موجود شد: {url}"
         elif a.kind == "price" and a.price_at and p.min_price and p.min_price <= a.price_at * 0.98:
-            text = f"قیمت «{p.title}» در ایران کارپت کم شد: از {p.min_price:,} تومان. {url}"
+            text = f"قیمت «{p.title}» در {brand.name()} کم شد: از {p.min_price:,} تومان. {url}"
         else:
             continue
         if send(a.mobile, text, "alert"):

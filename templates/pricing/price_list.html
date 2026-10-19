@@ -6,7 +6,7 @@
     <h1>{{ page.title }}</h1>
     <p class="pl-stamp">{% if data.updated %}آخرین تغییر قیمت: <time datetime="{{ data.updated|date:'c' }}">{{ data.updated|jdate:"%d %B %Y" }}</time> · {% endif %}{{ data.albums|fa_num }} لیست قیمت · {{ data.products|fa_num }} فرش</p>
     {% if auto_intro %}
-      {% if guide.cheapest %}<p class="pl-lead">قیمت فرش ماشینی ۱۲ متری در {{ month }} از <strong>{{ guide.cheapest.price|toman }} تومان</strong> ({{ guide.cheapest.group|fa_num }}) شروع می‌شود و تا <strong>{{ guide.priciest.price|toman }} تومان</strong> ({{ guide.priciest.group|fa_num }}) می‌رسد. قیمت‌های این صفحه مستقیم از قیمت‌گذاری فروشگاه ایران کارپت خوانده می‌شوند و با هر تغییر قیمت کارخانه همین‌جا به‌روز می‌شوند؛ خرید مستقیم از کاشان، نقد و اقساط.</p>{% endif %}
+      {% if guide.cheapest %}<p class="pl-lead">قیمت فرش ماشینی ۱۲ متری در {{ month }} از <strong>{{ guide.cheapest.price|toman }} تومان</strong> ({{ guide.cheapest.group|fa_num }}) شروع می‌شود و تا <strong>{{ guide.priciest.price|toman }} تومان</strong> ({{ guide.priciest.group|fa_num }}) می‌رسد. قیمت‌های این صفحه مستقیم از قیمت‌گذاری فروشگاه {% brand %} خوانده می‌شوند و با هر تغییر قیمت کارخانه همین‌جا به‌روز می‌شوند؛ خرید مستقیم از کاشان، نقد و اقساط.</p>{% endif %}
     {% else %}<div class="prose pl-intro">{{ before|safe }}</div>{% endif %}
   </header>
 
@@ -81,7 +81,7 @@
     <h3>نقشه، برند و گل‌برجسته</h3>
     <p>هر لیست قیمت (آلبوم) مجموعه‌ای از نقشه‌های یک کارخانه با کیفیت و قیمت یکسان است؛ قیمت همهٔ نقشه‌ها و رنگ‌های یک لیست برابر است. فرش‌های گل‌برجسته و نقشه‌های پرکار معمولاً در لیست‌های گران‌تر هستند.</p>
     <h3>خرید مستقیم از کارخانه</h3>
-    <p>ایران کارپت فرش را مستقیم از کاشان و بی‌واسطه می‌فروشد؛ قیمت هر سایز روشن است و با پرداخت کامل یا {% if inst_post %}<a href="{{ inst_post.get_absolute_url }}">خرید قسطی</a>{% else %}اقساط{% endif %} می‌توانید سفارش دهید.{% if guide.free_min %} برای خریدهای بالای {{ guide.free_min|toman }} تومان با پرداخت کامل آنلاین، ارسال رایگان است.{% endif %}</p>
+    <p>{% brand %} فرش را مستقیم از کاشان و بی‌واسطه می‌فروشد؛ قیمت هر سایز روشن است و با پرداخت کامل یا {% if inst_post %}<a href="{{ inst_post.get_absolute_url }}">خرید قسطی</a>{% else %}اقساط{% endif %} می‌توانید سفارش دهید.{% if guide.free_min %} برای خریدهای بالای {{ guide.free_min|toman }} تومان با پرداخت کامل آنلاین، ارسال رایگان است.{% endif %}</p>
   </section>
   {% endif %}
 

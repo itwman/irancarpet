@@ -14,6 +14,6 @@
   <div class="p-grid">{% for p in page.object_list %}{% include "partials/product_card.html" %}{% endfor %}</div>
   {% include "market/_pager.html" %}
   {% else %}<p class="muted">این فروشگاه هنوز کالایی در سایت ندارد.</p>{% endif %}
-  <p class="muted small mt-4">پرداخت همهٔ سفارش‌ها از درگاه امن ایران کارپت انجام می‌شود. <a href="/sell/">شما هم در ایران کارپت بفروشید</a></p>
+  <p class="muted small mt-4">پرداخت همهٔ سفارش‌ها از درگاه امن {% brand %} انجام می‌شود. <a href="/sell/">شما هم در {% brand %} بفروشید</a></p>
 </div>
 {% endblock %}

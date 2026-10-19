@@ -10,6 +10,7 @@ from core import seo
 
 from .models import BlogCategory, BlogTag, Post
 from .tidy import _swap_phones
+from core import brand
 
 
 def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
@@ -34,7 +35,7 @@ def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
 
 
 def blog_index(request, page=1):
-    return _paged(request, Post.objects.published(), page, "/blog/", {"kind": "blog"}, "مجله ایران کارپت",
+    return _paged(request, Post.objects.published(), page, "/blog/", {"kind": "blog"}, f"مجله {brand.name()}",
                   crumbs=[("مجله", "/blog/")])
 
 
@@ -69,8 +70,8 @@ def post_detail(request, post, preview=False):
         "datePublished": post.published_at.isoformat(), "dateModified": post.modified_at.isoformat(),
         "mainEntityOfPage": site + post.get_absolute_url(),
         "image": [post.image.absolute_url] if post.image_id else [],
-        "author": {"@type": "Organization", "name": "ایران کارپت", "url": site + "/"},
-        "publisher": {"@type": "Organization", "name": "ایران کارپت", "url": site + "/",
+        "author": {"@type": "Organization", "name": brand.name(), "url": site + "/"},
+        "publisher": {"@type": "Organization", "name": brand.name(), "url": site + "/",
                       "logo": {"@type": "ImageObject", "url": site + "/static/img/logo.png"}},
         "inLanguage": "fa-IR",
     }
@@ -162,7 +163,7 @@ def blog_search(request):
     from urllib.parse import urlencode
 
     return render(request, "blog/post_list.html", {
-        "meta": {"title": f"جستجوی «{q}» در مقاله‌ها - ایران کارپت" if q else "جستجو در مقاله‌ها - ایران کارپت",
+        "meta": {"title": f"جستجوی «{q}» در مقاله‌ها - {brand.name()}" if q else f"جستجو در مقاله‌ها - {brand.name()}",
                  "description": "", "robots": "noindex, follow", "canonical": settings.SITE_URL + "/blog/search/"},
         "heading": f"مقاله‌های «{q}»" if q else "جستجو در مقاله‌ها", "q": q, "is_search": True,
         "count": len(ids), "posts": posts, "page_obj": page_obj,

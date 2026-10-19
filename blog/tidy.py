@@ -7,6 +7,7 @@
 import re
 
 from django.utils.html import escape
+from core import brand
 
 LIVE = r"(?:installment_[a-z]+|price_updated|size_prices|size_faq|shipping_info|city_faq|reeds_compare|price_table|city_notice|reeds_links|contact_info|contact_form|custom_size_calc)"
 SHORTCODE = re.compile(r"\[/?(?!" + LIVE + r"\b)[a-z][a-z0-9_-]*(?:\s[^\[\]]*)?\]", re.I)
@@ -166,7 +167,7 @@ def _unlink_self(html, self_path):
         if "#" in href:
             return m.group(0)
         parts = urlsplit(unquote(href))
-        if parts.netloc and not parts.netloc.endswith("irancarpet.net"):
+        if parts.netloc and not parts.netloc.endswith(brand.domain()):
             return m.group(0)
         return m.group(2) if parts.path.rstrip("/") == target and not parts.query else m.group(0)
     return re.sub(r'<a\b[^>]*\shref="([^"]*)"[^>]*>((?:(?!</?a\b).)*?)</a>', fix, html, flags=re.S | re.I)

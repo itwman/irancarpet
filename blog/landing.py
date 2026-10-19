@@ -28,6 +28,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 
 from core.templatetags.fa import fa_num, jdate, toman
+from core import brand
 
 CODES = ("installment_calc", "installment_prices", "installment_plans", "installment_steps", "installment_faq")
 BLOCK_RE = re.compile(r"(?:<p[^>]*>\s*)?\[(%s)\](?:\s*</p>)?" % "|".join(CODES))
@@ -273,7 +274,7 @@ def size_faq_items(size_slug, reeds=None):
         lines = d["lines"]
         lo, hi = lines[0], lines[-1]
         out.append((f"قیمت {name} امروز چند است؟",
-                    f"قیمت {name} در ایران کارپت امروز از {toman(lo['price'])} تومان"
+                    f"قیمت {name} در {brand.name()} امروز از {toman(lo['price'])} تومان"
                     + (f" تا {toman(hi['price'])} تومان است" if hi["price"] != lo["price"] else " است")
                     + f"؛ در {fa_num(sum(len(x['albums']) for x in lines))} لیست قیمت و {fa_num(sum(x['count'] for x in lines))} نقشه."))
         out.append((f"ارزان‌ترین {name} کدام است؟",
@@ -474,8 +475,8 @@ def city_faq_items(city):
                 f"فرش از کاشان بسته‌بندی و به {city} فرستاده می‌شود."
                 + (f" سفارش‌های بالای {toman(sh.free_shipping_min)} تومان با پرداخت کامل آنلاین ارسال رایگان دارند؛ بقیه پس‌کرایه است."
                    if sh.free_shipping_min else "")))
-    out.append((f"ایران کارپت در {city} نمایندگی دارد؟",
-                "نه؛ ایران کارپت شعبه و نمایندگی در شهرها ندارد. سفارش آنلاین ثبت می‌شود و فرش مستقیم از کاشان به نشانی شما می‌رسد."))
+    out.append((f"{brand.name()} در {city} نمایندگی دارد؟",
+                f"نه؛ {brand.name()} شعبه و نمایندگی در شهرها ندارد. سفارش آنلاین ثبت می‌شود و فرش مستقیم از کاشان به نشانی شما می‌رسد."))
     plans = _plans()
     if plans:
         out.append((f"در {city} می‌توانم فرش را قسطی بخرم؟",

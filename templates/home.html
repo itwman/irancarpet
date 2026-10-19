@@ -31,7 +31,7 @@
 </section>
 
 {% if site_settings.trust_points %}
-<section class="promises" aria-label="چرا ایران کارپت">
+<section class="promises" aria-label="چرا {% brand %}">
   <div class="container">
     <ul>
       {% for t in site_settings.trust_points %}
@@ -151,7 +151,7 @@
 {% if apps_promo.home and apps_promo.apps %}
 <section class="sec apps-sec" aria-labelledby="appsTitle">
   <div class="container">
-    <h2 class="sec-title" id="appsTitle">ایران کارپت در گوشی شما</h2>
+    <h2 class="sec-title" id="appsTitle">{% brand %} در گوشی شما</h2>
     <p class="sec-lead">هر دو اپ رایگان‌اند و برای اندروید از کافه‌بازار نصب می‌شوند.</p>
     <div class="apps">
       {% for a in apps_promo.apps %}
@@ -197,19 +197,19 @@
     <nav class="cat-pills" aria-label="دسته‌های فرش">{% for c in categories %}<a href="{{ c.get_absolute_url }}">{{ c.name|fa_num }}</a>{% endfor %}</nav>
     {% endif %}
     {% if posts %}
-    <div class="section-head"><h2 class="sec-title">از مجلهٔ ایران کارپت</h2><a href="/blog/">همهٔ مطالب</a></div>
+    <div class="section-head"><h2 class="sec-title">از مجلهٔ {% brand %}</h2><a href="/blog/">همهٔ مطالب</a></div>
     <div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
     {% endif %}
   </div>
 </section>
 
 {% if aff or mk %}
-<section class="container pb-5" aria-label="همکاری با ایران کارپت">
+<section class="container pb-5" aria-label="همکاری با {% brand %}">
   <div class="{% if aff and mk %}home-partners{% endif %}">
     {% if mk %}
     <div class="home-sell">
       <div class="home-sell__in">
-        <h2 id="sellHome">فرش‌تان را در ایران کارپت بفروشید</h2>
+        <h2 id="sellHome">فرش‌تان را در {% brand %} بفروشید</h2>
         <p>کارخانه، تولیدی یا فرش‌فروشی هستید؟ کالایتان را با قیمت خودتان به خریداران سراسر ایران عرضه کنید؛ پرداخت امن با ما، ارسال با شما.</p>
         <ul><li>ثبت‌نام رایگان</li><li>{{ mk.commission|floatformat:"-2"|fa_num }}٪ کمیسیون فقط از فروش</li><li>تسویه {{ mk.hold|fa_num }} روز پس از تحویل</li></ul>
         <div class="home-sell__btns">
@@ -222,7 +222,7 @@
     {% if aff %}
     <div class="home-aff">
       <div>
-        <h2 id="affHome">همکار فروش ایران کارپت شوید</h2>
+        <h2 id="affHome">همکار فروش {% brand %} شوید</h2>
         <p>فرش‌ها را به دوستان و مخاطبانتان معرفی کنید و از هر خریدی که تا {{ aff.days|fa_num }} روز با پیوند شما انجام شود{% if aff.top %} تا {{ aff.top }}٪{% endif %} پورسانت بگیرید؛ بی‌هزینه و بدون نیاز به مغازه.</p>
         <div class="home-aff__steps" aria-hidden="true"><i style="height:35%"></i><i style="height:52%"></i><i style="height:68%"></i><i style="height:84%"></i><i style="height:100%"></i></div>
       </div>
@@ -252,7 +252,7 @@
 {% if about_html %}
 <section class="container">
   <details class="about">
-    <summary>دربارهٔ ایران کارپت</summary>
+    <summary>دربارهٔ {% brand %}</summary>
     <div class="prose">{{ about_html|safe }}</div>
   </details>
 </section>

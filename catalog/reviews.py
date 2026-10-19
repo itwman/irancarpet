@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from django.db.models import Avg, Count
 
 from .models import Review, ReviewPhoto
+from core import brand
 
 MAX_PHOTOS = 4
 
@@ -46,7 +47,7 @@ def save_photos(review, files):
 def create(product, *, user=None, name="", mobile="", rating=0, text="", photos=(), order=None):
     rating = max(0, min(5, int(rating or 0)))
     r = Review.objects.create(
-        product=product, user=user, author_name=(name or "مشتری ایران کارپت")[:200], mobile=mobile[:11],
+        product=product, user=user, author_name=(name or f"مشتری {brand.name()}")[:200], mobile=mobile[:11],
         rating=rating or None, content=text.strip()[:3000], is_approved=False,
         verified=bool(order) or bought(user, product),
     )

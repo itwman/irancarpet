@@ -34,6 +34,11 @@ CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "https://irancarpet.net,
 SITE_URL = os.environ.get("SITE_URL", "https://irancarpet.net").rstrip("/")
 SITE_NAME = os.environ.get("SITE_NAME", "ایران کارپت")
 
+# قالب ظاهری سایت: خالی = قالب اصلی (ایران کارپت). مثل farshestan → پوشهٔ themes/farshestan
+# قالب‌ها و فایل‌های استاتیک پوشهٔ قالب روی قالب اصلی می‌نشینند؛ هر فایلی که در قالب نباشد از قالب اصلی می‌آید.
+SITE_THEME = os.environ.get("SITE_THEME", "").strip()
+THEME_DIR = BASE_DIR / "themes" / SITE_THEME if SITE_THEME else None
+
 INSTALLED_APPS = [
     "unfold",
     "django.contrib.admin",
@@ -69,6 +74,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.ir)
     "django.middleware.security.SecurityMiddleware",
+    "core.features.FeatureGateMiddleware",  # بخش‌های خاموش در تنظیمات سایت (برای سایت‌های دیگر مثل فرشستان)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "seo.middleware.LegacyQueryMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -87,7 +93,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": ([THEME_DIR / "templates"] if THEME_DIR else []) + [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -97,6 +103,7 @@ TEMPLATES = [
                 "core.context_processors.site",
                 "shop.context_processors.cart",
             ],
+            "builtins": ["core.templatetags.brand"],
         },
     },
 ]
@@ -159,7 +166,7 @@ USE_TZ = True
 # --- فایل‌ها ---------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", BASE_DIR / "staticfiles"))
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = ([THEME_DIR / "static"] if THEME_DIR else []) + [BASE_DIR / "static"]
 
 # تصاویر دقیقاً در همان مسیر وردپرس سرو می‌شوند تا آدرس تصاویر (و ایندکس Google Images) حفظ شود.
 MEDIA_URL = "/wp-content/uploads/"
@@ -187,8 +194,8 @@ LOGGING = {
 }
 
 UNFOLD = {
-    "SITE_TITLE": "پنل ایران کارپت",
-    "SITE_HEADER": "ایران کارپت",
+    "SITE_TITLE": f"پنل {SITE_NAME}",
+    "SITE_HEADER": SITE_NAME,
     "SITE_URL": "/",
 }
 

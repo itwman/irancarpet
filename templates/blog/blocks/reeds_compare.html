@@ -1,7 +1,7 @@
 {% load fa %}<section class="lb-cmp" aria-label="مقایسهٔ {% for c in cols %}{{ c.title|fa_num }}{% if not forloop.last %} و {% endif %}{% endfor %}">
   <div class="table-wrap">
     <table class="lb-table lb-cmp__t">
-      <caption>مقایسه با قیمت و مشخصات امروز فرش‌های ایران کارپت{% if updated %} · به‌روز در <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</caption>
+      <caption>مقایسه با قیمت و مشخصات امروز فرش‌های {% brand %}{% if updated %} · به‌روز در <time datetime="{{ updated|date:'Y-m-d' }}">{{ updated|jdate }}</time>{% endif %}</caption>
       <thead><tr><th scope="col"></th>{% for c in cols %}<th scope="col"><a href="{{ c.url }}">{{ c.title|fa_num }}</a></th>{% endfor %}</tr></thead>
       <tbody>
         <tr><th scope="row">قیمت ۱۲ متری (تومان)</th>{% for c in cols %}<td>{% if c.p12 %}{% if c.p12.min != c.p12.max %}<small>از</small> {% endif %}<strong>{{ c.p12.min|toman }}</strong>{% if c.p12.min != c.p12.max %}<br><small>تا {{ c.p12.max|toman }}</small>{% endif %}{% else %}—{% endif %}</td>{% endfor %}</tr>

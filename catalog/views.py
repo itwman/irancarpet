@@ -11,6 +11,7 @@ from core import seo
 from pricing.models import PricingSettings
 
 from .models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag, Review, ReviewPhoto, Variation
+from core import brand as site_brand
 
 SORTS = {
     "new": ("-published_at", "جدیدترین"),
@@ -363,7 +364,7 @@ def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
     if priced:
         # قیمت‌ها به ریال (IRR) برای سازگاری با گوگل
         prices = [v.price * 10 for v in priced]
-        seller = {"@type": "Organization", "name": "ایران کارپت", "url": site + "/"}
+        seller = {"@type": "Organization", "name": site_brand.name(), "url": site + "/"}
         if product.seller_id:
             seller = {"@type": "Organization", "name": product.seller.name, "url": site + product.seller.get_absolute_url()}
         stock = "https://schema.org/InStock" if product.in_stock else "https://schema.org/OutOfStock"

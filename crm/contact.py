@@ -20,6 +20,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.utils import latin_digits, normalize_mobile
 from core.templatetags.fa import fa_num
+from core import brand
 
 log = logging.getLogger(__name__)
 SALT = "contact-form"
@@ -159,8 +160,8 @@ def sms_parts(text):
 
 def reply_text(m):
     body = (m.reply or "").strip()
-    if "ایران کارپت" not in body:
-        body += "\nایران کارپت"
+    if brand.name() not in body:
+        body += "\n" + brand.name()
     return f"{m.name} عزیز، {body}" if m.name else body
 
 

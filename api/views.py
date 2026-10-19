@@ -29,6 +29,7 @@ from shop.views import PROVINCES
 
 from . import serializers as S
 from .models import ApiToken, AppNotification, AppSettings, Device, Wishlist
+from core import brand
 
 log = logging.getLogger(__name__)
 PER_PAGE = 20
@@ -784,7 +785,7 @@ def product_review(request, pk):
     if not rating and len(text) < 5:
         return fail("امتیاز بدهید یا چند کلمه بنویسید.")
     u = request.api_user
-    R.create(p, user=u, name=u.get_full_name() or "مشتری ایران کارپت", mobile=profile_of(u).mobile or "", rating=rating,
+    R.create(p, user=u, name=u.get_full_name() or f"مشتری {brand.name()}", mobile=profile_of(u).mobile or "", rating=rating,
              text=text or "—",
              photos=request.FILES.getlist("photos") + [request.FILES[k] for k in sorted(request.FILES) if k.startswith("photo_")])
     return ok({"message": "ممنون! نظر شما بعد از بررسی نمایش داده می‌شود."}, status=201)

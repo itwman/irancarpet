@@ -37,7 +37,7 @@
       {% if r.utm %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>utm_source</th><th>utm_medium</th><th>utm_campaign</th><th>ورود</th><th>سبد</th><th>خرید</th><th>فروش (تومان)</th></tr></thead><tbody>
         {% for u in r.utm %}<tr><td class="ltr-num">{{ u.source }}</td><td>{{ u.medium_label|default:"—" }}</td><td class="ltr-num">{{ u.campaign|default:"—" }}</td><td>{{ u.visits|fa_num }}</td><td>{{ u.carts|fa_num }}</td><td>{{ u.orders|fa_num }}</td><td class="num">{{ u.revenue|toman }}</td></tr>{% endfor %}
       </tbody></table></div>{% else %}<p class="muted mt-2">هنوز ورودی با UTM نیامده است. نمونهٔ پیوند برای استوری اینستاگرام:</p>
-      <p class="ltr-num small"><code>https://irancarpet.net/فرش-جشنواره-ای/?utm_source=instagram&amp;utm_medium=story&amp;utm_campaign=mehr1405</code></p>{% endif %}
+      <p class="ltr-num small"><code>https://{% site_domain %}/فرش-جشنواره-ای/?utm_source=instagram&amp;utm_medium=story&amp;utm_campaign=mehr1405</code></p>{% endif %}
     </section>
 
     <section class="card-p"><h2>پربازدیدترین فرش‌ها</h2>

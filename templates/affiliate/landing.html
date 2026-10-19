@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% load fa static %}
-{% block content %}
+{% block content %}{% site_domain as SD %}
 <div class="aff">
   <section class="aff-top" id="top">
     <div class="container aff-hero">
@@ -25,7 +25,7 @@
             <a class="btn-ic btn-ic--ink aff-access__go" href="/my-account/affiliate/">دیدن وضعیت درخواست</a>
           {% else %}
             <h2>حساب همکاری {{ a.get_status_display }}</h2>
-            <p>برای پیگیری با ایران کارپت تماس بگیرید{% if site_settings.phone %}: <span dir="ltr">{{ site_settings.phone|fa_num }}</span>{% endif %}.</p>
+            <p>برای پیگیری با {% brand %} تماس بگیرید{% if site_settings.phone %}: <span dir="ltr">{{ site_settings.phone|fa_num }}</span>{% endif %}.</p>
           {% endif %}
         {% elif user.is_authenticated %}
           <h2>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
@@ -73,7 +73,7 @@
 
   <section class="aff-band" aria-labelledby="whyH">
     <div class="container">
-      <h2 id="whyH">چرا فرش ایران کارپت راحت فروخته می‌شود</h2>
+      <h2 id="whyH">چرا فرش {% brand %} راحت فروخته می‌شود</h2>
       <ul class="aff-facts">{% for t, d in facts %}<li><b>{{ t|fa_num }}</b><span>{{ d|fa_num }}</span></li>{% endfor %}</ul>
     </div>
   </section>
@@ -90,7 +90,7 @@
     <h2 id="how">سه قدم تا اولین پورسانت</h2>
     <ol>
       <li><strong>ثبت‌نام کنید</strong><span>با موبایل وارد شوید و فرم کوتاه را پر کنید. بعد از تأیید، پیامک می‌گیرید و پنل همکاری‌تان باز می‌شود.</span></li>
-      <li><strong>پیوند یا کدتان را بفرستید</strong><span>پیوند کوتاه هر فرش (مثل <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/نام‌شما</span>) را در واتس‌اپ، تلگرام یا بیو اینستاگرام بگذارید{% if s.coupon_enabled %}؛ برای پست و استوری، کد تخفیف اختصاصی‌تان را بنویسید{% endif %}.</span></li>
+      <li><strong>پیوند یا کدتان را بفرستید</strong><span>پیوند کوتاه هر فرش (مثل <span dir="ltr">{{ s.short_domain|default:SD }}/نام‌شما</span>) را در واتس‌اپ، تلگرام یا بیو اینستاگرام بگذارید{% if s.coupon_enabled %}؛ برای پست و استوری، کد تخفیف اختصاصی‌تان را بنویسید{% endif %}.</span></li>
       <li><strong>پورسانت بگیرید</strong><span>بعد از تحویل فرش، پورسانت قابل تسویه می‌شود و از {{ s.min_payout|toman }} تومان به بالا به شبای خودتان واریز می‌شود.</span></li>
     </ol>
     <div class="aff-tools">
@@ -133,7 +133,7 @@
         <div class="grid-2">
           <div class="field{% if errors.code %} has-err{% endif %}"><label for="acode">نام دلخواه در پیوند (اختیاری)</label>
             <input id="acode" name="code" value="{{ data.code|default:'' }}" dir="ltr" placeholder="sara_home" maxlength="20" autocapitalize="off">
-            <small>پیوند شما: <span dir="ltr">{{ s.short_domain|default:"irancarpet.net" }}/<b id="codePrev">{{ data.code|default:"…" }}</b></span>. خالی بماند، خودکار ساخته می‌شود.</small>
+            <small>پیوند شما: <span dir="ltr">{{ s.short_domain|default:SD }}/<b id="codePrev">{{ data.code|default:"…" }}</b></span>. خالی بماند، خودکار ساخته می‌شود.</small>
             {% if errors.code %}<span class="err">{{ errors.code }}</span>{% endif %}</div>
           <div class="field{% if errors.sheba %} has-err{% endif %}"><label for="ash">شماره شبا (اختیاری؛ برای واریز)</label>
             <input id="ash" name="sheba" value="{{ data.sheba|default:'' }}" dir="ltr" placeholder="IR…" inputmode="numeric">

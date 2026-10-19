@@ -1,15 +1,20 @@
 from django.conf import settings
 from django.contrib.syndication.views import Feed
 
+from core import brand
 from core.seo import plain
 
 from .models import Post
 
 
 class LatestPostsFeed(Feed):
-    title = "ایران کارپت"
     link = "/blog/"
-    description = "آخرین مطالب ایران کارپت"
+
+    def title(self):
+        return brand.name()
+
+    def description(self):
+        return f"آخرین مطالب {brand.name()}"
 
     def items(self):
         return Post.objects.published()[:20]

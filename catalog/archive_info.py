@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.db.models import Count, Max, Min
 
 from core.templatetags.fa import fa_num, toman
+from core import brand
 
 SIZE_TYPES = ["rect", "runner", "round"]
 
@@ -60,7 +61,7 @@ def _build(products_qs, title, reeds):
                             key=lambda x: int(str(x).translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))))
     main = next((r for r in size_rows if r["slug"] == "12-meter"), None) or (size_rows[0] if size_rows else None)
 
-    lead = f"<p>{fa_num(n)} طرح {title} در ایران کارپت موجود است"
+    lead = f"<p>{fa_num(n)} طرح {title} در {brand.name()} موجود است"
     if len(reeds_list) > 1:
         lead += "، در " + _join([f"{fa_num(r)} شانه" for r in reeds_list])
     lead += "."

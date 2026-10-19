@@ -63,6 +63,15 @@ class SiteSettings(models.Model):
     """تنظیمات کلی سایت (یک ردیف)."""
 
     site_name = models.CharField("نام سایت", max_length=200, default="ایران کارپت")
+    brand_name = models.CharField(
+        "نام کوتاه برند", max_length=100, default="ایران کارپت", blank=True,
+        help_text="در متن صفحه‌ها، پیامک‌ها و Schema به‌جای نام فروشگاه می‌نشیند؛ مثل «ایران کارپت» یا «فرشستان»",
+    )
+    features_off = models.CharField(
+        "بخش‌های خاموش", max_length=300, blank=True,
+        help_text="نشانی‌های این بخش‌ها ۴۰۴ می‌دهند؛ با ویرگول جدا کنید: affiliate (همکاری در فروش)، market (فروشندگان)، "
+                  "finder (فرش‌یاب)، farshplus (هدیهٔ فرش پلاس)، app (API اپ موبایل)، torob (فید ترب و ایمالز)، manix (API مانیکس)",
+    )
     tagline = models.CharField("شعار", max_length=300, blank=True)
     title_separator = models.CharField("جداکنندهٔ عنوان", max_length=10, default="-")
     home_title = models.CharField("عنوان صفحهٔ اصلی", max_length=300, blank=True)
@@ -133,6 +142,12 @@ class SiteSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from . import brand
+
+        brand.clear()
 
     DAY_CODES = {"sat-thu": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
                  "sat-wed": ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"],

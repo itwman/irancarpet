@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from . import rewrite_rules
 from .models import Post, PostRewrite
+from core import brand
 
 log = logging.getLogger(__name__)
 S = PostRewrite.Status
@@ -113,7 +114,7 @@ def _site_paths():
 def _link_warnings(content):
     out, paths = [], _site_paths()
     for href in re.findall(r'href="([^"]+)"', content or ""):
-        h = unquote(href.replace("https://irancarpet.net", "").replace("https://www.irancarpet.net", ""))
+        h = unquote(href.replace(f"https://{brand.domain()}", "").replace(f"https://www.{brand.domain()}", ""))
         if not (h.startswith("/") and h.count("/") == 2) or h in paths:
             continue
         try:
@@ -133,7 +134,7 @@ def import_data(data, sha=""):
     post = _post(data.get("slug"))
     if not post and data.get("new") and (data.get("title") or "").strip():
         post = Post.objects.create(title=data["title"][:300], slug=unquote(data["slug"]).strip("/")[:255], status="draft",
-                                   author_name="ایران کارپت")
+                                   author_name=brand.name())
     if not post:
         return f"مقاله‌ای با نامک «{data.get('slug')}» نیست"
     rw, _ = PostRewrite.objects.get_or_create(post=post)

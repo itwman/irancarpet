@@ -4,8 +4,8 @@
   {% include "partials/breadcrumbs.html" %}
   <section class="fpg-hero">
     <div class="fpg-hero__text">
-      <h1>ایران کارپت را در فرش پلاس دنبال کنید، {{ g.amount|toman }} تومان هدیه بگیرید</h1>
-      <p>فرش پلاس شبکهٔ اجتماعی فرش و دکور است. اپش را نصب کنید، پیج ما را دنبال کنید و یک کد تخفیف شخصی برای خرید از ایران کارپت بگیرید.</p>
+      <h1>{% brand %} را در فرش پلاس دنبال کنید، {{ g.amount|toman }} تومان هدیه بگیرید</h1>
+      <p>فرش پلاس شبکهٔ اجتماعی فرش و دکور است. اپش را نصب کنید، پیج ما را دنبال کنید و یک کد تخفیف شخصی برای خرید از {% brand %} بگیرید.</p>
     </div>
     <div class="fpg-ticket" aria-hidden="true">
       <span class="fpg-ticket__amount">{{ g.amount|toman }}</span>
@@ -24,9 +24,9 @@
       </div>
     </li>
     <li>
-      <h2>پیج ایران کارپت را دنبال کنید</h2>
+      <h2>پیج {% brand %} را دنبال کنید</h2>
       <p>در اپ، پیج <b dir="ltr">@irancarpet</b> را باز کنید و «دنبال کردن» را بزنید.</p>
-      <div class="fpg-step__act"><a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ g.page_url }}" target="_blank" rel="noopener">باز کردن پیج ایران کارپت</a></div>
+      <div class="fpg-step__act"><a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ g.page_url }}" target="_blank" rel="noopener">باز کردن پیج {% brand %}</a></div>
     </li>
     <li>
       <h2>کد هدیه را بگیرید</h2>
@@ -44,7 +44,7 @@
   <section class="fpg-terms">
     <h2>شرایط</h2>
     <ul>
-      <li>کد فقط با همان شمارهٔ موبایل کار می‌کند؛ موقع خرید با همین شماره وارد ایران کارپت شوید.</li>
+      <li>کد فقط با همان شمارهٔ موبایل کار می‌کند؛ موقع خرید با همین شماره وارد {% brand %} شوید.</li>
       <li>برای خریدهای بالای {{ g.min_order|toman }} تومان، یک بار و تا {{ g.days|fa_num }} روز پس از دریافت.</li>
       <li>هر شماره یک بار هدیه می‌گیرد.</li>
     </ul>

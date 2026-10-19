@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from catalog.models import AttributeTerm, Product, Variation
 from core.templatetags.fa import fa_num, toman
+from core import brand
 
 MIN_PRODUCTS = 4
 FA = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
@@ -128,7 +129,7 @@ SIZE_NOTE = {
 
 def auto_intro(lp, month):
     lo, hi = lp.min_price, lp.max_price
-    first = f"<p>{fa_num(lp.count)} طرح {lp.title} در ایران کارپت موجود است"
+    first = f"<p>{fa_num(lp.count)} طرح {lp.title} در {brand.name()} موجود است"
     if lo and hi:
         first += (f"؛ قیمت {'هر فرش' if lp.size_id else 'از سایز کوچک'} از {toman(lo)} تا {toman(hi)} تومان"
                   if lo != hi else f" با قیمت {toman(lo)} تومان")
@@ -152,7 +153,7 @@ def faq(lp, month, size_rows):
     if lo:
         if lp.size_id:
             out.append({"q": f"قیمت {lp.title} چند است؟",
-                        "a": f"در لیست قیمت {month} ایران کارپت، {lp.title} از {toman(lo)} تا {toman(hi)} تومان است."})
+                        "a": f"در لیست قیمت {month} {brand.name()}، {lp.title} از {toman(lo)} تا {toman(hi)} تومان است."})
         elif size_rows:
             parts = "، ".join(f"{fa_num(r['label'])} از {toman(r['lo'])}" for r in size_rows[:4])
             out.append({"q": f"قیمت {lp.title} چند است؟", "a": f"قیمت بر اساس سایز فرق می‌کند: {parts} تومان (لیست {month})."})

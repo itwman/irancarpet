@@ -11,6 +11,7 @@ from catalog.models import Product
 
 from .jobs import QUICKPAY_SALT, REVIEW_SALT
 from .models import ProductAlert
+from core import brand
 
 META = {"robots": "noindex,nofollow"}
 
@@ -101,7 +102,7 @@ def product_review(request, slug):
         return redirect(back)
     from accounts.views import profile_of
 
-    reviews.create(product, user=request.user, name=request.user.get_full_name() or "مشتری ایران کارپت",
+    reviews.create(product, user=request.user, name=request.user.get_full_name() or f"مشتری {brand.name()}",
                    mobile=profile_of(request.user).mobile or "", rating=int(rating) if rating.isdigit() else 0,
                    text=text or "—", photos=request.FILES.getlist("photos"))
     messages.success(request, "ممنون! نظر شما بعد از بررسی نمایش داده می‌شود.")
