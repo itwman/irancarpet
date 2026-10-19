@@ -129,6 +129,8 @@ for _alias, _db in DATABASES.items():
         _db.setdefault("OPTIONS", {}).update({"charset": "utf8mb4", "init_command": f"SET sql_mode={mode}"})
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# MySQL قید یکتای شرط‌دار ندارد؛ منطق برنامه خودش تکراری‌ها را می‌گیرد (هشدار بی‌اثر هنگام migrate)
+SILENCED_SYSTEM_CHECKS = ["models.W036"]
 
 # --- رمز عبور ------------------------------------------------------------
 # PhpassHasher اجازه می‌دهد مشتریان قدیمی با همان رمز وردپرس وارد شوند؛

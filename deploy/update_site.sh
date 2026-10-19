@@ -10,7 +10,7 @@ APP=/var/www/$NAME-django
 cd "$APP"
 echo "== $NAME: دریافت آخرین نسخه"
 git pull -q --ff-only
-venv/bin/pip install -q --no-index --find-links /tmp/ic-wheels -r requirements.txt 2>/dev/null || venv/bin/pip install -q --timeout 60 -r requirements.txt || true
+bash deploy/pip_install.sh "$APP"
 mkdir -p private/cache && chgrp -R www-data private && chmod 2770 private private/cache
 venv/bin/python manage.py migrate --noinput
 venv/bin/python manage.py collectstatic --noinput -v0

@@ -6,7 +6,7 @@ cd /var/www/irancarpet-django
 echo "== دریافت آخرین نسخه"
 git pull --ff-only
 echo "== کتابخانه‌ها"
-venv/bin/pip install -q --no-index --find-links /tmp/ic-wheels -r requirements.txt 2>/dev/null || venv/bin/pip install -q --timeout 60 -r requirements.txt || true
+bash deploy/pip_install.sh "$(pwd)"
 echo "== پوشهٔ خصوصی و کش فایلی (قبل از migrate، تا فایل‌های کشی که root می‌سازد برای www-data هم خواندنی باشد)"
 mkdir -p private/cache
 chgrp -R www-data private && chmod 2770 private private/cache

@@ -27,16 +27,8 @@ for p in python3-venv apache2-utils openssl; do dpkg -s "$p" >/dev/null 2>&1 || 
 
 step "۲/۹ محیط پایتون و کتابخانه‌ها"
 [ -d venv ] || python3 -m venv venv
-installed=0
-rm -rf /tmp/ic-wheels
-if git clone -q --depth 1 -b wheels "$(git remote get-url origin)" /tmp/ic-wheels 2>/dev/null; then
-  venv/bin/pip install -q --no-index --find-links /tmp/ic-wheels -r requirements.txt && installed=1 || true
-fi
-for IDX in https://pypi.org/simple https://mirror-pypi.runflare.com/simple https://package-mirror.liara.ir/repository/pypi/simple; do
-  [ $installed = 1 ] && break
-  venv/bin/pip install -q --timeout 60 --retries 2 -i "$IDX" -r requirements.txt && installed=1 || true
-done
-[ $installed = 1 ] || { echo "!! نصب کتابخانه‌ها ناموفق بود"; exit 1; }
+bash deploy/pip_install.sh "$APP"
+venv/bin/python -c "import django" || { echo "!! نصب کتابخانه‌ها ناموفق بود"; exit 1; }
 
 step "۳/۹ عکس‌ها (همان مسیر /wp-content/uploads/ قبلی)"
 mkdir -p "$MEDIA"
