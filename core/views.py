@@ -282,6 +282,11 @@ def resolve(request, path):
             return license_page(request, page)
         if page_num == 1:
             return blog_views.page_detail(request, page)
+    # پیوندهای ثابت «/store/» در قالب‌های مشترک: روی سایتی که برگهٔ فروشگاهش نامک دیگری دارد (فرشستان: /shop/)
+    if slugs == ["store"]:
+        target = catalog_views.store_path()
+        if target != "/store/":
+            return HttpResponsePermanentRedirect(target + (f"page/{page_num}/" if page_num > 1 else ""))
     raise Http404
 
 

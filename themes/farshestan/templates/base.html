@@ -1,8 +1,9 @@
 {% load static fa %}<!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="nojs">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className="js";</script>
 <title>{{ meta.title|default:site_settings.site_name }}</title>
 {% if meta.description %}<meta name="description" content="{{ meta.description }}">{% endif %}
 <meta name="robots" content="{% if meta.robots %}{{ meta.robots }}{% else %}index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large{% endif %}">
@@ -16,7 +17,7 @@
 {% if meta.canonical %}<meta property="og:url" content="{{ meta.canonical }}">{% endif %}
 {% block og %}<meta property="og:type" content="website">{% endblock %}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#3B1916">
+<meta name="theme-color" content="#1B3768">
 <link rel="icon" href="{% static 'img/logo-tile.svg' %}" type="image/svg+xml">
 <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
 <link rel="alternate icon" href="/favicon.ico">
@@ -33,12 +34,16 @@
 <body class="fs {% block body_class %}{% endblock %}">
 <a class="visually-hidden-focusable skip" href="#main">رفتن به محتوا</a>
 {% include "partials/header.html" %}
-<main id="main">
-{% if messages %}<div class="container"><ul class="flash" role="status">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul></div>{% endif %}
+<main id="main" tabindex="-1">
+{% if messages %}<div class="h-wrap"><ul class="flash" role="status">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul></div>{% endif %}
 {% block content %}{% endblock %}
 </main>
 {% include "partials/footer.html" %}
-<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+{% if apps_promo.bar and apps_promo.apps %}{% with a=apps_promo.apps.0 %}<div class="app-bar" id="appBar" hidden>
+  <span class="app-bar__text"><b>{{ a.name }}</b> را نصب کنید؛ خرید و پیگیری سفارش راحت‌تر است.</span>
+  <a class="app-bar__go" href="{{ a.url }}" target="_blank" rel="noopener">نصب</a>
+  <button type="button" class="app-bar__x" aria-label="بستن">×</button>
+</div>{% endwith %}{% endif %}
 <script src="{% static 'js/site.js' %}?v={{ ASSET_V }}" defer></script>
 <script src="{% static 'js/theme.js' %}?v={{ ASSET_V }}" defer></script>
 {% if not request.user.is_staff %}<script>(function(){function s(){try{var m=document.querySelector('meta[name="ic-pid"]');fetch('/t/',{method:'POST',keepalive:true,credentials:'same-origin',headers:{'Content-Type':'text/plain'},body:JSON.stringify({p:location.pathname+location.search,r:document.referrer,pid:m?m.content:0})}).catch(function(){})}catch(e){}}if(document.readyState==='complete'){s()}else{addEventListener('load',function(){setTimeout(s,0)})}})();</script>{% endif %}

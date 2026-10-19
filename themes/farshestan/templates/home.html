@@ -1,74 +1,205 @@
 {% extends "base.html" %}{% load static fa shop_theme %}
-{% block body_class %}home{% endblock %}
+{% block body_class %}h-home{% endblock %}
+{% block head %}<link rel="preload" href="{% static 'img/house/portal.svg' %}" as="image">{% endblock %}
 {% block content %}
-{% latest_products 10 as gallery %}{% reeds_categories as rc %}{% color_categories 8 as cc %}
-<section class="fs-hero">
-  <div class="container fs-hero__grid">
-    <div class="fs-hero__txt">
-      <span class="fs-eyebrow">گالری فرش ماشینی</span>
-      <h1 class="fs-hero__title"><span>فرشی که خانه را</span> <span>آرام می‌کند</span></h1>
-      <p class="fs-hero__lead">هر طرح را مثل یک تابلو ببینید: رنگ زمینه، حاشیه و تراکم بافت را کنار هم بگذارید و سایز مناسب خانه‌تان را انتخاب کنید.</p>
-      <div class="fs-hero__cta"><a class="fs-btn fs-btn--primary" href="/shop/">دیدن همهٔ فرش‌ها</a><a class="fs-btn fs-btn--ghost" href="/carpets-price-list/">لیست قیمت امروز</a></div>
-      {% if rc %}<dl class="fs-stats">
-        {% for x in rc|slice:":4" %}<div><dt>{{ x.reeds|fa_num }} شانه</dt><dd>{{ x.count|fa_num }} طرح</dd></div>{% endfor %}
-      </dl>{% endif %}
+{% arch_categories 7 as ac %}{% reeds_categories as rc %}{% color_categories 12 as cc %}{% product_total as ptotal %}
+{% best_products 5 as best %}{% latest_products 1 as newest %}
+{% with feat=newest.0 %}
+
+{# ---------------------------------------------------------------- ۱. سردر: در با کوبه، با اسکرول باز می‌شود #}
+<section class="door-sec" id="door" aria-label="سردر {% brand %}">
+  <div class="door-stage">
+    <div class="door-scene" id="door-scene">
+      <div class="alley"></div>
+      <div class="ground"></div>
+      <div class="spill" id="spill"></div>
+      <div class="portal">
+        <img src="{% static 'img/house/portal.svg' %}" alt="" width="400" height="640" fetchpriority="high">
+        <div class="portal-kot" aria-hidden="true"><span>{% brand %}</span></div>
+        <div class="doorway" id="doorway">
+          <div class="beyond" aria-hidden="true">
+            <div class="by-wall"></div>
+            <div class="by-arch"><span>{% if feat %}{% include "partials/_rugimg.html" with m=feat.image w=240 sizes="80px" %}{% endif %}</span></div>
+            <div class="by-glow"></div>
+            <div class="by-pool"></div>
+          </div>
+          <div class="leaf l" id="leaf-l"><img src="{% static 'img/house/leaf.svg' %}" alt="" width="88" height="282">
+            <button type="button" class="knock" aria-label="حلقهٔ در را بزنید تا در باز شود"><svg viewBox="0 0 30 60" aria-hidden="true"><defs><linearGradient id="kg1" x1="0" x2="1"><stop offset="0" stop-color="#1B1714"/><stop offset=".5" stop-color="#5A4E44"/><stop offset="1" stop-color="#1B1714"/></linearGradient></defs><circle cx="15" cy="10" r="8" fill="url(#kg1)" stroke="#0E0B09"/><circle cx="15" cy="10" r="2.6" fill="#8A7C6A"/><circle cx="15" cy="36" r="13" fill="none" stroke="#1B1714" stroke-width="5"/><circle cx="15" cy="36" r="13" fill="none" stroke="#6E6052" stroke-width="1.2" stroke-dasharray="10 30"/></svg></button></div>
+          <div class="leaf r" id="leaf-r"><img src="{% static 'img/house/leaf.svg' %}" alt="" width="88" height="282">
+            <button type="button" class="knock" aria-label="کوبهٔ در را بزنید تا در باز شود"><svg viewBox="0 0 30 90" aria-hidden="true"><defs><linearGradient id="kg2" x1="0" x2="1"><stop offset="0" stop-color="#1B1714"/><stop offset=".5" stop-color="#5A4E44"/><stop offset="1" stop-color="#1B1714"/></linearGradient></defs><circle cx="15" cy="10" r="9" fill="url(#kg2)" stroke="#0E0B09"/><circle cx="15" cy="10" r="3" fill="#8A7C6A"/><rect x="11.5" y="12" width="7" height="58" rx="3.5" fill="url(#kg2)" stroke="#0E0B09"/><ellipse cx="15" cy="74" rx="8" ry="9" fill="url(#kg2)" stroke="#0E0B09"/><circle cx="15" cy="86" r="3.5" fill="#2A2420"/></svg></button></div>
+        </div>
+      </div>
+      <div class="hero-copy" id="hero-copy">
+        <h1 class="nq">از کارخانه، تا خانه</h1>
+        <p>{{ site_settings.tagline|default:"خرید مستقیم فرش ماشینی از کارخانه، به صورت آنلاین" }}. {{ ptotal|fa_num }}&nbsp;طرح{% if rc %}، از {{ rc.0.reeds|fa_num }} تا {% with last=rc|last %}{{ last.reeds|fa_num }}{% endwith %}&nbsp;شانه{% endif %}.</p>
+        <div class="hero-cta">
+          <a class="hb hb--laki" href="#hayat" id="open-door">در را باز کنید</a>
+          <a class="hb hb--line" href="/shop/">دیدن همهٔ فرش‌ها</a>
+        </div>
+      </div>
+      <div class="plaque" id="plaque" aria-hidden="true"><b>{{ ptotal|fa_num }}</b><span>طرح در این خانه</span></div>
+      <p class="door-hint" id="door-hint" aria-hidden="true">کوبهٔ در را بزنید، یا پایین بروید</p>
     </div>
-    <figure class="fs-wall" aria-label="طرح‌های تازهٔ گالری">
-      {% with a=gallery.0 b=gallery.1 %}
-      {% if a and a.image %}<a class="fs-wall__rug fs-wall__rug--a" href="{{ a.get_absolute_url }}"><img src="{{ a.image|thumb:960 }}" alt="{{ a.title }}" fetchpriority="high" decoding="async"{% if a.image.width %} width="{{ a.image.width }}" height="{{ a.image.height }}"{% endif %}></a>{% endif %}
-      {% if b and b.image %}<a class="fs-wall__rug fs-wall__rug--b" href="{{ b.get_absolute_url }}"><img src="{{ b.image|thumb:480 }}" alt="{{ b.title }}" loading="lazy" decoding="async"{% if b.image.width %} width="{{ b.image.width }}" height="{{ b.image.height }}"{% endif %}></a>{% endif %}
-      {% if a %}<figcaption>{{ a.title|short_title|fa_num }}</figcaption>{% endif %}
-      {% endwith %}
-    </figure>
+    <div class="sky-fade" id="sky-fade"></div>
   </div>
 </section>
 
+{# ---------------------------------------------------------------- ۲. حیاط: هر طاق یک دسته #}
+<section class="hayat" id="hayat" aria-labelledby="hayat-h">
+  <header class="h-sechead">
+    <h2 class="kotibeh" id="hayat-h">هر طاق، یک دسته</h2>
+    <p>دسته‌ها را از زیر طاق‌های حیاط انتخاب کنید.</p>
+  </header>
+  <div class="facade-wrap">
+    <div class="facade" style="--n:{{ ac.arches|length }}">
+      {% for x in ac.arches %}<a class="arch{% if x.mid %} is-mid{% endif %}" href="{{ x.url }}"><span class="arch-o"><span class="arch-i"><span class="muq"></span><span class="rod"></span>{% include "partials/_rugimg.html" with m=x.image w=240 sizes="(max-width: 1100px) 120px, 170px" seed=forloop.counter %}</span></span>
+        <span class="arch-l"><b>{{ x.short|fa_num }}</b><small>{{ x.count|fa_num }} طرح</small></span></a>{% endfor %}
+    </div>
+  </div>
+  <div class="pool" id="pool">
+    <div class="pool-rim"></div>
+    <div class="pool-water" id="pool-water" aria-hidden="true"></div>
+    <div class="pool-shine" aria-hidden="true"></div>
+    <p class="pool-note" aria-hidden="true">روی آب حوض بزنید</p>
+  </div>
+  {% if ac.more %}<div class="hayat-more"><span>طرح‌های دیگر:</span>{% for x in ac.more|slice:":8" %}<a class="h-tag" href="{{ x.url }}">{{ x.name|fa_num }} <small>{{ x.count|fa_num }}</small></a>{% endfor %}</div>{% endif %}
+</section>
+
+{# ---------------------------------------------------------------- ۳. پنج‌دری: ارسی و فرشی که روی آجرفرش باز می‌شود #}
+{% if feat %}
+<section class="room-sec" id="room" aria-labelledby="room-h">
+  <div class="room-stage">
+    <div class="room-vault"></div>
+    <h2 class="kotibeh wood room-kot" id="room-h">فرش را باید روی زمین دید</h2>
+    <div class="orosi" aria-hidden="true"><img src="{% static 'img/house/orosi.svg' %}" alt="" width="528" height="262" loading="lazy" decoding="async"></div>
+    <div class="floor-wrap" aria-hidden="true">
+      <div class="floor">
+        <div class="room-rug ur x" id="room-rug" style="{{ feat.image|rug_style }}">
+          <div class="ur-sheet">{% include "partials/_rugimg.html" with m=feat.image w=960 sizes="(max-width: 991px) 70vw, 520px" seed=feat.pk %}</div><div class="ur-roll"></div>
+        </div>
+        <div class="floor-light" id="floor-light"><img src="{% static 'img/house/orosi.svg' %}" alt="" width="528" height="262" loading="lazy" decoding="async"></div>
+      </div>
+    </div>
+    <div class="room-plq">
+      <span class="nq">{{ feat.title|rug_name|fa_num }}</span>
+      <p>{% with r=feat.title|reeds_of %}{% if r %}{{ r|fa_num }} شانه، {% endif %}{% endwith %}{% if "برجسته" in feat.title %}برجسته، {% endif %}تازه به پنج‌دری آمده؛ زیر نور ارسی.</p>
+      {% if feat.min_price %}<p class="h-price">از <b>{{ feat.min_price|toman }}</b> تومان</p>{% endif %}
+      <div class="h-row">
+        <a class="hb hb--lapis hb--sm" href="{{ feat.get_absolute_url }}">دیدن این فرش</a>
+        <a class="hb hb--laki hb--sm" href="{{ feat.get_absolute_url }}#buy">انتخاب سایز و خرید</a>
+      </div>
+    </div>
+    <p class="room-note">نور شیشه‌های رنگی ارسی روی فرش؛ رنگ فرش در خانهٔ شما هم با نور روز کمی عوض می‌شود.</p>
+  </div>
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- ۴. کارگاه: گره به گره #}
 {% if rc %}
-<section class="container fs-sec" aria-labelledby="hReeds">
-  <div class="fs-sec__head"><h2 id="hReeds">انتخاب بر اساس تراکم بافت</h2></div>
-  <div class="fs-tiles">{% for x in rc %}<a class="fs-tile" href="{{ x.url }}"><b>{{ x.reeds|fa_num }}</b><span>شانه</span><small>{{ x.count|fa_num }} طرح</small></a>{% endfor %}</div>
-</section>
-{% endif %}
-
-{% if offers %}
-<section class="container fs-sec" aria-labelledby="hOffers">
-  <div class="fs-sec__head"><div><span class="fs-eyebrow">آماده در انبار</span><h2 id="hOffers">فرصت‌های ویژهٔ خرید</h2></div><a href="/فرش-جشنواره-ای/">همهٔ فرصت‌ها ←</a></div>
-  <div class="offer-grid fs-offers">{% for o in offers %}{% include "shop/_offer_card.html" %}{% endfor %}</div>
-</section>
-{% endif %}
-
-{% if gallery %}
-<section class="container fs-sec" aria-labelledby="hNew">
-  <div class="fs-sec__head"><div><span class="fs-eyebrow">تازه‌های گالری</span><h2 id="hNew">طرح‌هایی که تازه به دیوار آمدند</h2></div><a href="/shop/">همهٔ طرح‌ها ←</a></div>
-  <div class="fs-grid">{% for p in gallery|slice:"2:10" %}{% include "partials/product_card.html" %}{% endfor %}</div>
-</section>
-{% endif %}
-
-{% if cc %}
-<section class="fs-band" aria-labelledby="hColors">
-  <div class="container fs-band__in">
-    <div class="fs-band__txt"><h2 id="hColors">از رنگ اتاق شروع کنید</h2><p>رنگ زمینهٔ فرش را با مبلمان و دیوار هماهنگ کنید؛ طرح‌ها بر اساس رنگ زمینه کنار هم چیده شده‌اند.</p></div>
-    <div class="fs-swatches">{% for c in cc %}<a class="fs-sw" href="{{ c.url }}"><i style="background:{{ c.hex }}"></i>{{ c.name }}<small>{{ c.count|fa_num }} طرح</small></a>{% endfor %}</div>
+<section class="kargah" id="kargah" aria-labelledby="kargah-h">
+  <div class="h-wrap kargah-grid">
+    <div class="loom-col">
+      <div class="loom" id="loom">
+        <div class="loom-post a"></div><div class="loom-post b"></div>
+        <div class="warps"></div>
+        <div class="woven" id="woven"><canvas aria-hidden="true"></canvas></div>
+        <div class="weft"></div>
+        <div class="loom-beam t"></div><div class="loom-beam b"></div>
+        <div class="lens" id="lens" tabindex="0" role="img" aria-label="ذره‌بین روی فرش؛ با کلیدهای جهت جابه‌جا می‌شود"><canvas></canvas></div>
+      </div>
+      <p class="lens-tip">ذره‌بین را بکشید یا روی فرش بزنید؛ با کیبورد، کلیدهای جهت.</p>
+    </div>
+    <div>
+      <h2 class="nq" id="kargah-h">گره به گره</h2>
+      <p class="lead">شانه یعنی تعداد گره در عرض یک متر فرش. هرچه شانه بیشتر باشد، گره‌ها ریزترند و نقش با جزئیات بیشتری بافته می‌شود. شانه را عوض کنید و زیر ذره‌بین ببینید.</p>
+      <fieldset class="shaneh" id="k-shaneh">
+        <legend>تراکم را انتخاب کنید</legend>
+        {% for x in rc %}<label><input type="radio" name="ksh" value="{{ x.reeds }}" data-url="{{ x.url }}"{% if forloop.first %} checked{% endif %}><span>{{ x.reeds|fa_num }}</span></label>{% endfor %}
+      </fieldset>
+      <p class="knot-say" id="k-say" aria-live="polite">در هر ۱۰ سانت از عرض فرش {{ rc.0.reeds|fa_num }} شانه، تقریباً <b>{% widthratio rc.0.reeds 10 1 as kn %}{{ kn|fa_num }} گره</b> کنار هم می‌نشیند.</p>
+      <a class="hb hb--laki" id="k-link" href="{{ rc.0.url }}">دیدن فرش‌های {{ rc.0.reeds|fa_num }} شانه</a>
+    </div>
   </div>
 </section>
 {% endif %}
 
-{% if direct and direct.rows %}
-<section class="container fs-sec fs-direct" aria-labelledby="hDirect">
-  <div class="fs-sec__head"><div><span class="fs-eyebrow">قیمت امروز</span><h2 id="hDirect">ارزان‌ترین طرح‌های هر لیست</h2></div><a href="/carpets-price-list/">لیست قیمت کامل ←</a></div>
-  <ul class="fs-direct__list">{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
-  {% if direct.faq %}<div class="fs-faq">{% for q, a in direct.faq %}<details><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}</div>{% endif %}
+{# ---------------------------------------------------------------- ۵. شاه‌نشین: پربازدیدها #}
+{% if best %}
+<section class="shah" id="shah" aria-labelledby="shah-h">
+  <div class="h-wrap">
+    <header class="h-sechead">
+      <h2 class="kotibeh gach" id="shah-h">شاه‌نشین</h2>
+      <p>پرطرفدارترین فرش‌های این روزها، در بهترین جای خانه.</p>
+    </header>
+    <div class="shah-grid">
+      {% with b=best %}{% if b|length >= 5 %}
+        {% include "partials/product_card.html" with p=b.3 %}{% include "partials/product_card.html" with p=b.1 %}{% include "partials/product_card.html" with p=b.0 big=True %}{% include "partials/product_card.html" with p=b.2 %}{% include "partials/product_card.html" with p=b.4 %}
+      {% else %}{% for p in b %}{% include "partials/product_card.html" %}{% endfor %}{% endif %}{% endwith %}
+      <div class="shah-step" aria-hidden="true"></div>
+    </div>
+  </div>
 </section>
 {% endif %}
 
+{# ---------------------------------------------------------------- فرصت‌های ویژه #}
+{% if offers %}
+<section class="h-band h-band--brick" aria-labelledby="off-h">
+  <div class="h-wrap">
+    <div class="h-band__head"><h2 class="nq" id="off-h">فرصت‌های ویژه</h2><a class="hb hb--lapis hb--sm" href="/فرش-جشنواره-ای/">همهٔ {% if offers_total %}{{ offers_total|fa_num }} {% endif %}فرصت</a></div>
+    <div class="h-offers">{% for o in offers %}
+      <a class="h-card h-offer" href="{{ o.product.get_absolute_url }}">
+        <span class="h-offer__img">{% include "partials/_rugimg.html" with m=o.product.image w=240 sizes="120px" seed=o.product.pk %}</span>
+        <span class="h-offer__b"><b>{{ o.product.title|rug_name|fa_num }}</b><small>{{ o.size.label|fa_num }}، {% if o.remaining == 1 %}یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %}</small>
+          <span class="h-price"><del>{{ o.regular_price|toman }}</del> <b>{{ o.price|toman }}</b> <small>تومان</small>{% if o.off_percent %} <em>٪{{ o.off_percent|fa_num }}</em>{% endif %}</span>
+          {% if o.ends_at %}<span class="offer-card__clock" data-offer-end="{{ o.ends_at|date:'c' }}"></span>{% elif o.remaining == 1 %}<span class="offer-card__clock">آخرین تخته</span>{% endif %}</span>
+      </a>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- ۶. به رنگ خانه #}
+{% if cc %}
+<section class="rang" aria-labelledby="rang-h">
+  <div class="h-wrap">
+    <h2 class="nq" id="rang-h">به رنگ خانه</h2>
+    <p class="sub">رنگ زمینه را از روی کاشی‌ها انتخاب کنید.</p>
+    <div class="tiles" style="--cols:{% if cc|length > 8 %}{% widthratio cc|length 2 1 %}{% else %}{{ cc|length }}{% endif %}">{% for c in cc %}<a class="tile" href="{{ c.url }}" style="background-color:{{ c.hex }}" data-hex="{{ c.hex }}"><b>{{ c.name }}</b><small>{{ c.count|fa_num }} طرح</small></a>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- قیمت امروز و پرسش‌ها #}
+{% if direct and direct.rows or direct.faq %}
+<section class="h-band" aria-labelledby="dir-h">
+  <div class="h-wrap h-ledger">
+    {% if direct.rows %}<div class="h-card">
+      <div class="h-band__head" style="margin-bottom:6px"><h2 class="nq" id="dir-h">دفتر قیمت امروز</h2></div>
+      <p class="muted" style="margin:0 0 10px">ارزان‌ترین فرش ۱۲ متری هر لیست قیمت کارخانه{% if direct.updated %}؛ به‌روزشده {{ direct.updated|jdate:"%d %B" }}{% endif %}.</p>
+      <ul>{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
+      <p style="margin:14px 0 0"><a class="hb hb--line hb--sm" href="/carpets-price-list/">لیست قیمت کامل</a></p>
+    </div>{% endif %}
+    {% if direct.faq %}<div class="h-faq">
+      <h2 class="h-h2 nq"{% if not direct.rows %} id="dir-h"{% endif %}>پرسش‌های پیش از خرید</h2>
+      {% for q, a in direct.faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}
+    </div>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- مجله #}
 {% if posts %}
-<section class="container fs-sec" aria-labelledby="hMag">
-  <div class="fs-sec__head"><h2 id="hMag">مجلهٔ {% brand %}</h2><a href="/blog/">همهٔ نوشته‌ها ←</a></div>
-  <div class="fs-journal">{% for post in posts|slice:":3" %}<a href="{{ post.get_absolute_url }}"><span class="fs-eyebrow">{% if post.primary_category %}{{ post.primary_category.name }}{% else %}مجله{% endif %}</span><b>{{ post.title|fa_num }}</b>{% if post.excerpt %}<span>{{ post.excerpt|striptags|truncatewords:22 }}</span>{% endif %}</a>{% endfor %}</div>
+<section class="h-band" style="padding-top:20px" aria-labelledby="mag-h">
+  <div class="h-wrap">
+    <div class="h-band__head"><h2 class="nq" id="mag-h">مجلهٔ {% brand %}</h2><a class="h-more" href="/blog/">همهٔ نوشته‌ها</a></div>
+    <div class="h-journal">{% for post in posts|slice:":3" %}<a class="h-post" href="{{ post.get_absolute_url }}">{% if post.image %}<img src="{{ post.image|thumb:480 }}" alt="" loading="lazy" decoding="async" width="480" height="300">{% endif %}<span class="in"><small>{% if post.primary_category %}{{ post.primary_category.name }}{% else %}مجله{% endif %}</small><b>{{ post.title|fa_num }}</b>{% if post.excerpt %}<span>{{ post.excerpt|striptags|truncatewords:20 }}</span>{% endif %}</span></a>{% endfor %}</div>
+  </div>
 </section>
 {% endif %}
 
 {% if about_html %}
-<section class="container fs-sec fs-about"><details><summary>دربارهٔ {% brand %}</summary><div class="prose">{{ about_html|safe }}</div></details></section>
+<section class="h-wrap h-about h-faq"><details><summary>دربارهٔ {% brand %}</summary><div class="prose">{{ about_html|safe }}</div></details></section>
 {% endif %}
+{% endwith %}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/house-home.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}
