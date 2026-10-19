@@ -77,7 +77,10 @@ def build(obj=None, kind="", page=1, extra=None, path=""):
         pass
     ctx.update(extra or {})
     if kind == "home":
-        title, desc = s.home_title, s.home_description
+        ctx.setdefault("sitedesc", s.tagline or "")
+        # عنوان صفحهٔ اول ممکن است الگوی Rank Math باشد (مثل «%sitename% %sep% %sitedesc%»)
+        title = render(s.home_title, ctx) if "%" in (s.home_title or "") else s.home_title
+        desc = render(s.home_description, ctx) if "%" in (s.home_description or "") else s.home_description
         canonical = settings.SITE_URL + "/"
         return dict(title=title or s.site_name, description=desc, robots="", canonical=canonical)
 
