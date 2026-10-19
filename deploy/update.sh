@@ -41,4 +41,10 @@ echo "== راه‌اندازی دوباره"
 systemctl restart irancarpet
 sleep 2
 systemctl is-active irancarpet
+echo "== سایت‌های دیگر روی همین کد (فرشستان و...)"
+for CONF in deploy/sites/*.conf; do
+  [ -e "$CONF" ] || continue
+  N=$(basename "$CONF" .conf)
+  [ -d "/var/www/$N-django/.git" ] && bash deploy/update_site.sh "$N" || true
+done
 echo "تمام شد."
