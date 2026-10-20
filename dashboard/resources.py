@@ -257,13 +257,15 @@ def _clear_sale(qs):
 
 
 def _set_sale(qs, status):
-    n = 0
+    n = opened = 0
     for p in qs:
         p.sale_status = status
         p.save()
         p.refresh_price_cache()
+        if status == "available" and p.open_all_sizes():
+            opened += 1
         n += 1
-    return f"وضعیت فروش {n} محصول تغییر کرد."
+    return f"وضعیت فروش {n} محصول تغییر کرد." + (f" سایزهای {opened} فرش که همه ناموجود بودند، موجود شد." if opened else "")
 
 
 TAX_FIELDS = ("اطلاعات", ["name", "slug", "description"], "main")

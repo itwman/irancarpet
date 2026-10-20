@@ -51,6 +51,7 @@ def product_edit(request, pk=None):
         from .crud import _public_url, _redirect_old_url
 
         old_url = _public_url(product)
+        had_live = bool(product and product.variations.filter(is_available=True).exists())
         form = style_form(ProductForm(request.POST, instance=product))
         vfs = VariationFS(request.POST, instance=product or Product(), prefix="v")
         ffs = FaqFS(request.POST, instance=product or Product(), prefix="f")
@@ -79,11 +80,19 @@ def product_edit(request, pk=None):
 
                     sync_album_variations([Product.objects.select_related("album").get(pk=p.pk)])
                 p.refresh_price_cache()
+                opened = 0
+                if p.sale_status == "available" and not p.variations.filter(is_available=True).exists() and p.variations.exists():
+                    if had_live:  # همین الان آخرین سایز را بست: احترام، ولی هشدار
+                        messages.warning(request, "همهٔ سایزها تیک «موجود» ندارند؛ این فرش در سایت «ناموجود» نشان داده می‌شود. "
+                                                  "اگر عمداً است، «وضعیت فروش» را هم ناموجود کنید.")
+                    else:  # از قبل همه بسته بودند (مثلاً از سایت قبلی) و فرش «موجود» است ← همه باز می‌شوند
+                        opened = p.open_all_sizes()
                 save_fp_flags(request, p)
             _redirect_old_url(old_url, p)
             log(request, "create" if created else "update", "محصولات", p)
             clear_site_cache()
-            messages.success(request, f"«{p.title}» ذخیره شد.")
+            messages.success(request, f"«{p.title}» ذخیره شد."
+                             + (f" همهٔ {opened} سایزِ ناموجودش هم موجود شد." if opened else ""))
             if request.POST.get("_next") == "list":
                 return redirect("/panel/products/")
             return redirect(f"/panel/products/{p.pk}/edit/")

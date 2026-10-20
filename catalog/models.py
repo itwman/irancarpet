@@ -281,6 +281,16 @@ class Product(SeoFields):
                 min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status
             )
 
+    def open_all_sizes(self):
+        """«موجود» بودن فرشی که همهٔ سایزهایش تیک «موجود» ندارند بی‌معناست (در سایت ناموجود دیده می‌شود)؛
+        همهٔ سایزها موجود می‌شوند. خروجی: تعداد سایزهایی که باز شد."""
+        if self.sale_status != "available" or self.variations.filter(is_available=True).exists():
+            return 0
+        n = self.variations.update(is_available=True)
+        if n:
+            self.refresh_price_cache()
+        return n
+
     @staticmethod
     def next_sku():
         """کد کالای بعدی: یکی بیشتر از بزرگ‌ترین کد عددی موجود (مثل افزونهٔ کدساز وردپرس)."""

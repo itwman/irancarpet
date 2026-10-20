@@ -382,3 +382,29 @@ def _test_bnpl_fields_rendered_and_saved(self):
 
 
 PanelTests.test_bnpl_fields_rendered_and_saved = _test_bnpl_fields_rendered_and_saved
+
+
+def _test_available_opens_closed_sizes(self):
+    """فرش «موجود» که همهٔ سایزهایش از سایت قبلی ناموجود مانده‌اند: با «وضعیت فروش: موجود» سایزها هم باز می‌شوند."""
+    from pricing.models import Size, seed_sizes
+
+    from .resources import _set_sale
+
+    seed_sizes()
+    p = Product.objects.create(title="کناره ارکیده", slug="kenare-orkide", sale_status="available")
+    for slug in ("6-meter", "12-meter"):
+        Variation.objects.create(product=p, size=Size.objects.get(slug=slug), manual_price=5_000_000, is_available=False)
+    p.refresh_price_cache()
+    self.assertEqual(Product.objects.get(pk=p.pk).stock_status, "outofstock")
+    msg = _set_sale(Product.objects.filter(pk=p.pk), "available")
+    self.assertIn("موجود شد", msg)
+    p = Product.objects.get(pk=p.pk)
+    self.assertEqual(p.stock_status, "instock")
+    self.assertEqual(p.variations.filter(is_available=True).count(), 2)
+    # فرشی که یک سایزش موجود است دست نمی‌خورد
+    p.variations.filter(size__slug="6-meter").update(is_available=False)
+    self.assertEqual(p.open_all_sizes(), 0)
+    self.assertFalse(p.variations.get(size__slug="6-meter").is_available)
+
+
+PanelTests.test_available_opens_closed_sizes = _test_available_opens_closed_sizes
