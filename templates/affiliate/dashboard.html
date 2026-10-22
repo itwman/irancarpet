@@ -16,17 +16,18 @@
     <div class="alert-ic alert-ic--warn">حساب همکاری شما {{ a.get_status_display }} است. برای پیگیری با {% brand %} تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
   {% else %}
 
-  <section class="aff-stats" aria-label="خلاصه">
-    <div class="aff-stat aff-stat--tier">
-      <span>فروش {{ period_label }}</span>
-      <strong>{{ sales|toman }} <small>تومان</small></strong>
+  <section class="aff-hero2" aria-label="خلاصهٔ درآمد">
+    <div class="aff-hero2__main">
+      <span class="aff-hero2__k">فروش با پیوند شما · {{ period_label }}</span>
+      <strong class="aff-hero2__v">{{ sales|toman }} <small>تومان</small></strong>
       <div class="aff-bar" role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"><i style="width:{{ progress }}%"></i></div>
-      <small>{% if a.custom_percent is not None %}درصد اختصاصی شما {{ rate|pct }}٪{% else %}پورسانت فعلی {{ rate|pct }}٪{% if next_tier %} · {{ left|toman }} تومان دیگر تا {{ next_tier.percent|pct }}٪{% else %} · بالاترین پله{% endif %}{% endif %}</small>
+      <p class="aff-hero2__tier">{% if a.custom_percent is not None %}درصد اختصاصی شما <b>{{ rate|pct }}٪</b>{% else %}پورسانت فعلی <b>{{ rate|pct }}٪</b>{% if next_tier %} · {{ left|toman }} تومان فروش دیگر تا <b>{{ next_tier.percent|pct }}٪</b>{% else %} · بالاترین پله{% endif %}{% endif %}</p>
     </div>
-    <div class="aff-stat"><span>قابل تسویه</span><strong>{{ payable|toman }} <small>تومان</small></strong>
-      <small>{% if payable >= s.min_payout %}در نوبت واریز{% else %}واریز از {{ s.min_payout|toman }} تومان{% endif %}</small></div>
-    <div class="aff-stat"><span>در راه</span><strong>{{ upcoming|toman }} <small>تومان</small></strong><small>سفارش‌های پرداخت یا تحویل‌نشده</small></div>
-    <div class="aff-stat"><span>۳۰ روز اخیر</span><strong>{{ visitors30|fa_num }} <small>بازدیدکننده</small></strong><small>{{ clicks30|fa_num }} ورود · {{ orders30|fa_num }} سفارش</small></div>
+    <dl class="aff-hero2__stats">
+      <div><dt>قابل تسویه</dt><dd>{{ payable|toman }} <small>تومان</small></dd><small>{% if payable >= s.min_payout %}در نوبت واریز{% else %}واریز از {{ s.min_payout|toman }} تومان{% endif %}</small></div>
+      <div><dt>در راه</dt><dd>{{ upcoming|toman }} <small>تومان</small></dd><small>سفارش‌های پرداخت یا تحویل‌نشده</small></div>
+      <div><dt>۳۰ روز اخیر</dt><dd>{{ visitors30|fa_num }} <small>بازدیدکننده</small></dd><small>{{ clicks30|fa_num }} ورود · {{ orders30|fa_num }} سفارش</small></div>
+    </dl>
   </section>
 
   <section class="aff-links">
@@ -48,19 +49,35 @@
     {% endif %}
   </section>
 
-  <section class="card-ic aff-maker" aria-labelledby="mk">
-    <h2 id="mk">پیوند یک فرش</h2>
-    <p class="muted">نام، رنگ یا نقشهٔ فرش را بنویسید (مثل «گلریز لاکی») یا نشانی صفحهٔ فرش را بچسبانید.</p>
-    <div class="aff-search"><input id="affQ" type="search" placeholder="جستجوی فرش…" autocomplete="off"></div>
-    <ul class="aff-results" id="affResults" aria-live="polite"></ul>
-    <h3 class="h6 mt-4">پیوند هر صفحهٔ دیگر</h3>
-    <form class="aff-page" id="affPage">{% csrf_token %}
-      <input name="url" dir="ltr" placeholder="https://{% site_domain %}/carpets-price-list/…" aria-label="نشانی صفحه">
-      <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">پیوند کوتاه بساز</button>
-    </form>
-    <div class="aff-copy" id="affPageOut" hidden><input readonly dir="ltr" aria-label="پیوند ساخته‌شده"><button class="pill" type="button" data-copy="">کپی</button></div>
-    <p class="err" id="affPageErr" hidden></p>
-    {% if links %}<ul class="aff-mylinks">{% for lk, url in links %}<li><span dir="ltr">{{ lk.path|truncatechars:60 }}</span> → <button class="linkbtn" type="button" data-copy="{{ url }}" dir="ltr">{{ url }}</button></li>{% endfor %}</ul>{% endif %}
+  <section class="card-ic aff-shelf" aria-labelledby="mk">
+    <div class="aff-shelf__head">
+      <div>
+        <h2 id="mk">فرش‌ها برای معرفی</h2>
+        <p class="muted mb-0">فقط فرش‌های موجود. پیوند هر فرش به نام شماست؛ عکس را برای پست و استوری بردارید.</p>
+      </div>
+      <div class="aff-search"><input id="affQ" type="search" placeholder="جستجو: نام، رنگ، نقشه یا نشانی صفحه…" autocomplete="off" aria-label="جستجوی فرش"></div>
+    </div>
+    <div class="aff-tabs" role="tablist" aria-label="دسته‌بندی فرش‌ها">
+      <button type="button" role="tab" class="on" aria-selected="true" data-tab="best">پرفروش</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="offers">فرصت‌های ویژه</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="new">تازه‌ها</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="random">تصادفی</button>
+      <span class="aff-tabs__sep" aria-hidden="true"></span>
+      <label class="aff-reeds"><span class="sr-only">شانه</span><select id="affReeds"><option value="">همهٔ شانه‌ها</option><option value="700">۷۰۰ شانه</option><option value="1000">۱۰۰۰ شانه</option><option value="1200">۱۲۰۰ شانه</option><option value="1500">۱۵۰۰ شانه</option></select></label>
+    </div>
+    <div class="aff-grid" id="affResults" aria-live="polite"></div>
+    <div class="aff-more"><button class="btn-ic btn-ic--teal btn-ic--sm" type="button" id="affMore" hidden>فرش‌های بیشتر</button></div>
+
+    <details class="aff-anypage">
+      <summary>پیوند هر صفحهٔ دیگر سایت (لیست قیمت، دسته‌ها، مقاله‌ها…)</summary>
+      <form class="aff-page" id="affPage">{% csrf_token %}
+        <input name="url" dir="ltr" placeholder="https://{% site_domain %}/carpets-price-list/…" aria-label="نشانی صفحه">
+        <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">پیوند کوتاه بساز</button>
+      </form>
+      <div class="aff-copy" id="affPageOut" hidden><input readonly dir="ltr" aria-label="پیوند ساخته‌شده"><button class="pill" type="button" data-copy="">کپی</button></div>
+      <p class="err" id="affPageErr" hidden></p>
+      {% if links %}<ul class="aff-mylinks">{% for lk, url in links %}<li><span dir="ltr">{{ lk.path|truncatechars:60 }}</span> → <button class="linkbtn" type="button" data-copy="{{ url }}" dir="ltr">{{ url }}</button></li>{% endfor %}</ul>{% endif %}
+    </details>
   </section>
 
   {% if top_products %}

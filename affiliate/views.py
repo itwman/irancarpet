@@ -257,42 +257,139 @@ def _period_label(p):
     return fa_num(f"{months[int(m) - 1]} {int(y)}")
 
 
-def _share_text(p, link):
+def _share_text(p, link, offer=None):
     from core.templatetags.fa import fa_num, toman
 
-    price = f"\nقیمت از {toman(p.min_price)} تومان" if p.min_price else ""
+    if offer:
+        size = f" ({offer.size.label})" if offer.size_id else ""
+        price = f"\n🔥 فرصت ویژه{size}: {toman(offer.price)} تومان به‌جای {toman(offer.regular_price)}، فقط {offer.remaining} تخته"
+    else:
+        price = f"\nقیمت از {toman(p.min_price)} تومان" if p.min_price else ""
     return fa_num(f"{p.title}{price}\nخرید نقدی و اقساطی با ارسال به سراسر ایران 👇\n") + link
+
+
+TABS = {"best": "پرفروش", "offers": "فرصت‌های ویژه", "new": "تازه‌ها", "random": "تصادفی"}
+PER_PAGE = 12
+
+
+def _rate(a, s):
+    if a.custom_percent is not None:
+        return float(a.custom_percent)
+    cur, _, _ = C.tier_info(C.period_sales(a, C.current_period(s)))
+    return float(cur["percent"]) if cur else 0.0
+
+
+def _sellable():
+    """فرش‌هایی که همکار می‌تواند بفروشد: منتشرشده، موجود، عکس‌دار، با قیمت."""
+    from catalog.models import BLOCKED_SALE_STATUSES, Product
+
+    return (Product.objects.published().filter(image__isnull=False, min_price__gt=0)
+            .exclude(stock_status="outofstock").exclude(sale_status__in=BLOCKED_SALE_STATUSES))
+
+
+def _best_ids():
+    """پرفروش‌های ۹۰ روز اخیر (تعداد تخته)، بعد پربازدیدها؛ ۱۰ دقیقه کش."""
+    from django.core.cache import cache
+
+    ids = cache.get("aff:best")
+    if ids is None:
+        from shop.models import Order, OrderItem
+
+        since = timezone.now() - timezone.timedelta(days=90)
+        sold = (OrderItem.objects.filter(order__status__in=Order.PAID_STATUSES, order__created_at__gte=since, product__isnull=False)
+                .values("product").annotate(n=Sum("quantity")).order_by("-n").values_list("product", flat=True)[:300])
+        live = set(_sellable().values_list("pk", flat=True))
+        ids = [i for i in sold if i in live]
+        seen = set(ids)
+        ids += [i for i in _sellable().order_by("-views").values_list("pk", flat=True)[:600] if i not in seen]
+        cache.set("aff:best", ids, 600)
+    return ids
+
+
+def _card(a, p, rate, offer=None):
+    from core.templatetags.fa import fa_num, reeds_of, thumb, toman
+
+    link = track.product_link(a, p)
+    price = offer.price if offer else (p.min_price or 0)
+    sizes = sum(1 for v in p.variations.all() if v.is_available and v.price)
+    d = {"id": p.pk, "title": fa_num(p.title), "image": thumb(p.image, 480) if p.image_id else "",
+         "download": p.image.file.url if p.image_id and p.image.file else "", "url": p.get_absolute_url(),
+         "price": toman(price) if price else "", "from": not offer and sizes > 1,
+         "reeds": fa_num(reeds_of(p.title)), "sizes": fa_num(sizes) if sizes else "",
+         "commission": toman(int(price * rate / 100 / 1000) * 1000) if price and rate else "",
+         "link": link, "text": _share_text(p, link, offer)}
+    if offer:
+        from core.templatetags.fa import jdate
+
+        d["offer"] = {"percent": fa_num(offer.off_percent), "regular": toman(offer.regular_price),
+                      "size": offer.size.label if offer.size_id else "", "left": fa_num(offer.remaining),
+                      "ends": jdate(offer.ends_at, "%d %B") if offer.ends_at else ""}
+    return d
 
 
 @login_required(login_url=LOGIN)
 def products(request):
-    """جستجوی فرش برای ساختن پیوند (JSON)."""
+    """فرش‌ها برای ساختن پیوند (JSON): زبانه‌های پرفروش، فرصت ویژه، تازه، تصادفی؛ یا جستجو. فقط فرش‌های موجود."""
     a = _affiliate_or_redirect(request)
     if a is None or not a.is_active:
         return JsonResponse({"items": []}, status=403)
-    from catalog.models import Product
-    from catalog.search import search
-    from core.templatetags.fa import fa_num, thumb, toman
+    import random
 
+    from django.db.models import Prefetch
+
+    from catalog.models import Product, Variation
+    from catalog.search import search
+
+    s = AffiliateSettings.load()
+    rate = _rate(a, s)
     q = (request.GET.get("q") or "").strip()[:80]
-    qs = Product.objects.published().select_related("image")
+    tab = request.GET.get("tab") if request.GET.get("tab") in TABS else "best"
+    reeds = (request.GET.get("reeds") or "").strip()
+    try:
+        page = max(1, int(request.GET.get("page") or 1))
+    except ValueError:
+        page = 1
+    lo, hi = (page - 1) * PER_PAGE, page * PER_PAGE
+    prefetch = Prefetch("variations", queryset=Variation.objects.only("product_id", "is_available", "sale_price", "final_price"))
+    base = _sellable().select_related("image").prefetch_related(prefetch)
+    if reeds.isdigit():
+        base = base.filter(specs__attribute__slug="reeds-per-meter", specs__slug=reeds)
+    items, more = [], False
+
     if q:
         m = re.search(r"/product/([^/?#]+)", q)
         if m:
             from urllib.parse import unquote
 
-            qs = qs.filter(slug=unquote(m.group(1)))
+            qs = Product.objects.published().filter(slug=unquote(m.group(1))).select_related("image").prefetch_related(prefetch)
         else:
-            qs, _ = search(qs, q)
+            qs, _ = search(base, q)
             qs = qs.order_by("-_rank", "-views")
+        rows = list(qs[lo:hi + 1])
+        more, rows = len(rows) > PER_PAGE, rows[:PER_PAGE]
+        items = [_card(a, p, rate) for p in rows]
+    elif tab == "offers":
+        from shop.offers import live_offers
+
+        offers = [o for o in live_offers() if o.product.status == "publish" and o.price
+                  and (not reeds.isdigit() or o.product.specs.filter(attribute__slug="reeds-per-meter", slug=reeds).exists())]
+        more = len(offers) > hi
+        items = [_card(a, o.product, rate, o) for o in offers[lo:hi]]
     else:
-        qs = qs.order_by("-views")
-    items = []
-    for p in qs[:12]:
-        link = track.product_link(a, p)
-        items.append({"id": p.pk, "title": fa_num(p.title), "image": thumb(p.image, 240) if p.image_id else "",
-                      "price": toman(p.min_price) if p.min_price else "", "link": link, "text": _share_text(p, link)})
-    return JsonResponse({"items": items})
+        if tab == "new":
+            ids = list(base.order_by("-published_at").values_list("pk", flat=True)[lo:hi + 1])
+        elif tab == "random":
+            pool = list(base.values_list("pk", flat=True)) if reeds.isdigit() else list(_sellable().values_list("pk", flat=True))
+            seed = request.GET.get("seed") or "0"
+            random.Random(seed).shuffle(pool)  # همان دانه = همان ترتیب، تا «بیشتر» تکراری نیاورد
+            ids = pool[lo:hi + 1]
+        else:
+            allowed = set(base.values_list("pk", flat=True)) if reeds.isdigit() else None
+            ids = [i for i in _best_ids() if allowed is None or i in allowed][lo:hi + 1]
+        more, ids = len(ids) > PER_PAGE, ids[:PER_PAGE]
+        by = {p.pk: p for p in base.filter(pk__in=ids)}
+        items = [_card(a, by[i], rate) for i in ids if i in by]
+    return JsonResponse({"items": items, "more": more, "page": page})
 
 
 @login_required(login_url=LOGIN)

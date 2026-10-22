@@ -26,7 +26,10 @@ class AffiliateTests(TestCase):
         self.mu = User.objects.create_user("09350000000")
         self.a = Affiliate.objects.create(user=self.mu, code="sara", name="سارا", mobile="09350000000", status="active")
         self.cust = User.objects.create_user("09121112233")
-        self.p = Product.objects.create(title="فرش گلریز", slug="golriz", status="publish")
+        from core.models import Media
+
+        self.img = Media.objects.create(file="2024/01/a.jpg", title="a")
+        self.p = Product.objects.create(title="فرش گلریز", slug="golriz", status="publish", image=self.img, min_price=20 * M)
 
     # ----------------------------------------------------------- پیوند کوتاه و کوکی
     def test_short_host_redirects(self):
@@ -212,3 +215,71 @@ class LandingTests(TestCase):
         AffiliateSettings.objects.update_or_create(pk=1, defaults={"enabled": False})
         self.assertEqual(self.client.get("/affiliate/").status_code, 404)
         self.assertNotContains(self.client.get("/"), "همکار فروش ایران کارپت شوید")
+
+
+class ShelfTests(TestCase):
+    """قفسهٔ فرش‌های پنل همکار: فقط موجودها، پرفروش، فرصت ویژه، تصادفی و صفحه‌بندی."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        from core.models import Media
+        from pricing.models import Size, seed_sizes
+
+        cache.clear()
+        seed_sizes()
+        self.s6 = Size.objects.get(slug="6-meter")
+        u = User.objects.create_user("09350000001")
+        self.a = Affiliate.objects.create(user=u, code="nasrin", name="نسرین", mobile="09350000001", status="active")
+        self.client.force_login(u)
+        img = Media.objects.create(file="2024/01/b.jpg", title="b")
+        from catalog.models import Variation
+
+        self.ps = []
+        for i in range(30):
+            p = Product.objects.create(title=f"فرش ۷۰۰ شانه نقشه {i}", slug=f"n{i}", status="publish", image=img, views=i)
+            Variation.objects.create(product=p, size=self.s6, manual_price=(10 + i) * M)
+            p.refresh_price_cache()
+            self.ps.append(p)
+        self.out = self.ps[29]  # پربازدیدترین ولی ناموجود
+        self.out.variations.update(is_available=False)
+        self.out.refresh_price_cache()
+
+    def get(self, **kw):
+        from urllib.parse import urlencode
+
+        return self.client.get("/my-account/affiliate/products/?" + urlencode(kw)).json()
+
+    def test_only_in_stock_and_best_first(self):
+        from shop.models import OrderItem
+
+        o = order(total=20 * M, status="paid")
+        OrderItem.objects.create(order=o, product=self.ps[3], title="x", unit_price=20 * M, quantity=2)
+        d = self.get(tab="best")
+        ids = [it["id"] for it in d["items"]]
+        self.assertEqual(ids[0], self.ps[3].pk)  # فروش واقعی جلوتر از بازدید
+        self.assertNotIn(self.out.pk, ids)
+        self.assertTrue(d["more"])
+        d2 = self.get(tab="best", page=2)
+        self.assertFalse(set(ids) & {it["id"] for it in d2["items"]})
+        it = d["items"][0]
+        self.assertTrue(it["commission"] and it["download"].endswith("b.jpg") and it["sizes"])
+
+    def test_random_pages_do_not_repeat_and_search_excludes_out(self):
+        a = [it["id"] for it in self.get(tab="random", seed="7")["items"]]
+        b = [it["id"] for it in self.get(tab="random", seed="7", page=2)["items"]]
+        self.assertEqual(len(a), 12)
+        self.assertFalse(set(a) & set(b))
+        self.assertNotIn(self.out.pk, a + b)
+        self.assertNotIn(self.out.pk, [it["id"] for it in self.get(q="نقشه 29")["items"]])
+
+    def test_offers_tab(self):
+        from shop.models import SpecialOffer
+
+        SpecialOffer.objects.create(product=self.out, size=self.s6, percent=20, quantity=3)  # فرصت ویژه حتی برای فرش ناموجود
+        d = self.get(tab="offers")
+        self.assertEqual(len(d["items"]), 1)
+        it = d["items"][0]
+        self.assertEqual(it["id"], self.out.pk)
+        self.assertEqual(it["offer"]["percent"], "۲۰")
+        self.assertIn("فرصت ویژه", it["text"])

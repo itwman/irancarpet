@@ -1530,3 +1530,60 @@ body.has-app-bar{padding-bottom:64px}
 /* --- ترب‌پی زیر قیمت --- */
 .torob-line{display:flex;align-items:center;gap:.5rem;margin:.6rem 0 0;padding:.5rem .8rem;border-radius:12px;background:var(--soft);font-size:.9rem;line-height:1.7;color:var(--ink-2)}
 .torob-line b{color:#d6232c;font-weight:900;white-space:nowrap}
+
+/* --- پنل همکاری: سربرگ درآمد و قفسهٔ فرش‌ها --- */
+.aff-hero2{display:grid;grid-template-columns:1.3fr 2fr;gap:1.5rem;align-items:stretch;background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:1.6rem 1.8rem;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.aff-hero2::after{content:"";position:absolute;inset-inline-end:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:repeating-conic-gradient(var(--pink) 0 25%,var(--saffron) 0 50%,var(--teal) 0 75%,var(--pistachio) 0 100%);opacity:.12;pointer-events:none}
+.aff-hero2__k{color:#c9cbe6;font-size:.9rem;font-weight:600}
+.aff-hero2__v{display:block;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;line-height:1.3;margin:.2rem 0 .1rem}
+.aff-hero2__v small{font-size:.9rem;color:#c9cbe6;font-weight:600}
+.aff-hero2__tier{margin:.3rem 0 0;color:#e4e5f6;font-size:.9rem}
+.aff-hero2__tier b{color:var(--saffron)}
+.aff-hero2__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:0}
+.aff-hero2__stats>div{background:rgba(255,255,255,.07);border-radius:var(--r-md);padding:.9rem 1rem;display:flex;flex-direction:column;gap:.15rem}
+.aff-hero2__stats dt{color:#c9cbe6;font-size:.82rem;font-weight:600}
+.aff-hero2__stats dd{margin:0;font-size:1.35rem;font-weight:900}
+.aff-hero2__stats dd small{font-size:.75rem;color:#c9cbe6;font-weight:600}
+.aff-hero2__stats>div>small{color:#b9bbdc;font-size:.78rem;line-height:1.6}
+.aff-shelf__head{display:flex;gap:1rem;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:.9rem}
+.aff-shelf__head .aff-search{flex:0 1 380px}
+.aff-tabs{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.aff-tabs [data-tab]{border:0;background:var(--soft);color:var(--ink-2);font:inherit;font-weight:700;font-size:.9rem;padding:.5rem 1rem;border-radius:99px;cursor:pointer}
+.aff-tabs [data-tab].on{background:var(--ink);color:#fff}
+.aff-tabs [data-tab="offers"].on{background:var(--pink)}
+.aff-tabs__sep{flex:1}
+.aff-reeds select{border:2px solid var(--line);border-radius:99px;padding:.4rem .9rem;font:inherit;font-size:.88rem;background:#fff}
+.aff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.aff-grid[aria-busy]{opacity:.5;transition:opacity .2s}
+.aff-empty{grid-column:1/-1;padding:2rem 0;text-align:center}
+.affc{display:flex;flex-direction:column;border-radius:var(--r-lg);background:#fff;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.affc__img{position:relative;display:block;aspect-ratio:1;background:var(--soft)}
+.affc__img img{width:100%;height:100%;object-fit:cover}
+.affc__off{position:absolute;top:.6rem;inset-inline-start:.6rem;background:var(--pink);color:#fff;font-weight:800;font-size:.8rem;padding:.2rem .6rem;border-radius:99px}
+.affc__reeds{position:absolute;bottom:.6rem;inset-inline-start:.6rem;background:rgba(34,38,90,.85);color:#fff;font-weight:700;font-size:.75rem;padding:.15rem .55rem;border-radius:99px}
+.affc__body{padding:.8rem .9rem .9rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
+.affc__body h3{font-size:.92rem;line-height:1.7;margin:0;font-weight:800}
+.affc__price{margin:0;font-size:.95rem}
+.affc__price b{font-weight:900}
+.affc__price small{color:var(--muted)}
+.affc__price s{color:var(--muted);font-size:.8rem;margin-inline-start:.3rem}
+.affc__meta{margin:0;color:var(--muted);font-size:.8rem;min-height:1.3em}
+.affc__earn{margin:.15rem 0 .2rem;background:var(--saffron-t);color:#7a4f00;font-size:.8rem;padding:.35rem .6rem;border-radius:10px}
+.affc__earn b{font-weight:900}
+.affc__acts{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:auto;padding-top:.3rem}
+.affc__acts .pill{padding:.3rem .7rem;font-size:.8rem}
+.aff-more{text-align:center;margin-top:1rem}
+.aff-anypage{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}
+.aff-anypage summary{cursor:pointer;font-weight:700;color:var(--ink-2)}
+.aff-anypage .aff-page{margin-top:.8rem}
+@media (max-width:991px){.aff-hero2{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .aff-hero2{padding:1.2rem}
+  .aff-hero2__stats{grid-template-columns:1fr 1fr}
+  .aff-hero2__stats>div:last-child{grid-column:1/-1}
+  .aff-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+  .affc__body{padding:.6rem}
+  .affc__body h3{font-size:.84rem}
+  .affc__acts .pill{font-size:.74rem;padding:.25rem .55rem}
+  .aff-tabs__sep{display:none}
+}

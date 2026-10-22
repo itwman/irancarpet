@@ -52,28 +52,60 @@
   var code = document.getElementById("acode"), prev = document.getElementById("codePrev");
   if (code && prev) code.addEventListener("input", function () { code.value = code.value.toLowerCase().replace(/[^a-z0-9_]/g, ""); prev.textContent = code.value || "…"; });
 
-  // جستجوی فرش و پیوند هر فرش
+  // فرش‌ها برای معرفی: زبانه‌ها، شانه، جستجو و «بیشتر»
   var q = document.getElementById("affQ"), box = document.getElementById("affResults");
   if (q && box) {
-    var timer, last = null;
-    var esc = function (s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
-    var load = function () {
-      var v = q.value.trim(); if (v === last) return; last = v;
-      fetch("/my-account/affiliate/products/?q=" + encodeURIComponent(v), { credentials: "same-origin" })
+    var more = document.getElementById("affMore"), reeds = document.getElementById("affReeds");
+    var st = { tab: "best", page: 1, seed: String(Date.now() % 100000) }, timer, busy = false;
+    var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; };
+    var card = function (it) {
+      var o = it.offer;
+      return '<article class="affc">' +
+        '<a class="affc__img" href="' + esc(it.url) + '" target="_blank" rel="noopener">' +
+          (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy" width="480" height="480">' : "") +
+          (o ? '<span class="affc__off">٪' + esc(o.percent) + " تخفیف</span>" : "") +
+          (it.reeds ? '<span class="affc__reeds">' + esc(it.reeds) + " شانه</span>" : "") + "</a>" +
+        '<div class="affc__body"><h3>' + esc(it.title) + "</h3>" +
+          '<p class="affc__price">' + (it.price ? (it.from ? "<small>از</small> " : "") + "<b>" + esc(it.price) + "</b> <small>تومان</small>" : "") +
+            (o && o.regular ? " <s>" + esc(o.regular) + "</s>" : "") + "</p>" +
+          '<p class="affc__meta">' + (o ? esc(o.size) + " · " + esc(o.left) + " تخته مانده" + (o.ends ? " · تا " + esc(o.ends) : "") :
+            (it.sizes ? esc(it.sizes) + " سایز موجود" : "")) + "</p>" +
+          (it.commission ? '<p class="affc__earn">پورسانت شما از هر فروش حدود <b>' + esc(it.commission) + "</b> تومان</p>" : "") +
+          '<div class="affc__acts">' +
+            '<button class="pill" type="button" data-copy="' + esc(it.link) + '">کپی پیوند</button>' +
+            '<button class="pill" type="button" data-copy="' + esc(it.text) + '">کپی متن</button>' +
+            '<a class="pill" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(it.text) + '">واتس‌اپ</a>' +
+            (it.download ? '<a class="pill" href="' + esc(it.download) + '" download>دانلود عکس</a>' : "") +
+          "</div></div></article>";
+    };
+    var load = function (append) {
+      if (busy) return; busy = true;
+      var params = new URLSearchParams({ q: q.value.trim(), tab: st.tab, page: st.page, reeds: reeds ? reeds.value : "", seed: st.seed });
+      if (!append) box.setAttribute("aria-busy", "true");
+      fetch("/my-account/affiliate/products/?" + params, { credentials: "same-origin" })
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (!d.items || !d.items.length) { box.innerHTML = '<li class="muted">فرشی پیدا نشد؛ کلمهٔ دیگری بنویسید.</li>'; return; }
-          box.innerHTML = d.items.map(function (it) {
-            return '<li><img src="' + esc(it.image) + '" alt="" loading="lazy" width="64" height="64"><div><b>' + esc(it.title) + "</b>" +
-              (it.price ? "<small>از " + esc(it.price) + " تومان</small>" : "") + '<span dir="ltr">' + esc(it.link) + "</span></div>" +
-              '<div class="aff-acts"><button class="pill" type="button" data-copy="' + esc(it.link) + '">کپی پیوند</button>' +
-              '<button class="pill" type="button" data-copy="' + esc(it.text) + '">کپی متن آماده</button>' +
-              '<a class="pill" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(it.text) + '">واتس‌اپ</a></div></li>';
-          }).join("");
-        }).catch(function () {});
+          var html = (d.items || []).map(card).join("");
+          if (!append) box.innerHTML = html || '<p class="muted aff-empty">' + (st.tab === "offers" && !q.value.trim() ? "الان فرصت ویژه‌ای نیست." : "فرشی پیدا نشد؛ کلمهٔ دیگری بنویسید یا شانه را عوض کنید.") + "</p>";
+          else box.insertAdjacentHTML("beforeend", html);
+          more.hidden = !d.more;
+        })
+        .catch(function () {})
+        .finally(function () { busy = false; box.removeAttribute("aria-busy"); });
     };
-    q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(load, 300); });
-    load();
+    var reset = function () { st.page = 1; load(false); };
+    document.querySelectorAll(".aff-tabs [data-tab]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll(".aff-tabs [data-tab]").forEach(function (x) { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); });
+        st.tab = b.getAttribute("data-tab");
+        if (st.tab === "random") st.seed = String(Date.now() % 100000);  // هر بار چیدمان تازه
+        q.value = ""; reset();
+      });
+    });
+    if (reeds) reeds.addEventListener("change", reset);
+    q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(reset, 300); });
+    more.addEventListener("click", function () { st.page += 1; load(true); });
+    load(false);
   }
 
   // پیوند کوتاه هر صفحه
