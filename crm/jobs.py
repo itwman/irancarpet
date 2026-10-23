@@ -148,7 +148,7 @@ def review_rewards(now=None, limit=50):
     if not s.review_reward_enabled or not s.review_reward_amount:
         return 0
     now = now or timezone.now()
-    qs = (Review.objects.filter(is_approved=True, verified=True, parent__isnull=True, created_at__gte=now - td(days=45))
+    qs = (Review.objects.filter(is_approved=True, verified=True, parent__isnull=True, kind="review", created_at__gte=now - td(days=45))
           .exclude(mobile="").annotate(_ph=Count("photos")).filter(_ph__gt=0).order_by("created_at")[:limit])
     sent = 0
     for r in qs:

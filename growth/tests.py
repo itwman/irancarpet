@@ -197,6 +197,27 @@ class GrowthTests(TestCase):
         r = self.client.post(f"/product/{self.p.slug}/review/", {"rating": "4", "text": "خوب"})
         self.assertTrue(r["Location"].startswith("/my-account/login/"))
 
+    def test_product_question(self):
+        from catalog.reviews import recompute
+
+        url = f"/product/{self.p.slug}/question/"
+        r = self.client.post(url, {"text": "این فرش برای آشپزخانه مناسب است؟"})
+        self.assertTrue(r["Location"].startswith("/my-account/login/"))
+        self.login()
+        self.client.post(url, {"text": "کوتاه"})
+        self.assertFalse(Review.objects.exists())
+        self.client.post(url, {"text": "این فرش برای آشپزخانه مناسب است؟"})
+        q = Review.objects.get()
+        self.assertEqual((q.kind, q.rating, q.is_approved), ("question", None, False))
+        Review.objects.filter(pk=q.pk).update(is_approved=True)
+        Review.objects.create(product=self.p, parent=q, author_name="فروشگاه", content="بله، شست‌وشوپذیر است.", is_approved=True, rating=0)
+        recompute(self.p)
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.rating_count, 0)          # پرسش در امتیاز فرش حساب نمی‌شود
+        r = self.client.get(self.p.get_absolute_url())
+        self.assertEqual([x.pk for x in r.context["questions"]], [q.pk])
+        self.assertEqual(list(r.context["reviews"]), [])  # و در فهرست نظرها نمی‌آید
+
     def test_app_review_with_photos(self):
         r = self.client.post("/api/app/v1/auth/otp/", json.dumps({"mobile": "09125550000"}), content_type="application/json")
         code = r.json()["dev_code"]

@@ -205,7 +205,7 @@ def home(request):
                 reeds.append({"term_id": term.pk, "slug": term.slug, "name": term.name, "products": [S.card(p) for p in items]})
     site = SiteSettings.load()
     cats = Category.objects.filter(parent=None).select_related("image").order_by("order")[:16]
-    stats = Review.objects.filter(parent=None, is_approved=True, rating__gt=0).values("rating")
+    stats = Review.objects.filter(parent=None, kind="review", is_approved=True, rating__gt=0).values("rating")
     n = stats.count()
     return ok({
         "notice": AppSettings.load().home_notice,
@@ -337,7 +337,7 @@ def product(request, pk):
     specs = {}
     for t in p.specs.select_related("attribute").order_by("attribute__order", "order"):
         specs.setdefault(t.attribute.label, []).append(t.name)
-    reviews = Review.objects.filter(product=p, parent=None, is_approved=True).prefetch_related("photos").order_by("-created_at")[:20]
+    reviews = Review.objects.filter(product=p, parent=None, kind="review", is_approved=True).prefetch_related("photos").order_by("-created_at")[:20]
     faqs = p.faqs.filter(is_active=True).order_by("order")
     related = []
     if p.primary_category_id or p.categories.exists():

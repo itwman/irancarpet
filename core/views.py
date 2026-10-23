@@ -104,7 +104,7 @@ def _home_data():
                 break
 
     reviews = list(
-        Review.objects.filter(parent=None, is_approved=True, rating=5, product__status="publish")
+        Review.objects.filter(parent=None, kind="review", is_approved=True, rating=5, product__status="publish")
         .select_related("product").order_by("-created_at")[:300]
     )
     picked, seen = [], set()
@@ -121,7 +121,7 @@ def _home_data():
         if len(picked) == 4:
             break
 
-    stats = Review.objects.filter(parent=None, is_approved=True, rating__gt=0).aggregate(avg=Avg("rating"), n=Count("id"))
+    stats = Review.objects.filter(parent=None, kind="review", is_approved=True, rating__gt=0).aggregate(avg=Avg("rating"), n=Count("id"))
     return {
         "groups": groups, "showcase": showcase, "reviews": picked,
         "rating_avg": round(stats["avg"] or 0, 1), "rating_count": stats["n"],

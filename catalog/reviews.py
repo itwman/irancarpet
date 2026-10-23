@@ -12,7 +12,7 @@ MAX_PHOTOS = 4
 
 def recompute(product):
     """امتیاز و تعداد نظرهای تأییدشده (فقط نظرهای اصلی با امتیاز)."""
-    agg = Review.objects.filter(product=product, parent=None, is_approved=True, rating__gt=0).aggregate(a=Avg("rating"), n=Count("id"))
+    agg = Review.objects.filter(product=product, parent=None, kind="review", is_approved=True, rating__gt=0).aggregate(a=Avg("rating"), n=Count("id"))
     type(product).objects.filter(pk=product.pk).update(rating_avg=round(agg["a"] or 0, 2), rating_count=agg["n"] or 0)
 
 
@@ -42,6 +42,14 @@ def save_photos(review, files):
         ReviewPhoto.objects.create(review=review, image=ContentFile(buf.getvalue(), name=f"r{review.pk}-{n + 1}.jpg"))
         n += 1
     return n
+
+
+def ask(product, *, user=None, name="", mobile="", text=""):
+    """پرسش مشتری دربارهٔ فرش؛ بعد از تأیید و پاسخ در پنل، زیر «پرسش و پاسخ» صفحهٔ فرش می‌آید."""
+    return Review.objects.create(
+        product=product, user=user, author_name=(name or f"مشتری {brand.name()}")[:200], mobile=mobile[:11],
+        rating=None, content=text.strip()[:1500], is_approved=False, kind="question",
+    )
 
 
 def create(product, *, user=None, name="", mobile="", rating=0, text="", photos=(), order=None):

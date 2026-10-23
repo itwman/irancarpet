@@ -109,6 +109,31 @@ def product_review(request, slug):
     return redirect(back)
 
 
+def product_question(request, slug):
+    """پرسش مشتری دربارهٔ یک فرش (بعد از تأیید و پاسخ در پنل ← نظرات محصولات، نمایش داده می‌شود)."""
+    from catalog import reviews
+
+    product = get_object_or_404(Product.objects.published(), slug=slug)
+    back = product.get_absolute_url() + "#qa"
+    if request.method != "POST":
+        return redirect(back)
+    if not request.user.is_authenticated:
+        return redirect(f"/my-account/login/?next={back}")
+    text = (request.POST.get("text") or "").strip()
+    if len(text) < 8:
+        messages.error(request, "پرسش را کمی کامل‌تر بنویسید.")
+        return redirect(back)
+    if not cache.add(f"qa:{request.user.pk}:{product.pk}", 1, 60):
+        messages.info(request, "پرسش شما ثبت شده است؛ کمی بعد دوباره بفرستید.")
+        return redirect(back)
+    from accounts.views import profile_of
+
+    reviews.ask(product, user=request.user, name=request.user.get_full_name() or f"مشتری {brand.name()}",
+                mobile=profile_of(request.user).mobile or "", text=text)
+    messages.success(request, "پرسش شما ثبت شد؛ پاسخ کارشناس بعد از بررسی همین‌جا نمایش داده می‌شود.")
+    return redirect(back)
+
+
 # ------------------------------------------------------------------ «خبرم کن»
 def create_alert(product, kind, mobile, user=None, source="web", ip=""):
     """(ok، پیام)"""

@@ -287,8 +287,11 @@ def product_detail(request, slug):
     if cat:
         crumbs = [(c.name, c.get_absolute_url()) for c in cat.ancestors()] + [(cat.name, cat.get_absolute_url())]
     crumbs.append((product.title, product.get_absolute_url()))
-    reviews = product.reviews.filter(is_approved=True, parent=None).prefetch_related(
+    reviews = product.reviews.filter(is_approved=True, parent=None, kind="review").prefetch_related(
         Prefetch("replies", queryset=Review.objects.filter(is_approved=True)), "photos"
+    ).order_by("-created_at")[:30]
+    questions = product.reviews.filter(is_approved=True, parent=None, kind="question").prefetch_related(
+        Prefetch("replies", queryset=Review.objects.filter(is_approved=True))
     ).order_by("-created_at")[:30]
     from .related import related_products
 
@@ -313,7 +316,7 @@ def product_detail(request, slug):
     vschema = video_schema(product, video)
     ctx = {
         "meta": m, "product": product, "variations": variations, "specs": specs, "gallery": gallery,
-        "crumbs": crumbs, "reviews": reviews, "related": related, "pricing": PricingSettings.load(),
+        "crumbs": crumbs, "reviews": reviews, "questions": questions, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
         "landing_links": _landing_links(product),
         "doc": doc, "siblings": siblings, "offers": offers, "offer_vids": {o.variation.pk for o in offers}, "design": design_of(product) if siblings else "",

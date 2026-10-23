@@ -498,6 +498,9 @@ class Review(models.Model):
     user = models.ForeignKey("auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="کاربر")
     mobile = models.CharField("موبایل", max_length=11, blank=True)
     verified = models.BooleanField("خریدار این فرش", default=False, help_text="نظر از طرف کسی که همین فرش را خریده")
+    KINDS = [("review", "نظر"), ("question", "پرسش")]
+    kind = models.CharField("نوع", max_length=10, choices=KINDS, default="review", db_index=True,
+                            help_text="پرسش مشتری دربارهٔ فرش؛ پاسخ را در همین صفحه در کادر «پاسخ» بنویسید.")
 
     class Meta:
         verbose_name = "نظر محصول"
