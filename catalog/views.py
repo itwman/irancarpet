@@ -320,6 +320,7 @@ def product_detail(request, slug):
         "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
                              ensure_ascii=False),
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
+        "warranty": _warranty(product),
         "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
     }
     if product.is_purchasable and product.min_price and not product.seller_id:  # کالای فروشندگان اقساطی فروخته نمی‌شود
@@ -338,6 +339,15 @@ def product_detail(request, slug):
 
         ctx["season"] = state()
     return render(request, "catalog/product_detail.html", ctx)
+
+
+def _warranty(product):
+    m = product.material
+    if not m:
+        return ""
+    from content.models import ContentSettings
+
+    return ContentSettings.load().warranty_for(m)
 
 
 def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):

@@ -41,6 +41,7 @@
       {% if specs %}
       <ul class="spec-chips">
         {% for t in specs %}<li><span>{{ t.attribute.label }}</span>{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}<strong>{{ t.name|fa_num }}</strong>{% endif %}</li>{% endfor %}
+        {% if warranty %}<li><span>ضمانت</span><a href="/guarantee/">{{ warranty|fa_num }}</a></li>{% endif %}
       </ul>
       {% endif %}
 

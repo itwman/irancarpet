@@ -50,7 +50,7 @@ def design_of(p):
 
 def color_of(p):
     """رنگ زمینه؛ اگر در عنوان آمده («… زمینه کرم») همان، چون مشتری همان را می‌بیند."""
-    m = re.search(r"زمینه\s+(.+?)(?:\s+(?:سایز|طرح|کد)\b|\s+[0-9۰-۹]|$)", p.title or "")
+    m = re.search(r"زمینه\s+(.+?)(?:\s+(?:سایز|طرح|کد)\b|\s+[0-9۰-۹]|\s+[-–]|$)", p.title or "")
     return (m.group(1).strip(" -–") if m else "") or spec(p, "رنگ زمینه") or spec(p, "رنگ")
 
 
@@ -182,7 +182,8 @@ class Ctx:
             "زمان_آماده_سازی": lambda: cs.prep_time,
             "هزینه_ارسال": lambda: cs.shipping_cost,
             "جریمه_لغو": lambda: fa_num(cs.cancel_penalty) if cs.cancel_penalty else "",
-            "ضمانت": lambda: cs.warranty,
+            "ضمانت": lambda: cs.warranty_for(p.material),
+            "جنس": lambda: {"polyester": "پلی‌استر", "acrylic": "آکریلیک"}.get(p.material, ""),
             "بیعانه": lambda: f"{fa_num(shop.deposit_percent)}٪" if shop.allow_deposit and shop.deposit_percent else "",
             "حد_ارسال_رایگان": lambda: f"{short_price(shop.free_shipping_min)} تومان" if shop.free_shipping_min else "",
             "ارسال_رایگان": self._free_shipping,

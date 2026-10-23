@@ -103,7 +103,8 @@ FORMS = {
                           "w_set", "w_design", "w_click", "w_color", "w_reeds", "w_size", "w_recent", "calendar_preview",
                           "vip_total", "vip_orders", "short_links", "marketing_footer"]),
     "manix": (ShopSettings, ["manix_enabled", "manix_start"]),
-    "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty", "pair_colors", "pair_note"]),
+    "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty_polyester", "warranty_acrylic", "warranty",
+                                "pair_colors", "pair_note"]),
 }
 
 

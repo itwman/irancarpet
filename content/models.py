@@ -67,7 +67,13 @@ class ContentSettings(models.Model):
     pair_note = models.CharField(
         "جملهٔ جفتی", max_length=300,
         default="فرش‌های زمینهٔ {رنگ} معمولاً جفتی بافته می‌شوند؛ اگر فقط یک تخته می‌خواهید، پیش از سفارش با کارشناس هماهنگ کنید.")
-    warranty = models.CharField("ضمانت (یک خط)", max_length=200, default="۵ سال ضمانت", help_text="متغیر {ضمانت}")
+    warranty = models.CharField("ضمانت (جنس نامعلوم)", max_length=200, default="۲ تا ۷ سال ضمانت",
+                                help_text="متغیر {ضمانت} برای فرشی که جنس نخ خابش ثبت نشده")
+    warranty_polyester = models.CharField("ضمانت فرش پلی‌استر", max_length=200, default="۲ سال ضمانت")
+    warranty_acrylic = models.CharField("ضمانت فرش آکریلیک", max_length=200, default="۷ سال ضمانت")
+
+    def warranty_for(self, material):
+        return {"polyester": self.warranty_polyester, "acrylic": self.warranty_acrylic}.get(material) or self.warranty
 
     class Meta:
         verbose_name = "تنظیمات متن محصولات"

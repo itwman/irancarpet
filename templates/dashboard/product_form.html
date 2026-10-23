@@ -91,7 +91,26 @@
         {% if obj %}<a class="btn btn-light btn-sm w-100 mt-1" href="/panel/special-offers/add/?product={{ obj.pk }}">فرصت ویژهٔ خرید برای یک سایز این فرش</a>{% endif %}</section>
       <section class="card-p"><h2>تصویر اصلی</h2>{% with f=form.image %}{% include "dashboard/_field.html" %}{% endwith %}</section>
       <section class="card-p"><h2>ویدیو</h2>{% with f=form.video_url %}{% include "dashboard/_field.html" %}{% endwith %}</section>
-      <section class="card-p"><h2>دسته، برند و مشخصات</h2>{% for name in groups.tax %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
+      <section class="card-p" id="specs"><h2>مشخصات فرش</h2>
+        {% if missing %}<div class="alert alert-warning py-2 small">خالی است: {{ missing|join:"، " }}</div>{% endif %}
+        <p class="hint">با انتخاب آلبوم، مشخصات خالی از پیش‌فرض‌های آلبوم پر می‌شود.</p>
+        {% if form.specs.errors %}<div class="err">{{ form.specs.errors|join:" " }}</div>{% endif %}
+        {% for x in spec_attrs %}<div class="fld spec-fld{% if x.a.required %} is-req{% endif %}" data-attr="{{ x.a.pk }}">
+          <label>{{ x.a.label }}{% if x.a.required %} <span class="text-danger">*</span>{% endif %}</label>
+          <select name="specs" multiple data-ac="/panel/ac-term/{{ x.a.pk }}/" data-ac-create="1" data-placeholder="انتخاب یا نوشتن…">{% for t in x.terms %}<option value="{{ t.pk }}" selected>{{ t.name }}</option>{% endfor %}</select>
+        </div>{% endfor %}
+        <input type="hidden" name="brand" value="{{ form.brand.value|default:'' }}">
+        <p class="hint mb-0">صفحهٔ برند فرش هم از همین «برند» ساخته می‌شود.</p>
+      </section>
+      <section class="card-p" id="cats"><h2>دسته‌ها و برچسب‌ها</h2>
+        {% with f=form.primary_category %}{% include "dashboard/_field.html" %}{% endwith %}
+        <div class="fld"><label>دسته‌ها</label>
+          {% if form.categories.errors %}<div class="err">{{ form.categories.errors|join:" " }}</div>{% endif %}
+          <div class="cat-tree cat-tree--side" id="catTree">{% for c, d, on in cat_tree %}<label style="--d:{{ d }}"><input type="checkbox" name="categories" value="{{ c.pk }}"{% if on %} checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
+        </div>
+        {% with f=form.tags %}{% include "dashboard/_field.html" %}{% endwith %}
+        <p class="hint mb-0" id="ruleHint"></p>
+      </section>
       <section class="card-p" id="farshplus"><h2>فرش پلاس</h2>
         {% if fp %}
           <div class="kv"><span>وضعیت</span><strong><span class="badge-ic b-fp-{{ fp.status|default:'none'|lower }}">{{ fp.get_status_display }}</span></strong></div>
@@ -114,4 +133,57 @@
 <form method="post" action="/panel/products/{{ obj.pk }}/farshplus/" id="fpForm">{% csrf_token %}</form>
 <form method="post" action="/panel/products/{{ obj.pk }}/follow-album/" id="followForm" data-confirm="قیمت پایهٔ اختصاصی، قیمت‌های خرید اختصاصی و حراج‌های این محصول حذف شود؟">{% csrf_token %}</form>{% endif %}
 {% endblock %}
+{% block scripts %}<script id="kwRules" type="application/json">{{ rules_json|safe }}</script><script>
+(function () {
+  "use strict";
+  var form = document.getElementById("productForm"); if (!form) return;
+  var rules = JSON.parse(document.getElementById("kwRules").textContent || "[]");
+  var title = form.querySelector("[name=title]"), album = form.querySelector("[name=album]"), hint = document.getElementById("ruleHint");
+  function norm(s) { return String(s || "").replace(/\u200c/g, " ").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim(); }
+  function ts(el) { return el && (el.tomselect || (window.initAc && window.initAc(el))); }
+  function check(ids) { ids.forEach(function (id) { var c = form.querySelector('#catTree input[value="' + id + '"]'); if (c) c.checked = true; }); }
+  function addTags(tags) { var t = ts(form.querySelector("[name=tags]")); if (!t) return; tags.forEach(function (o) { t.addOption(o); t.addItem(o.value, true); }); }
+  // قانون کلمه: «افشان» در عنوان ← دسته و برچسب افشان (فقط تیک می‌زند؛ قابل برداشتن است)
+  var applied = {};
+  function applyRules() {
+    var t = norm(title.value), names = [];
+    rules.forEach(function (r) {
+      if (!r.k || t.indexOf(r.k) < 0) return;
+      names.push(r.k + " ← " + ((r.names || []).join("، ") || "برچسب"));
+      if (applied[r.k]) return;
+      applied[r.k] = 1; check(r.cats); addTags(r.tags);
+    });
+    if (hint) hint.textContent = names.length ? "از روی عنوان تیک خورد: " + names.join(" · ") : "";
+  }
+  if (title) { title.addEventListener("input", applyRules); applyRules(); }
+  // پیش‌فرض‌های آلبوم: فقط جاهای خالی پر می‌شود
+  function fromAlbum(id) {
+    if (!id) return;
+    fetch("/panel/products/quick/album/" + id + "/", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+      form.querySelectorAll(".spec-fld").forEach(function (b) {
+        var vals = d.specs[b.dataset.attr]; if (!vals) return;
+        var t = ts(b.querySelector("select")); if (!t || t.getValue().length) return;
+        vals.forEach(function (o) { t.addOption(o); t.addItem(o.value, true); });
+      });
+      var br = form.querySelector("input[name=brand]");
+      if (br && !br.value && d.brand) br.value = d.brand.value;
+      if (!form.querySelector("#catTree input:checked")) check(d.categories);
+      var tg = ts(form.querySelector("[name=tags]"));
+      if (tg && !tg.getValue().length) addTags(d.tags);
+      markReq();
+    });
+  }
+  function markReq() {
+    form.querySelectorAll(".spec-fld.is-req").forEach(function (b) {
+      var t = b.querySelector("select").tomselect; b.classList.toggle("is-missing", !!t && !t.getValue().length);
+    });
+  }
+  if (album) {
+    album.addEventListener("change", function () { fromAlbum(album.value); });
+    {% if not obj %}if (album.value) fromAlbum(album.value);{% endif %}
+  }
+  form.addEventListener("change", function (e) { if (e.target.closest(".spec-fld")) markReq(); });
+  setTimeout(markReq, 300);
+})();
+</script>{% endblock %}
 {% block scripts_before %}{% include "dashboard/_editor_assets.html" %}{% load static %}<script src="{% static 'vendor/sortable/Sortable.min.js' %}"></script>{% endblock %}

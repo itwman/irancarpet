@@ -445,3 +445,103 @@ def tools(request):
         messages.success(request, f"برگردانده شد: {edit.summary}")
         return redirect("/panel/content-tools/")
     return render(request, "content/tools.html", ctx)
+
+
+# ================================================================== افزودن سریع فرش‌های یک آلبوم
+@staff_required
+def quick(request):
+    """صفحهٔ افزودن سریع: آلبوم، پیش‌فرض‌ها، عکس‌ها و برای هر فرش فقط نقشه و رنگ زمینه."""
+    import json
+
+    from django.http import JsonResponse
+
+    from catalog.models import Attribute
+
+    from . import quick as Q
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body or b"{}")
+        except ValueError:
+            return JsonResponse({"error": "داده‌ها خوانده نشد."}, status=400)
+        album = Album.objects.filter(pk=data.get("album") or 0).first()
+        if album is None:
+            return JsonResponse({"error": "آلبوم را انتخاب کنید."}, status=400)
+        created, warnings = Q.create(album, data, request)
+        for p in created:
+            log(request, "create", "محصولات", p, "افزودن سریع")
+        clear_site_cache()
+        R.clear_cache()
+        return JsonResponse({"created": [{"id": p.pk, "title": fa_num(p.title), "url": f"/panel/products/{p.pk}/edit/",
+                                          "view": p.get_absolute_url()} for p in created],
+                             "warnings": warnings, "list": f"/panel/products/?album={album.pk}&sort=-published_at"})
+    color = color_attribute()
+    attrs = [a for a in Attribute.objects.order_by("order", "label") if not color or a.pk != color.pk]
+    cats = _category_tree()
+    albums = list(Album.objects.filter(is_active=True).order_by("sort_order", "name"))
+    return render(request, "content/quick.html", {
+        "albums": albums, "attrs": attrs, "cats": cats, "rules": json.dumps(Q.rules_payload(), ensure_ascii=False),
+        "album_id": request.GET.get("album") or "",
+    })
+
+
+@staff_required
+def quick_album(request, pk):
+    from django.http import JsonResponse
+
+    from . import quick as Q
+
+    album = get_object_or_404(Album, pk=pk)
+    if request.GET.get("tpl"):  # الگوی عنوان با مشخصاتی که الان در صفحه انتخاب شده
+        from catalog.models import Brand
+
+        ids = [int(x) for x in (request.GET.get("specs") or "").split(",") if x.strip().isdigit()]
+        terms = list(AttributeTerm.objects.filter(pk__in=ids).select_related("attribute"))
+        brand = Brand.objects.filter(pk=request.GET.get("brand") or 0).first() if (request.GET.get("brand") or "").isdigit() else None
+        return JsonResponse({"template": Q.title_template(album, terms, brand, request.GET.get("emb") == "1"),
+                             "material": Q.material_of_terms(terms)})
+    return JsonResponse(Q.album_payload(album))
+
+
+@staff_required
+def term_ac(request, attr_id):
+    """جستجو و ساخت مقدار یک ویژگی (برای انتخاب‌گرهای جدای هر ویژگی)."""
+    import json
+
+    from django.http import JsonResponse
+
+    from . import quick as Q
+
+    attr = get_object_or_404(Attribute, pk=attr_id)
+    if request.method == "POST":
+        try:
+            text = (json.loads(request.body or b"{}").get("text") or "").strip()
+        except ValueError:
+            text = ""
+        t = Q.term_named(attr, text)
+        return JsonResponse({"value": str(t.pk), "text": t.name} if t else {}, status=200 if t else 400)
+    from accounts.utils import latin_digits
+
+    q = Q.norm(request.GET.get("q") or "")
+    qs = AttributeTerm.objects.filter(attribute=attr).order_by("order", "name")
+    rows = [t for t in qs if not q or q in Q.norm(t.name) or latin_digits(q) in latin_digits(Q.norm(t.name))][:30]
+    return JsonResponse({"results": [{"value": str(t.pk), "text": t.name} for t in rows]})
+
+
+def _category_tree():
+    """[(دسته، عمق)] به ترتیب درخت، برای چک‌باکس‌ها."""
+    rows = list(Category.objects.order_by("order", "name"))
+    kids = {}
+    for c in rows:
+        kids.setdefault(c.parent_id, []).append(c)
+    out = []
+
+    def walk(pid, depth):
+        for c in kids.get(pid, []):
+            out.append((c, depth))
+            if depth < 5:
+                walk(c.pk, depth + 1)
+    walk(None, 0)
+    seen = {c.pk for c, _ in out}
+    out += [(c, 0) for c in rows if c.pk not in seen]
+    return out

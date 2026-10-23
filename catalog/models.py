@@ -85,6 +85,43 @@ class ProductTag(SeoFields):
         return f"/product-tag/{self.slug}/"
 
 
+def material_of(names):
+    """از نام مقدارهای «جنس نخ خاب»: پلی‌استر یا آکریلیک."""
+    for n in names:
+        n = (n or "").replace("\u200c", " ").replace("آ", "ا")
+        if "پلی" in n and "استر" in n or "polyester" in n.lower():
+            return "polyester"
+        if "اکریل" in n or "acrylic" in n.lower():
+            return "acrylic"
+    return ""
+
+
+class KeywordRule(models.Model):
+    """«اگر عنوان این کلمه را داشت، این دسته‌ها و برچسب‌ها» — در فرم محصول و افزودن سریع تیک پیش‌فرض می‌خورد."""
+
+    keyword = models.CharField("کلمه در عنوان", max_length=80, help_text="مثل «افشان» یا «وینتیج»؛ بزرگی و نیم‌فاصله فرقی ندارد")
+    categories = models.ManyToManyField(Category, blank=True, related_name="+", verbose_name="دسته‌ها")
+    tags = models.ManyToManyField(ProductTag, blank=True, related_name="+", verbose_name="برچسب‌ها")
+    is_active = models.BooleanField("فعال", default=True)
+
+    class Meta:
+        verbose_name = "قانون کلمهٔ عنوان"
+        verbose_name_plural = "قانون‌های کلمهٔ عنوان"
+        ordering = ["keyword"]
+
+    def __str__(self):
+        return self.keyword
+
+    @staticmethod
+    def norm(s):
+        return " ".join((s or "").replace("\u200c", " ").replace("ي", "ی").replace("ك", "ک").split())
+
+    @classmethod
+    def matches(cls, title):
+        t = cls.norm(title)
+        return [r for r in cls.objects.filter(is_active=True).prefetch_related("categories", "tags") if r.keyword and cls.norm(r.keyword) in t]
+
+
 class Brand(SeoFields):
     wp_id = models.PositiveBigIntegerField(unique=True, null=True, blank=True, editable=False)
     name = models.CharField("نام", max_length=255)
@@ -114,6 +151,8 @@ class Attribute(models.Model):
         "صفحهٔ آرشیو دارد", default=False, help_text="آدرس آرشیو: /<نامک ویژگی>/<نامک مقدار>/"
     )
     show_in_filters = models.BooleanField("در فیلترها", default=True)
+    required = models.BooleanField("لازم برای هر فرش", default=False,
+                                   help_text="در فرم محصول اگر خالی بماند هشدار داده می‌شود (مثل رنگ زمینه، شانه، تراکم، جنس نخ خاب، برند)")
     order = models.IntegerField("ترتیب", default=0)
 
     class Meta:
@@ -280,6 +319,11 @@ class Product(SeoFields):
             Product.objects.filter(pk=self.pk).update(
                 min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status
             )
+
+    @property
+    def material(self):
+        """جنس از «جنس نخ خاب»: polyester / acrylic / ''"""
+        return material_of(t.name for t in self.specs.all() if "جنس" in (t.attribute.label or ""))
 
     def open_all_sizes(self):
         """«موجود» بودن فرشی که همهٔ سایزهایش تیک «موجود» ندارند بی‌معناست (در سایت ناموجود دیده می‌شود)؛

@@ -1,0 +1,280 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}افزودن سریع فرش{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><a href="/panel/products/" class="back">‹ محصولات</a><h1>افزودن سریع فرش‌های یک آلبوم</h1>
+    <p class="muted">مشخصات مشترک یک بار؛ برای هر فرش فقط عکس، نقشه و رنگ زمینه.</p></div>
+  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/products/bulk/">ساخت گروهی یک نقشه در چند رنگ</a></div>
+</div>
+{% csrf_token %}
+<div class="qa" id="qa" data-album="{{ album_id }}">
+  <section class="card-p qa-album">
+    <label class="qa-k" for="qaAlbum">۱. آلبوم</label>
+    <select id="qaAlbum" class="form-select form-select-lg">
+      <option value="">انتخاب آلبوم…</option>
+      {% for a in albums %}<option value="{{ a.pk }}"{% if album_id == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name|fa_num }}{% if a.company %} · {{ a.company }}{% endif %}</option>{% endfor %}
+    </select>
+    <p class="qa-info muted" id="qaInfo"></p>
+  </section>
+
+  <div id="qaBody" hidden>
+    <section class="card-p">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div><span class="qa-k">۲. مشخصات مشترک همهٔ فرش‌های این آلبوم</span>
+          <p class="hint mb-0" id="qaDefNote"></p></div>
+        <label class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="qaSave" checked> ذخیره به‌عنوان پیش‌فرض این آلبوم</label>
+      </div>
+      <div class="qa-specs">
+        {% for a in attrs %}<div class="fld{% if a.required %} qa-req{% endif %}" data-attr="{{ a.pk }}">
+          <label>{{ a.label }}{% if a.required %} <span class="text-danger">*</span>{% endif %}</label>
+          <select multiple data-ac="/panel/ac-term/{{ a.pk }}/" data-ac-create="1" data-placeholder="انتخاب یا نوشتن…" class="qa-spec"></select>
+        </div>{% endfor %}
+        <div class="fld"><label>برچسب‌ها</label>
+          <select multiple data-ac="/panel/ac/product_tag/" data-ac-create="1" id="qaTags"></select></div>
+        <div class="fld"><label class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" id="qaEmb"> گل برجسته (در عنوان می‌آید)</label></div>
+      </div>
+      <div class="qa-cats">
+        <div class="d-flex justify-content-between align-items-center"><label class="qa-k2">دسته‌ها</label>
+          <label class="small">دستهٔ اصلی: <select id="qaPrimary" class="form-select form-select-sm d-inline-block w-auto"><option value="">خودکار (اولین دسته)</option>{% for c, d in cats %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}</select></label></div>
+        <div class="cat-tree" id="qaCats">{% for c, d in cats %}<label style="--d:{{ d }}"><input type="checkbox" value="{{ c.pk }}"> {{ c.name }}</label>{% endfor %}</div>
+      </div>
+      <p class="qa-tpl">عنوان فرش‌ها: <b id="qaTpl"></b></p>
+    </section>
+
+    <section class="card-p">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <span class="qa-k">۳. عکس‌ها و فرش‌ها</span>
+        <div class="d-flex gap-2"><button class="btn btn-light btn-sm" type="button" id="qaAddRow">+ فرش بدون عکس</button></div>
+      </div>
+      <label class="qa-drop" id="qaDrop">
+        <input type="file" accept="image/*" multiple hidden id="qaFiles">
+        <strong>عکس‌ها را اینجا بکشید یا بزنید تا انتخاب کنید</strong>
+        <span>هر عکس یک فرش می‌شود؛ عکس‌های اضافهٔ یک فرش را روی ردیف همان فرش بکشید. اگر نام فایل رنگ یا نقشه را داشته باشد (مثل <span dir="ltr">afshan-کرم-1.jpg</span>) خودش پر می‌شود.</span>
+      </label>
+      <datalist id="qaDesigns"></datalist><datalist id="qaColors"></datalist>
+      <div class="qa-rows" id="qaRows"></div>
+      <p class="muted small mt-2 mb-0" id="qaEmpty">هنوز فرشی اضافه نشده.</p>
+    </section>
+
+    <div class="qa-bar">
+      <span id="qaCount">۰ فرش</span>
+      <select id="qaStatus" class="form-select form-select-sm w-auto"><option value="publish">منتشر شود</option><option value="draft">پیش‌نویس</option></select>
+      <button class="btn btn-pink" type="button" id="qaGo" disabled>ساختن فرش‌ها</button>
+    </div>
+    <div id="qaResult"></div>
+  </div>
+</div>
+<script id="qaRules" type="application/json">{{ rules|safe }}</script>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  "use strict";
+  var FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(s) { return String(s).replace(/\d/g, function (d) { return FA[d]; }); }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+  function norm(s) { return String(s || "").replace(/‌/g, " ").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim(); }
+  function csrf() { var i = document.querySelector("input[name=csrfmiddlewaretoken]"); return i ? i.value : ""; }
+  var $ = function (id) { return document.getElementById(id); };
+  var rules = JSON.parse($("qaRules").textContent || "[]");
+  var st = { album: null, tpl: "", rows: [], designs: [], colors: [] }, uid = 0;
+  var D = "⁣D⁣", C = "⁣C⁣";
+
+  function ts(el) { return el.tomselect || (window.initAc && window.initAc(el)) || el.tomselect; }
+  function setItems(el, items) {
+    var t = ts(el); if (!t) return;
+    t.clear(true);
+    (items || []).forEach(function (o) { t.addOption(o); t.addItem(o.value, true); });
+  }
+
+  // ------------------------------------------------ آلبوم
+  $("qaAlbum").addEventListener("change", function () { loadAlbum(this.value); });
+  function loadAlbum(id) {
+    if (!id) { $("qaBody").hidden = true; return; }
+    fetch("/panel/products/quick/album/" + id + "/", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+      st.album = d.album.id; st.designs = d.designs; st.colors = d.colors;
+      $("qaInfo").textContent = fa(d.count) + " فرش در این آلبوم هست" + (d.material ? " · جنس: " + (d.material === "polyester" ? "پلی‌استر (ضمانت ۲ سال؛ «پلی استر» آخر عنوان)" : "آکریلیک (ضمانت ۷ سال)") : "");
+      $("qaDefNote").textContent = d.saved ? "پیش‌فرض‌های ذخیره‌شدهٔ همین آلبوم؛ اگر چیزی عوض شده، همین‌جا درست کنید." :
+        (d.count ? "از یکی از فرش‌های همین آلبوم برداشته شد؛ یک بار بررسی کنید تا برای همیشه ذخیره شود." : "آلبوم تازه است؛ مشخصات را یک بار انتخاب کنید.");
+      document.querySelectorAll(".qa-specs [data-attr]").forEach(function (box) {
+        setItems(box.querySelector("select"), d.specs[box.dataset.attr] || []);
+      });
+      setItems($("qaTags"), d.tags);
+      $("qaEmb").checked = !!d.embossed;
+      document.querySelectorAll("#qaCats input").forEach(function (c) { c.checked = d.categories.indexOf(+c.value) >= 0; });
+      $("qaPrimary").value = d.primary || "";
+      $("qaDesigns").innerHTML = d.designs.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
+      $("qaColors").innerHTML = d.colors.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
+      st.tpl = d.template;
+      $("qaBody").hidden = false;
+      refreshTpl();
+      checkReq();
+    });
+  }
+
+  // الگوی عنوان از سرور، با مشخصاتی که الان انتخاب شده (شانه، جنس، برجسته…)
+  var tplTimer;
+  function specIds() {
+    var out = [];
+    document.querySelectorAll(".qa-specs [data-attr] select").forEach(function (s) { var t = s.tomselect; if (t) out = out.concat(t.getValue()); });
+    return out.filter(function (v) { return /^\d+$/.test(v); });
+  }
+  function refreshTpl() {
+    clearTimeout(tplTimer);
+    tplTimer = setTimeout(function () {
+      if (!st.album) return;
+      fetch("/panel/products/quick/album/" + st.album + "/?tpl=1&specs=" + specIds().join(",") + "&emb=" + ($("qaEmb").checked ? 1 : 0),
+            { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+        st.tpl = d.template;
+        $("qaTpl").innerHTML = esc(st.tpl).replace(D, "<i>[نقشه]</i>").replace(C, "<i>[رنگ زمینه]</i>");
+        st.rows.forEach(renderTitle);
+      });
+    }, 150);
+  }
+  $("qaEmb").addEventListener("change", refreshTpl);
+  document.querySelector(".qa-specs").addEventListener("change", function () { refreshTpl(); checkReq(); });
+  function checkReq() {
+    document.querySelectorAll(".qa-req").forEach(function (b) {
+      var s = b.querySelector("select"), t = s && s.tomselect, v = t ? t.getValue() : s.value;
+      b.classList.toggle("is-missing", !(Array.isArray(v) ? v.length : v));
+    });
+  }
+
+  // ------------------------------------------------ ردیف‌ها
+  function guess(name) {
+    var n = norm(name.replace(/[_\-.]+/g, " ")), color = "", design = "";
+    st.colors.forEach(function (c) { if (n.indexOf(norm(c)) >= 0 && c.length > color.length) color = c; });
+    st.designs.forEach(function (x) { if (n.indexOf(norm(x)) >= 0 && x.length > design.length) design = x; });
+    return { color: color, design: design };
+  }
+  function addRow(images, g) {
+    var last = st.rows[st.rows.length - 1];
+    var r = { id: ++uid, images: images || [], design: (g && g.design) || (last ? last.design : ""), color: (g && g.color) || "", title: "", custom: false };
+    st.rows.push(r); draw(); return r;
+  }
+  function titleOf(r) { return r.custom ? r.title : st.tpl.replace(D, r.design || "…").replace(C, r.color || "…"); }
+  function ruleChips(title) {
+    var t = norm(title);
+    return rules.filter(function (x) { return x.k && t.indexOf(x.k) >= 0; }).map(function (x) {
+      return '<span class="qa-rule">' + esc(x.k) + " ← " + esc((x.names || []).join("، ") || "برچسب") + "</span>";
+    }).join("");
+  }
+  function renderTitle(r) {
+    var el = document.querySelector('[data-row="' + r.id + '"]'); if (!el) return;
+    var inp = el.querySelector(".qa-title");
+    if (!r.custom) inp.value = titleOf(r);
+    el.querySelector(".qa-rules").innerHTML = ruleChips(inp.value);
+    el.classList.toggle("is-ready", !!(r.design && r.color));
+  }
+  function draw() {
+    var box = $("qaRows");
+    box.innerHTML = st.rows.map(function (r, i) {
+      return '<div class="qa-row" data-row="' + r.id + '">' +
+        '<div class="qa-n">' + fa(i + 1) + "</div>" +
+        '<div class="qa-imgs" data-drop="' + r.id + '">' + r.images.map(function (m, k) {
+          return '<figure draggable="true" data-img="' + m.value + '" data-from="' + r.id + '"><img src="' + esc(m.thumb || m.url) + '" alt="">' +
+            (k === 0 ? "<em>اصلی</em>" : "") + '<button type="button" class="x" data-unimg="' + m.value + '" aria-label="برداشتن">×</button></figure>';
+        }).join("") + '<label class="qa-addimg" title="افزودن عکس به همین فرش">+<input type="file" accept="image/*" multiple hidden data-upto="' + r.id + '"></label></div>' +
+        '<div class="qa-fields">' +
+          '<div class="qa-two"><input class="form-control qa-design" list="qaDesigns" placeholder="نقشه (مثل افشان درباری)" value="' + esc(r.design) + '">' +
+          '<input class="form-control qa-color" list="qaColors" placeholder="رنگ زمینه (مثل سرمه‌ای)" value="' + esc(r.color) + '"></div>' +
+          '<input class="form-control form-control-sm qa-title" aria-label="عنوان">' +
+          '<div class="qa-rules"></div>' +
+        "</div>" +
+        '<button type="button" class="qa-del" aria-label="حذف ردیف">×</button></div>';
+    }).join("");
+    st.rows.forEach(renderTitle);
+    $("qaEmpty").hidden = st.rows.length > 0;
+    count();
+  }
+  function count() {
+    var ok = st.rows.filter(function (r) { return r.design && r.color; }).length;
+    $("qaCount").textContent = fa(ok) + " فرش آماده" + (st.rows.length > ok ? " · " + fa(st.rows.length - ok) + " ردیف ناقص" : "");
+    $("qaGo").disabled = !ok;
+    $("qaGo").textContent = ok ? "ساختن " + fa(ok) + " فرش" : "ساختن فرش‌ها";
+  }
+  function rowOf(el) { var x = el.closest("[data-row]"); return x && st.rows.filter(function (r) { return r.id === +x.dataset.row; })[0]; }
+  $("qaRows").addEventListener("input", function (e) {
+    var r = rowOf(e.target); if (!r) return;
+    if (e.target.classList.contains("qa-design")) r.design = e.target.value.trim();
+    if (e.target.classList.contains("qa-color")) r.color = e.target.value.trim();
+    if (e.target.classList.contains("qa-title")) { r.custom = true; r.title = e.target.value; }
+    renderTitle(r); count();
+  });
+  $("qaRows").addEventListener("click", function (e) {
+    var r = rowOf(e.target); if (!r) return;
+    if (e.target.classList.contains("qa-del")) { st.rows.splice(st.rows.indexOf(r), 1); draw(); }
+    var un = e.target.getAttribute("data-unimg");
+    if (un) { r.images = r.images.filter(function (m) { return m.value !== un; }); draw(); }
+  });
+  $("qaRows").addEventListener("change", function (e) {
+    var to = e.target.getAttribute("data-upto"); if (!to) return;
+    var r = st.rows.filter(function (x) { return x.id === +to; })[0];
+    window.panelUpload(e.target.files, function (files) { r.images = r.images.concat(files); draw(); });
+  });
+  // جابه‌جایی عکس بین فرش‌ها
+  var dragImg = null;
+  $("qaRows").addEventListener("dragstart", function (e) { var f = e.target.closest("[data-img]"); if (f) dragImg = { img: f.dataset.img, from: +f.dataset.from }; });
+  $("qaRows").addEventListener("dragover", function (e) { var z = e.target.closest("[data-drop]"); if (z) { e.preventDefault(); z.classList.add("over"); } });
+  $("qaRows").addEventListener("dragleave", function (e) { var z = e.target.closest("[data-drop]"); if (z) z.classList.remove("over"); });
+  $("qaRows").addEventListener("drop", function (e) {
+    var z = e.target.closest("[data-drop]"); if (!z) return; e.preventDefault();
+    var to = st.rows.filter(function (x) { return x.id === +z.dataset.drop; })[0];
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      window.panelUpload(e.dataTransfer.files, function (files) { to.images = to.images.concat(files); draw(); });
+    } else if (dragImg && dragImg.from !== to.id) {
+      var from = st.rows.filter(function (x) { return x.id === dragImg.from; })[0], m = from.images.filter(function (x) { return x.value === dragImg.img; })[0];
+      from.images = from.images.filter(function (x) { return x !== m; });
+      to.images.push(m);
+      if (!from.images.length && !from.color) st.rows.splice(st.rows.indexOf(from), 1);  // ردیفی که فقط همان عکس را داشت
+      draw();
+    }
+    dragImg = null;
+  });
+
+  // آپلود: هر عکس یک فرش
+  function addFiles(list) {
+    window.panelUpload(list, function (files) {
+      files.forEach(function (f) { addRow([f], guess(f.text || "")); });
+    });
+  }
+  var drop = $("qaDrop");
+  $("qaFiles").addEventListener("change", function () { addFiles(this.files); this.value = ""; });
+  drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", function () { drop.classList.remove("over"); });
+  drop.addEventListener("drop", function (e) { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); });
+  $("qaAddRow").addEventListener("click", function () { addRow([], null); });
+
+  // ------------------------------------------------ ساختن
+  $("qaGo").addEventListener("click", function () {
+    var btn = this, specs = {};
+    document.querySelectorAll(".qa-specs [data-attr]").forEach(function (b) {
+      var t = b.querySelector("select").tomselect; if (t && t.getValue().length) specs[b.dataset.attr] = t.getValue();
+    });
+    var body = {
+      album: st.album, specs: specs,
+      tags: $("qaTags").tomselect ? $("qaTags").tomselect.getValue() : [],
+      categories: Array.prototype.filter.call(document.querySelectorAll("#qaCats input"), function (c) { return c.checked; }).map(function (c) { return c.value; }),
+      primary: $("qaPrimary").value, embossed: $("qaEmb").checked, save_defaults: $("qaSave").checked, status: $("qaStatus").value,
+      rows: st.rows.filter(function (r) { return r.design && r.color; }).map(function (r) {
+        return { design: r.design, color: r.color, title: r.custom ? r.title : "", images: r.images.map(function (m) { return m.value; }) };
+      })
+    };
+    btn.disabled = true; btn.textContent = "در حال ساختن…";
+    fetch(location.pathname, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.error) { $("qaResult").innerHTML = '<div class="alert alert-danger mt-3">' + esc(d.error) + "</div>"; count(); return; }
+        $("qaResult").innerHTML = '<section class="card-p mt-3"><h2>' + fa(d.created.length) + " فرش ساخته شد</h2>" +
+          (d.warnings.length ? '<div class="alert alert-warning py-2 small">' + d.warnings.map(esc).join("<br>") + "</div>" : "") +
+          "<ul>" + d.created.map(function (p) { return '<li><a href="' + p.url + '">' + esc(p.title) + '</a> · <a href="' + p.view + '" target="_blank" rel="noopener">دیدن</a></li>'; }).join("") + "</ul>" +
+          '<a class="btn btn-light btn-sm" href="' + d.list + '">فهرست فرش‌های این آلبوم</a></section>';
+        st.rows = st.rows.filter(function (r) { return !(r.design && r.color); }); draw();
+        $("qaResult").scrollIntoView({ behavior: "smooth" });
+      })
+      .catch(function () { $("qaResult").innerHTML = '<div class="alert alert-danger mt-3">ارتباط برقرار نشد؛ دوباره بزنید.</div>'; count(); });
+  });
+
+  if ($("qa").dataset.album) loadAlbum($("qa").dataset.album);
+  else if ($("qaAlbum").value) loadAlbum($("qaAlbum").value);
+})();
+</script>{% endblock %}

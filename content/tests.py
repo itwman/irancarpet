@@ -239,3 +239,77 @@ class PanelTests(Base):
         self.p.refresh_from_db()
         self.assertTrue(self.p.use_template)
         self.assertEqual(self.p.design_name, "آرشان")
+
+
+class QuickAddTests(Base):
+    """افزودن سریع: پیش‌فرض آلبوم، عنوان (پلی‌استر/آکریلیک)، قانون کلمه، رنگ تازه، تکراری، مشخصات لازم."""
+
+    def setUp(self):
+        super().setUp()
+        self.u = get_user_model().objects.create_user("staff", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(self.u)
+
+    def post(self, **data):
+        import json
+
+        return self.client.post("/panel/products/quick/", json.dumps({"album": self.album.pk, **data}), content_type="application/json").json()
+
+    def test_album_payload_from_sample_then_saved(self):
+        d = self.client.get(f"/panel/products/quick/album/{self.album.pk}/").json()
+        self.assertFalse(d["saved"])
+        self.assertEqual(d["material"], "acrylic")
+        self.assertIn("آرشان", d["designs"])
+        self.assertNotIn(str(self.color.pk), d["specs"])  # رنگ زمینه برای هر فرش جداست
+        self.assertIn("⁣D⁣", d["template"])
+        self.assertNotIn("پلی استر", d["template"])
+
+    def test_create_rows_with_rules_and_polyester(self):
+        from catalog.models import KeywordRule, ProductTag
+
+        poly = AttributeTerm.objects.create(attribute=self.pile, name="پلی استر هیت ست", slug="poly")
+        afshan = Category.objects.create(name="فرش افشان", slug="afshan")
+        tag = ProductTag.objects.create(name="افشان", slug="afshan-tag")
+        r = KeywordRule.objects.create(keyword="افشان")
+        r.categories.set([afshan])
+        r.tags.set([tag])
+        up = self.client.post("/panel/media/upload/", {"file": png("afshan-کرم.png")}).json()["files"][0]["value"]
+        d = self.post(specs={str(self.reeds.pk): [str(self.t1500.pk)], str(self.pile.pk): [str(poly.pk)]},
+                      categories=[self.cat.pk], save_defaults=True, status="publish",
+                      rows=[{"design": "افشان درباری", "color": "کرم", "images": [up]},
+                            {"design": "افشان درباری", "color": "دلفینی", "images": []},
+                            {"design": "", "color": "آبی"}])
+        self.assertEqual(len(d["created"]), 2, d)
+        self.assertTrue(any("ردیف ۳" in w for w in d["warnings"]))
+        p = Product.objects.get(title="فرش ۱۵۰۰ شانه نقشه افشان درباری زمینه کرم - پلی استر")
+        self.assertEqual(p.material, "polyester")
+        self.assertEqual(p.image_id, int(up))
+        self.assertEqual(set(p.categories.all()), {self.cat, afshan})
+        self.assertEqual(list(p.tags.all()), [tag])
+        self.assertTrue(p.variations.exists() and p.min_price)
+        self.assertTrue(AttributeTerm.objects.filter(attribute=self.color, name="دلفینی").exists())  # رنگ تازه ساخته شد
+        self.album.refresh_from_db()
+        self.assertEqual(set(self.album.default_specs.all()), {self.t1500, poly})
+        self.assertEqual(R.color_of(p), "کرم")  # « - پلی استر» جزو رنگ نیست
+        again = self.post(rows=[{"design": "افشان درباری", "color": "کرم"}],
+                          specs={str(self.reeds.pk): [str(self.t1500.pk)], str(self.pile.pk): [str(poly.pk)]})
+        self.assertEqual(again["created"], [])
+        self.assertIn("از قبل هست", again["warnings"][0])
+        # صفحهٔ محصول: ضمانت پلی‌استر
+        self.assertContains(self.client.get(p.get_absolute_url()), "۲ سال ضمانت")
+
+    def test_product_form_specs_and_missing(self):
+        from .quick import missing_required
+
+        self.color.required = self.pile.required = True
+        self.color.save()
+        self.pile.save()
+        p = self.make("فرش 1500 شانه نقشه نگار زمینه کرم", "negar", self.cream)
+        p.specs.remove(self.tpile)
+        self.assertEqual(missing_required(p), ["جنس نخ خاب"])
+        r = self.client.get(f"/panel/products/{p.pk}/edit/")
+        self.assertContains(r, f'data-ac="/panel/ac-term/{self.pile.pk}/"')
+        self.assertContains(r, "خالی است: جنس نخ خاب")
+        self.assertContains(r, 'name="categories"')
+        self.assertContains(self.client.get("/panel/products/quick/"), "افزودن سریع")
+        j = self.client.get(f"/panel/ac-term/{self.color.pk}/?q=کر").json()
+        self.assertEqual([x["text"] for x in j["results"]], ["کرم"])

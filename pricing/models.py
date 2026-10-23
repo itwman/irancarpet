@@ -173,6 +173,17 @@ class Album(models.Model):
                                  help_text="خالی = خودکار. متغیرها: %title% %currentmonth% %currentyear% %sitename%")
     seo_description = models.TextField("توضیحات متا", blank=True, help_text="خالی = خودکار از قیمت‌ها")
 
+    # پیش‌فرض‌های فرش‌های این آلبوم (افزودن سریع و فرم محصول از این‌ها پر می‌شوند)
+    default_specs = models.ManyToManyField("catalog.AttributeTerm", blank=True, related_name="+", verbose_name="مشخصات پیش‌فرض",
+                                           help_text="شانه، تراکم، جنس نخ خاب، درجه، دستگاه بافت، برند… (رنگ زمینه برای هر فرش جداست)")
+    default_brand = models.ForeignKey("catalog.Brand", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                      verbose_name="برند پیش‌فرض")
+    default_categories = models.ManyToManyField("catalog.Category", blank=True, related_name="+", verbose_name="دسته‌های پیش‌فرض")
+    default_primary_category = models.ForeignKey("catalog.Category", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                                 verbose_name="دستهٔ اصلی پیش‌فرض")
+    default_tags = models.ManyToManyField("catalog.ProductTag", blank=True, related_name="+", verbose_name="برچسب‌های پیش‌فرض")
+    embossed = models.BooleanField("فرش‌های این آلبوم گل برجسته‌اند", default=False)
+
     PRICE_FIELDS = ("base_price", "base_size_id", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to", "is_active")
 
     class Meta:

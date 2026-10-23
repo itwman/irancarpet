@@ -90,6 +90,12 @@ def product_edit(request, pk=None):
                 save_fp_flags(request, p)
             _redirect_old_url(old_url, p)
             log(request, "create" if created else "update", "محصولات", p)
+            from content.quick import missing_required, sync_brand
+
+            sync_brand(p)
+            miss = missing_required(p)
+            if miss:
+                messages.warning(request, "این مشخصات خالی است: " + "، ".join(miss) + ". فرش بدون آن‌ها در فیلترهای سایت پیدا نمی‌شود.")
             clear_site_cache()
             messages.success(request, f"«{p.title}» ذخیره شد."
                              + (f" همهٔ {opened} سایزِ ناموجودش هم موجود شد." if opened else ""))
@@ -122,11 +128,34 @@ def product_edit(request, pk=None):
 
     tpl = template_for(product) if product else None
     return render(request, "dashboard/product_form.html", {
-        "tpl": tpl,
+        "tpl": tpl, **_tax_ctx(form, product),
         "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery, "own": own,
         "gallery_ids": ",".join(str(m.pk) for m in gallery), "fp": fp_item, "fp_off": inactive_reason(),
         "groups": {"main": MAIN, "text": SIDE_TEXT, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
     })
+
+
+def _tax_ctx(form, product):
+    """مشخصات جدا برای هر ویژگی، دسته‌ها به‌صورت چک‌باکس، قانون‌های کلمهٔ عنوان و مشخصات لازمِ خالی."""
+    import json
+
+    from catalog.models import Attribute, AttributeTerm
+    from content import quick as Q
+    from content.views import _category_tree
+
+    if form.is_bound:
+        spec_ids = [int(x) for x in form.data.getlist("specs") if str(x).isdigit()]
+        cat_ids = {int(x) for x in form.data.getlist("categories") if str(x).isdigit()}
+    else:
+        spec_ids = list(product.specs.values_list("pk", flat=True)) if product else []
+        cat_ids = set(product.categories.values_list("pk", flat=True)) if product else set()
+    chosen = {}
+    for t in AttributeTerm.objects.filter(pk__in=spec_ids):
+        chosen.setdefault(t.attribute_id, []).append(t)
+    attrs = [{"a": a, "terms": chosen.get(a.pk, [])} for a in Attribute.objects.order_by("order", "label")]
+    return {"spec_attrs": attrs, "cat_tree": [(c, d, c.pk in cat_ids) for c, d in _category_tree()],
+            "rules_json": json.dumps(Q.rules_payload(), ensure_ascii=False),
+            "missing": Q.missing_required(product) if product else []}
 
 
 @staff_required

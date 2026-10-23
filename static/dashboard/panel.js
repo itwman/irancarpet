@@ -196,6 +196,8 @@
     LIB.count.textContent = LIB.sel.length ? LIB.sel.length.toLocaleString("fa-IR") + " تصویر انتخاب شده" : "";
   }
   window.openMediaLibrary = openLibrary;
+  window.initAc = initAc;
+  window.panelUpload = upload;
 
   /* --------------------------------------------------------- ویرایشگر متن */
   function initEditor(t) {
