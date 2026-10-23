@@ -158,7 +158,7 @@
   {% endif %}
 </div>
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/affiliate.js' %}" defer></script>
+{% block scripts %}<script src="{% static 'js/affiliate.js' %}?v={{ ASSET_V }}\" defer></script>
 <script>
 (function () {
   var d = document.getElementById("sellCalc"); if (!d) return;

@@ -96,7 +96,7 @@
   </form>
 </div>
 {% endblock %}
-{% block scripts %}{% if plans %}<script src="{% static 'js/installments.js' %}"></script>{% endif %}<script>
+{% block scripts %}{% if plans %}<script src="{% static 'js/installments.js' %}?v={{ ASSET_V }}\"></script>{% endif %}<script>
 (function () {
   var f = document.getElementById("checkoutForm"); if (!f) return;
   var total = +f.dataset.total, dep = +f.dataset.deposit, freeMin = +f.dataset.freeMin, FA = "۰۱۲۳۴۵۶۷۸۹";
