@@ -1,205 +1,257 @@
 {% extends "base.html" %}{% load static fa shop_theme %}
-{% block body_class %}h-home{% endblock %}
-{% block head %}<link rel="preload" href="{% static 'img/house/portal.svg' %}" as="image">{% endblock %}
+{% block body_class %}p-home{% endblock %}
 {% block content %}
-{% arch_categories 7 as ac %}{% reeds_categories as rc %}{% color_categories 12 as cc %}{% product_total as ptotal %}
-{% best_products 5 as best %}{% latest_products 1 as newest %}
-{% with feat=newest.0 %}
+{% arch_categories 10 as ac %}{% reeds_categories as rc %}{% color_categories 12 as cc %}{% product_total as ptotal %}{% shop_sizes as szs %}{% installments_info as inst %}
+{% best_products 10 as best %}{% latest_products 10 as newest %}
+{% with b0=best.0 b1=best.1 n0=newest.0 o0=offers.0 mo=offers|max_off %}
 
-{# ---------------------------------------------------------------- ۱. سردر: در با کوبه، با اسکرول باز می‌شود #}
-<section class="door-sec" id="door" aria-label="سردر {% brand %}">
-  <div class="door-stage">
-    <div class="door-scene" id="door-scene">
-      <div class="alley"></div>
-      <div class="ground"></div>
-      <div class="spill" id="spill"></div>
-      <div class="portal">
-        <img src="{% static 'img/house/portal.svg' %}" alt="" width="400" height="640" fetchpriority="high">
-        <div class="portal-kot" aria-hidden="true"><span>{% brand %}</span></div>
-        <div class="doorway" id="doorway">
-          <div class="beyond" aria-hidden="true">
-            <div class="by-wall"></div>
-            <div class="by-arch"><span>{% if feat %}{% include "partials/_rugimg.html" with m=feat.image w=240 sizes="80px" %}{% endif %}</span></div>
-            <div class="by-glow"></div>
-            <div class="by-pool"></div>
-          </div>
-          <div class="leaf l" id="leaf-l"><img src="{% static 'img/house/leaf.svg' %}" alt="" width="88" height="282">
-            <button type="button" class="knock" aria-label="حلقهٔ در را بزنید تا در باز شود"><svg viewBox="0 0 30 60" aria-hidden="true"><defs><linearGradient id="kg1" x1="0" x2="1"><stop offset="0" stop-color="#1B1714"/><stop offset=".5" stop-color="#5A4E44"/><stop offset="1" stop-color="#1B1714"/></linearGradient></defs><circle cx="15" cy="10" r="8" fill="url(#kg1)" stroke="#0E0B09"/><circle cx="15" cy="10" r="2.6" fill="#8A7C6A"/><circle cx="15" cy="36" r="13" fill="none" stroke="#1B1714" stroke-width="5"/><circle cx="15" cy="36" r="13" fill="none" stroke="#6E6052" stroke-width="1.2" stroke-dasharray="10 30"/></svg></button></div>
-          <div class="leaf r" id="leaf-r"><img src="{% static 'img/house/leaf.svg' %}" alt="" width="88" height="282">
-            <button type="button" class="knock" aria-label="کوبهٔ در را بزنید تا در باز شود"><svg viewBox="0 0 30 90" aria-hidden="true"><defs><linearGradient id="kg2" x1="0" x2="1"><stop offset="0" stop-color="#1B1714"/><stop offset=".5" stop-color="#5A4E44"/><stop offset="1" stop-color="#1B1714"/></linearGradient></defs><circle cx="15" cy="10" r="9" fill="url(#kg2)" stroke="#0E0B09"/><circle cx="15" cy="10" r="3" fill="#8A7C6A"/><rect x="11.5" y="12" width="7" height="58" rx="3.5" fill="url(#kg2)" stroke="#0E0B09"/><ellipse cx="15" cy="74" rx="8" ry="9" fill="url(#kg2)" stroke="#0E0B09"/><circle cx="15" cy="86" r="3.5" fill="#2A2420"/></svg></button></div>
-        </div>
+{# ------------------------------------------------ بنر اصلی + سایزیاب #}
+<section class="wrap hero-row">
+  <div class="slider" id="slider" aria-roledescription="carousel" aria-label="پیشنهادهای {% brand %}">
+    {% if offers %}
+    <div class="slide s1 is-active" role="group" aria-roledescription="slide">
+      <div class="slide-txt">
+        <span class="eyebrow"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-tag"/></svg>پیشنهاد ویژهٔ امروز</span>
+        <h2>{% if mo %}<em>تا ٪{{ mo|fa_num }} تخفیف؛</em> {% endif %}{{ offers_total|fa_num }} فرصت خرید از کارخانه</h2>
+        <p>قیمت ویژه برای سایزها و تخته‌های محدود؛ تا وقتی موجودی هست.</p>
+        <a class="fbtn fbtn--gold" href="/فرش-جشنواره-ای/">دیدن همهٔ فرصت‌ها<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>
       </div>
-      <div class="hero-copy" id="hero-copy">
-        <h1 class="nq">از کارخانه، تا خانه</h1>
-        <p>{{ site_settings.tagline|default:"خرید مستقیم فرش ماشینی از کارخانه، به صورت آنلاین" }}. {{ ptotal|fa_num }}&nbsp;طرح{% if rc %}، از {{ rc.0.reeds|fa_num }} تا {% with last=rc|last %}{{ last.reeds|fa_num }}{% endwith %}&nbsp;شانه{% endif %}.</p>
-        <div class="hero-cta">
-          <a class="hb hb--laki" href="#hayat" id="open-door">در را باز کنید</a>
-          <a class="hb hb--line" href="/shop/">دیدن همهٔ فرش‌ها</a>
-        </div>
-      </div>
-      <div class="plaque" id="plaque" aria-hidden="true"><b>{{ ptotal|fa_num }}</b><span>طرح در این خانه</span></div>
-      <p class="door-hint" id="door-hint" aria-hidden="true">کوبهٔ در را بزنید، یا پایین بروید</p>
-    </div>
-    <div class="sky-fade" id="sky-fade"></div>
-  </div>
-</section>
-
-{# ---------------------------------------------------------------- ۲. حیاط: هر طاق یک دسته #}
-<section class="hayat" id="hayat" aria-labelledby="hayat-h">
-  <header class="h-sechead">
-    <h2 class="kotibeh" id="hayat-h">هر طاق، یک دسته</h2>
-    <p>دسته‌ها را از زیر طاق‌های حیاط انتخاب کنید.</p>
-  </header>
-  <div class="facade-wrap">
-    <div class="facade" style="--n:{{ ac.arches|length }}">
-      {% for x in ac.arches %}<a class="arch{% if x.mid %} is-mid{% endif %}" href="{{ x.url }}"><span class="arch-o"><span class="arch-i"><span class="muq"></span><span class="rod"></span>{% include "partials/_rugimg.html" with m=x.image w=240 sizes="(max-width: 1100px) 120px, 170px" seed=forloop.counter %}</span></span>
-        <span class="arch-l"><b>{{ x.short|fa_num }}</b><small>{{ x.count|fa_num }} طرح</small></span></a>{% endfor %}
-    </div>
-  </div>
-  <div class="pool" id="pool">
-    <div class="pool-rim"></div>
-    <div class="pool-water" id="pool-water" aria-hidden="true"></div>
-    <div class="pool-shine" aria-hidden="true"></div>
-    <p class="pool-note" aria-hidden="true">روی آب حوض بزنید</p>
-  </div>
-  {% if ac.more %}<div class="hayat-more"><span>طرح‌های دیگر:</span>{% for x in ac.more|slice:":8" %}<a class="h-tag" href="{{ x.url }}">{{ x.name|fa_num }} <small>{{ x.count|fa_num }}</small></a>{% endfor %}</div>{% endif %}
-</section>
-
-{# ---------------------------------------------------------------- ۳. پنج‌دری: ارسی و فرشی که روی آجرفرش باز می‌شود #}
-{% if feat %}
-<section class="room-sec" id="room" aria-labelledby="room-h">
-  <div class="room-stage">
-    <div class="room-vault"></div>
-    <h2 class="kotibeh wood room-kot" id="room-h">فرش را باید روی زمین دید</h2>
-    <div class="orosi" aria-hidden="true"><img src="{% static 'img/house/orosi.svg' %}" alt="" width="528" height="262" loading="lazy" decoding="async"></div>
-    <div class="floor-wrap" aria-hidden="true">
-      <div class="floor">
-        <div class="room-rug ur x" id="room-rug" style="{{ feat.image|rug_style }}">
-          <div class="ur-sheet">{% include "partials/_rugimg.html" with m=feat.image w=960 sizes="(max-width: 991px) 70vw, 520px" seed=feat.pk %}</div><div class="ur-roll"></div>
-        </div>
-        <div class="floor-light" id="floor-light"><img src="{% static 'img/house/orosi.svg' %}" alt="" width="528" height="262" loading="lazy" decoding="async"></div>
+      <div class="slide-art" aria-hidden="true">
+        {% if mo %}<div class="disc"><div><span>تا</span><br><b>٪{{ mo|fa_num }}</b></div></div>{% endif %}
+        <span class="art-rug r2">{% include "partials/_rugimg.html" with m=o0.product.image w=480 sizes="200px" seed=o0.product.pk eager=1 %}</span>
+        {% with o1=offers.1 %}{% if o1 %}<span class="art-rug r1">{% include "partials/_rugimg.html" with m=o1.product.image w=240 sizes="160px" seed=o1.product.pk %}</span>{% endif %}{% endwith %}
       </div>
     </div>
-    <div class="room-plq">
-      <span class="nq">{{ feat.title|rug_name|fa_num }}</span>
-      <p>{% with r=feat.title|reeds_of %}{% if r %}{{ r|fa_num }} شانه، {% endif %}{% endwith %}{% if "برجسته" in feat.title %}برجسته، {% endif %}تازه به پنج‌دری آمده؛ زیر نور ارسی.</p>
-      {% if feat.min_price %}<p class="h-price">از <b>{{ feat.min_price|toman }}</b> تومان</p>{% endif %}
-      <div class="h-row">
-        <a class="hb hb--lapis hb--sm" href="{{ feat.get_absolute_url }}">دیدن این فرش</a>
-        <a class="hb hb--laki hb--sm" href="{{ feat.get_absolute_url }}#buy">انتخاب سایز و خرید</a>
+    {% else %}
+    <div class="slide s1 is-active" role="group" aria-roledescription="slide">
+      <div class="slide-txt">
+        <span class="eyebrow"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-box"/></svg>مستقیم از کارخانه</span>
+        <h2>{{ site_settings.tagline|default:"خرید مستقیم فرش از کارخانه به صورت آنلاین" }}</h2>
+        <p>{{ ptotal|fa_num }} طرح فرش ماشینی{% if rc %}، از {{ rc.0.reeds|fa_num }} تا {% with last=rc|last %}{{ last.reeds|fa_num }}{% endwith %} شانه{% endif %}؛ با قیمت کارخانه و ارسال به سراسر کشور.</p>
+        <a class="fbtn fbtn--gold" href="/shop/">دیدن همهٔ فرش‌ها<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>
+      </div>
+      <div class="slide-art" aria-hidden="true">
+        {% if b1 %}<span class="art-rug r1">{% include "partials/_rugimg.html" with m=b1.image w=240 sizes="160px" seed=b1.pk %}</span>{% endif %}
+        {% if b0 %}<span class="art-rug r2">{% include "partials/_rugimg.html" with m=b0.image w=480 sizes="200px" seed=b0.pk eager=1 %}</span>{% endif %}
       </div>
     </div>
-    <p class="room-note">نور شیشه‌های رنگی ارسی روی فرش؛ رنگ فرش در خانهٔ شما هم با نور روز کمی عوض می‌شود.</p>
-  </div>
-</section>
-{% endif %}
-
-{# ---------------------------------------------------------------- ۴. کارگاه: گره به گره #}
-{% if rc %}
-<section class="kargah" id="kargah" aria-labelledby="kargah-h">
-  <div class="h-wrap kargah-grid">
-    <div class="loom-col">
-      <div class="loom" id="loom">
-        <div class="loom-post a"></div><div class="loom-post b"></div>
-        <div class="warps"></div>
-        <div class="woven" id="woven"><canvas aria-hidden="true"></canvas></div>
-        <div class="weft"></div>
-        <div class="loom-beam t"></div><div class="loom-beam b"></div>
-        <div class="lens" id="lens" tabindex="0" role="img" aria-label="ذره‌بین روی فرش؛ با کلیدهای جهت جابه‌جا می‌شود"><canvas></canvas></div>
+    {% endif %}
+    {% if b0 %}
+    <div class="slide s2" role="group" aria-roledescription="slide">
+      <div class="slide-txt">
+        <span class="eyebrow"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-loupe"/></svg>نمای نزدیک بافت</span>
+        <h2>پیش از خرید، گره‌های فرش را از نزدیک ببینید</h2>
+        <p>در صفحهٔ هر فرش، بافت ۷۰۰ تا ۱۵۰۰ شانه را روی عکس خود همان فرش مقایسه کنید.</p>
+        <a class="fbtn fbtn--primary" href="{{ b0.get_absolute_url }}#tex">امتحان کنید<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>
       </div>
-      <p class="lens-tip">ذره‌بین را بکشید یا روی فرش بزنید؛ با کیبورد، کلیدهای جهت.</p>
+      <div class="slide-art" aria-hidden="true">
+        <span class="art-rug r1">{% include "partials/_rugimg.html" with m=b0.image w=240 sizes="140px" seed=b0.pk %}</span>
+        {% if b0.image %}<div class="mag"><i style="background-image:url('{{ b0.image|thumb:240 }}')"></i></div><span class="mag-h"></span>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% if n0 %}
+    <div class="slide s3" role="group" aria-roledescription="slide">
+      <div class="slide-txt">
+        <span class="eyebrow"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-8star"/></svg>تازه از کارخانه</span>
+        <h2>{{ n0.title|rug_name|fa_num }}{% with r=n0.title|reeds_of %}{% if r %}؛ {{ r|fa_num }} شانه{% endif %}{% endwith %}{% if "برجسته" in n0.title %} برجسته{% endif %}</h2>
+        <p>{{ n0.title|fa_num }}</p>
+        <a class="fbtn fbtn--primary" href="{{ n0.get_absolute_url }}">مشاهده و خرید<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>
+      </div>
+      <div class="slide-art" aria-hidden="true">
+        <span class="art-rug r1">{% include "partials/_rugimg.html" with m=n0.image w=480 sizes="200px" seed=n0.pk %}</span>
+        {% if n0.min_price %}<div class="price-tag">قیمت از<b>{{ n0.min_price|toman }} تومان</b></div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    <button class="sl-arrow prev" type="button" aria-label="اسلاید قبلی"><svg class="ic" aria-hidden="true"><use href="#i-chr"/></svg></button>
+    <button class="sl-arrow next" type="button" aria-label="اسلاید بعدی"><svg class="ic" aria-hidden="true"><use href="#i-chl"/></svg></button>
+    <div class="sl-dots" role="tablist" aria-label="انتخاب اسلاید"></div>
+  </div>
+
+  <aside class="box2 sizeyab" id="sizeyab" aria-labelledby="syTitle">
+    <div class="sy-hd">
+      <span class="sy-ic"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg></span>
+      <div><h2 id="syTitle">سایزیاب فرش</h2><p>ابعاد اتاق را بدهید؛ سایز مناسب را پیشنهاد می‌دهیم.</p></div>
     </div>
     <div>
-      <h2 class="nq" id="kargah-h">گره به گره</h2>
-      <p class="lead">شانه یعنی تعداد گره در عرض یک متر فرش. هرچه شانه بیشتر باشد، گره‌ها ریزترند و نقش با جزئیات بیشتری بافته می‌شود. شانه را عوض کنید و زیر ذره‌بین ببینید.</p>
-      <fieldset class="shaneh" id="k-shaneh">
-        <legend>تراکم را انتخاب کنید</legend>
-        {% for x in rc %}<label><input type="radio" name="ksh" value="{{ x.reeds }}" data-url="{{ x.url }}"{% if forloop.first %} checked{% endif %}><span>{{ x.reeds|fa_num }}</span></label>{% endfor %}
-      </fieldset>
-      <p class="knot-say" id="k-say" aria-live="polite">در هر ۱۰ سانت از عرض فرش {{ rc.0.reeds|fa_num }} شانه، تقریباً <b>{% widthratio rc.0.reeds 10 1 as kn %}{{ kn|fa_num }} گره</b> کنار هم می‌نشیند.</p>
-      <a class="hb hb--laki" id="k-link" href="{{ rc.0.url }}">دیدن فرش‌های {{ rc.0.reeds|fa_num }} شانه</a>
+      <div class="seg2" id="syType" role="group" aria-label="نوع اتاق">
+        <button type="button" data-t="liv" aria-pressed="true">پذیرایی</button>
+        <button type="button" data-t="bed" aria-pressed="false">اتاق خواب</button>
+        <button type="button" data-t="din" aria-pressed="false">ناهارخوری</button>
+        <button type="button" data-t="hall" aria-pressed="false">راهرو</button>
+      </div>
+      <div class="sy-dims">
+        <div class="fld"><label for="syL">طول اتاق (متر)</label><div class="stepper2"><button type="button" data-stp="syL:0.5" aria-label="زیاد کردن طول"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input id="syL" type="text" inputmode="decimal" data-min="1" data-max="15" value="۵" autocomplete="off"><button type="button" data-stp="syL:-0.5" aria-label="کم کردن طول"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div></div>
+        <span class="x" aria-hidden="true">×</span>
+        <div class="fld"><label for="syW">عرض اتاق (متر)</label><div class="stepper2"><button type="button" data-stp="syW:0.5" aria-label="زیاد کردن عرض"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input id="syW" type="text" inputmode="decimal" data-min="1" data-max="15" value="۴" autocomplete="off"><button type="button" data-stp="syW:-0.5" aria-label="کم کردن عرض"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div></div>
+      </div>
     </div>
+    <div class="sy-res" id="syRes" aria-live="polite"><a class="fbtn fbtn--primary fbtn--block" href="/shop/">دیدن همهٔ سایزها</a></div>
+    {{ szs|json_script:"sizesData" }}
+  </aside>
+</section>
+
+<section class="wrap" aria-label="خدمات {% brand %}">{% include "partials/_trust.html" %}</section>
+
+{# ------------------------------------------------ دسته‌ها #}
+{% if ac.arches %}
+<section class="wrap sec" aria-labelledby="hCats">
+  <div class="sec-hd"><h2 id="hCats"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>دسته‌بندی‌های {% brand %}</h2><a class="link" href="/shop/">همهٔ {{ ptotal|fa_num }} طرح<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="cats">
+    {% for x in rc %}<a class="cat" href="{{ x.url }}"><span class="cat-img">{% for a in ac.arches %}{% if a.url == x.url %}{% include "partials/_rugimg.html" with m=a.image w=240 sizes="100px" seed=forloop.counter %}{% endif %}{% endfor %}<span class="ov"></span><span class="lbl">{{ x.reeds|fa_num }}</span></span><b>{{ x.name|fa_num }}</b><small>{{ x.count|fa_num }} طرح</small></a>{% endfor %}
+    {% for x in ac.arches %}{% if not x.reeds %}<a class="cat" href="{{ x.url }}"><span class="cat-img">{% include "partials/_rugimg.html" with m=x.image w=240 sizes="100px" seed=forloop.counter %}</span><b>{{ x.name|fa_num }}</b><small>{{ x.count|fa_num }} طرح</small></a>{% endif %}{% endfor %}
   </div>
 </section>
 {% endif %}
 
-{# ---------------------------------------------------------------- ۵. شاه‌نشین: پربازدیدها #}
-{% if best %}
-<section class="shah" id="shah" aria-labelledby="shah-h">
-  <div class="h-wrap">
-    <header class="h-sechead">
-      <h2 class="kotibeh gach" id="shah-h">شاه‌نشین</h2>
-      <p>پرطرفدارترین فرش‌های این روزها، در بهترین جای خانه.</p>
-    </header>
-    <div class="shah-grid">
-      {% with b=best %}{% if b|length >= 5 %}
-        {% include "partials/product_card.html" with p=b.3 %}{% include "partials/product_card.html" with p=b.1 %}{% include "partials/product_card.html" with p=b.0 big=True %}{% include "partials/product_card.html" with p=b.2 %}{% include "partials/product_card.html" with p=b.4 %}
-      {% else %}{% for p in b %}{% include "partials/product_card.html" %}{% endfor %}{% endif %}{% endwith %}
-      <div class="shah-step" aria-hidden="true"></div>
-    </div>
-  </div>
-</section>
-{% endif %}
-
-{# ---------------------------------------------------------------- فرصت‌های ویژه #}
+{# ------------------------------------------------ پیشنهاد ویژهٔ امروز (فقط فرصت‌های واقعی) #}
 {% if offers %}
-<section class="h-band h-band--brick" aria-labelledby="off-h">
-  <div class="h-wrap">
-    <div class="h-band__head"><h2 class="nq" id="off-h">فرصت‌های ویژه</h2><a class="hb hb--lapis hb--sm" href="/فرش-جشنواره-ای/">همهٔ {% if offers_total %}{{ offers_total|fa_num }} {% endif %}فرصت</a></div>
-    <div class="h-offers">{% for o in offers %}
-      <a class="h-card h-offer" href="{{ o.product.get_absolute_url }}">
-        <span class="h-offer__img">{% include "partials/_rugimg.html" with m=o.product.image w=240 sizes="120px" seed=o.product.pk %}</span>
-        <span class="h-offer__b"><b>{{ o.product.title|rug_name|fa_num }}</b><small>{{ o.size.label|fa_num }}، {% if o.remaining == 1 %}یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %}</small>
-          <span class="h-price"><del>{{ o.regular_price|toman }}</del> <b>{{ o.price|toman }}</b> <small>تومان</small>{% if o.off_percent %} <em>٪{{ o.off_percent|fa_num }}</em>{% endif %}</span>
-          {% if o.ends_at %}<span class="offer-card__clock" data-offer-end="{{ o.ends_at|date:'c' }}"></span>{% elif o.remaining == 1 %}<span class="offer-card__clock">آخرین تخته</span>{% endif %}</span>
-      </a>{% endfor %}
+<section class="offers" aria-labelledby="hOff">
+  <div class="wrap offers-in">
+    <div class="offers-side">
+      <h2 id="hOff"><span>فرصت‌های ویژهٔ خرید</span>پیشنهاد ویژهٔ امروز</h2>
+      <small>{{ offers_total|fa_num }} فرصت فعال؛ هر کدام برای سایز و تعداد مشخص.</small>
+      <a class="fbtn fbtn--white" href="/فرش-جشنواره-ای/">همهٔ {{ offers_total|fa_num }} فرصت<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>
     </div>
+    <div class="rail" data-rail><div class="rail-track">
+      {% for o in offers %}<article class="pc pc--deal">
+        <div class="pc-media">{% include "partials/_rugimg.html" with m=o.product.image w=480 sizes="(max-width: 860px) 46vw, 240px" seed=o.product.pk %}
+          {% if o.off_percent %}<div class="badges"><span class="bdg bdg-off">٪{{ o.off_percent|fa_num }} تخفیف</span></div>{% endif %}</div>
+        <div class="pc-body">
+          <div class="pc-meta"><span>{{ o.size.label|size_name|fa_dec }}</span><span>{% if o.remaining == 1 %}آخرین تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %}</span></div>
+          <h3 class="pc-title"><a class="stretch" href="{{ o.product.get_absolute_url }}">{{ o.product.title|fa_num }}</a></h3>
+          <div class="pc-price"><div class="pr-top"><del>{{ o.regular_price|toman }}</del>{% if o.off_percent %}<span class="off2">٪{{ o.off_percent|fa_num }}</span>{% endif %}</div><div class="pr-now">{{ o.price|toman }}<small>تومان</small></div></div>
+          {% if o.ends_at %}<div class="deal-clock"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-clock"/></svg><span data-offer-end="{{ o.ends_at|date:'c' }}"></span></div>{% endif %}
+        </div>
+      </article>{% endfor %}
+    </div></div>
   </div>
 </section>
 {% endif %}
 
-{# ---------------------------------------------------------------- ۶. به رنگ خانه #}
+{# ------------------------------------------------ پربازدیدها #}
+{% if best %}
+<section class="wrap sec" aria-labelledby="hBest">
+  <div class="sec-hd"><div><h2 id="hBest"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>پربازدیدترین فرش‌ها</h2><p>برای مقایسه، تیک «مقایسه» را روی چند فرش بزنید.</p></div><a class="link" href="/shop/?sort=popular">مشاهدهٔ همه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="rail" data-rail><div class="rail-track">{% for p in best %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
+</section>
+{% endif %}
+
+{# ------------------------------------------------ خرید بر اساس سایز #}
+{% if szs %}
+<section class="wrap sec" aria-labelledby="hSize">
+  <div class="sec-hd"><div><h2 id="hSize"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>خرید بر اساس سایز</h2><p>شکل‌ها به نسبت واقعی ابعاد کشیده شده‌اند.</p></div><a class="link" href="#sizeyab">سایزیاب<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="sizes">
+    {% for s in szs %}<a class="szt" href="/shop/?size={{ s.slug|urlencode }}"><span class="sz-art" aria-hidden="true"><i style="--w:{{ s.w|stringformat:'g' }};--l:{{ s.l|stringformat:'g' }}"></i></span><b>{{ s.name|fa_dec }}</b><span>{{ s.l|stringformat:'g'|fa_dec }}×{{ s.w|stringformat:'g'|fa_dec }} متر</span><span>{{ s.count|fa_num }} طرح</span>{% if s.min_price %}<em>از {{ s.min_price|toman }} تومان</em>{% endif %}</a>{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ------------------------------------------------ دو بنر میانی #}
+{% with top=rc|last %}{% if top or inst.on %}
+<section class="wrap banners" aria-label="پیشنهادهای میانی">
+  {% if top %}<a class="bnr bnr-a" href="{{ top.url }}">
+    <div class="bt"><span class="eyebrow">بافت ظریف‌تر، نقش ریزتر</span><h3>{{ top.name|fa_num }}؛ ظریف‌ترین بافت {% brand %}</h3><p>{{ top.count|fa_num }} طرح با گره‌های ریز و نقش‌های پرجزئیات.</p><span class="fbtn fbtn--white">مشاهدهٔ طرح‌ها</span></div>
+    <div class="art" aria-hidden="true">{% for a in ac.arches %}{% if a.url == top.url %}<span class="art-rug">{% include "partials/_rugimg.html" with m=a.image w=240 sizes="120px" seed=9 %}</span>{% endif %}{% endfor %}</div>
+  </a>{% endif %}
+  {% if inst.on %}<a class="bnr bnr-b" href="{{ inst.url|default:'/shop/' }}">
+    <div class="bt"><span class="eyebrow">خرید اقساطی فرش</span><h3>فرش را امروز ببرید، در چند قسط پرداخت کنید</h3><p>شرایط و مبلغ قسط هر فرش را در صفحهٔ همان فرش ببینید.</p><span class="fbtn fbtn--primary">شرایط خرید اقساطی</span></div>
+    <div class="art inst" aria-hidden="true"><div><b>۱</b>انتخاب فرش</div><div><b>۲</b>پیش‌پرداخت</div><div><b>۳</b>اقساط ماهانه</div></div>
+  </a>{% else %}<a class="bnr bnr-b" href="/carpets-price-list/">
+    <div class="bt"><span class="eyebrow">لیست قیمت امروز</span><h3>قیمت همهٔ سایزها، به‌روز و یکجا</h3><p>قیمت روز فرش‌های هر شانه و سایز را پیش از خرید ببینید.</p><span class="fbtn fbtn--primary">دیدن لیست قیمت</span></div>
+    <div class="art inst" aria-hidden="true"><div><b>۶</b>متری</div><div><b>۹</b>متری</div><div><b>۱۲</b>متری</div></div>
+  </a>{% endif %}
+</section>
+{% endif %}{% endwith %}
+
+{# ------------------------------------------------ تازه‌ها #}
+{% if newest %}
+<section class="wrap sec" aria-labelledby="hNew">
+  <div class="sec-hd"><div><h2 id="hNew"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>تازه‌های کارخانه</h2><p>تازه‌ترین طرح‌هایی که به {% brand %} اضافه شده‌اند.</p></div><a class="link" href="/shop/?sort=new">مشاهدهٔ همه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="rail" data-rail><div class="rail-track">{% for p in newest %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
+</section>
+{% endif %}
+
+{# ------------------------------------------------ رنگ زمینه #}
 {% if cc %}
-<section class="rang" aria-labelledby="rang-h">
-  <div class="h-wrap">
-    <h2 class="nq" id="rang-h">به رنگ خانه</h2>
-    <p class="sub">رنگ زمینه را از روی کاشی‌ها انتخاب کنید.</p>
-    <div class="tiles" style="--cols:{% if cc|length > 8 %}{% widthratio cc|length 2 1 %}{% else %}{{ cc|length }}{% endif %}">{% for c in cc %}<a class="tile" href="{{ c.url }}" style="background-color:{{ c.hex }}" data-hex="{{ c.hex }}"><b>{{ c.name }}</b><small>{{ c.count|fa_num }} طرح</small></a>{% endfor %}</div>
-  </div>
+<section class="wrap sec" aria-labelledby="hCol">
+  <div class="sec-hd"><h2 id="hCol"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>خرید بر اساس رنگ زمینه</h2></div>
+  <div class="colors">{% for c in cc %}<a class="colr" href="{{ c.url }}"><span class="ring"><i style="background-color:{{ c.hex }}"></i></span><b>{{ c.name }}</b><small>{{ c.count|fa_num }} طرح</small></a>{% endfor %}</div>
 </section>
 {% endif %}
 
-{# ---------------------------------------------------------------- قیمت امروز و پرسش‌ها #}
+{# ------------------------------------------------ راهنمای خرید #}
+<section class="wrap sec" id="guide" aria-labelledby="hGuide">
+  <div class="sec-hd"><div><h2 id="hGuide"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>راهنمای خرید فرش</h2><p>سه پرسشی که پیش از خرید هر فرش ماشینی بهتر است جوابش را بدانید.</p></div><a class="link" href="/blog/">مجلهٔ {% brand %}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="guide-grid">
+    <a class="art-card" href="/blog/search/?q={{ "شانه"|urlencode }}">
+      <div class="art-ill"><svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="#EEF2FA"/><path d="M22.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M32.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M42.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M52.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M62.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M72.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><path d="M82.0 50v80" stroke="#1D3F8F" stroke-opacity="0.35" stroke-width="1.6"/><text x="57" y="152" text-anchor="middle" font-size="13" font-weight="800" fill="#17336F">۷۰۰</text><path d="M114.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M121.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M128.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M135.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M142.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M149.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M156.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M163.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M170.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><path d="M177.0 50v80" stroke="#1D3F8F" stroke-opacity="0.50" stroke-width="1.6"/><text x="149" y="152" text-anchor="middle" font-size="13" font-weight="800" fill="#17336F">۱۰۰۰</text><path d="M206.0 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M211.8 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M217.7 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M223.5 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M229.3 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M235.2 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M241.0 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M246.8 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M252.7 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M258.5 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M264.3 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><path d="M270.2 50v80" stroke="#1D3F8F" stroke-opacity="0.65" stroke-width="1.6"/><text x="241" y="152" text-anchor="middle" font-size="13" font-weight="800" fill="#17336F">۱۲۰۰</text><path d="M298.0 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M302.7 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M307.3 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M312.0 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M316.7 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M321.3 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M326.0 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M330.7 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M335.3 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M340.0 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M344.7 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M349.3 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M354.0 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M358.7 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><path d="M363.3 50v80" stroke="#1D3F8F" stroke-opacity="0.80" stroke-width="1.6"/><text x="333" y="152" text-anchor="middle" font-size="13" font-weight="800" fill="#17336F">۱۵۰۰</text><text x="200" y="32" text-anchor="middle" font-size="13" fill="#5A6377">تعداد تار در هر متر از عرض فرش</text></svg></div>
+      <div class="art-b"><span class="q">شانه چیست؟</span><h3>عدد ۷۰۰ تا ۱۵۰۰ روی برچسب فرش چه می‌گوید؟</h3><p>شانه تعداد تارهای عمودی در هر متر از عرض فرش است. هرچه شانه بیشتر باشد، گره‌ها ریزتر و نقش‌ها با جزئیات بیشتری بافته می‌شوند.</p></div>
+    </a>
+    <a class="art-card" href="#sizeyab">
+      <div class="art-ill"><svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="#EEF2FA"/><rect x="100" y="24" width="200" height="140" fill="#fff" stroke="#323C52" stroke-width="5"/><rect x="130" y="49" width="140" height="90" fill="#DDE5F5" stroke="#1D3F8F" stroke-width="2"/><ellipse cx="200" cy="94" rx="26" ry="18" fill="#C99A2E" opacity=".6"/><path d="M100 94h30M270 94h30M200 24v25M200 139v25" stroke="#C99A2E" stroke-width="2" stroke-dasharray="4 3"/><text x="236" y="156" font-size="11.5" font-weight="800" fill="#3A2A05">۳۰ تا ۶۰</text><text x="200" y="16" text-anchor="middle" font-size="12" fill="#5A6377">فاصلهٔ معمول فرش تا دیوار (سانتی‌متر)</text></svg></div>
+      <div class="art-b"><span class="q">چه سایزی بخرم؟</span><h3>انتخاب سایز فرش برای پذیرایی، خواب و ناهارخوری</h3><p>قاعدهٔ ساده: از هر دیوار ۳۰ تا ۶۰ سانتی‌متر فاصله بگذارید. سایزیاب بالای همین صفحه این حساب را برایتان انجام می‌دهد.</p></div>
+    </a>
+    <a class="art-card" href="/carpets-price-list/">
+      <div class="art-ill"><svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="#FCF6E7"/><g font-size="13" font-weight="800"><rect x="90" y="40" width="220" height="28" rx="6" fill="#fff"/><rect x="90" y="76" width="220" height="28" rx="6" fill="#fff"/><rect x="90" y="112" width="220" height="28" rx="6" fill="#fff"/><text x="290" y="59" text-anchor="end" fill="#17336F">۶ متری</text><text x="290" y="95" text-anchor="end" fill="#17336F">۹ متری</text><text x="290" y="131" text-anchor="end" fill="#17336F">۱۲ متری</text><rect x="104" y="49" width="70" height="10" rx="5" fill="#C99A2E" opacity=".55"/><rect x="104" y="85" width="88" height="10" rx="5" fill="#C99A2E" opacity=".7"/><rect x="104" y="121" width="106" height="10" rx="5" fill="#C99A2E" opacity=".85"/></g><text x="200" y="26" text-anchor="middle" font-size="12" fill="#5A6377">قیمت هر سایز، جدا و به‌روز</text></svg></div>
+      <div class="art-b"><span class="q">قیمت روز</span><h3>لیست قیمت امروز فرش‌ها بر اساس شانه و سایز</h3><p>قیمت هر سایز را پیش از خرید ببینید و فرش‌های یک شانه را با هم مقایسه کنید.</p></div>
+    </a>
+  </div>
+</section>
+
+{# ------------------------------------------------ نظر خریداران (فقط نظرهای واقعی و تأییدشده) #}
+{% if reviews %}
+<section class="wrap sec" aria-labelledby="hRev">
+  <div class="sec-hd"><div><h2 id="hRev"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>نظر خریداران</h2>{% if rating_count %}<p>میانگین {{ rating_avg|fa_dec }} از ۵، از {{ rating_count|fa_num }} نظر ثبت‌شده</p>{% endif %}</div></div>
+  <div class="quotes">{% for r in reviews %}<figure class="quote">
+    <div class="stars2" aria-label="امتیاز {{ r.rating|fa_num }} از ۵">{% for s in r.rating|stars5 %}<svg class="ic ic-fill{% if s == 'e' %} e{% endif %}" aria-hidden="true"><use href="#i-star"/></svg>{% endfor %}</div>
+    <blockquote>{{ r.quote|fa_num }}</blockquote>
+    <figcaption><span class="av">{{ r.author_name|initial }}</span><span><b>{{ r.author_name }}</b><a href="{{ r.product.get_absolute_url }}">{{ r.product.title|rug_name|fa_num }}</a></span></figcaption>
+  </figure>{% endfor %}</div>
+</section>
+{% endif %}
+
+{# ------------------------------------------------ قیمت امروز و پرسش‌ها #}
 {% if direct and direct.rows or direct.faq %}
-<section class="h-band" aria-labelledby="dir-h">
-  <div class="h-wrap h-ledger">
-    {% if direct.rows %}<div class="h-card">
-      <div class="h-band__head" style="margin-bottom:6px"><h2 class="nq" id="dir-h">دفتر قیمت امروز</h2></div>
-      <p class="muted" style="margin:0 0 10px">ارزان‌ترین فرش ۱۲ متری هر لیست قیمت کارخانه{% if direct.updated %}؛ به‌روزشده {{ direct.updated|jdate:"%d %B" }}{% endif %}.</p>
-      <ul>{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
-      <p style="margin:14px 0 0"><a class="hb hb--line hb--sm" href="/carpets-price-list/">لیست قیمت کامل</a></p>
-    </div>{% endif %}
-    {% if direct.faq %}<div class="h-faq">
-      <h2 class="h-h2 nq"{% if not direct.rows %} id="dir-h"{% endif %}>پرسش‌های پیش از خرید</h2>
-      {% for q, a in direct.faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}
-    </div>{% endif %}
-  </div>
+<section class="wrap sec ledger{% if direct.rows and direct.faq %} ledger--2{% endif %}" aria-labelledby="dir-h">
+  {% if direct.rows %}<div class="box2 ledger-box">
+    <div class="sec-hd"><div><h2 id="dir-h"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>قیمت امروز</h2><p>ارزان‌ترین فرش ۱۲ متری هر لیست قیمت کارخانه{% if direct.updated %}؛ به‌روزشده {{ direct.updated|jdate:"%d %B" }}{% endif %}.</p></div></div>
+    <ul>{% for r in direct.rows %}<li><a href="{{ r.url }}">{{ r.name|fa_num }}</a><span>از <b>{{ r.price|toman }}</b> تومان</span></li>{% endfor %}</ul>
+    <a class="fbtn fbtn--line" href="/carpets-price-list/">لیست قیمت کامل</a>
+  </div>{% endif %}
+  {% if direct.faq %}<div class="faq2">
+    <h2{% if not direct.rows %} id="dir-h"{% endif %}>پرسش‌های پیش از خرید</h2>
+    {% for q, a in direct.faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ q }}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><p>{{ a }}</p></details>{% endfor %}
+  </div>{% endif %}
 </section>
 {% endif %}
 
-{# ---------------------------------------------------------------- مجله #}
+{# ------------------------------------------------ مجله #}
 {% if posts %}
-<section class="h-band" style="padding-top:20px" aria-labelledby="mag-h">
-  <div class="h-wrap">
-    <div class="h-band__head"><h2 class="nq" id="mag-h">مجلهٔ {% brand %}</h2><a class="h-more" href="/blog/">همهٔ نوشته‌ها</a></div>
-    <div class="h-journal">{% for post in posts|slice:":3" %}<a class="h-post" href="{{ post.get_absolute_url }}">{% if post.image %}<img src="{{ post.image|thumb:480 }}" alt="" loading="lazy" decoding="async" width="480" height="300">{% endif %}<span class="in"><small>{% if post.primary_category %}{{ post.primary_category.name }}{% else %}مجله{% endif %}</small><b>{{ post.title|fa_num }}</b>{% if post.excerpt %}<span>{{ post.excerpt|striptags|truncatewords:20 }}</span>{% endif %}</span></a>{% endfor %}</div>
-  </div>
+<section class="wrap sec" aria-labelledby="hMag">
+  <div class="sec-hd"><div><h2 id="hMag"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>مجلهٔ {% brand %}</h2></div><a class="link" href="/blog/">همهٔ نوشته‌ها<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  <div class="guide-grid posts">{% for post in posts|slice:":3" %}<a class="art-card" href="{{ post.get_absolute_url }}">
+    <div class="art-ill">{% if post.image %}<img src="{{ post.image|thumb:480 }}" alt="" loading="lazy" decoding="async" width="480" height="240">{% endif %}</div>
+    <div class="art-b"><span class="q">{% if post.primary_category %}{{ post.primary_category.name }}{% else %}مجله{% endif %}</span><h3>{{ post.title|fa_num }}</h3>{% if post.excerpt %}<p>{{ post.excerpt|striptags|truncatewords:22 }}</p>{% endif %}<div class="art-meta">{% if post.published_at %}<span><svg class="ic ic-xs" aria-hidden="true"><use href="#i-clock"/></svg>{{ post.published_at|jdate:"%-d %B %Y" }}</span>{% endif %}</div></div>
+  </a>{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if apps_promo.home and apps_promo.apps %}
+<section class="wrap sec" aria-labelledby="appsTitle">
+  <div class="sec-hd"><div><h2 id="appsTitle"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>{% brand %} در گوشی شما</h2><p>اپ‌ها رایگان‌اند و برای اندروید از کافه‌بازار نصب می‌شوند.</p></div></div>
+  <div class="apps2">{% for a in apps_promo.apps %}<article class="app2">
+    <span class="app2-ic" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-{% if a.key == 'finder' %}loupe{% else %}phone{% endif %}"/></svg></span>
+    <div><h3>{{ a.name }}</h3><p>{{ a.text }}</p><a class="fbtn fbtn--primary fbtn--sm" href="{{ a.url }}" target="_blank" rel="noopener">دریافت از کافه‌بازار</a></div>
+    {% if a.qr %}<img class="app2-qr" src="{{ a.qr }}" width="96" height="96" alt="کد QR دانلود {{ a.name }}" loading="lazy">{% endif %}
+  </article>{% endfor %}</div>
 </section>
 {% endif %}
 
 {% if about_html %}
-<section class="h-wrap h-about h-faq"><details><summary>دربارهٔ {% brand %}</summary><div class="prose">{{ about_html|safe }}</div></details></section>
+<section class="wrap sec about2"><details><summary>دربارهٔ {% brand %}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><div class="prose">{{ about_html|safe }}</div></details></section>
 {% endif %}
 {% endwith %}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/house-home.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}
+{% block scripts %}{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}

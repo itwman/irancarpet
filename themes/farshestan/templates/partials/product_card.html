@@ -1,11 +1,13 @@
-{% load fa shop_theme %}{% with r=p.title|reeds_of %}
-<article class="niche{% if big %} big{% endif %}{% if p.stock_status == 'outofstock' %} is-out{% endif %}">
-  <a class="niche-a" href="{{ p.get_absolute_url }}" tabindex="-1" aria-hidden="true"><span class="niche-o"><span class="niche-i"><span class="muq"></span><span class="rod"></span>{% include "partials/_rugimg.html" with m=p.image w=480 sizes="(max-width: 600px) 52vw, 300px" seed=p.pk eager=eager %}</span></span>
-    {% if p.offer %}<span class="niche-badge">فرصت ویژه · ٪{{ p.offer.off_percent|fa_num }}</span>{% elif p.stock_status == 'outofstock' %}<span class="niche-badge is-out">ناموجود</span>{% endif %}</a>
-  <div class="niche-p">
-    <h3><a href="{{ p.get_absolute_url }}" title="{{ p.title|fa_num }}">{{ p.title|rug_name|fa_num }}</a></h3>
-    <ul class="h-meta">{% if r %}<li>{{ r|fa_num }} شانه</li>{% endif %}{% if "برجسته" in p.title %}<li>برجسته</li>{% endif %}{% if p.brand %}<li>{{ p.brand.name }}</li>{% endif %}{% if p.rating_count %}<li><span class="h-stars" aria-label="امتیاز {{ p.rating_avg|floatformat:1|fa_num }} از ۵">★</span> {{ p.rating_avg|floatformat:1|fa_num }}</li>{% endif %}</ul>
-    <p class="h-price">{% if p.stock_status == 'outofstock' and not p.offer %}<span class="muted">ناموجود؛ خبرم کن</span>{% elif p.min_price %}<small>از</small> <b>{{ p.min_price|toman }}</b> <small>تومان</small>{% else %}<span class="muted">استعلام قیمت</span>{% endif %}</p>
-    <a class="hb hb--sm hb--soft" href="{{ p.get_absolute_url }}#buy" aria-label="انتخاب سایز و خرید {{ p.title|fa_num }}">انتخاب سایز و خرید</a>
+{% load fa shop_theme %}{% with r=p.title|reeds_of st=p.stock_status %}<article class="pc{% if st == "outofstock" %} is-out{% endif %}" data-id="{{ p.pk }}" data-t="{{ p.title|fa_num }}" data-u="{{ p.get_absolute_url }}" data-img="{% if p.image %}{{ p.image|thumb:240 }}{% endif %}" data-r="{{ r }}" data-tex="{% if "برجسته" in p.title %}برجسته{% endif %}" data-p="{% if p.min_price and st != "outofstock" %}{{ p.min_price }}{% endif %}" data-rt="{% if p.rating_count %}{{ p.rating_avg|floatformat:1|fa_dec }}{% endif %}" data-rc="{{ p.rating_count|default:0 }}"{% if st == "outofstock" %} data-out="1"{% endif %}>
+  <div class="pc-media">
+    {% include "partials/_rugimg.html" with m=p.image w=480 sizes="(max-width: 860px) 46vw, 260px" seed=p.pk eager=eager alt="" %}
+    {% if p.offer or st == "outofstock" %}<div class="badges">{% if p.offer %}<span class="bdg bdg-off">٪{{ p.offer.off_percent|fa_num }} تخفیف</span>{% endif %}{% if st == "outofstock" %}<span class="bdg bdg-out">ناموجود</span>{% endif %}</div>{% endif %}
+    <label class="pc-cmp"><input type="checkbox" data-cmp="{{ p.pk }}" aria-label="افزودن {{ p.title|fa_num }} به مقایسه"><span aria-hidden="true">مقایسه</span></label>
+  </div>
+  <div class="pc-body">
+    <div class="pc-meta">{% if r %}<span><svg class="dens dens-xs" aria-hidden="true"><use href="#d-{{ r }}"/></svg>{{ r|fa_num }} شانه</span>{% endif %}{% if "برجسته" in p.title %}<span>برجسته</span>{% endif %}{% if p.brand %}<span>{{ p.brand.name }}</span>{% endif %}</div>
+    <h3 class="pc-title"><a class="stretch" href="{{ p.get_absolute_url }}" title="{{ p.title|fa_num }}">{{ p.title|fa_num }}</a></h3>
+    {% if p.rating_count %}<span class="rate" aria-label="امتیاز {{ p.rating_avg|floatformat:1|fa_dec }} از ۵ با {{ p.rating_count|fa_num }} دیدگاه"><svg class="ic ic-fill" aria-hidden="true"><use href="#i-star"/></svg>{{ p.rating_avg|floatformat:1|fa_dec }}<span>({{ p.rating_count|fa_num }})</span></span>{% endif %}
+    <div class="pc-price">{% if st == "outofstock" and not p.offer %}<span class="out">ناموجود</span><span class="pr-note">خبرم کن در صفحهٔ فرش</span>{% elif p.min_price %}<div class="pr-now"><small>از</small> {{ p.min_price|toman }}<small>تومان</small></div>{% else %}<span class="pr-note">استعلام قیمت</span>{% endif %}</div>
   </div>
 </article>{% endwith %}

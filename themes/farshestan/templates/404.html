@@ -1,12 +1,14 @@
-{% extends "base.html" %}{% load fa %}
-{% block body_class %}h-nf-page{% endblock %}
-{% block content %}
-<div class="h-wrap h-nf">
-  <p class="nf__code" aria-hidden="true">۴۰۴</p>
-  <h1 class="kotibeh">این در به جایی باز نمی‌شود</h1>
-  <p class="muted">صفحه‌ای که دنبالش بودید در این خانه نیست. نام نقشه، رنگ یا کد فرش را جستجو کنید.</p>
-  <form action="/search/" class="search search--big" role="search"><label class="sr-only" for="q404">جستجو در فرش‌ها</label><input id="q404" type="search" name="q" placeholder="نقشه، رنگ یا کد فرش"><button type="submit" aria-label="جستجو"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></form>
-  <p><a class="hb hb--lapis" href="/">بازگشت به صفحهٔ اول</a> <a class="hb hb--line" href="/shop/">همهٔ فرش‌ها</a></p>
-  {% if products %}<h2 class="nq h-h2">پربازدیدترین فرش‌ها</h2><div class="rel-grid text-start">{% for p in products|slice:":8" %}{% include "partials/product_card.html" %}{% endfor %}</div>{% endif %}
+{% extends "base.html" %}{% load fa shop_theme %}
+{% block body_class %}p-404{% endblock %}
+{% block content %}{% reeds_categories as rc %}
+<div class="wrap nf2">
+  <div class="nf2-box">
+    <p class="nf2-code" aria-hidden="true">۴۰۴</p>
+    <h1>این صفحه پیدا نشد</h1>
+    <p class="muted">نشانی عوض شده یا این فرش دیگر در فروشگاه نیست. نام نقشه، رنگ یا کد فرش را جستجو کنید.</p>
+    <form action="/search/" class="nf2-search" role="search"><label class="sr-only" for="q404">جستجو در فرش‌ها</label><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="q404" type="search" name="q" placeholder="نام نقشه، رنگ یا کد فرش"><button class="fbtn fbtn--primary" type="submit">جستجو</button></form>
+    <div class="nf2-links"><a class="fbtn fbtn--line" href="/">صفحهٔ اول</a><a class="fbtn fbtn--line" href="/shop/">همهٔ فرش‌ها</a>{% for x in rc %}<a class="fbtn fbtn--ghost" href="{{ x.url }}">{{ x.name|fa_num }}</a>{% endfor %}</div>
+  </div>
+  {% if products %}<section class="sec" aria-labelledby="nfP"><div class="sec-hd"><h2 id="nfP"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>پربازدیدترین فرش‌ها</h2></div><div class="grid2 grid2--5">{% for p in products|slice:":10" %}{% include "partials/product_card.html" %}{% endfor %}</div></section>{% endif %}
 </div>
 {% endblock %}

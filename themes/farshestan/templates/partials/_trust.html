@@ -1,0 +1,7 @@
+{% load fa shop_theme %}{% installments_info as inst %}<ul class="trust">
+  <li><span class="t-ic"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg></span><div><b>مستقیم از کارخانه</b><span>بدون واسطه، با قیمت کارخانه</span></div></li>
+  <li><span class="t-ic"><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg></span><div><b>ارسال به سراسر کشور</b><span>بسته‌بندی‌شده تا درِ خانهٔ شما</span></div></li>
+  <li><span class="t-ic"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></span><div><b>پرداخت امن</b><span>درگاه بانکی؛ <a href="/license/">مجوزها و نماد اعتماد</a></span></div></li>
+  {% if inst.on %}<li><span class="t-ic"><svg class="ic" aria-hidden="true"><use href="#i-card"/></svg></span><div><b>خرید اقساطی</b><span>{% if inst.url %}<a href="{{ inst.url }}">شرایط و مراحل اقساط</a>{% else %}شرایط در صفحهٔ هر فرش{% endif %}</span></div></li>{% endif %}
+  {% if site_settings.mobile or site_settings.phone %}<li><span class="t-ic"><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg></span><div><b>مشاورهٔ پیش از خرید</b><span>{% if site_settings.mobile %}<a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a>{% else %}<a href="tel:{{ site_settings.phone|cut:'-'|cut:' ' }}"><bdi>{{ site_settings.phone|fa_num }}</bdi></a>{% endif %}</span></div></li>{% endif %}
+</ul>

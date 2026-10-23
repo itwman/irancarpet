@@ -328,3 +328,120 @@ def rug_data(media):
     if not c:
         return "0,0,100,100,0.6667"
     return f"{c['x']:g},{c['y']:g},{c['w']:g},{c['h']:g},{c['ar']:.4f}"
+
+
+# ---------------------------------------------------------------- قالب «فروشگاه تخصصی» فرشستان (۱۴۰۵)
+@register.simple_tag
+def shop_sizes():
+    """سایزهای فعالی که فرش موجود و منتشرشده دارند، با تعداد طرح و کمترین قیمت واقعی (برای فیلتر سایز، مگامنو،
+    «خرید بر اساس سایز» و سایزیاب). [{slug, label, name, type, l, w, area, count, min_price}]"""
+    data = cache.get("theme_shop_sizes")
+    if data is None:
+        from catalog.models import Variation
+        from pricing.models import Size
+
+        rows = (Variation.objects.filter(is_available=True, size__is_active=True, product__status="publish")
+                .exclude(product__stock_status="outofstock").exclude(size__type__in=("round", "custom"))
+                .values_list("size_id", "product_id", "final_price", "sale_price"))
+        prods, low = {}, {}
+        for sid, pid, final, sale in rows:
+            price = sale if (sale and final and sale < final) else (final or sale)
+            prods.setdefault(sid, set()).add(pid)
+            if price and (sid not in low or price < low[sid]):
+                low[sid] = price
+        data = []
+        for s in Size.objects.filter(pk__in=prods.keys()).order_by("sort_order", "pk"):
+            l, w = float(s.length or 0), float(s.width or 0)
+            if not (l and w):
+                continue
+            data.append({"slug": s.slug, "label": s.label, "name": _size_short(s, max(l, w), min(l, w)), "type": s.type,
+                         "l": max(l, w), "w": min(l, w), "area": round(float(s.area or l * w), 2),
+                         "count": len(prods[s.pk]), "min_price": low.get(s.pk) or 0})
+        cache.set("theme_shop_sizes", data, 600)
+    return data
+
+
+def _size_short(s, l, w):
+    """نام کوتاه و آشنای سایز: «۱۲ متری»، «۹ متری»، «قالیچه ۳ متری»، «کناره ۴ متری»، «پادری»."""
+    label = size_name(s.label)
+    if s.type == "rect":
+        return re.sub(r"\s*مستطیل", "", label).strip()
+    if s.type == "runner":
+        return f"کناره {l:g} متری"
+    if s.type == "rug":
+        a = l * w
+        return f"قالیچه {int(a) if a >= 2 else round(a * 2) / 2:g} متری"
+    if "پادری" in label:
+        return "پادری"
+    return re.sub(r"\s*[\d۰-۹.٫]+\s*[×x*]\s*[\d۰-۹.٫]+.*$", "", label).strip() or label
+
+
+@register.simple_tag
+def shop_price_bounds():
+    """کمترین و بیشترین «قیمت از» فرش‌های منتشرشده (گرد به ۱۰۰ هزار تومان) برای لغزندهٔ بازهٔ قیمت."""
+    data = cache.get("theme_price_bounds")
+    if data is None:
+        from django.db.models import Max, Min
+
+        from catalog.models import Product
+
+        agg = Product.objects.published().filter(min_price__gt=0).aggregate(lo=Min("min_price"), hi=Max("min_price"))
+        lo, hi = agg["lo"] or 0, agg["hi"] or 0
+        step = 100000
+        data = {"lo": (lo // step) * step, "hi": -(-hi // step) * step, "step": step}
+        cache.set("theme_price_bounds", data, 600)
+    return data
+
+
+@register.filter
+def stars5(rating):
+    """امتیاز ← فهرست پنج‌تایی «f» (پر) و «e» (خالی) برای کشیدن ستاره‌ها با SVG."""
+    try:
+        r = int(round(float(rating or 0)))
+    except (TypeError, ValueError):
+        r = 0
+    r = max(0, min(5, r))
+    return ["f"] * r + ["e"] * (5 - r)
+
+
+@register.filter
+def pattern_kind(name):
+    """نوع نقشه از نام دسته برای آیکن کوچک فیلتر طرح: afshan، toranj، modern، vintage، barjaste، khesht یا rug."""
+    n = str(name or "")
+    for key, words in (("afshan", ("افشان",)), ("vintage", ("وینتیج", "کهنه")), ("modern", ("مدرن", "ورساچه", "تک رنگ")),
+                       ("barjaste", ("برجسته",)), ("khesht", ("خشتی",)), ("toranj", ("سنتی", "ترنج", "نقره کوب", "طلاکوب")),
+                       ("frame", ("تابلو",))):
+        if any(w in n for w in words):
+            return key
+    return "rug"
+
+
+@register.filter
+def max_off(offers):
+    """بیشترین درصد تخفیف واقعی میان فرصت‌های ویژه (برای بنر صفحهٔ اول)."""
+    try:
+        return max((int(o.off_percent or 0) for o in offers), default=0)
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
+@register.filter
+def initial(name):
+    """حرف اول نام برای نشان دایره‌ای کنار دیدگاه‌ها."""
+    s = str(name or "").strip()
+    return s[:1] if s else "؟"
+
+
+@register.simple_tag
+def installments_info():
+    """آیا خرید اقساطی روشن است و برگهٔ «خرید اقساطی» کجاست (برای نشان‌های اعتماد و منو). {"on", "url"}"""
+    data = cache.get("theme_inst_info")
+    if data is None:
+        try:
+            from installments.services import active_plans, page_url
+
+            data = {"on": bool(active_plans()), "url": page_url()}
+        except Exception:  # noqa: BLE001 — نبودِ اقساط نباید صفحه را از کار بیندازد
+            data = {"on": False, "url": ""}
+        cache.set("theme_inst_info", data, 600)
+    return data

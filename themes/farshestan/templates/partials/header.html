@@ -1,50 +1,86 @@
-{% load static fa shop_theme %}{% arch_categories 7 as ac %}{% reeds_categories as rc %}{% color_categories 12 as cc %}{% product_total as ptotal %}
-<header class="h-hdr" id="hdr">
-  <div class="h-hdr__in">
-    <a class="h-logo" href="/" aria-label="{% brand %}، صفحهٔ اول"><img src="{% static 'img/logo.svg' %}" alt="" width="30" height="36"><span class="nq">{% brand %}</span></a>
-    <nav class="h-nav" aria-label="منوی اصلی">
-      <a href="/shop/" id="cats-btn" aria-controls="h-mega" aria-expanded="false">دسته‌ها <svg class="h-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
-      {% for x in rc %}{% if x.reeds != 1000 %}<a href="{{ x.url }}"{% if forloop.counter > 2 %} class="h-nav-x"{% endif %}>{{ x.reeds|fa_num }} شانه</a>{% endif %}{% endfor %}
-      <a href="/carpets-price-list/">لیست قیمت</a>
-      <a href="/blog/" class="h-nav-x">مجله</a>
-    </nav>
-    <div class="h-tools">
-      <a class="h-tool h-search" href="/search/" id="search-btn" aria-label="جستجو در طرح‌ها"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>جستجو در {{ ptotal|fa_num }} طرح</span></a>
-      {% with ms=site_settings.messengers %}{% if ms or site_settings.mobile %}
-      <details class="h-msg">
-        <summary class="h-tool" aria-label="گفتگو با کارشناس فروش"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></summary>
-        <div class="h-pop">
-          <p>گفتگو با کارشناس فروش</p>
-          {% for key, name, url in ms %}<a href="{{ url }}" target="_blank" rel="noopener">{% include "partials/_sico.html" %}<span>{{ name }}</span></a>{% endfor %}
-          {% if site_settings.mobile %}<a href="tel:{{ site_settings.mobile }}">{% include "partials/_sico.html" with key="phone" %}<span>تماس <bdi>{{ site_settings.mobile|fa_num }}</bdi></span></a>{% endif %}
+{% load static fa shop_theme %}{% reeds_categories as rc %}{% arch_categories 7 as ac %}{% color_categories 12 as cc %}{% shop_sizes as szs %}{% product_total as ptotal %}
+<div class="topbar">
+  <div class="wrap">
+    <p><b>{{ site_settings.tagline|default:"خرید مستقیم فرش از کارخانه به صورت آنلاین" }}</b>{% if ptotal %} · {{ ptotal|fa_num }} طرح فرش ماشینی{% endif %}</p>
+    <nav aria-label="پیوندهای کمکی"><a href="/track-order/">پیگیری سفارش</a><a href="/carpets-price-list/">لیست قیمت امروز</a>{% if site_settings.mobile %}<a href="tel:{{ site_settings.mobile }}">مشاوره و پشتیبانی: <bdi>{{ site_settings.mobile|fa_num }}</bdi></a>{% elif site_settings.phone %}<a href="tel:{{ site_settings.phone|cut:'-' }}">پشتیبانی: <bdi>{{ site_settings.phone|fa_num }}</bdi></a>{% endif %}</nav>
+  </div>
+</div>
+<header class="hdr2" id="hdr">
+  <div class="wrap hdr-main">
+    <a class="icon-btn m-only" href="#drawer" data-drawer id="btnDrawer" aria-label="منوی دسته‌بندی‌ها" aria-controls="drawer" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></a>
+    <a class="logo" href="/" aria-label="{% brand %}، صفحهٔ اول"><img src="{% static 'img/logo.svg' %}" alt="" width="42" height="42"><span class="logo-txt"><b>{% brand %}</b><small>فرش ماشینی، مستقیم از کارخانه</small></span></a>
+    <div class="qsearch" id="qsearch">
+      <form class="qsearch-row" action="/search/" method="get" role="search">
+        <button class="icon-btn qsearch-close" type="button" id="searchClose" aria-label="بستن جستجو"><svg class="ic" aria-hidden="true"><use href="#i-chr"/></svg></button>
+        <div class="qsearch-field">
+          <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+          <label class="sr-only" for="q">جستجو در {% brand %}</label>
+          <input id="q" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="جستجو در {{ ptotal|fa_num }} طرح؛ نام نقشه، رنگ یا شانه" data-short="جستجو در {{ ptotal|fa_num }} طرح فرش" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sugg" aria-autocomplete="list">
+          <button class="qsearch-go" type="submit" aria-label="جستجو"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></button>
         </div>
-      </details>{% endif %}{% endwith %}
-      <a class="h-tool" href="{% if user.is_authenticated %}/my-account/{% else %}/my-account/login/{% endif %}" rel="nofollow" aria-label="{% if user.is_authenticated %}حساب کاربری{% else %}ورود یا ثبت‌نام{% endif %}"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></a>
-      <a class="h-tool" href="/cart/" rel="nofollow" aria-label="سبد خرید{% if cart_count %}، {{ cart_count|fa_num }} کالا{% else %}، خالی{% endif %}"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16l-1.4 11.2a1.5 1.5 0 0 1-1.5 1.3H6.9a1.5 1.5 0 0 1-1.5-1.3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>{% if cart_count %}<span class="h-badge">{{ cart_count|fa_num }}</span>{% endif %}</a>
-      <a class="h-tool h-menu-btn" href="#h-menu" id="menu-btn" aria-label="منوی دسته‌ها" aria-controls="h-menu" aria-expanded="false"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+      </form>
+      <div class="sugg" id="sugg" role="listbox" aria-label="پیشنهادهای جستجو" hidden></div>
+      <script type="application/json" id="suggData">[{% for x in rc %}{"t":"{{ x.name|fa_num|escapejs }}","h":"{{ x.url|escapejs }}","s":"{{ x.count|fa_num }} طرح","i":"d-{{ x.reeds }}"},{% endfor %}{% for x in ac.arches %}{% if not x.reeds %}{"t":"{{ x.name|fa_num|escapejs }}","h":"{{ x.url|escapejs }}","s":"{{ x.count|fa_num }} طرح","i":"p-{{ x.name|pattern_kind }}"},{% endif %}{% endfor %}{% for x in ac.more %}{% if not x.reeds %}{"t":"{{ x.name|fa_num|escapejs }}","h":"{{ x.url|escapejs }}","s":"{{ x.count|fa_num }} طرح","i":"p-{{ x.name|pattern_kind }}"},{% endif %}{% endfor %}{% for c in cc %}{"t":"فرش زمینه {{ c.name|escapejs }}","h":"{{ c.url|escapejs }}","s":"رنگ زمینه · {{ c.count|fa_num }} طرح","c":"{{ c.hex }}"},{% endfor %}{% for s in szs %}{"t":"فرش {{ s.name|fa_dec|escapejs }}","h":"/shop/?size={{ s.slug|urlencode|escapejs }}","s":"{{ s.count|fa_num }} طرح · ابعاد {{ s.l|stringformat:'g'|fa_dec }}×{{ s.w|stringformat:'g'|fa_dec }} متر","i":"i-ruler"},{% endfor %}{}]</script>
     </div>
+    <div class="hdr-actions">
+      {% if user.is_authenticated %}<a class="btn-login d-only" href="/my-account/" rel="nofollow"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-user"/></svg>حساب من</a>
+      {% else %}<a class="btn-login d-only" href="/my-account/login/?next={{ request.path|urlencode }}" rel="nofollow"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-user"/></svg>ورود | ثبت‌نام</a>{% endif %}
+      <a class="icon-btn d-only" href="/my-account/wishlist/" rel="nofollow" aria-label="علاقه‌مندی‌ها"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></a>
+      <a class="icon-btn" href="/cart/" rel="nofollow" id="cartBtn" aria-label="سبد خرید{% if cart_count %}، {{ cart_count|fa_num }} کالا{% else %}، خالی{% endif %}"><svg class="ic" aria-hidden="true"><use href="#i-cart"/></svg>{% if cart_count %}<span class="count">{{ cart_count|fa_num }}</span>{% endif %}</a>
+    </div>
+    <button class="m-search m-only" type="button" id="btnMSearch"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-search"/></svg>جستجو در {{ ptotal|fa_num }} طرح فرش</button>
   </div>
-  <div class="h-mega" id="h-mega" hidden>
-    <div class="h-mega__in">{% include "partials/_menu_cols.html" %}</div>
-  </div>
+  <nav class="hdr-nav d-only" aria-label="ناوبری اصلی">
+    <div class="wrap nav-row">
+      <div class="mega-wrap" id="megaWrap">
+        <a class="mega-btn" href="/shop/" id="megaBtn" aria-expanded="false" aria-controls="mega"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-grid"/></svg>دسته‌بندی فرش<svg class="ic ic-xs" aria-hidden="true"><use href="#i-chd"/></svg></a>
+        <div class="mega" id="mega" hidden>
+          <div class="wrap mega-in">
+            <div><h3>بر اساس شانه</h3><ul>
+              {% for x in rc %}<li><a href="{{ x.url }}"><svg class="dens" aria-hidden="true"><use href="#d-{{ x.reeds }}"/></svg>{{ x.name|fa_num }}<small>{{ x.count|fa_num }}</small></a></li>{% endfor %}
+              <li><a href="/shop/"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-layers"/></svg>همهٔ فرش‌ها<small>{{ ptotal|fa_num }}</small></a></li>
+            </ul></div>
+            <div><h3>بر اساس طرح</h3><ul>
+              {% for x in ac.arches %}{% if not x.reeds %}<li><a href="{{ x.url }}"><svg class="pat" aria-hidden="true"><use href="#p-{{ x.name|pattern_kind }}"/></svg>{{ x.name|fa_num }}<small>{{ x.count|fa_num }}</small></a></li>{% endif %}{% endfor %}
+              {% for x in ac.more|slice:":6" %}{% if not x.reeds %}<li><a href="{{ x.url }}"><svg class="pat" aria-hidden="true"><use href="#p-{{ x.name|pattern_kind }}"/></svg>{{ x.name|fa_num }}<small>{{ x.count|fa_num }}</small></a></li>{% endif %}{% endfor %}
+            </ul></div>
+            {% if cc %}<div><h3>بر اساس رنگ زمینه</h3><ul class="sw-grid">
+              {% for c in cc %}<li><a href="{{ c.url }}"><span class="sw" style="background:{{ c.hex }}"></span>{{ c.name }}</a></li>{% endfor %}
+            </ul></div>{% endif %}
+            {% if szs %}<div><h3>بر اساس سایز</h3><ul>
+              {% for s in szs %}<li><a href="/shop/?size={{ s.slug|urlencode }}"><i class="szi" style="--w:{{ s.w|stringformat:'g' }};--l:{{ s.l|stringformat:'g' }}" aria-hidden="true"></i>{{ s.name|fa_dec }}<small>{{ s.l|stringformat:'g'|fa_dec }}×{{ s.w|stringformat:'g'|fa_dec }}</small></a></li>{% endfor %}
+            </ul></div>{% endif %}
+            <div class="mega-promo"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><b>نمی‌دانید چه سایزی بخرید؟</b><p>طول و عرض اتاق را بدهید تا سایزیاب، فرش مناسب را با فاصلهٔ استاندارد از دیوار پیشنهاد دهد.</p><a class="fbtn fbtn--primary" href="/#sizeyab">باز کردن سایزیاب</a></div>
+          </div>
+        </div>
+      </div>
+      <span class="nav-sep" aria-hidden="true"></span>
+      <ul class="quick">
+        <li><a class="hot" href="/فرش-جشنواره-ای/"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-tag"/></svg>فرصت‌های ویژه</a></li>
+        {% for x in rc %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endfor %}
+        <li><a href="/carpets-price-list/"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-list"/></svg>لیست قیمت</a></li>
+        <li><a href="/#sizeyab"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-ruler"/></svg>سایزیاب</a></li>
+        <li><a href="/blog/"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-book"/></svg>مجله</a></li>
+      </ul>
+      <div class="nav-note"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-truck"/></svg>ارسال به سراسر کشور</div>
+    </div>
+  </nav>
 </header>
-<aside class="h-drawer" id="h-menu" aria-labelledby="h-menu-t">
-  <div class="h-drawer__head"><p class="nq" id="h-menu-t">تالارها</p><a class="h-iconbtn" href="#" data-close aria-label="بستن منو"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></a></div>
-  <div class="h-drawer__body">
-    <form action="/search/" method="get" role="search" class="h-sfield" style="margin-top:12px"><label class="h-sr" for="q-m">جستجو در طرح‌ها</label><input id="q-m" type="search" name="q" placeholder="نام طرح، رنگ یا شانه"><button class="h-iconbtn" type="submit" aria-label="جستجو"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></form>
-    {% include "partials/_menu_cols.html" %}
-    <h3>راهنما</h3>
-    <ul><li><a href="/carpets-price-list/">لیست قیمت امروز</a></li><li><a href="/track-order/">پیگیری سفارش</a></li><li><a href="/blog/">مجله</a></li>{% if site_settings.mobile %}<li><a href="tel:{{ site_settings.mobile }}">تماس <bdi>{{ site_settings.mobile|fa_num }}</bdi></a></li>{% endif %}</ul>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="منوی دسته‌بندی‌ها" hidden>
+  <div class="drawer-hd"><a class="logo" href="/"><img src="{% static 'img/logo.svg' %}" alt="" width="34" height="34"><span class="logo-txt"><b>{% brand %}</b></span></a><button class="icon-btn" type="button" data-close-sheet aria-label="بستن منو"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="drawer-b">
+    <a class="dl" href="/فرش-جشنواره-ای/"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>فرصت‌های ویژه</a>
+    <a class="dl" href="/shop/"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>همهٔ فرش‌ها<small>{{ ptotal|fa_num }}</small></a>
+    {% if rc %}<details open><summary>بر اساس شانه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><ul>{% for x in rc %}<li><a href="{{ x.url }}"><svg class="dens" aria-hidden="true"><use href="#d-{{ x.reeds }}"/></svg>{{ x.name|fa_num }}<small>{{ x.count|fa_num }}</small></a></li>{% endfor %}</ul></details>{% endif %}
+    <details><summary>بر اساس طرح<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><ul>{% for x in ac.arches %}{% if not x.reeds %}<li><a href="{{ x.url }}"><svg class="pat" aria-hidden="true"><use href="#p-{{ x.name|pattern_kind }}"/></svg>{{ x.name|fa_num }}</a></li>{% endif %}{% endfor %}{% for x in ac.more %}{% if not x.reeds %}<li><a href="{{ x.url }}"><svg class="pat" aria-hidden="true"><use href="#p-{{ x.name|pattern_kind }}"/></svg>{{ x.name|fa_num }}</a></li>{% endif %}{% endfor %}</ul></details>
+    {% if cc %}<details><summary>بر اساس رنگ زمینه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><ul>{% for c in cc %}<li><a href="{{ c.url }}"><span class="sw" style="background:{{ c.hex }}"></span>{{ c.name }}</a></li>{% endfor %}</ul></details>{% endif %}
+    {% if szs %}<details><summary>بر اساس سایز<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><ul>{% for s in szs %}<li><a href="/shop/?size={{ s.slug|urlencode }}"><i class="szi" style="--w:{{ s.w|stringformat:'g' }};--l:{{ s.l|stringformat:'g' }}" aria-hidden="true"></i>{{ s.name|fa_dec }} · {{ s.l|stringformat:'g'|fa_dec }}×{{ s.w|stringformat:'g'|fa_dec }}</a></li>{% endfor %}</ul></details>{% endif %}
+    <a class="dl" href="/#sizeyab"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg>سایزیاب</a>
+    <a class="dl" href="/carpets-price-list/"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>لیست قیمت امروز</a>
+    <a class="dl" href="/track-order/"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg>پیگیری سفارش</a>
+    <a class="dl" href="/blog/"><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg>مجله و راهنمای خرید</a>
+    {% if site_settings.mobile %}<a class="dl" href="tel:{{ site_settings.mobile }}"><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg>مشاوره: <bdi>{{ site_settings.mobile|fa_num }}</bdi></a>{% endif %}
+    {% with ms=site_settings.messengers %}{% if ms %}<div class="drawer-msg">{% for key, name, url in ms %}<a href="{{ url }}" target="_blank" rel="noopener">{% include "partials/_sico.html" with size=18 %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}{% endwith %}
   </div>
-</aside>
-<a class="h-scrim" href="#" data-close tabindex="-1" aria-hidden="true"></a>
-<dialog class="h-dlg" id="h-search" aria-label="جستجو در طرح‌ها">
-  <div class="h-dlg__in">
-    <form class="h-sfield" action="/search/" method="get" role="search"><label class="h-sr" for="q-d">جستجو در طرح‌ها</label>
-      <input id="q-d" type="search" name="q" placeholder="نام طرح، رنگ یا شانه؛ مثلاً «افشان» یا «کرم»" autocomplete="off" required>
-      <button class="h-iconbtn" type="submit" aria-label="جستجو"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-      <button class="h-iconbtn" type="button" data-close aria-label="بستن جستجو"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button>
-    </form>
-    <div class="h-sugg"><p>پیشنهادها:</p>{% for x in rc %}<a href="{{ x.url }}">{{ x.reeds|fa_num }} شانه</a>{% endfor %}{% for c in cc|slice:":5" %}<a href="{{ c.url }}">زمینهٔ {{ c.name }}</a>{% endfor %}</div>
-  </div>
-</dialog>
+</div>

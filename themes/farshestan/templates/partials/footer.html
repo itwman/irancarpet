@@ -1,36 +1,42 @@
-{% load static fa shop_theme %}{% reeds_categories as rc %}{% arch_categories 7 as ac %}
-<footer class="hashti">
-  <div class="hashti-top">
-    <p class="nq">خانه‌تان آباد</p>
-    <p>امروز، {% jtoday %}</p>
-  </div>
-  <div class="h-wrap">
-    <div class="h-trust">
-      <div><b>مستقیم از کارخانه</b><span>{{ site_settings.tagline|default:"خرید مستقیم فرش از کارخانه، به صورت آنلاین" }}</span></div>
-      <div><b>ارسال به سراسر ایران</b><span>فرش بسته‌بندی‌شده به نشانی شما فرستاده می‌شود.</span></div>
-      <div><b>پرداخت امن</b><span>پرداخت آنلاین با درگاه بانکی؛ <a href="/license/">مجوزها و نماد اعتماد</a></span></div>
-      <div><b>مشاورهٔ پیش از خرید</b><span>{% if site_settings.mobile %}<a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a>{% elif site_settings.phone %}<a href="tel:{{ site_settings.phone|cut:'-' }}"><bdi>{{ site_settings.phone|fa_num }}</bdi></a>{% else %}<a href="/track-order/">پیگیری سفارش</a>{% endif %}</span></div>
+{% load static fa shop_theme %}{% reeds_categories as rc %}{% arch_categories 7 as ac %}{% product_total as ptotal %}
+<footer class="ftr">
+  {% if request.path != "/" %}<section class="wrap ftr-trust" aria-label="خدمات {% brand %}">{% include "partials/_trust.html" %}</section>{% endif %}
+  <div class="wrap ftr-cols">
+    <div class="ftr-about">
+      <a class="logo" href="/" aria-label="{% brand %}، صفحهٔ اول"><img src="{% static 'img/logo.svg' %}" alt="" width="42" height="42"><span class="logo-txt"><b>{% brand %}</b><small>فرش ماشینی، مستقیم از کارخانه</small></span></a>
+      <p>{% brand %}؛ {{ site_settings.tagline|default:"خرید مستقیم فرش از کارخانه به صورت آنلاین" }}{% if ptotal %}، با {{ ptotal|fa_num }} طرح در شانه‌ها و سایزهای مختلف{% endif %}.</p>
+      <ul class="contact">
+        {% if site_settings.phone %}<li><svg class="ic ic-sm" aria-hidden="true"><use href="#i-phone"/></svg>تلفن: <a href="tel:{{ site_settings.phone|cut:'-'|cut:' ' }}"><bdi>{{ site_settings.phone|fa_num }}</bdi></a></li>{% endif %}
+        {% if site_settings.mobile %}<li><svg class="ic ic-sm" aria-hidden="true"><use href="#i-phone"/></svg>موبایل: <a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a></li>{% endif %}
+        {% if site_settings.email %}<li><svg class="ic ic-sm" aria-hidden="true"><use href="#i-mail"/></svg><a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
+        {% if site_settings.address %}<li><svg class="ic ic-sm" aria-hidden="true"><use href="#i-pin"/></svg><span>{% if site_settings.has_store %}<b>فروشگاه حضوری{% if site_settings.store_city %} {{ site_settings.store_city }}{% endif %}:</b> {% endif %}{{ site_settings.address|fa_num }}</span></li>{% endif %}
+        {% if site_settings.has_store and site_settings.store_hours %}<li><svg class="ic ic-sm" aria-hidden="true"><use href="#i-clock"/></svg><span>ساعت کاری: {{ site_settings.store_hours|fa_num }}</span></li>{% endif %}
+      </ul>
     </div>
-    <div class="foot-cols">
-      <div>
-        <a class="foot-logo" href="/" aria-label="{% brand %}، صفحهٔ اول"><img src="{% static 'img/logo-light.svg' %}" alt="" width="30" height="36"><span class="nq">{% brand %}</span></a>
-        <ul class="foot-contact">
-          {% if site_settings.phone %}<li>تلفن: <a href="tel:{{ site_settings.phone|cut:'-' }}"><bdi>{{ site_settings.phone|fa_num }}</bdi></a></li>{% endif %}
-          {% if site_settings.mobile %}<li>موبایل: <a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a></li>{% endif %}
-          {% if site_settings.email %}<li>ایمیل: <a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></li>{% endif %}
-          {% if site_settings.address %}<li>{{ site_settings.address|fa_num }}</li>{% endif %}
-          {% if site_settings.has_store and site_settings.store_hours %}<li>ساعت کاری: {{ site_settings.store_hours }}</li>{% endif %}
-        </ul>
-        {% if site_settings.socials %}<div class="h-socials">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener me">{% include "partials/_sico.html" with size=18 %}<span>{{ name }}</span></a>{% endfor %}</div>{% endif %}
-      </div>
-      <nav aria-labelledby="f-t1"><h2 id="f-t1">تالارها</h2><ul><li><a href="/shop/">همهٔ فرش‌ها</a></li>{% for x in rc %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endfor %}</ul></nav>
-      <nav aria-labelledby="f-t2"><h2 id="f-t2">طرح‌ها</h2><ul>{% for x in ac.arches %}{% if not x.reeds %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endif %}{% endfor %}{% for x in ac.more|slice:":3" %}{% if not x.reeds %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endif %}{% endfor %}</ul></nav>
-      <nav aria-labelledby="f-t3"><h2 id="f-t3">راهنما</h2><ul><li><a href="/carpets-price-list/">لیست قیمت امروز</a></li><li><a href="/track-order/">پیگیری سفارش</a></li><li><a href="/blog/">مجله</a></li>{% for t, u in footer_sizes|slice:":2" %}<li><a href="{{ u }}">{{ t }}</a></li>{% endfor %}<li><a href="/license/">مجوزها</a></li></ul></nav>
-      <div><h2>نماد اعتماد</h2>
-        <a href="/license/" class="foot-trust" title="مجوزها و نماد اعتماد الکترونیکی">{% if site_settings.trust_badge %}<img src="{{ site_settings.trust_badge.url }}" alt="نماد اعتماد الکترونیکی {{ site_settings.site_name }}" width="96" height="96" loading="lazy" decoding="async">{% else %}<span>دیدن مجوزها</span>{% endif %}</a>
-        {% if site_settings.footer_html %}<div class="foot-extra">{{ site_settings.footer_html|safe }}</div>{% endif %}
-      </div>
+    <nav aria-labelledby="f-t1"><h2 id="f-t1">دسته‌های فرش</h2><ul>
+      <li><a href="/shop/">همهٔ فرش‌ها</a></li>
+      {% for x in rc %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endfor %}
+      {% for x in ac.arches %}{% if not x.reeds %}<li><a href="{{ x.url }}">{{ x.name|fa_num }}</a></li>{% endif %}{% endfor %}
+    </ul></nav>
+    <nav aria-labelledby="f-t2"><h2 id="f-t2">خدمات مشتریان</h2><ul>
+      <li><a href="/track-order/">پیگیری سفارش</a></li>
+      <li><a href="/cart/" rel="nofollow">سبد خرید</a></li>
+      <li><a href="{% if user.is_authenticated %}/my-account/{% else %}/my-account/login/{% endif %}" rel="nofollow">حساب کاربری</a></li>
+      <li><a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></li>
+      <li><a href="/license/">مجوزها و نماد اعتماد</a></li>
+    </ul></nav>
+    <nav aria-labelledby="f-t3"><h2 id="f-t3">راهنمای خرید</h2><ul>
+      <li><a href="/carpets-price-list/">لیست قیمت امروز</a></li>
+      <li><a href="/#sizeyab">سایزیاب فرش</a></li>
+      <li><a href="/blog/">مجله و راهنما</a></li>
+      {% for t, u in footer_sizes|slice:":3" %}<li><a href="{{ u }}">{{ t|fa_num }}</a></li>{% endfor %}
+    </ul></nav>
+    <div class="ftr-seals">
+      <h2>نماد اعتماد</h2>
+      <a href="/license/" class="trust-badge" title="مجوزها و نماد اعتماد الکترونیکی">{% if site_settings.trust_badge %}<img src="{{ site_settings.trust_badge.url }}" alt="نماد اعتماد الکترونیکی {{ site_settings.site_name }}" width="104" height="104" loading="lazy" decoding="async">{% else %}<svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span>نماد اعتماد<small>دیدن مجوزها</small></span>{% endif %}</a>
+      {% if site_settings.socials %}<div class="social" aria-label="{% brand %} در شبکه‌های اجتماعی">{% for key, name, url in site_settings.socials %}<a href="{{ url }}" target="_blank" rel="noopener me" aria-label="{{ name }}" title="{{ name }}">{% include "partials/_sico.html" with size=20 %}</a>{% endfor %}</div>{% endif %}
     </div>
-    <p class="copy">© {% jyear %} {% brand %} · {% site_domain %} · همهٔ حقوق محفوظ است.</p>
   </div>
+  {% if site_settings.footer_html %}<div class="wrap ftr-extra">{{ site_settings.footer_html|safe }}</div>{% endif %}
+  <div class="wrap ftr-bottom"><span>© {% jyear %} {% brand %} · {% site_domain %} · همهٔ حقوق محفوظ است.</span><span>{% jtoday %} · قیمت‌ها به تومان است.</span></div>
 </footer>

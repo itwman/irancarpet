@@ -1,0 +1,7 @@
+{% load fa %}<nav class="bnav" aria-label="ناوبری پایین">
+  <a href="/"{% if request.path == "/" %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>خانه</a>
+  <a href="#drawer" data-drawer aria-controls="drawer"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>دسته‌ها</a>
+  <a href="/#sizeyab"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg>سایزیاب</a>
+  <a href="/cart/" rel="nofollow"{% if request.path == "/cart/" %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-cart"/></svg>سبد خرید{% if cart_count %}<span class="count">{{ cart_count|fa_num }}</span>{% endif %}</a>
+  <a href="{% if user.is_authenticated %}/my-account/{% else %}/my-account/login/{% endif %}" rel="nofollow"{% if "/my-account/" in request.path %} aria-current="page"{% endif %}><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg>{% if user.is_authenticated %}حساب من{% else %}ورود{% endif %}</a>
+</nav>

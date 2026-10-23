@@ -71,7 +71,8 @@ def product_listing(request, base_qs, *, page, path, meta, heading, intro="", cr
     if g.get("size"):
         qs = qs.filter(variations__size__slug=g["size"], variations__is_available=True)
         active["size"] = g["size"]
-    attrs = filter_attributes()
+    # پارامتر size همیشه سایز فرش (Variation) است؛ ویژگی‌ای با همین نامک (مثل فرشستان) نباید دوباره فیلترش کند
+    attrs = [a for a in filter_attributes() if a.slug != "size"]
     for attr in attrs:
         val = g.get(attr.slug)
         if val:

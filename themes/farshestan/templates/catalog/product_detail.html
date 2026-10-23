@@ -1,193 +1,295 @@
-{% extends "base.html" %}{% load static fa shop_theme %}{# فرشستان «خانهٔ ایرانی»: صفحهٔ فرش. منطق خرید همان ایران کارپت است (فرم buyForm با رادیوهای variation و /cart/add/)؛ فرش روی آجرفرش باز می‌شود، ذره‌بین گره‌ها را از روی عکس خود فرش می‌سازد و نقشهٔ اتاق سایزها را با اندازهٔ واقعی می‌نشاند. #}
-{% block body_class %}h-pd{% endblock %}
+{% extends "base.html" %}{% load static fa shop_theme %}{# فرشستان «فروشگاه تخصصی»: صفحهٔ فرش. منطق خرید همان قالب مشترک است (فرم buyForm با رادیوهای variation و /cart/add/)؛
+   رادیوها و دکمه‌ها با ویژگی form="buyForm" به فرم وصل‌اند تا فرم‌های دیگر صفحه (فرصت ویژه، خبرم کن، علاقه‌مندی) تو در تو نشوند. #}
+{% block body_class %}p-pd{% endblock %}
 {% block og %}<meta property="og:type" content="product">{% if product.image %}<meta property="og:image" content="{{ product.image.absolute_url }}">{% endif %}{% endblock %}
-{% block head %}<meta name="ic-pid" content="{{ product.pk }}">{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 992px) 320px, 400px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
-{% block content %}{% with r=product.title|reeds_of m0=gallery.0 %}
-<div class="h-wrap pd">
+{% block head %}<meta name="ic-pid" content="{{ product.pk }}">{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 860px) 100vw, 480px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
+{% block bottom_bar %}{% endblock %}
+{% block content %}{% with r=product.title|reeds_of m0=gallery.0 out=product.stock_status %}
+<div class="wrap">
   {% include "partials/breadcrumbs.html" %}
   <div class="pd-top">
-    <div class="pd-info">
-      <span class="nq pd-name" aria-hidden="true">{{ product.title|rug_name|fa_num }}</span>
-      <h1>{{ product.title|fa_num }}</h1>
-      <ul class="h-meta">
-        {% if r %}<li>{{ r|fa_num }} شانه</li>{% endif %}
-        {% if "برجسته" in product.title %}<li>برجسته</li>{% endif %}
-        {% if product.brand %}<li><a href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a></li>{% endif %}
-        {% if product.rating_count %}<li><a href="#reviews"><span class="h-stars" aria-hidden="true">★</span> {{ product.rating_avg|floatformat:1|fa_num }} · {{ product.rating_count|fa_num }} نظر</a></li>{% endif %}
-        {% if product.sku %}<li>کد {{ product.sku|fa_num }}</li>{% endif %}
-      </ul>
-      {% if product.seller_id %}{% with sl=product.seller %}<p class="pd-sub"><span>فروشنده: <b><a href="{{ sl.get_absolute_url }}">{{ sl.name }}</a></b></span><span>ارسال از {{ sl.city }} · {{ sl.shipping_label }} · آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری</span></p>{% endwith %}{% endif %}
-
-      {% if siblings %}
-      <div class="pd-block"><h2>رنگ‌های دیگر نقشهٔ {{ design }}</h2>
-        <div class="variants">{% for s in siblings %}<a class="variant" href="{{ s.product.get_absolute_url }}"{% if s.current %} aria-current="page"{% endif %} title="{{ s.product.title|fa_num }}">{% if s.thumb %}<img src="{{ s.thumb }}" alt="" loading="lazy" width="44" height="44">{% endif %}<span>{{ s.color }}</span></a>{% endfor %}</div>
+    {# ------------------------------------------------ گالری #}
+    <div class="gal" id="gal">
+      <div class="stage" id="stage">
+        <div class="stage-img" id="stageImg"{% if m0 %} data-full="{{ m0.url }}" data-crop="{{ m0|rug_data }}"{% endif %}>
+          {% include "partials/_rugimg.html" with m=m0 w=960 sizes="(max-width: 860px) 90vw, 440px" seed=product.pk eager=1 alt=product.title %}
+          {% if m0 %}<span class="zoom-lens" id="zoomLens" aria-hidden="true" hidden></span><span class="stage-hint"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-loupe"/></svg>برای بزرگ‌نمایی نشانگر را روی فرش ببرید</span>{% endif %}
+        </div>
+        {% if m0 %}<div class="stage-tex" id="stageTex" tabindex="0" role="img" aria-label="نمای نزدیک بافت؛ با کلیدهای جهت جابه‌جا کنید" hidden>
+          <canvas class="tx" id="texCv" aria-hidden="true"></canvas>
+          <button type="button" class="tex-mini" id="texMini" aria-label="انتخاب ناحیهٔ بزرگ‌نمایی روی فرش"><span class="tex-mini-in">{% include "partials/_rugimg.html" with m=m0 w=240 sizes="80px" seed=product.pk %}</span><span class="box" id="texBox"></span></button>
+          <span class="tex-label" id="texLabel"></span>
+          <span class="tex-ruler"><i id="texRuler"></i>۱ سانتی‌متر</span>
+        </div>{% endif %}
+        <div class="stage-tools">
+          <button type="button" id="shareBtn" aria-label="اشتراک‌گذاری این فرش"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-share"/></svg></button>
+        </div>
       </div>
-      {% endif %}
+      {% if m0 %}<div class="texbar" id="texbar" hidden>
+        <div class="texbar-hd"><b>نمای نزدیک بافت · مقایسهٔ شانه‌ها</b><span><kbd>→</kbd> <kbd>←</kbd></span></div>
+        <div class="texseg" role="radiogroup" aria-label="شانه برای نمای نزدیک" id="texSeg">
+          <button type="button" role="radio" data-tsh="700" aria-checked="{% if r == '700' or not r %}true{% else %}false{% endif %}">{% if r == "700" %}<span class="mine">این فرش</span>{% endif %}۷۰۰<small>شانه</small></button>
+          <button type="button" role="radio" data-tsh="1000" aria-checked="{% if r == '1000' %}true{% else %}false{% endif %}">{% if r == "1000" %}<span class="mine">این فرش</span>{% endif %}۱۰۰۰<small>شانه</small></button>
+          <button type="button" role="radio" data-tsh="1200" aria-checked="{% if r == '1200' %}true{% else %}false{% endif %}">{% if r == "1200" %}<span class="mine">این فرش</span>{% endif %}۱۲۰۰<small>شانه</small></button>
+          <button type="button" role="radio" data-tsh="1500" aria-checked="{% if r == '1500' %}true{% else %}false{% endif %}">{% if r == "1500" %}<span class="mine">این فرش</span>{% endif %}۱۵۰۰<small>شانه</small></button>
+        </div>
+        <p class="texcap" id="texCap" aria-live="polite"></p>
+      </div>{% endif %}
+      <div class="thumbs" role="group" aria-label="عکس‌ها و ابزارهای فرش">
+        {% for m in gallery %}<button class="thumb" type="button" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}" data-src="{{ m|thumb:960 }}" data-set="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" data-full="{{ m.url }}" data-crop="{{ m|rug_data }}" aria-label="عکس {{ forloop.counter|fa_num }}"><img src="{{ m|thumb:240 }}" alt="" loading="lazy" width="80" height="80"></button>{% endfor %}
+        {% if m0 %}<button class="thumb tool" type="button" id="texBtn" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-loupe"/></svg>نمای نزدیک بافت</button>{% endif %}
+        {% if variations %}<button class="thumb tool" type="button" data-room-open><svg class="ic" aria-hidden="true"><use href="#i-plan"/></svg>اندازه در اتاق</button>{% endif %}
+        {% if product.image %}<button class="thumb tool" type="button" id="roomBtn" data-img="{{ product.image.url }}"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg>با عکس اتاق خودتان</button>{% endif %}
+        {% if video %}<button class="thumb tool" type="button" id="videoBtn"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>ویدیوی فرش</button>{% endif %}
+      </div>
+      {% if video %}<div class="p-video" id="pVideo" hidden data-kind="{{ video.kind }}" data-src="{% if video.kind == 'aparat' %}{{ video.embed }}{% elif video.kind == 'file' %}{{ video.src }}{% else %}{{ video.page }}{% endif %}" data-poster="{{ video.poster }}"></div>{% endif %}
+    </div>
 
-      {% if product.sale_status != "available" %}<div class="status-note status-note--{{ product.sale_status }}">{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این فرش فقط با استعلام قیمت سفارش داده می‌شود.{% endif %}</div>{% endif %}
+    {# ------------------------------------------------ معرفی کوتاه، رنگ‌ها و سایز #}
+    <div class="pd-info">
+      <div class="pd-brand"><svg class="ic ic-sm ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>{% if product.primary_category %}<a href="{{ product.primary_category.get_absolute_url }}">{{ product.primary_category.name|fa_num }}</a>{% endif %}{% if product.brand %}{% if product.primary_category %} / {% endif %}<a href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}</div>
+      <h1>{{ product.title|fa_num }}</h1>
+      <div class="pd-sub">
+        {% if product.rating_count %}<a href="#reviews" class="rate"><svg class="ic ic-fill" aria-hidden="true"><use href="#i-star"/></svg>{{ product.rating_avg|floatformat:1|fa_dec }}<span>({{ product.rating_count|fa_num }} دیدگاه)</span></a><span class="dot-sep"></span>{% endif %}
+        <a href="#qa">{% if questions %}{{ questions|length|fa_num }} پرسش{% else %}پرسش دربارهٔ این فرش{% endif %}</a>
+        {% if product.sku %}<span class="dot-sep"></span><span>کد کالا: {{ product.sku|fa_num }}</span>{% endif %}
+      </div>
+
+      {% if siblings %}<div class="blk">
+        <div class="blk-hd">رنگ‌های دیگر نقشهٔ {{ design|fa_num }}{% for s in siblings %}{% if s.current %}<span>رنگ: <b>{{ s.color }}</b></span>{% endif %}{% endfor %}</div>
+        <div class="variants">{% for s in siblings %}<a class="var" href="{{ s.product.get_absolute_url }}"{% if s.current %} aria-current="page"{% endif %} title="{{ s.product.title|fa_num }}">{% if s.thumb %}<img src="{{ s.thumb }}" alt="" loading="lazy" width="48" height="64">{% else %}<span class="noimg2"></span>{% endif %}<span>{{ s.color }}</span></a>{% endfor %}</div>
+      </div>{% endif %}
+
+      {% if product.sale_status != "available" %}<div class="note-row note-row--warn"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-info"/></svg><span>{{ product.get_sale_status_display }}{% if product.sale_status == "inquiry_only" %} — این فرش فقط با استعلام قیمت سفارش داده می‌شود.{% endif %}</span></div>{% endif %}
 
       {% for o in offers %}
-      <div class="offer-box">
-        <div class="offer-box__head"><span class="offer-tag">فرصت ویژهٔ خرید</span>{% if o.ends_at %}<span class="offer-box__clock" data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span>{% elif o.remaining == 1 %}<span class="offer-box__clock">آخرین تخته</span>{% endif %}</div>
-        <p class="offer-box__what"><strong>{{ o.size.label|fa_num }}</strong> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
-        <div class="offer-box__price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان{% if o.remaining > 1 %} هر تخته{% endif %}</small></strong>{% if o.off_percent %}<span class="off">٪{{ o.off_percent|fa_num }} تخفیف</span>{% endif %}</div>
-        <form method="post" action="/cart/add/" class="offer-box__buy">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="offer" value="1">
-          {% for q in o.allowed %}<button class="hb hb--sm {% if forloop.first %}hb--laki{% else %}hb--lapis{% endif %}" type="submit" name="qty" value="{{ q }}">{% if q == 1 %}خرید یک تخته{% elif q == 2 %}خرید جفت (۲ تخته){% else %}خرید {{ q|fa_num }} تخته{% endif %}</button>{% endfor %}</form>
-        <p class="offer-box__note">{% if o.allowed|length == 1 and o.allowed.0 == 2 %}این دو تخته فقط با هم فروخته می‌شوند.{% else %}قیمت ویژه برای خرید {{ o.allowed_label }} تخته است.{% endif %}</p>
+      <div class="offer2">
+        <div class="offer2-hd"><span class="bdg bdg-off">پیشنهاد ویژه</span>{% if o.ends_at %}<span class="offer2-clock"><svg class="ic ic-xs" aria-hidden="true"><use href="#i-clock"/></svg><span data-offer-end="{{ o.ends_at|date:'c' }}" aria-label="زمان باقی‌مانده"></span></span>{% elif o.remaining == 1 %}<span class="offer2-clock">آخرین تخته</span>{% endif %}</div>
+        <p class="offer2-what"><b>{{ o.size.label|fa_dec }}</b> · {% if o.remaining == 1 %}فقط یک تخته{% else %}{{ o.remaining|fa_num }} تخته{% endif %} آمادهٔ ارسال</p>
+        <div class="offer2-price"><del>{{ o.regular_price|toman }}</del><strong>{{ o.price|toman }} <small>تومان{% if o.remaining > 1 %} هر تخته{% endif %}</small></strong>{% if o.off_percent %}<span class="off2">٪{{ o.off_percent|fa_num }}</span>{% endif %}</div>
+        <form method="post" action="/cart/add/" class="offer2-buy">{% csrf_token %}<input type="hidden" name="variation" value="{{ o.variation.pk }}"><input type="hidden" name="offer" value="1">
+          {% for q in o.allowed %}<button class="fbtn fbtn--sm {% if forloop.first %}fbtn--gold{% else %}fbtn--line{% endif %}" type="submit" name="qty" value="{{ q }}">{% if q == 1 %}خرید یک تخته{% elif q == 2 %}خرید جفت (۲ تخته){% else %}خرید {{ q|fa_num }} تخته{% endif %}</button>{% endfor %}</form>
+        <p class="offer2-note">{% if o.allowed|length == 1 and o.allowed.0 == 2 %}این دو تخته فقط با هم فروخته می‌شوند.{% else %}قیمت ویژه برای خرید {{ o.allowed_label }} تخته است.{% endif %}</p>
       </div>
       {% endfor %}
 
       {% if variations and pricing.show_size_table %}
-      <form method="post" action="/cart/add/" id="buyForm" class="pd-buy">{% csrf_token %}
-        <div class="pd-block" id="buy"><h2 id="sz-h">سایز <small>ابعاد به متر</small></h2>
-          <div class="h-sizes" role="radiogroup" aria-labelledby="sz-h">
-          {% for v in variations %}{% with ok=v.is_available %}
-            <label class="h-size"><input type="radio" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}"{% if v.size %} data-l="{{ v.size.length|stringformat:'s' }}" data-w="{{ v.size.width|stringformat:'s' }}" data-t="{{ v.size.type }}" data-label="{{ v.size.label|fa_num }}"{% endif %}{% if ok and product.stock_status != 'outofstock' %}{% if v.on_sale %} data-pt="{{ v.sale_price|toman }}" data-was="{{ v.final_price|toman }}"{% elif v.final_price %} data-pt="{{ v.final_price|toman }}"{% endif %}{% endif %}{% if v.is_pair_only %} data-pair="1"{% endif %} {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %}>
-              <span><b>{% if v.size %}{{ v.size.label|size_name|fa_num }}{% elif product.seller_id %}{{ v.sku|default:"—"|fa_num }}{% else %}—{% endif %}{% if v.pk in offer_vids %}<i class="h-tag-s">فرصت ویژه</i>{% elif v.is_pair_only %}<i class="h-tag-s">فقط زوج</i>{% elif v.stock_qty is not None and v.stock_qty <= 3 and ok %}<i class="h-tag-s">{{ v.stock_qty|fa_num }} عدد</i>{% endif %}</b>
-                {% if v.size.dimensions %}<small>{{ v.size.dimensions|fa_num }}{% if v.size.needs_waste %} · با پرتی{% endif %}{% for a in v.attributes.all %} · {{ a.name }}{% endfor %}</small>{% endif %}
-                <em>{% if not ok or product.stock_status == 'outofstock' %}{% if v.pk in offer_vids %}در کادر فرصت ویژه{% else %}ناموجود{% endif %}{% elif v.on_sale %}<del>{{ v.final_price|toman }}</del> {{ v.sale_price|toman }}{% elif v.final_price %}{{ v.final_price|toman }}{% else %}استعلام{% endif %}</em></span></label>
-          {% endwith %}{% endfor %}
-          </div>
+      <div class="blk" id="buy">
+        <div class="blk-hd" id="szT">انتخاب سایز <span id="szSel"></span></div>
+        <div class="size-grid" role="radiogroup" aria-labelledby="szT">
+        {% for v in variations %}{% with ok=v.is_available %}
+          <label class="szb{% if not ok or not product.is_purchasable %} is-off{% endif %}"><input class="sr-only" type="radio" form="buyForm" name="variation" value="{{ v.pk }}" data-price="{{ v.price|default:0 }}"{% if v.size %} data-l="{{ v.size.length|stringformat:'s' }}" data-w="{{ v.size.width|stringformat:'s' }}" data-t="{{ v.size.type }}" data-slug="{{ v.size.slug }}" data-area="{{ v.size.area|stringformat:'s' }}" data-label="{{ v.size.label|size_name|fa_dec }}" data-dims="{{ v.size.dimensions|fa_dec }}"{% endif %}{% if ok and product.stock_status != 'outofstock' %}{% if v.on_sale %} data-pt="{{ v.sale_price|toman }}" data-was="{{ v.final_price|toman }}"{% elif v.final_price %} data-pt="{{ v.final_price|toman }}"{% endif %}{% endif %}{% if v.is_pair_only %} data-pair="1"{% endif %}{% if v.stock_qty is not None and v.stock_qty <= 3 and ok %} data-q="{{ v.stock_qty }}"{% endif %} {% if not ok or not product.is_purchasable %}disabled{% endif %} {% if request.GET.size %}{% if ok and v.size.slug == request.GET.size %}checked{% endif %}{% elif forloop.first and ok %}checked{% endif %}>
+            <b>{% if v.size %}{{ v.size.label|size_name|fa_dec }}{% elif product.seller_id %}{{ v.sku|default:"—"|fa_num }}{% else %}—{% endif %}{% if v.pk in offer_vids %}<i class="tag-s">پیشنهاد ویژه</i>{% elif v.is_pair_only %}<i class="tag-s">فقط جفت</i>{% elif v.stock_qty is not None and v.stock_qty <= 3 and ok %}<i class="tag-s">{{ v.stock_qty|fa_num }} عدد</i>{% endif %}</b>
+            {% if v.size.dimensions %}<small>{{ v.size.dimensions|fa_dec }} متر{% if v.size.needs_waste %} · با پرتی{% endif %}{% for a in v.attributes.all %} · {{ a.name }}{% endfor %}</small>{% endif %}
+            <em>{% if not ok or product.stock_status == 'outofstock' %}{% if v.pk in offer_vids %}قیمت ویژه در کادر بالا{% else %}ناموجود{% endif %}{% elif v.on_sale %}<del>{{ v.final_price|toman }}</del> {{ v.sale_price|toman }}{% elif v.final_price %}{{ v.final_price|toman }}{% else %}استعلام{% endif %}</em>
+          </label>
+        {% endwith %}{% endfor %}
         </div>
-        <div class="h-buy">
-          <p class="h-price" id="pd-price" aria-live="polite">{% if product.min_price %}<small>از</small> <b>{{ product.min_price|toman }}</b> <small>تومان</small>{% else %}<span class="muted">استعلام قیمت</span>{% endif %}</p>
-          <div class="h-qty"><button type="button" data-q="1" aria-label="یکی بیشتر">+</button><input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric" aria-label="تعداد"><button type="button" data-q="-1" aria-label="یکی کمتر">−</button></div>
-          <button class="hb hb--laki" type="submit" {% if not product.is_purchasable %}disabled{% endif %}>افزودن به سبد خرید</button>
-        </div>
-        {% if season.paused %}<p class="h-ship">{{ season.paused|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></p>{% elif season.busy %}<p class="h-ship">{{ season.busy }}</p>{% endif %}
-        {% if inst_teaser %}
-        <a class="inst-teaser" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}">
-          <span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span><strong>خرید اقساطی</strong> {% if inst_teaser.down_percent %}{{ inst_teaser.down_percent|fa_num }}٪ پیش‌پرداخت، {% else %}بدون پیش‌پرداخت، {% endif %}قسط از {{ inst_teaser.installment|toman }} تومان</span>
-          <span class="inst-teaser__go">محاسبه</span>
-        </a>
-        {% endif %}
-        {% if torob %}<p class="torob-line" id="torobLine" data-max="{{ torob.max }}" data-each-max="{{ torob.show_each }}"><b>ترب‌پی</b> <span>{% if torob.each %}۴ قسط {{ torob.each|toman }} تومان، بدون چک و ضامن{% else %}خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی{% endif %}</span></p>{% endif %}
-      </form>
+        <button type="button" class="room-cta" data-room-open><span class="ri"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plan"/></svg></span><span><b>اندازه در اتاق شما</b><small>فرش <span id="rcSize">انتخاب‌شده</span> را روی نقشهٔ اتاقتان ببینید</small></span><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></button>
+      </div>
       {% endif %}
-      {% if custom_calc %}{{ custom_calc|safe }}{% endif %}
+      {% if custom_calc %}<div class="blk custom-calc">{{ custom_calc|safe }}</div>{% endif %}
 
-      <p class="h-ship">سفارش‌ها بسته‌بندی‌شده از کارخانه به نشانی شما فرستاده می‌شوند.{% if site_settings.mobile %} مشاورهٔ پیش از خرید: <a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a>{% endif %}{% if variations %}<br><a href="#planner" id="to-plan">این فرش در اتاق من جا می‌شود؟</a>{% endif %}</p>
+      {% if r or specs %}<div class="blk">
+        <div class="blk-hd">ویژگی‌های اصلی <a class="link" href="#spec">همهٔ مشخصات</a></div>
+        <div class="keyfeat">
+          {% if r %}<div>شانه<b>{{ r|fa_num }}{% if m0 %} <button type="button" class="link" data-texopen>(ببینید)</button>{% endif %}</b></div>{% endif %}
+          {% for t in specs|slice:":5" %}<div>{{ t.attribute.label }}<b>{{ t.name|fa_num }}</b></div>{% endfor %}
+          {% if "برجسته" in product.title %}<div>بافت<b>برجسته</b></div>{% endif %}
+        </div>
+      </div>{% endif %}
+      {% if doc.bullets %}<div class="blk prose p-summary">{{ doc.bullets|safe }}</div>{% endif %}
+      <div class="blk note-row"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-info"/></svg><span>رنگ واقعی فرش ممکن است در نور محیط و صفحه‌نمایش‌های مختلف کمی متفاوت دیده شود.</span></div>
+    </div>
 
-      <details class="alert-box"{% if alert_kind == "stock" %} open{% endif %}>
-        <summary>{% if alert_kind == "stock" %}<b>موجود شد خبرم کن</b>{% else %}<b>ارزان شد خبرم کن</b>{% endif %}<span>با پیامک</span></summary>
+    {# ------------------------------------------------ جعبهٔ خرید #}
+    <aside class="buy" aria-label="خرید">
+      <div class="buy-seller">{% if product.seller_id %}{% with sl=product.seller %}<span class="si"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg></span><div><b>فروشنده: <a href="{{ sl.get_absolute_url }}">{{ sl.name }}</a></b><small>ارسال از {{ sl.city }} · {{ sl.shipping_label }} · آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری</small></div>{% endwith %}{% else %}<span class="si"><img src="{% static 'img/logo.svg' %}" alt="" width="26" height="26"></span><div><b>فروشنده: {% brand %}</b><small>ارسال مستقیم از کارخانه</small></div>{% endif %}</div>
+      <div class="buy-lines">
+        {% if warranty %}<div><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>ضمانت: {{ warranty|fa_num }}</div>{% endif %}
+        <div id="stockLine">{% if out == "outofstock" %}<svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span class="warn">فعلاً ناموجود</span>{% else %}<svg class="ic" aria-hidden="true"><use href="#i-box"/></svg><span class="ok">موجود برای سفارش</span>{% endif %}</div>
+        <div><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>ارسال به سراسر کشور</div>
+        {% if season.paused %}<div class="season"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>{{ season.paused|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></span></div>{% elif season.busy %}<div class="season"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>{{ season.busy }}</span></div>{% endif %}
+      </div>
+      {% if variations and pricing.show_size_table %}
+      <div class="buy-price" id="buyPrice" aria-live="polite">{% if out == "outofstock" or product.sale_status == "unavailable" %}<div class="pr-now out">ناموجود</div><div class="pr-note">{% if offers %}قیمت ویژه در کادر پیشنهاد ویژه{% else %}با «خبرم کن» از موجود شدنش باخبر شوید.{% endif %}</div>{% elif product.min_price and product.is_purchasable %}<div class="pr-now"><small>از</small> {{ product.min_price|toman }}<small>تومان</small></div>{% else %}<div class="pr-note">استعلام قیمت</div>{% endif %}</div>
+      <div class="qty-row">
+        <div class="qty2" role="group" aria-label="تعداد"><button type="button" data-q="1" aria-label="یکی بیشتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input form="buyForm" type="number" name="qty" value="1" min="1" max="20" inputmode="numeric" aria-label="تعداد"><button type="button" data-q="-1" aria-label="یکی کمتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div>
+        <button class="fbtn fbtn--primary fbtn--lg" type="submit" form="buyForm" {% if not product.is_purchasable %}disabled{% endif %}>{% if product.is_purchasable %}افزودن به سبد خرید{% else %}ناموجود{% endif %}</button>
+      </div>
+      {% elif product.min_price and out != "outofstock" %}<div class="buy-price"><div class="pr-now"><small>از</small> {{ product.min_price|toman }}<small>تومان</small></div></div>{% endif %}
+      {% if inst_teaser %}<a class="inst-line" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}"><svg class="ic" aria-hidden="true"><use href="#i-card"/></svg><span><b>خرید اقساطی این فرش</b>{% if inst_teaser.down_percent %}{{ inst_teaser.down_percent|fa_num }}٪ پیش‌پرداخت، {% else %}بدون پیش‌پرداخت، {% endif %}قسط از {{ inst_teaser.installment|toman }} تومان</span><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>{% endif %}
+      {% if torob %}<p class="torob-line" id="torobLine" data-max="{{ torob.max }}" data-each-max="{{ torob.show_each }}"><b>ترب‌پی</b> <span>{% if torob.each %}۴ قسط {{ torob.each|toman }} تومان، بدون چک و ضامن{% else %}خرید ۴ قسطی بر اساس اعتبار شما در ترب‌پی{% endif %}</span></p>{% endif %}
+      <details class="alert2"{% if alert_kind == "stock" %} open{% endif %}>
+        <summary><svg class="ic ic-sm" aria-hidden="true"><use href="#i-bell"/></svg>{% if alert_kind == "stock" %}<b>موجود شد خبرم کن</b>{% else %}<b>ارزان شد خبرم کن</b>{% endif %}<span>با پیامک</span></summary>
         <form method="post" action="/alerts/">{% csrf_token %}
           <input type="hidden" name="product" value="{{ product.pk }}"><input type="hidden" name="kind" value="{{ alert_kind }}">
-          {% if not user.is_authenticated %}<input name="mobile" inputmode="tel" placeholder="شمارهٔ موبایل" required class="ltr-num" aria-label="شمارهٔ موبایل">{% endif %}
-          <button class="hb hb--lapis hb--sm" type="submit">{% if user.is_authenticated %}خبرم کن{% else %}ثبت{% endif %}</button>
+          {% if not user.is_authenticated %}<input name="mobile" inputmode="tel" placeholder="شمارهٔ موبایل" required dir="ltr" aria-label="شمارهٔ موبایل">{% endif %}
+          <button class="fbtn fbtn--line fbtn--sm" type="submit">{% if user.is_authenticated %}خبرم کن{% else %}ثبت{% endif %}</button>
         </form>
       </details>
-      {% if doc.bullets %}<div class="prose p-summary">{{ doc.bullets|safe }}</div>{% endif %}
-    </div>
-
-    <div class="gal" id="gal">
-      <div class="gal-floor">
-        <div class="gal-light" aria-hidden="true"><img src="{% static 'img/house/orosi2.svg' %}" alt="" width="200" height="160"></div>
-        <div class="pd-rug ur y" id="pd-rug" style="{% if m0 %}{{ m0|rug_style }}{% else %}--ar:0.6667{% endif %}"{% if m0 %} data-full="{{ m0.url }}" data-crop="{{ m0|rug_data }}"{% endif %}>
-          <div class="ur-sheet" id="pd-sheet">{% include "partials/_rugimg.html" with m=m0 w=960 sizes="(max-width: 992px) 320px, 400px" seed=product.pk eager=1 alt=product.title %}</div>
-          <div class="ur-roll"></div>
-          <div class="lens pd-lens" id="pd-lens" aria-hidden="true"><canvas></canvas></div>
-        </div>
+      <div class="buy-sec">
+        <button type="button" id="cmpSelf" data-cmp-btn="{{ product.pk }}" aria-pressed="false"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-compare"/></svg>مقایسه</button>
+        <form method="post" action="/my-account/wishlist/{{ product.pk }}/" class="fav-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="fav-btn{% if faved %} on{% endif %}" aria-pressed="{% if faved %}true{% else %}false{% endif %}" aria-label="نگه داشتن در علاقه‌مندی‌ها"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-heart"/></svg>علاقه‌مندی</button></form>
       </div>
-      {% if gallery|length > 1 %}<div class="gal-thumbs" role="group" aria-label="عکس‌های فرش">{% for m in gallery %}<button type="button" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}" data-src="{{ m|thumb:960 }}" data-set="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" data-full="{{ m.url }}" data-crop="{{ m|rug_data }}" aria-label="عکس {{ forloop.counter|fa_num }}"><img src="{{ m|thumb:240 }}" alt="" loading="lazy" width="64" height="64"></button>{% endfor %}</div>{% endif %}
-      <div class="gal-tools">
-        {% if m0 %}<button type="button" class="p-tool" id="lens-key" aria-pressed="false"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5.5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>ذره‌بین</button>{% endif %}
-        <button type="button" class="p-tool" id="replay"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>باز کردن دوباره</button>
-        {% if product.image %}<button type="button" class="p-tool" id="roomBtn" data-img="{{ product.image.url }}"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M3 10l9-6 9 6v10H3z M8 20v-5h8v5"/></svg>با عکس اتاق خودتان</button>{% endif %}
-        {% if video %}<button type="button" class="p-tool" id="videoBtn"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>ویدیوی فرش</button>{% endif %}
-      </div>
-      {% if video %}<div class="p-video" id="pVideo" hidden data-kind="{{ video.kind }}" data-src="{% if video.kind == 'aparat' %}{{ video.embed }}{% elif video.kind == 'file' %}{{ video.src }}{% else %}{{ video.page }}{% endif %}" data-poster="{{ video.poster }}"></div>{% endif %}
-      {% if m0 %}
-      <div class="knots" id="knots">
-        <div class="knots__c" aria-hidden="true"><canvas></canvas></div>
-        <div>
-          <fieldset class="shaneh light" id="pd-sh"><legend>گره‌ها زیر ذره‌بین</legend><label><input type="radio" name="sh" value="700"{% if r == "700" or r != "1000" and r != "1200" and r != "1500" %} checked{% endif %}><span>۷۰۰</span></label><label><input type="radio" name="sh" value="1000"{% if r == "1000" %} checked{% endif %}><span>۱۰۰۰</span></label><label><input type="radio" name="sh" value="1200"{% if r == "1200" %} checked{% endif %}><span>۱۲۰۰</span></label><label><input type="radio" name="sh" value="1500"{% if r == "1500" %} checked{% endif %}><span>۱۵۰۰</span></label></fieldset>
-          <p id="pd-say" aria-live="polite">{% if r %}این فرش {{ r|fa_num }} شانه است؛ یعنی در هر ۱۰ سانت از عرض فرش حدود {% widthratio r 10 1 as g %}<b>{{ g|fa_num }} گره</b> کنار هم نشسته.{% endif %}</p>
-        </div>
-      </div>
-      {% endif %}
-    </div>
+      {% if site_settings.mobile %}<p class="buy-call">مشاورهٔ پیش از خرید: <a href="tel:{{ site_settings.mobile }}"><bdi>{{ site_settings.mobile|fa_num }}</bdi></a></p>{% endif %}
+    </aside>
   </div>
 </div>
+<form method="post" action="/cart/add/" id="buyForm" class="sr-only" aria-hidden="true">{% csrf_token %}</form>
+<span hidden id="pdSelf" data-id="{{ product.pk }}" data-t="{{ product.title|fa_num }}" data-u="{{ product.get_absolute_url }}" data-img="{% if product.image %}{{ product.image|thumb:240 }}{% endif %}" data-r="{{ r }}" data-tex="{% if "برجسته" in product.title %}برجسته{% endif %}" data-p="{% if product.min_price and out != "outofstock" %}{{ product.min_price }}{% endif %}" data-rt="{% if product.rating_count %}{{ product.rating_avg|floatformat:1|fa_dec }}{% endif %}" data-rc="{{ product.rating_count|default:0 }}"{% if out == "outofstock" %} data-out="1"{% endif %}></span>
 
-{% if variations %}
-<section class="planner" id="planner" aria-labelledby="pl-h">
-  <div class="h-wrap pl-grid">
-    <div>
-      <div class="pl-head">
-        <h2 class="nq" id="pl-h">در اتاق شما</h2>
-        <p>طول و عرض اتاق را بدهید؛ فرش با اندازهٔ واقعی روی نقشه می‌نشیند. فرش را بکشید یا با کلیدهای جهت جابه‌جا کنید؛ کلید R می‌چرخاندش.</p>
+{# ------------------------------------------------ زبانه‌ها #}
+<nav class="ptabs" aria-label="بخش‌های صفحه"><div class="wrap"><ul>
+  <li><a href="#desc" aria-current="true">معرفی</a></li>
+  <li><a href="#spec">مشخصات</a></li>
+  {% if variations and pricing.show_size_table %}<li><a href="#sizes">قیمت سایزها</a></li>{% endif %}
+  <li><a href="#p-compare">مقایسه</a></li>
+  <li><a href="#qa">پرسش و پاسخ{% if questions %} ({{ questions|length|fa_num }}){% endif %}</a></li>
+  <li><a href="#reviews">دیدگاه‌ها{% if product.rating_count %} ({{ product.rating_count|fa_num }}){% endif %}</a></li>
+  {% if faqs %}<li><a href="#faq">پرسش‌های پرتکرار</a></li>{% endif %}
+</ul></div></nav>
+
+<div class="wrap pd-sections">
+  <div class="pd-main">
+    <section class="psec" id="desc" aria-labelledby="h-intro">
+      <h2 id="h-intro">معرفی</h2>
+      <div class="prose product-desc">{{ doc.html|safe }}</div>
+    </section>
+
+    <section class="psec" id="spec" aria-labelledby="h-specs">
+      <h2 id="h-specs">مشخصات فنی</h2>
+      <table class="specs"><tbody>
+        {% if r %}<tr><th scope="row">شانه</th><td>{{ r|fa_num }}</td></tr>{% endif %}
+        {% for t in specs %}<tr><th scope="row">{{ t.attribute.label }}</th><td>{% if t.attribute.slug == "color" %}<span class="sw" style="background:{{ t.name|swatch }}"></span>{% endif %}{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}{{ t.name|fa_num }}{% endif %}</td></tr>{% endfor %}
+        {% if "برجسته" in product.title %}<tr><th scope="row">نوع بافت</th><td>برجسته</td></tr>{% endif %}
+        {% if product.brand %}<tr><th scope="row">کارخانه</th><td><a href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a></td></tr>{% endif %}
+        {% if variations %}<tr><th scope="row">سایزها</th><td>{% for v in variations %}{% if v.size %}{{ v.size.label|size_name|fa_dec }}{% if not forloop.last %}، {% endif %}{% endif %}{% endfor %}</td></tr>{% endif %}
+        {% if warranty %}<tr><th scope="row">ضمانت</th><td>{{ warranty|fa_num }}</td></tr>{% endif %}
+        {% if product.sku %}<tr><th scope="row">کد فرش</th><td>{{ product.sku|fa_num }}</td></tr>{% endif %}
+      </tbody></table>
+      {% if doc.blocks %}<div class="info-blocks2" aria-label="ارسال، پرداخت و ضمانت">{% for b in doc.blocks %}<details{% if b.open %} open{% endif %}><summary>{{ b.title }}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><div class="prose">{{ b.html|safe }}</div></details>{% endfor %}</div>{% endif %}
+    </section>
+
+    {% if variations and pricing.show_size_table %}
+    <section class="psec" id="sizes" aria-labelledby="h-sizes">
+      <h2 id="h-sizes">قیمت سایزها<small>قیمت‌ها به تومان</small></h2>
+      <div class="tbl-wrap"><table class="stbl" id="sizeTbl">
+        <thead><tr><th scope="col">سایز</th><th scope="col">ابعاد (متر)</th><th scope="col" class="c-x">مساحت</th><th scope="col">قیمت</th><th scope="col" class="c-x">هر متر مربع</th><th scope="col"><span class="sr-only">انتخاب</span></th></tr></thead>
+        <tbody>{% for v in variations %}{% if v.size %}{% with ok=v.is_available %}
+          <tr data-row="{{ v.pk }}"><td class="szn"><i class="szi" style="--w:{{ v.size.width|stringformat:'s' }};--l:{{ v.size.length|stringformat:'s' }}" aria-hidden="true"></i>{{ v.size.label|size_name|fa_dec }}</td><td>{{ v.size.dimensions|fa_dec }}</td><td class="c-x">{% if v.size.area %}{{ v.size.area|floatformat:"-2"|fa_dec }} م²{% endif %}</td>
+            {% if ok and product.stock_status != 'outofstock' and v.price %}<td class="p"><b>{{ v.price|toman }}</b>{% if v.on_sale %}<del>{{ v.final_price|toman }}</del>{% endif %}</td><td class="c-x">{% if v.size.area %}{% widthratio v.price v.size.area 1 as pm %}{{ pm|toman }}{% else %}—{% endif %}</td><td><button type="button" data-pick="{{ v.pk }}" {% if not product.is_purchasable %}disabled{% endif %}>انتخاب</button></td>
+            {% else %}<td class="na" colspan="3">{% if v.pk in offer_vids %}قیمت ویژه در کادر بالا{% elif ok and not v.price %}استعلام قیمت{% else %}ناموجود{% endif %}</td>{% endif %}</tr>
+        {% endwith %}{% endif %}{% endfor %}</tbody>
+      </table></div>
+    </section>
+    {% endif %}
+
+    <section class="psec" id="p-compare" aria-labelledby="h-cmp">
+      <h2 id="h-cmp">مقایسه با فرش‌های دیگر</h2>
+      <div id="cmpBox"><p class="muted">با تیک «مقایسه» روی کارت فرش‌ها، آن‌ها را این‌جا کنار همین فرش ببینید.</p></div>
+    </section>
+
+    <section class="psec" id="qa" aria-labelledby="h-qa">
+      <h2 id="h-qa">پرسش و پاسخ{% if questions %}<small>{{ questions|length|fa_num }} پرسش</small>{% endif %}</h2>
+      {% if user.is_authenticated %}
+      <form class="qa-ask" method="post" action="/product/{{ product.slug }}/question/">{% csrf_token %}<label class="sr-only" for="qaIn">پرسش شما</label><input id="qaIn" name="text" minlength="8" maxlength="1000" placeholder="پرسش خود را دربارهٔ این فرش بنویسید…" required><button class="fbtn fbtn--primary" type="submit">ثبت پرسش</button></form>
+      {% else %}
+      <div class="qa-login"><span>برای پرسیدن دربارهٔ این فرش، اول وارد شوید؛ پاسخ کارشناس همین‌جا نمایش داده می‌شود.</span><a class="fbtn fbtn--line" href="/my-account/login/?next={{ request.path|urlencode }}%23qa" rel="nofollow">ورود و ثبت پرسش</a></div>
+      {% endif %}
+      {% if questions %}<div class="qa">
+        {% for q in questions %}{% if q.replies.all %}<div class="qa-item"><div class="qa-q"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chat"/></svg><span>{{ q.content|linebreaksbr }}<small>{{ q.author_name }} · {{ q.created_at|jdate:"%-d %B %Y" }}</small></span></div>
+          {% for a in q.replies.all %}<div class="qa-a">{{ a.content|linebreaksbr }}<div class="by">پاسخ <b>{{ a.author_name|default:"کارشناس فروش" }}</b> · {{ a.created_at|jdate:"%-d %B %Y" }}</div></div>{% endfor %}</div>{% endif %}{% endfor %}
+        {% for q in questions %}{% if not q.replies.all %}<div class="qa-item"><div class="qa-q"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chat"/></svg><span>{{ q.content|linebreaksbr }}<small>{{ q.author_name }} · {{ q.created_at|jdate:"%-d %B %Y" }}</small></span></div><div class="qa-pend">در انتظار پاسخ کارشناس</div></div>{% endif %}{% endfor %}
+      </div>{% else %}<p class="muted">هنوز پرسشی دربارهٔ این فرش ثبت نشده است.</p>{% endif %}
+    </section>
+
+    <section class="psec" id="reviews" aria-labelledby="h-rv">
+      <h2 id="h-rv">دیدگاه خریداران</h2>
+      <div class="rv-top">
+        {% if product.rating_count %}<div class="rv-avg"><div class="big"><b>{{ product.rating_avg|floatformat:1|fa_dec }}</b><span>از ۵</span></div><span class="stars2" aria-hidden="true">{% for s in product.rating_avg|stars5 %}<svg class="ic ic-fill{% if s == 'e' %} e{% endif %}"><use href="#i-star"/></svg>{% endfor %}</span><span class="pr-note">از مجموع {{ product.rating_count|fa_num }} دیدگاه</span></div>{% endif %}
+        <div class="rv-cta{% if not product.rating_count %} rv-cta--full{% endif %}">
+          <details class="rv-form2">
+            <summary><span>{% if product.rating_count %}شما هم این فرش را خریده‌اید؟{% else %}هنوز دیدگاهی ثبت نشده؛ اولین نفر باشید.{% endif %}</span><span class="fbtn fbtn--line">ثبت دیدگاه یا عکس</span></summary>
+            {% if user.is_authenticated %}
+            <form method="post" action="/product/{{ product.slug }}/review/" enctype="multipart/form-data">{% csrf_token %}
+              <fieldset class="rv-stars2"><legend>امتیاز شما</legend>{% for n in "54321" %}<input type="radio" name="rating" value="{{ n }}" id="st{{ n }}"><label for="st{{ n }}" title="{{ n|fa_num }} ستاره"><svg class="ic ic-fill" aria-hidden="true"><use href="#i-star"/></svg><span class="sr-only">{{ n|fa_num }} ستاره</span></label>{% endfor %}</fieldset>
+              <textarea name="text" rows="3" placeholder="تجربه‌تان از این فرش: کیفیت، رنگ، ارسال…" aria-label="متن دیدگاه"></textarea>
+              <label class="rv-file"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-camera"/></svg>عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
+              <button class="fbtn fbtn--primary" type="submit">ثبت دیدگاه</button>
+            </form>
+            {% else %}<p class="muted">برای ثبت دیدگاه <a href="/my-account/login/?next={{ request.path|urlencode }}%23reviews" rel="nofollow">وارد شوید</a>.</p>{% endif %}
+          </details>
+        </div>
       </div>
-      <div class="dims">
-        <div class="dim"><label for="room-l">طول اتاق (متر)</label><div class="stepper"><button type="button" data-step="l,1" aria-label="افزایش طول">+</button><input id="room-l" inputmode="decimal" value="۵"><button type="button" data-step="l,-1" aria-label="کاهش طول">−</button></div></div>
-        <div class="dim"><label for="room-w">عرض اتاق (متر)</label><div class="stepper"><button type="button" data-step="w,1" aria-label="افزایش عرض">+</button><input id="room-w" inputmode="decimal" value="۴"><button type="button" data-step="w,-1" aria-label="کاهش عرض">−</button></div></div>
-      </div>
-      <div class="pl-sizes" id="pl-sizes" role="radiogroup" aria-label="سایز فرش روی نقشه"></div>
-      <div class="pl-actions">
-        <button type="button" class="hb hb--line hb--sm" id="pl-rot"><svg class="h-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>چرخاندن ۹۰ درجه</button>
-        <button type="button" class="hb hb--line hb--sm" id="pl-center">وسط اتاق</button>
-      </div>
-      <p class="pl-read" id="pl-read" aria-live="polite"></p>
-      <p class="pl-warn" id="pl-warn" hidden></p>
-    </div>
-    <div class="plan-box">
-      <svg class="plan" id="plan" role="group" aria-label="نقشهٔ اتاق از بالا"></svg>
-      <p class="plan-key">نقشه از بالا: پنجره بالای نقشه و در سمت چپ. هر خانهٔ کف ۵۰ سانت است.</p>
-    </div>
+      {% if review_photos %}<div class="rv-wall"><h3>این فرش در خانهٔ مشتری‌ها</h3><div class="rv-photos">{% for ph in review_photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس مشتری از {{ product.title }}" loading="lazy" width="120" height="120"></a>{% endfor %}</div></div>{% endif %}
+      {% if reviews %}<div class="rv-list">{% for rv in reviews %}
+        <article class="rv2">
+          <div class="rv-hd"><span class="av">{{ rv.author_name|initial }}</span><b>{{ rv.author_name }}</b>{% if rv.verified %}<span class="buyer">خریدار این فرش</span>{% endif %}<time datetime="{{ rv.created_at|date:'c' }}">{{ rv.created_at|jdate:"%-d %B %Y" }}</time>{% if rv.rating %}<span class="stars2" aria-label="امتیاز {{ rv.rating|fa_num }} از ۵">{% for s in rv.rating|stars5 %}<svg class="ic ic-fill{% if s == 'e' %} e{% endif %}" aria-hidden="true"><use href="#i-star"/></svg>{% endfor %}</span>{% endif %}</div>
+          <p>{{ rv.content|linebreaksbr }}</p>
+          {% if rv.photos.all %}<div class="rv-photos">{% for ph in rv.photos.all %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس {{ product.title }} در خانهٔ مشتری" loading="lazy" width="96" height="96"></a>{% endfor %}</div>{% endif %}
+          {% for rep in rv.replies.all %}<div class="rv-reply"><b>{{ rep.author_name }}</b><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
+        </article>
+      {% endfor %}</div>{% endif %}
+    </section>
+
+    {% if faqs %}<section class="psec faq2" id="faq" aria-labelledby="h-faq"><h2 id="h-faq">پرسش‌های پرتکرار</h2>{% for f in faqs %}<details><summary>{{ f.question }}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><div class="prose">{{ f.answer|safe }}</div></details>{% endfor %}</section>{% endif %}
+    {% if landing_links %}<nav class="psec" aria-labelledby="lp-h"><h2 id="lp-h">جستجوهای مرتبط</h2><div class="tags2">{% for x in landing_links %}<a href="{{ x.get_absolute_url }}">{{ x.title|fa_num }}</a>{% endfor %}</div></nav>{% endif %}
   </div>
+  {% if variations and pricing.show_size_table %}
+  <aside class="side-buy" aria-label="خرید سریع">
+    <div class="sb-top">{% include "partials/_rugimg.html" with m=m0 w=240 sizes="48px" seed=product.pk %}<div><b>{{ product.title|fa_num }}</b><small id="sbSize"></small></div></div>
+    <div class="pr" id="sbPrice"></div>
+    <button class="fbtn fbtn--primary fbtn--block" type="submit" form="buyForm" {% if not product.is_purchasable %}disabled{% endif %}>{% if product.is_purchasable %}افزودن به سبد خرید{% else %}ناموجود{% endif %}</button>
+  </aside>
+  {% endif %}
+</div>
+
+{% if related %}
+<section class="wrap sec" id="rel" aria-labelledby="h-sim">
+  <div class="sec-hd"><h2 id="h-sim"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>فرش‌های مشابه</h2>{% if product.primary_category %}<a class="link" href="{{ product.primary_category.get_absolute_url }}">مشاهدهٔ همه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>{% endif %}</div>
+  <div class="rail" data-rail><div class="rail-track">{% for p in related|slice:":10" %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
 </section>
 {% endif %}
 
-<div class="h-wrap">
-  <nav class="pd-tabs" aria-label="بخش‌های صفحه"><a href="#desc">معرفی فرش</a>{% if specs %}<a href="#spec">شناسنامه</a>{% endif %}{% if faqs %}<a href="#faq">پرسش‌ها</a>{% endif %}<a href="#reviews">نظرها ({{ product.rating_count|fa_num }})</a>{% if related %}<a href="#rel">هم‌خانواده‌ها</a>{% endif %}</nav>
-  <div class="pd-desc">
-    <section id="desc" class="prose product-desc">{{ doc.html|safe }}</section>
-    <div>
-      {% if specs or r %}<section id="spec" aria-labelledby="spec-h"><h2 class="nq h-h2" id="spec-h">شناسنامهٔ فرش</h2>
-        <table class="spec-t"><tbody>
-          {% if r %}<tr><th scope="row">شانه</th><td>{{ r|fa_num }}</td></tr>{% endif %}
-          {% for t in specs %}<tr><th scope="row">{{ t.attribute.label }}</th><td>{% if t.attribute.is_public %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% else %}{{ t.name|fa_num }}{% endif %}</td></tr>{% endfor %}
-          {% if product.brand %}<tr><th scope="row">کارخانه</th><td><a href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a></td></tr>{% endif %}
-          {% if product.sku %}<tr><th scope="row">کد فرش</th><td>{{ product.sku|fa_num }}</td></tr>{% endif %}
-        </tbody></table>
-      </section>{% endif %}
-      {% if doc.blocks %}<section class="info-blocks" aria-label="ارسال، پرداخت و ضمانت">{% for b in doc.blocks %}<details{% if b.open %} open{% endif %}><summary>{{ b.title }}</summary><div class="prose">{{ b.html|safe }}</div></details>{% endfor %}</section>{% endif %}
-    </div>
-  </div>
-
-  {% if faqs %}<section id="faq" class="faq pd-sec"><h2 class="nq h-h2">پرسش‌های پرتکرار</h2>{% for f in faqs %}<details><summary>{{ f.question }}</summary><div class="prose">{{ f.answer|safe }}</div></details>{% endfor %}</section>{% endif %}
-
-  <section id="reviews" class="reviews pd-sec">
-    <h2 class="nq h-h2">نظر خریداران</h2>
-    {% if review_photos %}<div class="rv-wall"><h3>این فرش در خانهٔ مشتری‌ها</h3><div class="rv-photos">{% for ph in review_photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس مشتری از {{ product.title }}" loading="lazy" width="120" height="120"></a>{% endfor %}</div></div>{% endif %}
-    <details class="rv-form">
-      <summary>نظر یا عکس فرش خودتان را بفرستید</summary>
-      {% if user.is_authenticated %}
-      <form method="post" action="/product/{{ product.slug }}/review/" enctype="multipart/form-data">{% csrf_token %}
-        <fieldset class="rv-stars"><legend>امتیاز شما</legend>{% for n in "54321" %}<input type="radio" name="rating" value="{{ n }}" id="st{{ n }}"><label for="st{{ n }}" title="{{ n }} ستاره">★</label>{% endfor %}</fieldset>
-        <textarea name="text" rows="3" placeholder="تجربه‌تان از این فرش: کیفیت، رنگ، ارسال…" aria-label="متن نظر"></textarea>
-        <label class="rv-file">عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
-        <button class="hb hb--lapis hb--sm" type="submit">ثبت نظر</button>
-      </form>
-      {% else %}<p class="muted">برای ثبت نظر <a href="/my-account/login/?next={{ request.path }}%23reviews">وارد شوید</a>.</p>{% endif %}
-    </details>
-    {% for rv in reviews %}
-      <article class="review">
-        <header><strong>{{ rv.author_name }}</strong>{% if rv.rating %} {% stars rv.rating %}{% endif %}<time datetime="{{ rv.created_at|date:'c' }}">{{ rv.created_at|jdate }}</time></header>
-        {% if rv.verified %}<span class="rv-verified">خریدار این فرش</span>{% endif %}
-        <p>{{ rv.content|linebreaksbr }}</p>
-        {% if rv.photos.all %}<div class="rv-photos">{% for ph in rv.photos.all %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="عکس {{ product.title }} در خانهٔ مشتری" loading="lazy" width="96" height="96"></a>{% endfor %}</div>{% endif %}
-        {% for rep in rv.replies.all %}<div class="review review--reply"><header><strong>{{ rep.author_name }}</strong></header><p>{{ rep.content|linebreaksbr }}</p></div>{% endfor %}
-      </article>
-    {% empty %}
-      <p class="muted">هنوز نظری ثبت نشده است؛ اولین نفر باشید.</p>
-    {% endfor %}
-  </section>
-
-  {% if landing_links %}<nav class="pd-sec" aria-labelledby="lp-h"><h2 class="nq h-h2" id="lp-h">جستجوهای مرتبط</h2><div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title|fa_num }}</a>{% endfor %}</div></nav>{% endif %}
-  {% if related %}<section class="pd-sec" id="rel" aria-labelledby="rel-h"><h2 class="nq h-h2" id="rel-h">هم‌خانواده‌ها</h2>
-    <div class="rel-grid">{% for p in related|slice:":8" %}{% include "partials/product_card.html" %}{% endfor %}</div>
-  </section>{% endif %}
+{% if variations and pricing.show_size_table %}
+<div class="mbuy" aria-label="خرید">
+  <button class="fbtn fbtn--primary fbtn--lg" type="submit" form="buyForm" {% if not product.is_purchasable %}disabled{% endif %}>{% if product.is_purchasable %}افزودن به سبد{% else %}ناموجود{% endif %}</button>
+  <div class="mp" id="mPrice">{% if out == "outofstock" or product.sale_status == "unavailable" %}<b class="out">ناموجود</b>{% elif product.min_price %}<b><small>از</small> {{ product.min_price|toman }} <small>تومان</small></b>{% endif %}</div>
 </div>
+
+<div class="fmodal" id="roomModal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="roomTitle">
+    <div class="modal-hd">
+      <span class="ri"><svg class="ic" aria-hidden="true"><use href="#i-plan"/></svg></span>
+      <div><h2 id="roomTitle">اندازه در اتاق شما</h2><small>نقشهٔ ساده از بالا، به مقیاس واقعی</small></div>
+      <button class="icon-btn" type="button" data-close-modal aria-label="بستن"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="room-body">
+      <div class="room-ctrl">
+        <div><h3>ابعاد اتاق</h3>
+          <div class="sy-dims">
+            <div class="fld"><label for="rmL">طول (متر)</label><div class="stepper2"><button type="button" data-stp="rmL:0.5" aria-label="زیاد کردن طول اتاق"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input id="rmL" type="text" inputmode="decimal" data-min="1" data-max="20" value="۵" autocomplete="off"><button type="button" data-stp="rmL:-0.5" aria-label="کم کردن طول اتاق"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div></div>
+            <span class="x" aria-hidden="true">×</span>
+            <div class="fld"><label for="rmW">عرض (متر)</label><div class="stepper2"><button type="button" data-stp="rmW:0.5" aria-label="زیاد کردن عرض اتاق"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input id="rmW" type="text" inputmode="decimal" data-min="1" data-max="20" value="۴" autocomplete="off"><button type="button" data-stp="rmW:-0.5" aria-label="کم کردن عرض اتاق"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div></div>
+          </div>
+        </div>
+        <div><h3 id="rszT">سایز فرش</h3><div class="rsz" id="rsz" role="radiogroup" aria-labelledby="rszT"></div></div>
+        <div class="room-btns">
+          <button class="fbtn fbtn--line" type="button" id="rmRot"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-rotate"/></svg>چرخش ۹۰°</button>
+          <button class="fbtn fbtn--line" type="button" id="rmCenter"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-center"/></svg>وسط اتاق</button>
+        </div>
+        <div class="readout" id="rmRead"></div>
+        <div id="rmWarn"></div>
+      </div>
+      <div class="room-plan">
+        <svg id="plan" role="group" aria-label="نقشهٔ اتاق از بالا"></svg>
+        <p>فرش را بکشید و جابه‌جا کنید · با کلیدهای جهت ۱۰ سانتی‌متر حرکت می‌کند و کلید R آن را می‌چرخاند. پنجره بالای نقشه و در سمت چپ است.</p>
+      </div>
+    </div>
+    <div class="modal-ft"><p id="rmFoot"></p><button class="fbtn fbtn--primary" type="button" id="rmApply">انتخاب این سایز</button></div>
+  </div>
+</div>
+{% endif %}
 {% endwith %}{% endblock %}
-{% block scripts %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script><script src="{% static 'js/house-product.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}
+{% block scripts %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script><script src="{% static 'js/product.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}{% endblock %}
