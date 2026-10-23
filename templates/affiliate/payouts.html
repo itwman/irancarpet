@@ -1,0 +1,26 @@
+{% extends "affiliate/_layout.html" %}{% load fa aff %}
+{% block aff %}
+<header class="acc2-title"><h1>تسویه و حساب بانکی</h1><p>پورسانت هر سفارش بعد از تحویل سفارش به مشتری قابل تسویه می‌شود و از {{ s.min_payout|toman }} تومان به بالا به حساب شما واریز می‌شود.</p></header>
+<dl class="aff2-bal">
+  <div class="is-main"><dt>قابل تسویه</dt><dd>{{ payable|toman }} <small>تومان</small></dd><small>{% if payable >= s.min_payout %}در نوبت واریز{% else %}{{ s.min_payout|toman }} تومان حداقل واریز{% endif %}</small></div>
+  <div><dt>در راه</dt><dd>{{ upcoming|toman }} <small>تومان</small></dd><small>سفارش‌های تحویل‌نشده</small></div>
+  <div><dt>واریزشده تا امروز</dt><dd>{{ paid_total|toman }} <small>تومان</small></dd></div>
+</dl>
+<div class="acc2-grid">
+  <section class="acc2-card" id="bank">
+    <h2>حساب بانکی برای واریز</h2>
+    {% if not a.sheba %}<p class="alert-ic alert-ic--warn">برای دریافت پورسانت، شماره شبا را ثبت کنید.</p>{% endif %}
+    <form method="post" action="/my-account/affiliate/payouts/" class="acc2-form">{% csrf_token %}<input type="hidden" name="action" value="bank">
+      <div class="field"><label for="bs">شماره شبا</label><input id="bs" name="sheba" dir="ltr" value="{{ a.sheba }}" placeholder="IR…" inputmode="numeric"></div>
+      <div class="field"><label for="bh">به نام</label><input id="bh" name="account_holder" value="{{ a.account_holder }}"></div>
+      <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ذخیرهٔ حساب بانکی</button>
+    </form>
+  </section>
+  <section class="acc2-card">
+    <h2>واریزها</h2>
+    {% if payouts %}
+    <ul class="aff2-top">{% for p in payouts %}<li><span>{{ p.paid_at|jdate }}{% if p.reference %} <small class="muted">پیگیری {{ p.reference|fa_num }}</small>{% endif %}</span><b>{{ p.amount|toman }} تومان</b></li>{% endfor %}</ul>
+    {% else %}<div class="acc2-empty"><p>هنوز واریزی نبوده.</p></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

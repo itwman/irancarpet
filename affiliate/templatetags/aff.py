@@ -13,3 +13,21 @@ def pct(value):
     except (TypeError, ValueError):
         return ""
     return fa_num(s.replace(".", "٫"))
+
+
+@register.filter
+def money(value):
+    """۱۵۰٬۰۰۰٬۰۰۰ ← «۱۵۰ میلیون»"""
+    from affiliate.views import money_label
+
+    return money_label(value)
+
+
+@register.filter
+def bare(url):
+    """https://crpt.ir/ali ← crpt.ir/ali"""
+    s = str(url or "")
+    for p in ("https://", "http://"):
+        if s.startswith(p):
+            s = s[len(p):]
+    return s.rstrip("/")

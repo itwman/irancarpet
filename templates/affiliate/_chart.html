@@ -1,0 +1,3 @@
+{% load fa aff %}<ol class="aff2-bars" aria-label="فروش ماهانه">
+  {% for m in chart %}<li{% if forloop.last %} class="is-now"{% endif %}><span class="aff2-bars__v">{% if m.base %}{{ m.base|money }}{% endif %}</span><i style="height:{{ m.h|default:0 }}%"{% if not m.base %} class="is-zero"{% endif %}></i><span class="aff2-bars__k">{{ m.label }}</span><small>{% if m.amount %}{{ m.amount|money }} پورسانت{% endif %}</small></li>{% endfor %}
+</ol>

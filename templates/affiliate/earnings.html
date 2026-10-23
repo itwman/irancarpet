@@ -1,0 +1,37 @@
+{% extends "affiliate/_layout.html" %}{% load fa aff %}
+{% block aff %}
+<header class="acc2-title"><h1>فروش و پورسانت</h1><p>نام و نشانی مشتری‌ها محرمانه است و نمایش داده نمی‌شود. با رسیدن به پلهٔ بالاتر، درصد سفارش‌های تسویه‌نشدهٔ همان دوره خودکار بالا می‌رود.</p></header>
+<div class="acc2-grid">
+  <section class="acc2-card"><h2>فروش شش ماه اخیر</h2>{% include "affiliate/_chart.html" %}</section>
+  <section class="acc2-card">
+    <h2>پله‌های پورسانت</h2>
+    <table class="aff-tiers">
+      <tbody>{% for t in tiers %}
+        <tr{% if tier and tier.min == t.min and a.custom_percent is None %} class="on"{% endif %}><td>{% if t.max %}{% if forloop.first %}تا {{ t.max_label }}{% else %}{{ t.min_label }} تا {{ t.max_label }}{% endif %}{% else %}بالای {{ t.min_label }}{% endif %}</td><td><strong>{{ t.pct }}٪</strong></td></tr>
+      {% endfor %}</tbody>
+    </table>
+    <p class="muted small mb-0">بر اساس جمع فروش {% if s.tier_period == "month" %}هر ماه شمسی{% else %}از ابتدای همکاری{% endif %}.</p>
+  </section>
+</div>
+<section class="acc2-card">
+  <h2>سفارش‌ها و پورسانت‌ها</h2>
+  {% if commissions %}
+  <div class="table-wrap"><table class="orders">
+    <thead><tr><th>سفارش</th><th class="hide-sm">تاریخ</th><th>خرید</th><th>درصد</th><th>پورسانت</th><th>وضعیت</th></tr></thead>
+    <tbody>{% for c in commissions %}
+      <tr><td>{{ c.order.number|fa_num }}</td><td class="hide-sm">{{ c.created_at|jdate }}</td><td>{{ c.base|toman }}</td>
+        <td>{{ c.percent|pct }}٪</td><td><strong>{{ c.amount|toman }}</strong></td>
+        <td><span class="st aff-st-{{ c.status }}">{{ c.get_status_display }}</span></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="acc2-empty"><p>هنوز سفارشی با پیوند یا کد شما ثبت نشده.</p><a class="btn-ic btn-ic--pink btn-ic--sm" href="/my-account/affiliate/carpets/">انتخاب فرش برای معرفی</a></div>
+  {% endif %}
+</section>
+{% if top_products %}
+<section class="acc2-card">
+  <h2>فرش‌هایی که بیشتر از پیوند شما دیده شده‌اند (۳۰ روز)</h2>
+  <ul class="aff2-top">{% for t in top_products %}<li><span>{{ t.product__title|fa_num }}</span><b>{{ t.n|fa_num }} ورود</b></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

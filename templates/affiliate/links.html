@@ -1,0 +1,36 @@
+{% extends "affiliate/_layout.html" %}{% load fa aff brand %}
+{% block aff %}
+<header class="acc2-title"><h1>پیوندها و کد تخفیف</h1><p>هر خریدی که مشتری تا {{ s.attribution_days|fa_num }} روز بعد از ورود با پیوند شما انجام دهد، یا با کد شما ثبت کند، به نام شماست.</p></header>
+<div class="acc2-grid">
+  <section class="acc2-card">
+    <h2>پیوند عمومی</h2>
+    <p class="muted">برای بیو اینستاگرام، استوری و معرفی کلی {% brand %}.</p>
+    <div class="aff-copy"><input readonly dir="ltr" value="{{ general }}" aria-label="پیوند عمومی"><button class="pill" type="button" data-copy="{{ general }}">کپی</button></div>
+    <div class="aff-share">
+      <a class="pill" href="https://wa.me/?text={{ 'فرش ماشینی کاشان، نقد و اقساط، ارسال به سراسر ایران 👇 '|urlencode }}{{ general|urlencode }}" target="_blank" rel="noopener">واتس‌اپ</a>
+      <a class="pill" href="https://t.me/share/url?url={{ general|urlencode }}&text={{ 'فرش ماشینی کاشان، نقد و اقساط'|urlencode }}" target="_blank" rel="noopener">تلگرام</a>
+    </div>
+  </section>
+  {% if coupon %}
+  <section class="acc2-card aff2-coupon">
+    <h2>کد تخفیف اختصاصی</h2>
+    <p class="muted">برای پست و استوری که پیوندش کلیک نمی‌شود: مشتری کد را در سبد خرید می‌زند و {{ s.coupon_percent|fa_num }}٪ تخفیف{% if s.coupon_max %} (تا {{ s.coupon_max|toman }} تومان){% endif %} می‌گیرد.</p>
+    <div class="aff-code"><code dir="ltr">{{ coupon.code }}</code><button class="pill" type="button" data-copy="{{ coupon.code }}">کپی کد</button></div>
+  </section>
+  {% endif %}
+</div>
+<section class="acc2-card">
+  <h2>پیوند هر صفحهٔ سایت</h2>
+  <p class="muted">لیست قیمت، دسته‌ها، مقاله‌ها یا صفحهٔ یک فرش: نشانی را بچسبانید تا پیوند کوتاه به نام شما ساخته شود.</p>
+  <form class="aff-page" id="affPage">{% csrf_token %}
+    <input name="url" dir="ltr" placeholder="https://{% site_domain %}/carpets-price-list/" aria-label="نشانی صفحه">
+    <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ساختن پیوند</button>
+  </form>
+  <div class="aff-copy" id="affPageOut" hidden><input readonly dir="ltr" aria-label="پیوند ساخته‌شده"><button class="pill" type="button" data-copy="">کپی</button></div>
+  <p class="err" id="affPageErr" hidden></p>
+  {% if links %}
+  <h3 class="aff2-h3">پیوندهای ساخته‌شده</h3>
+  <ul class="aff2-links">{% for lk, url in links %}<li><span dir="ltr">{{ lk.path|truncatechars:70 }}</span><button class="pill" type="button" data-copy="{{ url }}">کپی</button></li>{% endfor %}</ul>
+  {% endif %}
+</section>
+{% endblock %}

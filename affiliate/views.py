@@ -206,13 +206,118 @@ def _affiliate_or_redirect(request):
     return a
 
 
-@login_required(login_url=LOGIN)
-def dashboard(request):
+SECTIONS = [("home", "پیشخوان", ""), ("carpets", "فرش‌ها برای معرفی", "carpets/"), ("links", "پیوندها و کد تخفیف", "links/"),
+            ("earnings", "فروش و پورسانت", "earnings/"), ("payouts", "تسویه و حساب بانکی", "payouts/"), ("guide", "راهنمای فروش بیشتر", "guide/")]
+
+
+def _base(request, section):
+    """(همکار، تنظیمات، ctx) — ctx شامل منو و آمار سربرگ."""
     a = _affiliate_or_redirect(request)
+    s = AffiliateSettings.load()
+    title = dict((k, t) for k, t, _ in SECTIONS)[section]
+    ctx = {"meta": {**META, "title": f"{title} · همکاری در فروش"}, "a": a, "s": s, "section": section,
+           "sections": [{"key": k, "title": t, "url": "/my-account/affiliate/" + u} for k, t, u in SECTIONS]}
+    if a is None or not a.is_active:
+        return a, s, ctx
+    period = C.current_period(s)
+    sales = C.period_sales(a, period)
+    cur, nxt, left = C.tier_info(sales)
+    bal = C.balances(a)
+    since = timezone.now() - timezone.timedelta(days=30)
+    clicks30 = a.clicks.filter(created_at__gte=since)
+    ctx.update({
+        "general": track.general_link(a), "coupon": _coupon_for(a, s), "period": period, "period_label": _period_label(period),
+        "sales": sales, "tier": cur, "next_tier": nxt, "left": left,
+        "rate": a.custom_percent if a.custom_percent is not None else (cur["percent"] if cur else 0),
+        "progress": min(100, int(sales * 100 / nxt["min"])) if nxt and nxt["min"] else 100,
+        "bal": bal, "payable": bal["approved"]["amount"], "upcoming": bal["pending"]["amount"] + bal["waiting"]["amount"],
+        "paid_total": bal["paid"]["amount"],
+        "clicks30": clicks30.count(), "visitors30": clicks30.values("visitor").distinct().count(),
+        "orders30": a.commissions.filter(created_at__gte=since).exclude(status=Commission.Status.CANCELLED).count(),
+        "clicks30_qs": clicks30,
+    })
+    return a, s, ctx
+
+
+def _gate(request, section, template, extra=None):
+    a, s, ctx = _base(request, section)
     if a is None:
         return redirect("/affiliate/")
-    s = AffiliateSettings.load()
-    if request.method == "POST" and request.POST.get("action") == "bank":
+    if not a.is_active and section != "home":
+        return redirect("/my-account/affiliate/")
+    if a.is_active and extra:
+        ctx.update(extra(a, s, ctx))
+    return render(request, template, ctx)
+
+
+def _chart(a):
+    """فروش و پورسانت شش ماه شمسی اخیر (بر اساس تاریخ سفارش) برای نمودار ستونی."""
+    import jdatetime
+
+    today = jdatetime.date.today()
+    keys, y, m = [], today.year, today.month
+    for _ in range(6):
+        keys.insert(0, (y, m))
+        y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+    start = jdatetime.date(keys[0][0], keys[0][1], 1).togregorian()
+    by = {k: {"base": 0, "amount": 0, "n": 0} for k in keys}
+    rows = (a.commissions.filter(created_at__date__gte=start).exclude(status=Commission.Status.CANCELLED)
+            .values_list("created_at", "base", "amount"))
+    for at, base, amount in rows:
+        d = jdatetime.date.fromgregorian(date=timezone.localtime(at).date())
+        if (d.year, d.month) in by:
+            b = by[(d.year, d.month)]
+            b["base"] += base or 0
+            b["amount"] += amount or 0
+            b["n"] += 1
+    top = max([v["base"] for v in by.values()] + [1])
+    months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
+    return [{"label": months[k[1] - 1], **by[k], "h": int(100 * by[k]["base"] / top)} for k in keys]
+
+
+@login_required(login_url=LOGIN)
+def dashboard(request):
+    if request.method == "POST" and request.POST.get("action") == "bank":  # فرم قدیمی
+        return payouts(request)
+
+    def extra(a, s, ctx):
+        from catalog.models import Product
+
+        rate = float(ctx["rate"] or 0)
+        best = [i for i in _best_ids()[:24]]
+        import random
+
+        pick = random.Random(timezone.localdate().toordinal() + a.pk).sample(best, min(4, len(best))) if best else []
+        by = {p.pk: p for p in _sellable().select_related("image").prefetch_related("variations").filter(pk__in=pick)}
+        return {"chart": _chart(a), "today": [_card(a, by[i], rate) for i in pick if i in by],
+                "recent": a.commissions.select_related("order").order_by("-created_at")[:5]}
+    return _gate(request, "home", "affiliate/home.html", extra)
+
+
+@login_required(login_url=LOGIN)
+def carpets(request):
+    return _gate(request, "carpets", "affiliate/carpets.html")
+
+
+@login_required(login_url=LOGIN)
+def links(request):
+    return _gate(request, "links", "affiliate/links.html",
+                 lambda a, s, ctx: {"links": [(lk, track.page_link(a, lk)) for lk in a.links.order_by("-created_at")[:30]]})
+
+
+@login_required(login_url=LOGIN)
+def earnings(request):
+    def extra(a, s, ctx):
+        top = (ctx["clicks30_qs"].exclude(product=None).values("product__title").annotate(n=Count("pk")).order_by("-n")[:8])
+        return {"commissions": a.commissions.select_related("order").order_by("-created_at")[:100], "tiers": _tiers_view(s),
+                "top_products": top, "chart": _chart(a)}
+    return _gate(request, "earnings", "affiliate/earnings.html", extra)
+
+
+@login_required(login_url=LOGIN)
+def payouts(request):
+    a = _affiliate_or_redirect(request)
+    if a is not None and a.is_active and request.method == "POST" and request.POST.get("action") == "bank":
         sheba = clean_sheba(request.POST.get("sheba"))
         if sheba and not valid_sheba(sheba):
             messages.error(request, "شماره شبا درست نیست (IR و ۲۴ رقم).")
@@ -220,31 +325,40 @@ def dashboard(request):
             a.sheba, a.account_holder = sheba, (request.POST.get("account_holder") or "").strip()[:120]
             a.save(update_fields=["sheba", "account_holder"])
             messages.success(request, "اطلاعات حساب بانکی ذخیره شد.")
-        return redirect("/my-account/affiliate/#bank")
-    ctx = {"meta": {**META, "title": "پنل همکاری در فروش"}, "a": a, "s": s}
-    if a.is_active:
-        period = C.current_period(s)
-        sales = C.period_sales(a, period)
-        cur, nxt, left = C.tier_info(sales)
-        bal = C.balances(a)
-        since = timezone.now() - timezone.timedelta(days=30)
-        clicks30 = a.clicks.filter(created_at__gte=since)
-        top = (clicks30.exclude(product=None).values("product__title").annotate(n=Count("pk")).order_by("-n")[:5])
-        ctx.update({
-            "general": track.general_link(a), "coupon": _coupon_for(a, s), "period": period, "period_label": _period_label(period),
-            "sales": sales, "tier": cur, "next_tier": nxt, "left": left,
-            "rate": a.custom_percent if a.custom_percent is not None else (cur["percent"] if cur else 0),
-            "progress": min(100, int(sales * 100 / nxt["min"])) if nxt and nxt["min"] else 100,
-            "bal": bal, "payable": bal["approved"]["amount"], "upcoming": bal["pending"]["amount"] + bal["waiting"]["amount"],
-            "paid_total": bal["paid"]["amount"],
-            "clicks30": clicks30.count(), "visitors30": clicks30.values("visitor").distinct().count(),
-            "orders30": a.commissions.filter(created_at__gte=since).exclude(status=Commission.Status.CANCELLED).count(),
-            "top_products": top,
-            "commissions": a.commissions.select_related("order").order_by("-created_at")[:30],
-            "payouts": a.payouts.all()[:20], "tiers": _tiers_view(s),
-            "links": [(lk, track.page_link(a, lk)) for lk in a.links.order_by("-created_at")[:10]],
-        })
-    return render(request, "affiliate/dashboard.html", ctx)
+        return redirect("/my-account/affiliate/payouts/")
+    return _gate(request, "payouts", "affiliate/payouts.html", lambda a, s, ctx: {"payouts": a.payouts.all()[:50]})
+
+
+@login_required(login_url=LOGIN)
+def guide(request):
+    return _gate(request, "guide", "affiliate/guide.html")
+
+
+@login_required(login_url=LOGIN)
+def story(request, pk):
+    """تصویر استوری یک فرش با کد تخفیف همین همکار."""
+    from django.http import HttpResponse
+
+    from catalog.models import Product
+
+    from . import story as S
+
+    a = _affiliate_or_redirect(request)
+    if a is None or not a.is_active:
+        raise Http404
+    s = AffiliateSettings.load()
+    p = Product.objects.published().select_related("image").filter(pk=pk).first()
+    if p is None:
+        raise Http404
+    from shop.offers import live_offers
+
+    offer = next((o for o in live_offers() if o.product_id == p.pk and o.price), None)
+    c = _coupon_for(a, s)
+    data = S.render(p, c.code if c else a.code.upper(), s.coupon_percent if c else 0, offer)
+    r = HttpResponse(data, content_type="image/jpeg")
+    r["Content-Disposition"] = f'inline; filename="story-{p.pk}.jpg"'
+    r["Cache-Control"] = "private, max-age=1800"
+    return r
 
 
 def _period_label(p):
@@ -317,7 +431,7 @@ def _card(a, p, rate, offer=None):
          "price": toman(price) if price else "", "from": not offer and sizes > 1,
          "reeds": fa_num(reeds_of(p.title)), "sizes": fa_num(sizes) if sizes else "",
          "commission": toman(int(price * rate / 100 / 1000) * 1000) if price and rate else "",
-         "link": link, "text": _share_text(p, link, offer)}
+         "link": link, "text": _share_text(p, link, offer), "story": f"/my-account/affiliate/story/{p.pk}/"}
     if offer:
         from core.templatetags.fa import jdate
 

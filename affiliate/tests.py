@@ -170,6 +170,21 @@ class AffiliateTests(TestCase):
         r = self.client.get("/" + link.split("crpt.ir/")[1], HTTP_HOST="crpt.ir")
         self.assertIn("/carpets-price-list/?ref=ali_home", r["Location"])
         self.assertEqual(self.client.post("/my-account/affiliate/link/", {"url": "https://evil.com/"}).status_code, 400)
+        for sec in ("carpets", "links", "earnings", "payouts", "guide"):
+            self.assertEqual(self.client.get(f"/my-account/affiliate/{sec}/").status_code, 200, sec)
+        self.assertContains(self.client.get("/my-account/affiliate/links/"), "/carpets-price-list/")
+        r = self.client.get(f"/my-account/affiliate/story/{self.p.pk}/")
+        self.assertEqual((r.status_code, r["Content-Type"]), (200, "image/jpeg"))
+        self.assertEqual(r.content[:2], b"\xff\xd8")
+        self.assertEqual(self.client.get("/my-account/affiliate/story/999999/").status_code, 404)
+        r = self.client.post("/my-account/affiliate/", {"action": "bank", "sheba": "IR820540102680020817909002", "account_holder": "علی"})
+        self.assertEqual(r.status_code, 302)
+        a.refresh_from_db()
+        self.assertEqual(a.sheba, "IR820540102680020817909002")
+        a.status = "pending"
+        a.save()
+        self.assertEqual(self.client.get("/my-account/affiliate/earnings/").status_code, 302)
+        self.assertEqual(self.client.get(f"/my-account/affiliate/story/{self.p.pk}/").status_code, 404)
 
     def test_panel_pages(self):
         admin = User.objects.create_superuser("adm", password="x")

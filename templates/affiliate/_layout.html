@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load fa static aff brand %}
+{% block content %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="fi-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="fi-carpets" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7l3 5-3 5-3-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="fi-links" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="fi-earnings" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="fi-payouts" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M7 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="fi-guide" viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14c-3-.5-6 0-8 1.5zM12 6v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="fi-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="fi-story" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 15l2-2.5 1.5 1.8L14 12l1.5 3z" fill="currentColor"/></symbol>
+</svg>
+<div class="container acc2 aff2">
+  <aside class="acc2-side aff2-side">
+    <div class="aff2-me">
+      <span class="aff2-badge" aria-hidden="true">{{ a.name|default:"؟"|slice:":1" }}</span>
+      <div><b>{{ a.name }}</b>{% if general %}<small dir="ltr">{{ general|bare }}</small>{% else %}<small dir="ltr">{{ a.code }}</small>{% endif %}</div>
+    </div>
+    {% if a.is_active %}
+    <div class="aff2-rate">
+      <span>پورسانت شما</span><strong>{{ rate|pct }}٪</strong>
+      {% if a.custom_percent is None and next_tier %}<small>{{ left|money }} تومان فروش دیگر تا {{ next_tier.percent|pct }}٪</small>{% elif a.custom_percent is not None %}<small>درصد اختصاصی</small>{% else %}<small>بالاترین پله</small>{% endif %}
+    </div>
+    <nav class="acc2-nav aff2-nav" aria-label="بخش‌های پنل همکاری">
+      {% for n in sections %}<a href="{{ n.url }}"{% if section == n.key %} aria-current="page"{% endif %}><svg><use href="#fi-{{ n.key }}"/></svg>{{ n.title }}{% if n.key == "payouts" and payable and payable >= s.min_payout %}<em>آماده</em>{% endif %}</a>{% endfor %}
+    </nav>
+    <button class="aff2-quick" type="button" data-copy="{{ general }}"><svg><use href="#fi-copy"/></svg><span>کپی پیوند عمومی</span></button>
+    {% endif %}
+    <a class="aff2-back" href="/my-account/">بازگشت به حساب من</a>
+  </aside>
+  <main class="acc2-main aff2-main">
+    {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}">{{ m|fa_num }}</div>{% endfor %}
+    {% block aff %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/affiliate.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}

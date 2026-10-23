@@ -74,8 +74,9 @@
           '<div class="affc__acts">' +
             '<button class="pill" type="button" data-copy="' + esc(it.link) + '">کپی پیوند</button>' +
             '<button class="pill" type="button" data-copy="' + esc(it.text) + '">کپی متن</button>' +
+            '<a class="pill pill--story" href="' + esc(it.story) + '" download="story-' + esc(it.id) + '.jpg"><svg aria-hidden="true"><use href="#fi-story"/></svg>استوری</a>' +
             '<a class="pill" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(it.text) + '">واتس‌اپ</a>' +
-            (it.download ? '<a class="pill" href="' + esc(it.download) + '" download>دانلود عکس</a>' : "") +
+            (it.download ? '<a class="pill" href="' + esc(it.download) + '" download>عکس</a>' : "") +
           "</div></div></article>";
     };
     var load = function (append) {

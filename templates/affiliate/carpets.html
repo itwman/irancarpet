@@ -1,0 +1,18 @@
+{% extends "affiliate/_layout.html" %}{% load fa aff %}
+{% block aff %}
+<header class="acc2-title"><h1>فرش‌ها برای معرفی</h1><p>فقط فرش‌های موجود. برای هر فرش پیوند به نام شما، متن آمادهٔ پیام و عکس استوری با کد تخفیفتان.</p></header>
+<section class="acc2-card aff-shelf" aria-label="فرش‌ها">
+  <div class="aff-shelf__head">
+    <div class="aff-tabs" role="tablist" aria-label="دسته‌بندی فرش‌ها">
+      <button type="button" role="tab" class="on" aria-selected="true" data-tab="best">پرفروش</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="offers">فرصت‌های ویژه</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="new">تازه‌ها</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="random">تصادفی</button>
+      <label class="aff-reeds"><span class="sr-only">شانه</span><select id="affReeds"><option value="">همهٔ شانه‌ها</option><option value="700">۷۰۰ شانه</option><option value="1000">۱۰۰۰ شانه</option><option value="1200">۱۲۰۰ شانه</option><option value="1500">۱۵۰۰ شانه</option></select></label>
+    </div>
+    <div class="aff-search"><input id="affQ" type="search" placeholder="جستجو: نام، رنگ، نقشه یا نشانی صفحه…" autocomplete="off" aria-label="جستجوی فرش"></div>
+  </div>
+  <div class="aff-grid" id="affResults" aria-live="polite"></div>
+  <div class="aff-more"><button class="btn-ic btn-ic--teal btn-ic--sm" type="button" id="affMore" hidden>فرش‌های بیشتر</button></div>
+</section>
+{% endblock %}

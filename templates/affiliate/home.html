@@ -1,0 +1,75 @@
+{% extends "affiliate/_layout.html" %}{% load fa aff brand %}
+{% block aff %}
+{% if a.status == "pending" %}
+<section class="aff2-state">
+  <span class="aff2-state__ico" aria-hidden="true">⏳</span>
+  <h1>درخواستتان ثبت شد</h1>
+  <p>همکاران ما درخواست را بررسی می‌کنند؛ بعد از تأیید، پیامک می‌گیرید و پیوند و کد تخفیف شما همین‌جا آماده است.</p>
+  <a class="btn-ic btn-ic--teal btn-ic--sm" href="/affiliate/">شرایط همکاری</a>
+</section>
+{% elif not a.is_active %}
+<section class="aff2-state">
+  <h1>حساب همکاری {{ a.get_status_display }} است</h1>
+  <p>برای پیگیری با {% brand %} تماس بگیرید{% if site_settings.phone %}: <a href="tel:{{ site_settings.phone|cut:'-' }}" dir="ltr">{{ site_settings.phone|fa_num }}</a>{% endif %}.</p>
+</section>
+{% else %}
+
+<header class="acc2-hello">
+  <div>
+    <h1>سلام {{ a.name }}</h1>
+    <p>{% if sales %}در ۳۰ روز اخیر {{ orders30|fa_num }} سفارش از معرفی‌های شما آمده؛ ادامه دهید.{% else %}امروز اولین فرش را معرفی کنید؛ پیوند، متن و عکس استوری آماده است.{% endif %}</p>
+  </div>
+</header>
+
+<section class="aff-hero2" aria-label="خلاصهٔ درآمد">
+  <div class="aff-hero2__main">
+    <span class="aff-hero2__k">فروش با پیوند و کد شما · {{ period_label }}</span>
+    <strong class="aff-hero2__v">{{ sales|toman }} <small>تومان</small></strong>
+    <div class="aff-bar" role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"><i style="width:{{ progress }}%"></i></div>
+    <p class="aff-hero2__tier">{% if a.custom_percent is not None %}درصد اختصاصی شما <b>{{ rate|pct }}٪</b>{% else %}پورسانت فعلی <b>{{ rate|pct }}٪</b>{% if next_tier %} · {{ left|toman }} تومان تا <b>{{ next_tier.percent|pct }}٪</b>{% else %} · بالاترین پله{% endif %}{% endif %}</p>
+  </div>
+  <dl class="aff-hero2__stats">
+    <div><dt>قابل تسویه</dt><dd>{{ payable|toman }} <small>تومان</small></dd><small>{% if payable >= s.min_payout %}در نوبت واریز{% else %}واریز از {{ s.min_payout|toman }} تومان{% endif %}</small></div>
+    <div><dt>در راه</dt><dd>{{ upcoming|toman }} <small>تومان</small></dd><small>سفارش‌هایی که هنوز تحویل نشده‌اند</small></div>
+    <div><dt>۳۰ روز اخیر</dt><dd>{{ visitors30|fa_num }} <small>بازدیدکننده</small></dd><small>{{ clicks30|fa_num }} ورود · {{ orders30|fa_num }} سفارش</small></div>
+  </dl>
+</section>
+
+<div class="acc2-grid">
+  <section class="acc2-card aff2-chart" aria-labelledby="chT">
+    <div class="acc2-card__head"><h2 id="chT">فروش شش ماه اخیر</h2><a href="/my-account/affiliate/earnings/">جزئیات</a></div>
+    {% include "affiliate/_chart.html" %}
+  </section>
+  <section class="acc2-card aff2-tools" aria-label="ابزار سریع">
+    <div class="aff2-tool">
+      <span>پیوند عمومی</span>
+      <div class="aff-copy"><input readonly dir="ltr" value="{{ general }}" aria-label="پیوند عمومی"><button class="pill" type="button" data-copy="{{ general }}">کپی</button></div>
+    </div>
+    {% if coupon %}
+    <div class="aff2-tool">
+      <span>کد تخفیف شما برای مشتری · {{ s.coupon_percent|fa_num }}٪</span>
+      <div class="aff-code"><code dir="ltr">{{ coupon.code }}</code><button class="pill" type="button" data-copy="{{ coupon.code }}">کپی کد</button></div>
+    </div>
+    {% endif %}
+    <a class="aff2-tool__more" href="/my-account/affiliate/links/">پیوند هر صفحهٔ سایت</a>
+  </section>
+</div>
+
+{% if today %}
+<section class="acc2-card" aria-labelledby="tdT">
+  <div class="acc2-card__head"><h2 id="tdT">پیشنهاد امروز برای معرفی</h2><a href="/my-account/affiliate/carpets/">همهٔ فرش‌ها</a></div>
+  <p class="muted aff2-sub">از پرفروش‌های موجود؛ هر روز چهار فرش تازه. «استوری» عکس آمادهٔ اینستاگرام با قیمت امروز و کد تخفیف شما می‌دهد.</p>
+  <div class="aff-grid aff-grid--4">{% for it in today %}{% include "affiliate/_card.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+
+<section class="acc2-card">
+  <div class="acc2-card__head"><h2>آخرین سفارش‌ها با پیوند شما</h2>{% if recent %}<a href="/my-account/affiliate/earnings/">همه</a>{% endif %}</div>
+  {% if recent %}
+  <ul class="acc2-mini aff2-mini">{% for c in recent %}<li><div><b>{{ c.order.number|fa_num }}</b><span>{{ c.created_at|jdate:"%d %B" }}</span><span>{{ c.amount|toman }} تومان پورسانت</span><span class="st aff-st-{{ c.status }}">{{ c.get_status_display }}</span></div></li>{% endfor %}</ul>
+  {% else %}
+  <div class="acc2-empty"><p>هنوز سفارشی با پیوند یا کد شما ثبت نشده. یکی از پیشنهادهای بالا را در استوری بگذارید.</p></div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
