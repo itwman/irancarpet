@@ -48,6 +48,12 @@ def design_of(p):
     return (p.design_name or "").strip() or design_from_title(p.title)
 
 
+def design_label(p):
+    """نقشه برای متن: کد عددی «کد ۵۰۰۶» می‌شود."""
+    d = design_of(p)
+    return f"کد {fa_num(d)}" if d and d.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")).isdigit() else d
+
+
 def color_of(p):
     """رنگ زمینه؛ اگر در عنوان آمده («… زمینه کرم») همان، چون مشتری همان را می‌بیند."""
     m = re.search(r"زمینه\s+(.+?)(?:\s+(?:سایز|طرح|کد)\b|\s+[0-9۰-۹]|\s+[-–]|$)", p.title or "")
@@ -165,7 +171,7 @@ class Ctx:
 
         simple = {
             "عنوان": lambda: fa_num(p.title),
-            "نقشه": lambda: design_of(p),
+            "نقشه": lambda: design_label(p),
             "رنگ": lambda: color_of(p),
             "شانه": lambda: fa_num(spec(p, "شانه")),
             "تراکم": lambda: fa_num(spec(p, "تراکم")),

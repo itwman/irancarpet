@@ -319,6 +319,28 @@ class QuickAddTests(Base):
         # صفحهٔ محصول: ضمانت پلی‌استر
         self.assertContains(self.client.get(p.get_absolute_url()), "۲ سال ضمانت")
 
+    def test_finglish_guess_learn_and_code(self):
+        import json
+
+        from .models import NameHint
+
+        g = self.client.post("/panel/products/quick/guess/", json.dumps({"album": self.album.pk, "names": [
+            "Bahar-Doodi-Noqrei", "5006-Laki", "Arshan_Sormei", "Nazanin Kerem", "Samin-Bej-2"]}), content_type="application/json").json()["guesses"]
+        self.assertEqual([(x["design"], x["color"]) for x in g], [
+            ("بهار", "دودی نقره ای"), ("5006", "لاکی"), ("آرشان", "سرمه ای"), ("نازنین", "کرم"), ("ثمین", "بژ")])
+        d = self.post(specs={str(self.reeds.pk): [str(self.t1500.pk)]}, status="publish", rows=[
+            {"design": "5006", "color": "لاکی", "dl": g[1]["dl"], "cl": g[1]["cl"]},
+            {"design": "سمین", "color": "بژ", "dl": g[4]["dl"], "cl": g[4]["cl"]}])  # «ثمین» دستی اصلاح شد
+        self.assertEqual(len(d["created"]), 2, d)
+        self.assertTrue(Product.objects.filter(title="فرش ۱۵۰۰ شانه کد ۵۰۰۶ زمینه لاکی").exists())
+        self.assertEqual(NameHint.objects.get(kind="design", latin="samin").persian, "سمین")
+        self.assertFalse(NameHint.objects.filter(latin="bej").exists())  # پیش‌فرض درست بود، یاد گرفتن لازم نیست
+        g2 = self.client.post("/panel/products/quick/guess/", json.dumps({"names": ["Samin-Doodi"]}), content_type="application/json").json()
+        self.assertEqual(g2["guesses"][0]["design"], "سمین")
+        code = Product.objects.get(title="فرش ۱۵۰۰ شانه کد ۵۰۰۶ زمینه لاکی")
+        code.use_template = True
+        self.assertIn("کد ۵۰۰۶", R.build(code)["html"])
+
     def test_product_form_specs_and_missing(self):
         from .quick import missing_required
 

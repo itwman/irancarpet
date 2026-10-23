@@ -323,6 +323,23 @@ register(Resource(
 ))
 
 
+def _name_hint():
+    from content.models import NameHint
+
+    return NameHint
+
+
+register(Resource(
+    key="name-hints", model=_name_hint(), title="نام‌های فینگلیش آموخته", single="نام", group="فروشگاه", icon="hash",
+    columns=[Col("latin", "نوشتهٔ نام فایل", sort="latin"), Col("persian", "فارسی", sort="persian"),
+             Col("kind", "نوع", lambda o: o.get_kind_display())],
+    search=["latin", "persian"], ordering=("kind", "latin"),
+    fieldsets=[("نام", ["kind", "latin", "persian"], "main")],
+    help="در افزودن سریع، هر بار نقشه یا رنگی را که از نام فایل حدس زده شده اصلاح کنید، اینجا ذخیره می‌شود تا دفعهٔ بعد درست حدس بزند. "
+         "نوشتهٔ نام فایل با حروف کوچک و بدون فاصله و خط تیره است (مثل doodinoqrei).",
+))
+
+
 def _review_after_save(request, obj, created, form=None):
     from catalog.reviews import recompute
 

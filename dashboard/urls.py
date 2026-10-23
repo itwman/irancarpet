@@ -25,6 +25,7 @@ urlpatterns = [
     path("products/bulk/", content_views.bulk),
     path("products/quick/", content_views.quick),
     path("products/quick/album/<int:pk>/", content_views.quick_album),
+    path("products/quick/guess/", content_views.quick_guess),
     path("ac-term/<int:attr_id>/", content_views.term_ac),
     path("content-tools/", content_views.tools),
     path("content-templates/<int:pk>/preview/", content_views.preview),

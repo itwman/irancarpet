@@ -485,3 +485,4 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 }
 .cat-tree--side{columns:1;max-height:260px}
 .spec-fld.is-missing .ts-control{box-shadow:0 0 0 2px var(--pink-t);border-color:var(--pink)!important}
+.qa-guess{display:block;color:#8a5a00;font-size:.75rem;margin-top:.15rem}

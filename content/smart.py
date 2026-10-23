@@ -232,7 +232,10 @@ class Smart:
         design, color, brand = fa_num(design_of(p)), color_of(p), brand_of(p)
         if not design and not color:
             return ""
-        name = "فرش" + (f" نقشهٔ {design}" if design else "") + (f" با زمینهٔ {color}" if color else "")
+        from .render import design_label
+
+        label = design_label(p)
+        name = "فرش" + ((f" {label}" if label.startswith("کد ") else f" نقشهٔ {design}") if design else "") + (f" با زمینهٔ {color}" if color else "")
         made = f"کارخانهٔ {brand} در کاشان" if brand else "کاشان"
         opening = self._pick([
             f"{name}، بافت {made} است.",

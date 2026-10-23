@@ -74,7 +74,16 @@ def title_template(album, terms, brand, embossed):
     return t
 
 
+def is_code(design):
+    """نقشه‌ای که فقط عدد است (مثل 5006) کد نقشه است: «کد 5006» به‌جای «نقشه 5006»."""
+    d = (design or "").strip().translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))
+    return d.isdigit()
+
+
 def make(template, design, color):
+    if is_code(design):
+        template = template.replace("نقشه " + D, "کد " + D).replace("نقشهٔ " + D, "کد " + D)
+        design = fa_num(design.strip())
     t = template.replace(D, design.strip()).replace(C, color.strip())
     return re.sub(r"\s+", " ", t).strip()
 
@@ -159,7 +168,7 @@ def create(album, data, request=None):
         album.save(update_fields=["default_brand", "default_primary_category", "embossed"])
     template = title_template(album, terms, brand, embossed)
     publish = data.get("status") == "publish"
-    warnings, created = [], []
+    warnings, created, learn_rows = [], [], []
     existing = {norm(t) for t in Product.objects.values_list("title", flat=True)}
     with transaction.atomic():
         for i, row in enumerate(data.get("rows") or []):
@@ -193,7 +202,11 @@ def create(album, data, request=None):
             ProductImage.objects.bulk_create([ProductImage(product=p, media_id=m, order=k) for k, m in enumerate(images)])
             Media.objects.filter(pk__in=images, alt="").update(alt=title[:500])
             created.append(p)
+            learn_rows.append({"dl": row.get("dl"), "cl": row.get("cl"), "design": design, "color": color})
         if created:
+            from .finglish import learn
+
+            learn(learn_rows)
             from pricing.albums import sync_album_variations
 
             sync_album_variations(list(Product.objects.filter(pk__in=[p.pk for p in created]).select_related("album")))

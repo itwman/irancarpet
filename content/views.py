@@ -486,6 +486,30 @@ def quick(request):
 
 
 @staff_required
+def quick_guess(request):
+    """نام فایل‌های عکس ← حدس نقشه و رنگ زمینه (فارسی یا فینگلیش)."""
+    import json
+
+    from django.http import JsonResponse
+
+    from catalog.models import AttributeTerm, Product
+
+    from . import finglish as F
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except ValueError:
+        data = {}
+    album = Album.objects.filter(pk=data.get("album") or 0).first()
+    designs = sorted({x for x in Product.objects.filter(album=album).exclude(design_name="").values_list("design_name", flat=True)}) if album else []
+    color = color_attribute()
+    colors = list(AttributeTerm.objects.filter(attribute=color).values_list("name", flat=True)) if color else []
+    learned = F._learned()
+    names = [str(n)[:200] for n in (data.get("names") or [])][:300]
+    return JsonResponse({"guesses": [F.guess(n, designs, colors, learned) for n in names]})
+
+
+@staff_required
 def quick_album(request, pk):
     from django.http import JsonResponse
 

@@ -102,3 +102,19 @@ class ContentEdit(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class NameHint(models.Model):
+    """نوشتهٔ فینگلیش نام فایل ← نقشه یا رنگی که کاربر در افزودن سریع تأیید کرده (یادگیری از اصلاح‌ها)."""
+    kind = models.CharField(max_length=10, choices=[("design", "نقشه"), ("color", "رنگ زمینه")])
+    latin = models.CharField("نوشتهٔ نام فایل", max_length=80)
+    persian = models.CharField("فارسی", max_length=120)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("kind", "latin")]
+        verbose_name = "نام فینگلیش آموخته"
+        verbose_name_plural = "نام‌های فینگلیش آموخته"
+
+    def __str__(self):
+        return f"{self.latin} ← {self.persian}"
