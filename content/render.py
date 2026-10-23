@@ -194,6 +194,12 @@ class Ctx:
         }
         if name in simple:
             return simple[name]() or ""
+        from .smart import SMART_VARS, Smart
+
+        if name in SMART_VARS:
+            if not hasattr(self, "_smart"):
+                self._smart = Smart(self)
+            return self._smart.get(name) or ""
         if name == "قیمت_سایزها":
             return self._sizes_inline()
         if name == "اقساط":
@@ -393,8 +399,11 @@ def render(src, ctx):
             out.append("<ul>" + "".join(f"<li>{x}</li>" for x in items) + "</ul>")
             items.clear()
 
+    from .smart import variants
+
+    seed = ctx.p.pk or ctx.p.title
     for raw in (src or "").replace("\r\n", "\n").split("\n"):
-        s = raw.strip()
+        s = variants(raw.strip(), seed, raw.strip()[:40]) if "{{" in raw else raw.strip()
         if not s:
             flush()
             continue

@@ -76,8 +76,8 @@ class RenderTests(Base):
         self.assertIn("کارخانهٔ شاه پسند", html)               # برند از کارخانهٔ آلبوم
         self.assertIn("۶٬۷۵۰٬۰۰۰ گره", html)                    # شانه × تراکم
         self.assertIn('class="price-lines"', html)              # قیمت روز سایزها
-        self.assertIn("۱۰۰٪ آکریلیک هیت ست", html)
-        self.assertNotIn("با ضمانت", html)
+        self.assertIn("۱۰۰٪ آکریلیک هیت ست", bullets)
+        self.assertNotIn("با ضمانت", html + bullets)
         self.assertEqual(html.count('href="/product-category/carpet-1500/"'), 1)
         self.assertNotIn("<h2><a", html)                         # لینک در تیتر نیست
         self.assertIn("گل برجسته", bullets)
@@ -119,6 +119,28 @@ class RenderTests(Base):
         self.assertIn("<strong>پررنگ</strong>", out)
         self.assertEqual(R.render("## تنها\n{ناموجود}", R.Ctx(self.p)), "")  # تیتر بی‌محتوا حذف
         self.assertEqual(R.render("<b>{نقشه}</b>", R.Ctx(self.p)), "<p>&lt;b&gt;آرشان&lt;/b&gt;</p>")  # بی‌خطر
+
+    def test_smart_text(self):
+        from . import smart
+
+        self.p.use_template = True
+        html = R.build(self.p)["html"]
+        self.assertIn("زمینهٔ سرمه ای، ", html)                 # حس رنگ
+        self.assertIn("۱۵۰۰ شانه، ", html.replace("۱۵۰۰ شانه است؛", "۱۵۰۰ شانه، "))                   # کیفیت شانه
+        self.assertIn("آکریلیک", html)                          # توضیح جنس
+        self.assertIn("<h2>نگهداری و شست‌وشو</h2>", html)
+        self.assertNotIn("{{", html)
+        self.assertNotIn("|", html)
+        # برای هر فرش ثابت، ولی میان فرش‌ها متفاوت
+        self.assertEqual(html, R.build(self.p)["html"])
+        picks = {smart.pick(["a", "b", "c"], i) for i in range(30)}
+        self.assertEqual(picks, {"a", "b", "c"})
+        out = R.render("{{یک {نقشه}|دو {لینک:دسته|متن}}}", R.Ctx(self.p))
+        self.assertTrue(out in ("<p>یک آرشان</p>", '<p>دو <a href="/product-category/carpet-1500/">متن</a></p>'), out)
+        cream = self.make("فرش 1500 شانه نقشه افشان زمینه کرم", "afshan-cream", self.cream, use_template=True)
+        h2 = R.build(cream)["html"]
+        self.assertIn("افشان", h2)
+        self.assertIn("زمینهٔ کرم، رنگی", h2)
 
     def test_manual_text_untouched(self):
         self.p.content = '<p>متن قدیمی <a href="/product-category/carpet-1500/">دسته</a></p>'
