@@ -125,7 +125,7 @@ class KnotPainter extends CustomPainter {
   bool shouldRepaint(KnotPainter o) => o.px != px || o.cx != cx || o.cy != cy || o.knots != knots || o.patch != patch || o.crop != crop;
 }
 
-/// ذره‌بین با قاب برنجی
+/// ذره‌بین «نمای نزدیک بافت»: حلقهٔ سفید با سایهٔ نرم و دستهٔ لاجوردی
 class Loupe extends StatelessWidget {
   const Loupe({super.key, required this.painter, this.size = 150, this.handle = true});
   final KnotPainter painter;
@@ -137,26 +137,26 @@ class Loupe extends StatelessWidget {
         child: Stack(clipBehavior: Clip.none, children: [
           if (handle)
             Positioned(
-              left: size * .72,
-              top: size * .82,
+              left: size * .78,
+              top: size * .8,
               child: Transform.rotate(
-                angle: -.7,
+                angle: -.75,
                 child: Container(
-                  width: 18,
-                  height: size * .5,
+                  width: 14,
+                  height: size * .42,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(9),
-                    gradient: const LinearGradient(colors: [Color(0xFF3A2212), Color(0xFF7A4E2B), Color(0xFF3A2212)]),
-                    boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 6))],
+                    borderRadius: BorderRadius.circular(7),
+                    color: C.brand800,
+                    boxShadow: const [BoxShadow(color: Color(0x40141D33), blurRadius: 8, offset: Offset(0, 6))],
                   ),
                 ),
               ),
             ),
           Container(
             decoration: const BoxDecoration(shape: BoxShape.circle, boxShadow: [
-              BoxShadow(color: C.brass, spreadRadius: 6),
-              BoxShadow(color: Color(0xFF6B4A1C), spreadRadius: 8),
-              BoxShadow(color: Color(0x88000000), spreadRadius: 8, blurRadius: 18, offset: Offset(0, 10)),
+              BoxShadow(color: Colors.white, spreadRadius: 4),
+              BoxShadow(color: Color(0x14000000), spreadRadius: 5),
+              BoxShadow(color: Color(0x59141D33), spreadRadius: 4, blurRadius: 26, offset: Offset(0, 10)),
             ]),
             child: CustomPaint(size: Size.square(size), painter: painter),
           ),

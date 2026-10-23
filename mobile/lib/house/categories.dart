@@ -4,9 +4,10 @@ import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import 'home.dart';
 import 'ui.dart';
 
-/// دسته‌ها: هر دسته یک طاق در دیوار آجری؛ زیردسته‌ها روی کتیبهٔ گچی
+/// زبانهٔ «دسته‌بندی» فرشستان: جستجو، میان‌برهای همهٔ فرش‌ها و لیست قیمت، دسته‌ها با تصویر دایره‌ای و زیردسته‌ها
 class HouseCategories extends StatefulWidget {
   const HouseCategories({super.key});
   @override
@@ -27,24 +28,27 @@ class _HouseCategoriesState extends State<HouseCategories> with AutomaticKeepAli
 
   Future<void> _load() async {
     try {
-      final r = (await Api.i.get('/categories/') as List).cast<Json>();
-      if (mounted) setState(() => _cats = r);
+      final r = asList(await Api.i.get('/categories/'));
+      if (mounted) setState(() => (_cats = r, _err = null));
     } on ApiError catch (e) {
       if (mounted) setState(() => _err = e.message);
     }
   }
 
-  void _open(Json c) => Navigator.pushNamed(context, '/products', arguments: {'title': c['name'], 'query': {'category': c['id']}});
+  void _open(Json c) => Navigator.pushNamed(context, '/products', arguments: {'title': faDigits(c['name'] ?? ''), 'query': {'category': c['id']}});
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final cats = _cats;
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('تالارها', style: nast(24, height: 1.5)),
-        actions: [IconButton(tooltip: 'جستجو', onPressed: () => Navigator.pushNamed(context, '/search'), icon: const Icon(Icons.search_rounded))],
-        bottom: const PreferredSize(preferredSize: Size.fromHeight(6), child: GirihBand(height: 6)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        scrolledUnderElevation: 0,
+        title: const Text('دسته‌بندی'),
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(64), child: HouseSearchBar(hint: 'جستجو در همهٔ فرش‌ها')),
       ),
       body: cats == null
           ? (_err != null
@@ -53,56 +57,67 @@ class _HouseCategoriesState extends State<HouseCategories> with AutomaticKeepAli
                   _load();
                 })
               : const Loading())
-          : ListView(padding: const EdgeInsets.only(bottom: 24), children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                child: Row(children: [
-                  Expanded(
-                    child: _wide(Icons.grid_view_rounded, 'همهٔ فرش‌ها', 'از ۷۰۰ تا ۱۵۰۰ شانه', C.lapis, C.cream,
-                        () => Navigator.pushNamed(context, '/products', arguments: {'title': 'همهٔ فرش‌ها', 'query': <String, dynamic>{}})),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _wide(Icons.receipt_long_rounded, 'لیست قیمت امروز', 'همهٔ سایزها', C.soft, C.ink,
-                        () => Navigator.pushNamed(context, '/pricelist')),
-                  ),
-                ]),
-              ),
-              Container(
-                margin: const EdgeInsets.only(top: 14),
-                decoration: const BoxDecoration(color: Color(0xFFA35E3A)),
-                child: Column(children: [
-                  const GirihBand(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                    child: LayoutBuilder(builder: (_, bc) {
-                      final cw = (bc.maxWidth - 2 * 10) / 3;
-                      return Wrap(spacing: 10, runSpacing: 14, children: [
-                        for (final c in cats) SizedBox(width: cw, child: _arch(c)),
-                      ]);
-                    }),
-                  ),
-                ]),
-              ),
-              for (final c in cats.where((c) => (c['children'] as List).isNotEmpty)) _kids(c),
-            ]),
+          : RefreshIndicator(
+              color: C.brand,
+              onRefresh: _load,
+              child: ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Row(children: [
+                    Expanded(
+                      child: _quick(Icons.grid_view_rounded, 'همهٔ فرش‌ها', 'همهٔ طرح‌ها و سایزها', true,
+                          () => Navigator.pushNamed(context, '/products', arguments: {'title': 'همهٔ فرش‌ها', 'query': <String, dynamic>{}})),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _quick(Icons.receipt_long_rounded, 'لیست قیمت امروز', 'قیمت روز همهٔ سایزها', false,
+                          () => Navigator.pushNamed(context, '/pricelist')),
+                    ),
+                  ]),
+                ),
+                const SecHead('دسته‌های اصلی'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: LayoutBuilder(builder: (_, bc) {
+                    final cols = bc.maxWidth >= 600 ? 5 : 3;
+                    final cw = bc.maxWidth / cols;
+                    return Wrap(runSpacing: 6, children: [
+                      for (final c in cats)
+                        SizedBox(
+                          width: cw,
+                          child: Center(child: CatCircle(c, count: asInt(c['count']), size: 78, onTap: () => _open(c))),
+                        ),
+                    ]);
+                  }),
+                ),
+                for (final c in cats.where((c) => asList(c['children']).isNotEmpty)) _kids(c),
+              ]),
+            ),
     );
   }
 
-  Widget _wide(IconData ic, String t, String sub, Color bg, Color fg, VoidCallback on) => Material(
-        color: bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4), side: const BorderSide(color: C.rim)),
+  Widget _quick(IconData ic, String t, String sub, bool primary, VoidCallback on) => Material(
+        color: primary ? C.brand : C.surface2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: primary ? C.brand : C.line)),
         child: InkWell(
+          borderRadius: BorderRadius.circular(14),
           onTap: on,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              Icon(ic, color: fg),
-              const SizedBox(width: 8),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(color: primary ? const Color(0x24FFFFFF) : C.brand50, borderRadius: BorderRadius.circular(10)),
+                child: Icon(ic, color: primary ? Colors.white : C.brand, size: 20),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t, style: TextStyle(fontWeight: FontWeight.w800, color: fg, fontSize: 13.5)),
-                  Text(sub, style: TextStyle(color: fg.withValues(alpha: .75), fontSize: 11.5)),
+                  Text(t, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w800, color: primary ? Colors.white : C.ink, fontSize: 13.5)),
+                  Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: primary ? const Color(0xFFC9D4EE) : C.muted, fontSize: 11.5)),
                 ]),
               ),
             ]),
@@ -110,41 +125,26 @@ class _HouseCategoriesState extends State<HouseCategories> with AutomaticKeepAli
         ),
       );
 
-  Widget _arch(Json c) => GestureDetector(
-        onTap: () => _open(c),
-        child: Column(children: [
-          Niche(ar: RugCrop.of(c['crop']).ar, child: RugImage(c['image'] as String? ?? '', crop: RugCrop.of(c['crop']), seed: asInt(c['id']))),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-            color: C.soft,
-            child: Column(children: [
-              Text(faDigits(c['name']), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, height: 1.5)),
-              Text('${sep(asInt(c['count']))} طرح', style: const TextStyle(color: C.muted, fontSize: 11)),
-            ]),
-          ),
-        ]),
-      );
-
   Widget _kids(Json c) {
-    final kids = (c['children'] as List).cast<Json>();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(faDigits(c['name']), style: nast(26, color: C.brickDark, height: 1.7)),
-        const SizedBox(height: 6),
-        Wrap(spacing: 8, runSpacing: 8, children: [
+    final kids = asList(c['children']);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      SecHead(faDigits(c['name'] ?? ''), action: 'همه', onAction: () => _open(c)),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Wrap(spacing: 8, runSpacing: 8, children: [
           for (final k in kids)
             ActionChip(
-              backgroundColor: C.soft,
-              side: const BorderSide(color: C.rim),
+              backgroundColor: Colors.white,
+              side: const BorderSide(color: C.line),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              label: Text('${faDigits(k['name'])}  ${sep(asInt(k['count']))}'),
+              label: Text.rich(TextSpan(children: [
+                TextSpan(text: faDigits(k['name'] ?? ''), style: const TextStyle(fontWeight: FontWeight.w700, color: C.ink2)),
+                TextSpan(text: '  ${sep(asInt(k['count']))}', style: const TextStyle(color: C.muted, fontSize: 12)),
+              ])),
               onPressed: () => _open(k),
             ),
         ]),
-      ]),
-    );
+      ),
+    ]);
   }
 }

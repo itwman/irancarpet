@@ -45,8 +45,8 @@ class _SnackCleaner extends NavigatorObserver {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: kHouse ? C.soft : Colors.white));
-  await Future.wait([Api.i.init(), if (kHouse) _loadNastaliq()]);
+      statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: Colors.white));
+  await Api.i.init();
   final auth = Auth(), cart = Cart(), wish = Wishlist(), config = AppConfig(), finder = FinderData();
   await Future.wait([auth.load(), cart.load(), wish.load()]);
   runApp(MultiProvider(
@@ -64,15 +64,6 @@ Future<void> main() async {
   if (kIsFinder) finder.load();
   onNotificationTap = _openPayload;
   setupNotifications().catchError((_) {});
-}
-
-/// فونت نستعلیق فقط در اپ فرشستان (دارایی مخصوص همین flavor)
-Future<void> _loadNastaliq() async {
-  try {
-    await (FontLoader(kNast)..addFont(rootBundle.load('assets/house/IranNastaliq.ttf'))).load();
-  } catch (_) {
-    // اگر نبود، تیترها با وزیرمتن نمایش داده می‌شوند
-  }
 }
 
 void _openPayload(String payload) {

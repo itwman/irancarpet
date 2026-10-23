@@ -6,9 +6,9 @@ import 'package:flutter/services.dart' show appFlavor;
 /// (رنگ‌ها ثابت‌های زمان کامپایل‌اند، پس انتخاب ظاهر باید از dart-define بیاید.)
 const _app = String.fromEnvironment('APP');
 
-/// اپ فرشستان با ظاهر «خانهٔ ایرانی»
+/// اپ فرشستان با ظاهر «فروشگاه تخصصی فرش» (lib/house/)
 const bool kHouse = _app == 'farshestan';
 final bool kIsFinder = !kHouse && (_app == 'finder' || appFlavor == 'finder');
 final String kAppName = kHouse ? 'فرشستان' : (kIsFinder ? 'فرش‌یاب' : 'ایران کارپت');
 final String kScheme = kHouse ? 'farshestan' : (kIsFinder ? 'farshyab' : 'irancarpet');
-final String kAppVersion = kHouse ? '1.0.0' : (kIsFinder ? '1.0.3' : '1.0.8');
+final String kAppVersion = kHouse ? '1.1.0' : (kIsFinder ? '1.0.3' : '1.0.8');

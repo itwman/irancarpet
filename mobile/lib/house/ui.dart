@@ -5,14 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../core/api.dart';
 import '../core/theme.dart';
-import '../widgets/knots.dart';
 
-/// اجزای «خانهٔ ایرانی» اپ فرشستان: نستعلیق، کتیبه، گره‌چینی، طاق جناغی، عکس بریدهٔ فرش.
-
-/// متن نستعلیق (ایران‌نستعلیق؛ اگر بار نشد وزیرمتن)
-TextStyle nast(double size, {Color color = C.lapis, double height = 1.9, List<Shadow>? shadows}) => TextStyle(
-    fontFamily: kNast, fontFamilyFallback: const [kFont], fontSize: size, height: height, color: color, fontWeight: FontWeight.w400,
-    shadows: shadows);
+/// اجزای مشترک ظاهر «فروشگاه تخصصی فرش» اپ فرشستان:
+/// نشان ستارهٔ هشت‌پر، سرتیتر بخش‌ها، نشان‌ها (badge)، عکس فرش با برش کادر و «صحنهٔ عکس استودیویی».
 
 /// «فرش طرح زرین سیلور 700 شانه برجسته تمام آکریلیک» ← «زرین سیلور» (همان rug_name سایت)
 String rugName(String title) {
@@ -25,108 +20,174 @@ String rugName(String title) {
   return w.isEmpty ? t : w.take(4).join(' ');
 }
 
-/// طاق جناغی (مثل archPoly سایت): دو کمان با شعاع ۰٫۶۲ پهنا که در وسط به هم می‌رسند
-class ArchClipper extends CustomClipper<Path> {
-  const ArchClipper({this.k = .62});
-  final double k;
-  @override
-  Path getClip(Size s) => archPath(s, k: k);
-  @override
-  bool shouldReclip(ArchClipper old) => old.k != k;
-}
-
-Path archPath(Size s, {double k = .62}) {
-  final w = s.width, h = s.height, r = k * w;
-  var ha = sqrt(r * r - (r - w / 2) * (r - w / 2));
-  if (ha > h) ha = h;
-  final p = Path()..moveTo(0, h)..lineTo(0, ha);
-  // کمان چپ: مرکز (r, ha)
-  final a1 = atan2(-ha, w / 2 - r) + 2 * pi;
-  for (var i = 1; i <= 16; i++) {
-    final a = pi + (a1 - pi) * i / 16;
-    p.lineTo(r + r * cos(a), ha + r * sin(a));
-  }
-  final a2 = atan2(-ha, r - w / 2);
-  for (var i = 1; i <= 16; i++) {
-    final a = a2 + (0 - a2) * i / 16;
-    p.lineTo(w - r + r * cos(a), ha + r * sin(a));
-  }
-  return p
-    ..lineTo(w, h)
-    ..close();
-}
-
-/// نوار گره‌چینی (ستاره‌های هشت‌پر کاشی) برای لبهٔ سربرگ‌ها و کتیبه‌ها
-class GirihBand extends StatelessWidget {
-  const GirihBand({super.key, this.height = 8, this.bg = C.lapis, this.fg = C.firoozeLight, this.star = C.cream});
-  final double height;
-  final Color bg, fg, star;
+/// نشان فرشستان: دو مربع لاجوردی چرخیده (ستارهٔ هشت‌پر)، ستارهٔ خطی سفید و مرکز طلایی (از SVG پروتوتایپ)
+class FarshestanMark extends StatelessWidget {
+  const FarshestanMark({super.key, this.size = 40});
+  final double size;
   @override
   Widget build(BuildContext context) =>
-      SizedBox(height: height, width: double.infinity, child: CustomPaint(painter: _GirihPainter(bg, fg, star)));
+      Semantics(excludeSemantics: true, child: CustomPaint(size: Size.square(size), painter: const _MarkPainter()));
 }
 
-class _GirihPainter extends CustomPainter {
-  _GirihPainter(this.bg, this.fg, this.star);
-  final Color bg, fg, star;
+class _MarkPainter extends CustomPainter {
+  const _MarkPainter();
+  static const _pts = [
+    [24.0, 12.5], [27.0, 18.7], [33.6, 16.8], [31.7, 23.4], [37.9, 26.4], [31.7, 29.4], [33.6, 36.0], [27.0, 34.1],
+    [24.0, 40.3], [21.0, 34.1], [14.4, 36.0], [16.3, 29.4], [10.1, 26.0], [16.3, 23.0], [14.4, 16.4], [21.0, 18.3],
+  ];
   @override
   void paint(Canvas c, Size s) {
-    c.drawRect(Offset.zero & s, Paint()..color = bg);
-    final u = s.height, pf = Paint()..color = fg, ps = Paint()..color = star;
-    for (var x = u / 2; x < s.width + u; x += u * 1.5) {
-      final cx = x, cy = u / 2;
-      // ستارهٔ هشت‌پر: دو مربع چرخیده
-      for (final rot in [0.0, pi / 4]) {
-        final path = Path();
-        for (var i = 0; i < 4; i++) {
-          final a = rot + i * pi / 2;
-          final px = cx + cos(a) * u * .42, py = cy + sin(a) * u * .42;
-          i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
-        }
-        c.drawPath(path..close(), pf);
-      }
-      c.drawCircle(Offset(cx, cy), u * .14, ps);
-      c.drawRect(Rect.fromCenter(center: Offset(cx + u * .75, cy), width: u * .16, height: u * .16), ps);
+    c.save();
+    c.scale(s.width / 48);
+    final sq = RRect.fromRectAndRadius(const Rect.fromLTWH(9, 9, 30, 30), const Radius.circular(3));
+    final blue = Paint()..color = C.brand;
+    c.drawRRect(sq, blue);
+    c.save();
+    c.translate(24, 24);
+    c.rotate(pi / 4);
+    c.translate(-24, -24);
+    c.drawRRect(sq, blue);
+    c.restore();
+    final star = Path()..moveTo(_pts[0][0], _pts[0][1] - 2);
+    for (final p in _pts.skip(1)) {
+      star.lineTo(p[0], p[1] - 2);
     }
+    c.drawPath(
+        star..close(),
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..strokeJoin = StrokeJoin.round);
+    c.drawCircle(const Offset(24, 24), 4.2, Paint()..color = C.gold);
+    c.restore();
   }
 
   @override
-  bool shouldRepaint(_GirihPainter o) => o.bg != bg || o.fg != fg;
+  bool shouldRepaint(_MarkPainter o) => false;
 }
 
-enum KotibehKind { lapis, wood, gach }
+/// نشان + نام «فرشستان» + شعار کوتاه
+class FarshestanLogo extends StatelessWidget {
+  const FarshestanLogo({super.key, this.mark = 34, this.tagline = true, this.light = false});
+  final double mark;
+  final bool tagline, light;
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: kAppName,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          FarshestanMark(size: mark),
+          SizedBox(width: mark * .25),
+          Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(kAppName,
+                style: TextStyle(fontSize: mark * .6, fontWeight: FontWeight.w900, color: light ? Colors.white : C.brand, height: 1.2)),
+            if (tagline)
+              Text('فرش ماشینی، مستقیم از کارخانه',
+                  style: TextStyle(fontSize: max(10.5, mark * .31), color: light ? const Color(0xFFC9D4EE) : C.muted, height: 1.3)),
+          ]),
+        ]),
+      );
+}
 
-/// کتیبه: تیتر نستعلیق روی کاشی لاجوردی، چوب یا گچ با نوار گره‌چینی بالا و پایین
-class Kotibeh extends StatelessWidget {
-  const Kotibeh(this.text, {super.key, this.size = 30, this.kind = KotibehKind.lapis});
-  final String text;
+/// ستارهٔ هشت‌پر طلایی کوچک کنار سرتیتر بخش‌ها
+class Star8 extends StatelessWidget {
+  const Star8({super.key, this.size = 16, this.color = C.gold});
   final double size;
-  final KotibehKind kind;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: size,
+        child: Stack(alignment: Alignment.center, children: [
+          for (final a in [0.0, pi / 4])
+            Transform.rotate(angle: a, child: Container(width: size * .7, height: size * .7, color: color)),
+        ]),
+      );
+}
 
+/// سرتیتر بخش: ستارهٔ طلایی + تیتر + توضیح کوتاه + پیوند «مشاهدهٔ همه»
+class SecHead extends StatelessWidget {
+  const SecHead(this.title, {super.key, this.subtitle, this.action, this.onAction, this.light = false, this.padding});
+  final String title;
+  final String? subtitle, action;
+  final VoidCallback? onAction;
+  final bool light;
+  final EdgeInsets? padding;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: padding ?? const EdgeInsets.fromLTRB(16, 28, 8, 12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Star8(size: 15),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(title,
+                      style: TextStyle(fontSize: 17.5, fontWeight: FontWeight.w800, height: 1.4, color: light ? Colors.white : C.ink)),
+                ),
+              ]),
+              if (subtitle != null && subtitle!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(subtitle!, style: TextStyle(fontSize: 12.5, color: light ? const Color(0xFFC9D4EE) : C.muted, height: 1.6)),
+                ),
+            ]),
+          ),
+          if (action != null)
+            TextButton(
+              style: TextButton.styleFrom(
+                  foregroundColor: light ? Colors.white : C.brand, minimumSize: const Size(44, 40), padding: const EdgeInsets.symmetric(horizontal: 8)),
+              onPressed: onAction,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(action!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                const Icon(Icons.chevron_left_rounded, size: 20),
+              ]),
+            ),
+        ]),
+      );
+}
+
+enum BdgKind { brand, gold, white, muted }
+
+/// نشان کوچک روی کارت‌ها (جدید، تخفیف، ناموجود…)
+class Bdg extends StatelessWidget {
+  const Bdg(this.text, {super.key, this.kind = BdgKind.white, this.icon});
+  final String text;
+  final BdgKind kind;
+  final IconData? icon;
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, band) = switch (kind) {
-      KotibehKind.lapis => (C.lapis, C.cream, const GirihBand(height: 7)),
-      KotibehKind.wood => (C.walnut, const Color(0xFFF0D9A8), const GirihBand(height: 6, bg: Color(0xFF3E230F), fg: Color(0xFFA7733E), star: Color(0xFF7A4B26))),
-      KotibehKind.gach => (C.soft, const Color(0xFF5B3F25), const GirihBand(height: 7, bg: C.rim, fg: C.gach2, star: Colors.white)),
+    final (bg, fg) = switch (kind) {
+      BdgKind.brand => (C.brand, Colors.white),
+      BdgKind.gold => (C.gold100, C.goldInk),
+      BdgKind.white => (Colors.white, C.brand700),
+      BdgKind.muted => (const Color(0xF2FFFFFF), C.muted),
     };
-    return IntrinsicWidth(
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        band,
-        Container(
-          padding: EdgeInsets.fromLTRB(size * .8, size * .05, size * .8, size * .22),
-          decoration: BoxDecoration(
-            color: bg,
-            border: Border.all(color: kind == KotibehKind.lapis ? const Color(0xFFCDB98E) : C.rim, width: 1.2),
-            boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 14, offset: Offset(0, 8), spreadRadius: -6)],
-          ),
-          child: Text(text, textAlign: TextAlign.center, style: nast(size, color: fg, height: 1.75)),
-        ),
-        band,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6), boxShadow: kind == BdgKind.white ? kShadow1 : null),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[Icon(icon, size: 13, color: fg), const SizedBox(width: 3)],
+        Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: fg, height: 1.7)),
       ]),
     );
   }
 }
+
+/// درصد تخفیف روی زمینهٔ طلایی (متن تیره)
+class OffPill extends StatelessWidget {
+  const OffPill(this.percent, {super.key, this.size = 12});
+  final int percent;
+  final double size;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7),
+        decoration: BoxDecoration(color: C.gold, borderRadius: BorderRadius.circular(12)),
+        child: Text('${_fa(percent)}٪', style: TextStyle(color: C.goldInk, fontSize: size, fontWeight: FontWeight.w900, height: 1.65)),
+      );
+}
+
+String _fa(Object s) => s.toString().split('').map((c) => int.tryParse(c) == null ? c : '۰۱۲۳۴۵۶۷۸۹'[int.parse(c)]).join();
 
 /// کادر خود فرش در عکس محصول: [x, y, w, h, ar] به درصد (از API)؛ بیرون کادر (حاشیهٔ سفید، لوگو) دیده نمی‌شود
 class RugCrop {
@@ -181,205 +242,128 @@ class RugImage extends StatelessWidget {
   }
 }
 
-/// جای خالی عکس: فرش ساده با ترنج (بی‌شبکه، فوری)
+/// جای خالی عکس: مستطیل خاکستری روشن با ترنج کم‌رنگ (بی‌شبکه، فوری)
 class RugPlaceholder extends StatelessWidget {
   const RugPlaceholder({super.key, this.seed = 7});
   final int seed;
-  static const _pals = [
-    [Color(0xFFC9C6C0), Color(0xFF5A5753), Color(0xFF6E6A66)],
-    [Color(0xFFE9DCC2), Color(0xFF7A2E2A), Color(0xFF2E3A5C)],
-    [Color(0xFF1E2A4A), Color(0xFF8E1F22), Color(0xFFE7D7B2)],
-    [Color(0xFF8E1F22), Color(0xFF1F2A4A), Color(0xFFE9D9B6)],
-  ];
   @override
-  Widget build(BuildContext context) {
-    final p = _pals[seed.abs() % _pals.length];
-    return CustomPaint(painter: _PhPainter(p), child: const SizedBox.expand());
-  }
+  Widget build(BuildContext context) => CustomPaint(painter: _PhPainter(), child: const SizedBox.expand());
 }
 
 class _PhPainter extends CustomPainter {
-  _PhPainter(this.p);
-  final List<Color> p;
   @override
   void paint(Canvas c, Size s) {
-    c.drawRect(Offset.zero & s, Paint()..color = p[1]);
-    final b = s.shortestSide * .09;
-    c.drawRect(Rect.fromLTRB(b, b, s.width - b, s.height - b), Paint()..color = p[0]);
-    final cx = s.width / 2, cy = s.height / 2, rw = s.width * .26, rh = s.height * .2;
-    c.drawPath(Path()..moveTo(cx, cy - rh)..lineTo(cx + rw, cy)..lineTo(cx, cy + rh)..lineTo(cx - rw, cy)..close(), Paint()..color = p[2]);
-    c.drawPath(
-        Path()..moveTo(cx, cy - rh * .45)..lineTo(cx + rw * .45, cy)..lineTo(cx, cy + rh * .45)..lineTo(cx - rw * .45, cy)..close(),
-        Paint()..color = p[1]);
+    c.drawRect(Offset.zero & s, Paint()..color = const Color(0xFFE6EAF1));
+    final b = s.shortestSide * .08;
+    c.drawRect(
+        Rect.fromLTRB(b, b, s.width - b, s.height - b),
+        Paint()
+          ..color = const Color(0xFFD5DCE7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = max(1.0, b * .35));
+    final cx = s.width / 2, cy = s.height / 2, rw = s.width * .2, rh = s.height * .15;
+    c.drawPath(Path()..moveTo(cx, cy - rh)..lineTo(cx + rw, cy)..lineTo(cx, cy + rh)..lineTo(cx - rw, cy)..close(),
+        Paint()..color = const Color(0xFFD5DCE7));
   }
 
   @override
   bool shouldRepaint(_PhPainter o) => false;
 }
 
-/// طاقچه: فرشی که از چوب‌پرده در طاقی جناغی آویزان است (کارت‌ها، دسته‌ها، صفحهٔ اول)
-class Niche extends StatelessWidget {
-  const Niche({super.key, required this.child, this.ar = .6667, this.tile = true, this.inset = .14});
+/// «عکس استودیویی»: فرش وسط زمینهٔ روشن خنثی با سایهٔ نرم (کارت‌ها، دسته‌ها، گالری)
+class RugStage extends StatelessWidget {
+  const RugStage({super.key, required this.url, this.crop = RugCrop.full, this.seed = 7, this.fill = .84, this.dim = false, this.heroTag});
+  final String url;
+  final RugCrop crop;
+  final int seed;
 
-  /// معمولاً RugImage
-  final Widget child;
-  final double ar;
+  /// بلندی فرش نسبت به بلندی کادر
+  final double fill;
 
-  /// قاب کاشی فیروزه‌ای دور طاق
-  final bool tile;
-  final double inset;
+  /// فرش ناموجود: خاکستری و کم‌رنگ
+  final bool dim;
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: .62,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(center: Alignment(0, -.1), radius: .85, colors: [Colors.white, Color(0xFFEEF1F5)]),
+      ),
       child: LayoutBuilder(builder: (_, bc) {
-        final w = bc.maxWidth, h = bc.maxHeight;
-        final rugW = w * (1 - inset * 2), rugH = min(rugW / ar, h * .68);
-        final rw = rugH * ar;
-        return ClipPath(
-          clipper: const ArchClipper(),
-          child: Stack(children: [
-            // قاب کاشی
-            if (tile) Positioned.fill(child: Container(color: C.teal)),
-            Positioned.fill(
-              left: tile ? 3 : 0,
-              right: tile ? 3 : 0,
-              top: tile ? 3 : 0,
-              child: ClipPath(
-                clipper: const ArchClipper(),
-                child: const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
-                      Color(0xFFD9C7A2), Color(0xFFB99A6E), Color(0xFF9A7650), Color(0xFF7E5C3A),
-                    ], stops: [0, .3, .62, 1]),
-                  ),
-                  child: _Muqarnas(),
-                ),
-              ),
-            ),
-            // چوب‌پرده و فرش
-            Positioned(
-              left: (w - rw) / 2 - 6,
-              width: rw + 12,
-              top: h * .3 - 3,
-              height: 5,
-              child: DecoratedBox(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
-                      gradient: const LinearGradient(
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFC08A4E), Color(0xFF6B4320)]))),
-            ),
-            Positioned(
-              left: (w - rw) / 2,
-              width: rw,
-              top: h * .3,
-              height: rugH,
-              child: DecoratedBox(
-                decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 6))]),
-                child: child,
-              ),
-            ),
-          ]),
+        var h = bc.maxHeight * fill, w = h * crop.ar;
+        if (w > bc.maxWidth * .9) {
+          w = bc.maxWidth * .9;
+          h = w / crop.ar;
+        }
+        Widget rug = SizedBox(width: w, height: h, child: RugImage(url, crop: crop, seed: seed));
+        if (dim) {
+          rug = Opacity(
+              opacity: .55,
+              child: ColorFiltered(
+                  colorFilter: const ColorFilter.matrix([.33, .59, .11, 0, 0, .33, .59, .11, 0, 0, .33, .59, .11, 0, 0, 0, 0, 0, 1, 0]),
+                  child: rug));
+        }
+        if (heroTag != null) rug = Hero(tag: heroTag!, child: rug);
+        return Center(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(boxShadow: [
+              BoxShadow(color: Color(0x2E141D33), blurRadius: 12, offset: Offset(0, 9)),
+              BoxShadow(color: Color(0x1F141D33), blurRadius: 2, offset: Offset(0, 1)),
+            ]),
+            child: rug,
+          ),
         );
       }),
     );
   }
 }
 
-/// مقرنس سادهٔ بالای طاق (ردیف‌های نیم‌دایره)
-class _Muqarnas extends StatelessWidget {
-  const _Muqarnas();
+/// تکهٔ گرد از وسط فرش (دسته‌ها و رنگ‌ها)
+class RugDisc extends StatelessWidget {
+  const RugDisc({super.key, required this.url, this.crop = RugCrop.full, this.seed = 7, this.size = 76, this.zoom = 1.5, this.label});
+  final String url;
+  final RugCrop crop;
+  final int seed;
+  final double size, zoom;
+  final String? label;
   @override
-  Widget build(BuildContext context) => CustomPaint(painter: _MuqPainter(), child: const SizedBox.expand());
-}
-
-class _MuqPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    final top = s.height * .26, u = s.width / 7;
-    final light = Paint()..color = const Color(0x33FFFFFF), dark = Paint()..color = const Color(0x22000000);
-    for (var row = 0; row < 4; row++) {
-      final y = row * u * .55;
-      if (y > top) break;
-      for (var i = -1; i < 9; i++) {
-        final x = i * u + (row.isOdd ? u / 2 : 0);
-        c.drawArc(Rect.fromLTWH(x, y, u, u * .9), pi, pi, true, light);
-        c.drawArc(Rect.fromLTWH(x, y + u * .1, u, u * .9), 0, pi, false, dark..style = PaintingStyle.stroke..strokeWidth = 1);
-      }
-    }
-    // سایهٔ عمق طاقچه
-    c.drawRect(Rect.fromLTWH(0, top, s.width, s.height - top),
-        Paint()..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0x40000000)])
-            .createShader(Rect.fromLTWH(0, top, s.width, s.height - top)));
+  Widget build(BuildContext context) {
+    final w = size * zoom, h = w / crop.ar;
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(shape: BoxShape.circle, color: C.soft),
+      clipBehavior: Clip.antiAlias,
+      foregroundDecoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0x0F000000))),
+      child: Stack(fit: StackFit.expand, children: [
+        OverflowBox(maxWidth: w, maxHeight: h, child: SizedBox(width: w, height: h, child: RugImage(url, crop: crop, seed: seed))),
+        if (label != null) ...[
+          const DecoratedBox(
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0x00000000), Color(0x8C0B1C42)])),
+          ),
+          Positioned(
+            bottom: size * .1,
+            left: 0,
+            right: 0,
+            child: Text(label!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w900, fontSize: size * .17, shadows: const [Shadow(blurRadius: 3, color: Colors.black45)])),
+          ),
+        ],
+      ]),
+    );
   }
-
-  @override
-  bool shouldRepaint(_MuqPainter o) => false;
 }
 
-/// کاشی کف آجری (برای صفحهٔ فرش و پنج‌دری)
-class BrickFloor extends StatelessWidget {
-  const BrickFloor({super.key, required this.child, this.padding = const EdgeInsets.all(26)});
-  final Widget child;
-  final EdgeInsets padding;
-  @override
-  Widget build(BuildContext context) => CustomPaint(painter: _FloorPainter(), child: Padding(padding: padding, child: child));
-}
-
-class _FloorPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    c.drawRect(Offset.zero & s, Paint()..color = const Color(0xFFB66D45));
-    const u = 34.0;
-    final grout = Paint()
-      ..color = const Color(0xFFE2C9A2)
-      ..strokeWidth = 2;
-    final rnd = Random(3);
-    for (var y = 0.0; y < s.height; y += u) {
-      for (var x = 0.0; x < s.width; x += u) {
-        final t = rnd.nextDouble();
-        c.drawRect(Rect.fromLTWH(x + 1, y + 1, u - 2, u - 2),
-            Paint()..color = Color.lerp(const Color(0xFFA9603A), const Color(0xFFC57E52), t)!);
-      }
-      c.drawLine(Offset(0, y), Offset(s.width, y), grout);
-    }
-    for (var x = 0.0; x < s.width; x += u) {
-      c.drawLine(Offset(x, 0), Offset(x, s.height), grout);
-    }
-    // نور ارسی
-    c.drawRect(
-        Offset.zero & s,
-        Paint()
-          ..shader = const RadialGradient(center: Alignment(.7, -.8), radius: 1.1, colors: [Color(0x40FFF0C8), Color(0x00000000), Color(0x55281405)])
-              .createShader(Offset.zero & s));
-  }
-
-  @override
-  bool shouldRepaint(_FloorPainter o) => false;
-}
-
-/// نشان شانه به رنگ خانه
-class HouseChip extends StatelessWidget {
-  const HouseChip(this.text, {super.key, this.color = C.lapis, this.bg});
-  final String text;
-  final Color color;
-  final Color? bg;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(color: bg ?? C.soft, borderRadius: BorderRadius.circular(3), border: Border.all(color: C.rim)),
-        child: Text(text, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: color)),
-      );
-}
-
-/// بارگذاری با گره‌ها (همان KnotLogo با رنگ خانه)
-class HouseLoading extends StatelessWidget {
-  const HouseLoading({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: KnotIcon(size: 28));
-}
+/// کادر سفید با حاشیهٔ نازک و سایهٔ نرم
+BoxDecoration boxDeco({double r = 16, Color color = Colors.white, Color border = C.line}) =>
+    BoxDecoration(color: color, borderRadius: BorderRadius.circular(r), border: Border.all(color: border), boxShadow: kShadow1);
 
 /// خواندن عدد از JSON
 int asInt(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
 Json asMap(Object? v) => v is Map ? v.cast<String, dynamic>() : <String, dynamic>{};
+List<Json> asList(Object? v) => v is List ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : <Json>[];

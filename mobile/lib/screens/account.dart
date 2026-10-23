@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
+import '../house/cards.dart';
 import '../state/app_state.dart';
 import '../widgets/brand.dart';
 import '../widgets/common.dart';
@@ -203,8 +204,10 @@ class _WishlistTabState extends State<WishlistTab> {
               ? const Loading()
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: kHouse ? .45 : .54),
+                  gridDelegate: kHouse
+                      ? HouseGrid(textScale: textScaleOf(context))
+                      : const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: .54),
                   itemCount: items.length,
                   itemBuilder: (_, i) => ProductCard(items[i]),
                 ),

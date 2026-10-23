@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
+import '../house/cards.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/knots.dart';
@@ -258,7 +259,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     final body = Column(children: [
-      Padding(
+      if (kHouse) _houseBar() else Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Row(children: [
           Expanded(child: Text(_page == 0 ? '' : '${sep(_count)} فرش', style: const TextStyle(color: C.muted))),
@@ -295,8 +296,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 child: GridView.builder(
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: kHouse ? .45 : .54),
+                  gridDelegate: kHouse
+                      ? HouseGrid(textScale: textScaleOf(context))
+                      : const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 12, childAspectRatio: .54),
                   itemCount: _items.length + (_page < _pages ? 1 : 0),
                   itemBuilder: (_, i) => i < _items.length ? ProductCard(_items[i]) : const Center(child: Loading()),
                 ),
@@ -304,7 +307,65 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     ]);
     if (widget.embedded) return body;
+    if (kHouse) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          title: Text(widget.title),
+          actions: [
+            IconButton(tooltip: 'جستجو', onPressed: () => Navigator.pushNamed(context, '/search'), icon: const Icon(Icons.search_rounded)),
+          ],
+        ),
+        body: body,
+      );
+    }
     return Scaffold(appBar: AppBar(title: Text(widget.title)), body: body);
+  }
+
+  /// فرشستان: شمار کالا، و دو دکمهٔ هم‌اندازهٔ «فیلترها» و «مرتب‌سازی» (برگهٔ پایین)
+  Widget _houseBar() {
+    final sorts = context.watch<AppConfig>().sorts;
+    final sortLabel = sorts.firstWhere((x) => x['key'] == _q['sort'], orElse: () => {'label': 'جدیدترین'})['label'] as String;
+    Widget btn(IconData ic, String t, VoidCallback on, {int badge = 0}) => Expanded(
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(10, 46),
+              foregroundColor: C.ink,
+              side: const BorderSide(color: C.line, width: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            onPressed: on,
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(ic, size: 19, color: C.ink2),
+              const SizedBox(width: 6),
+              Flexible(child: Text(t, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700))),
+              if (badge > 0) ...[
+                const SizedBox(width: 6),
+                CircleAvatar(
+                    radius: 10,
+                    backgroundColor: C.brand,
+                    child: Text(faDigits(badge), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800))),
+              ],
+            ]),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          btn(Icons.tune_rounded, 'فیلترها', _filters, badge: _activeFilters),
+          const SizedBox(width: 10),
+          btn(Icons.swap_vert_rounded, sortLabel, _sort),
+        ]),
+        if (_page > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('${faDigits(sep(_count))} کالا', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+          ),
+      ]),
+    );
   }
 }
 

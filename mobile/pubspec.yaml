@@ -73,7 +73,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/
-    # فقط در اپ فرشستان: نشان و فونت ایران‌نستعلیق (فونت در main.dart با FontLoader بار می‌شود)
+    # فقط در اپ فرشستان: نشان ستارهٔ هشت‌پر (PNG)؛ فونت همهٔ اپ‌ها وزیرمتن است
     - path: assets/house/
       flavors:
         - farshestan

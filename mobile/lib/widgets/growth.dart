@@ -38,6 +38,9 @@ class ProductExtras extends StatelessWidget {
     );
   }
 
+  /// «خبرم کن» (موجود شد / ارزان شد) از هر جای اپ؛ همان رفتار دکمهٔ همین ردیف
+  static Future<void> ask(BuildContext context, Json p, String kind) => ProductExtras(p)._alert(context, kind);
+
   Future<void> _alert(BuildContext context, String kind) async {
     final auth = context.read<Auth>();
     String? mobile;

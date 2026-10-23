@@ -10,7 +10,7 @@ import '../widgets/common.dart';
 import 'lens.dart';
 import 'ui.dart';
 
-/// «در اتاق من»: نقشهٔ اتاق از بالا با اندازهٔ واقعی؛ فرش را می‌کشید، می‌چرخانید و فاصله تا دیوارها را می‌بینید.
+/// «اندازه در اتاق شما»: نقشهٔ اتاق از بالا با اندازهٔ واقعی؛ فرش را می‌کشید، می‌چرخانید و فاصله تا دیوارها را می‌بینید.
 class HousePlannerScreen extends StatefulWidget {
   const HousePlannerScreen({super.key, required this.args});
   final Map<String, dynamic> args;
@@ -114,7 +114,8 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
   Widget build(BuildContext context) {
     final p = _p;
     return Scaffold(
-      appBar: AppBar(title: Text('در اتاق من', style: nast(26, height: 1.6))),
+      backgroundColor: Colors.white,
+      appBar: AppBar(backgroundColor: Colors.white, surfaceTintColor: Colors.white, title: const Text('اندازه در اتاق شما')),
       body: p == null
           ? const Loading()
           : _sizes.isEmpty
@@ -138,14 +139,14 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
                       ChoiceChip(
                         showCheckmark: false,
                         selected: i == _k,
-                        selectedColor: C.lapis,
-                        backgroundColor: C.soft,
-                        side: const BorderSide(color: C.rim),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+                        selectedColor: C.brand50,
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: i == _k ? C.brand : C.line, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         label: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(faDigits(_sizes[i].name), style: TextStyle(fontWeight: FontWeight.w800, color: i == _k ? C.cream : C.ink)),
+                          Text(faDigits(_sizes[i].name), style: TextStyle(fontWeight: FontWeight.w800, color: i == _k ? C.brand : C.ink)),
                           Text('${faDigits(m(_sizes[i].l))} × ${faDigits(m(_sizes[i].w))}',
-                              style: TextStyle(fontSize: 11.5, color: i == _k ? const Color(0xFFCFD8E8) : C.ink2)),
+                              style: const TextStyle(fontSize: 11.5, color: C.muted)),
                         ]),
                         onSelected: (_) => setState(() {
                           _k = i;
@@ -178,12 +179,12 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
   }
 
   Widget _dim(String label, TextEditingController c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: C.muted)),
         const SizedBox(height: 4),
         Container(
-          decoration: BoxDecoration(color: Colors.white, border: Border.all(color: C.rim), borderRadius: BorderRadius.circular(4)),
+          decoration: BoxDecoration(color: Colors.white, border: Border.all(color: C.line, width: 1.5), borderRadius: BorderRadius.circular(10)),
           child: Row(children: [
-            IconButton(tooltip: 'نیم متر بیشتر', onPressed: () => _step(c, .5), icon: const Icon(Icons.add_rounded)),
+            IconButton(tooltip: 'نیم متر بیشتر', color: C.brand, onPressed: () => _step(c, .5), icon: const Icon(Icons.add_rounded)),
             Expanded(
               child: TextField(
                 controller: c,
@@ -198,7 +199,7 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
                 },
               ),
             ),
-            IconButton(tooltip: 'نیم متر کمتر', onPressed: () => _step(c, -.5), icon: const Icon(Icons.remove_rounded)),
+            IconButton(tooltip: 'نیم متر کمتر', color: C.brand, onPressed: () => _step(c, -.5), icon: const Icon(Icons.remove_rounded)),
           ]),
         ),
       ]);
@@ -212,7 +213,8 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
       final h = (_wid + 2 * _margin) * scale;
       Offset toRoom(Offset o) => Offset(o.dx / scale - _margin, o.dy / scale - _margin);
       return Container(
-        decoration: BoxDecoration(color: const Color(0xFFF2EADA), border: Border.all(color: C.rim), borderRadius: BorderRadius.circular(3)),
+        decoration: BoxDecoration(color: C.surface2, border: Border.all(color: C.line), borderRadius: BorderRadius.circular(14)),
+        clipBehavior: Clip.antiAlias,
         child: GestureDetector(
           onPanStart: (d) {
             final q = toRoom(d.localPosition), r = _rug;
@@ -259,7 +261,7 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: C.soft, border: Border.all(color: C.rim), borderRadius: BorderRadius.circular(3)),
+        decoration: BoxDecoration(color: C.brand50, border: Border.all(color: C.brand100), borderRadius: BorderRadius.circular(12)),
         child: Text(
           big
               ? 'فرش ${faDigits(s.name)} (${faDigits(m(s.l))} × ${faDigits(m(s.w))}) روی اتاق ${faDigits(m(_len))} × ${faDigits(m(_wid))} متر.'
@@ -272,8 +274,12 @@ class _HousePlannerScreenState extends State<HousePlannerScreen> {
         Container(
           margin: const EdgeInsets.only(top: 8),
           padding: const EdgeInsets.all(10),
-          decoration: const BoxDecoration(color: Color(0xFFF6DCD6), border: BorderDirectional(start: BorderSide(color: C.pink, width: 3))),
-          child: Text(warn, style: const TextStyle(color: Color(0xFF6E141B), fontWeight: FontWeight.w700, fontSize: 13.5)),
+          decoration: BoxDecoration(color: C.warnTint, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF2DDB0))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Padding(padding: EdgeInsets.only(top: 2), child: Icon(Icons.warning_amber_rounded, size: 18, color: C.warn)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(warn, style: const TextStyle(color: C.warn, fontWeight: FontWeight.w700, fontSize: 13.5, height: 1.8))),
+          ]),
         ),
     ]);
   }
@@ -296,10 +302,10 @@ class _PlanPainter extends CustomPainter {
     final room = Rect.fromLTWH(0, 0, L.toDouble(), W.toDouble());
     const t = 18.0;
     // دیوارها
-    c.drawRect(room.inflate(t), Paint()..color = const Color(0xFF7B4127));
-    c.drawRect(room, Paint()..color = const Color(0xFFE9DBC0));
+    c.drawRect(room.inflate(t), Paint()..color = const Color(0xFF323C52));
+    c.drawRect(room, Paint()..color = Colors.white);
     final grid = Paint()
-      ..color = const Color(0xFFCDB894)
+      ..color = const Color(0xFFE6EAF1)
       ..strokeWidth = 1.2;
     for (var x = 50.0; x < L; x += 50) {
       c.drawLine(Offset(x, 0), Offset(x, W.toDouble()), grid);
@@ -309,20 +315,17 @@ class _PlanPainter extends CustomPainter {
     }
     // پنجره (ارسی) در دیوار بالا
     final ow = min(L * .6, 360.0), ox = (L - ow) / 2;
-    c.drawRect(Rect.fromLTWH(ox, -t, ow, t), Paint()..color = const Color(0xFFF2EADA));
-    const glass = [Color(0xFF2E5E9A), Color(0xFFC6392B), Color(0xFFE2B13C), Color(0xFF2F8A57)];
-    for (var k = 0; k < 5; k++) {
-      c.drawRect(Rect.fromLTWH(ox + k * ow / 5 + 3, -t + 4, ow / 5 - 6, t - 8), Paint()..color = glass[k % 4].withValues(alpha: .8));
-    }
+    c.drawRect(Rect.fromLTWH(ox, -t, ow, t), Paint()..color = Colors.white);
+    c.drawRect(Rect.fromLTWH(ox + 3, -t / 2 - 2, ow - 6, 4), Paint()..color = const Color(0xFFC3D0EC));
     // در در دیوار چپ
     final dl = min(90.0, W * .3), dy = W - min(110.0, W * .4);
-    c.drawRect(Rect.fromLTWH(-t - 1, dy, t + 2, dl), Paint()..color = const Color(0xFFE9DBC0));
+    c.drawRect(Rect.fromLTWH(-t - 1, dy, t + 2, dl), Paint()..color = Colors.white);
     c.drawArc(Rect.fromCircle(center: Offset(0, dy), radius: dl), 0, pi / 2, false,
         Paint()
-          ..color = const Color(0xFF8C7656)
+          ..color = const Color(0xFF8A92A3)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5);
-    c.drawLine(Offset(0, dy), Offset(dl, dy), Paint()..color = const Color(0xFF2B1D15)..strokeWidth = 2.5);
+    c.drawLine(Offset(0, dy), Offset(dl, dy), Paint()..color = const Color(0xFF323C52)..strokeWidth = 2.5);
 
     // فرش
     final big = rug.w > L || rug.h > W;
@@ -337,17 +340,17 @@ class _PlanPainter extends CustomPainter {
       final src = Rect.fromLTWH(im.width * crop.x / 100, im.height * crop.y / 100, im.width * crop.w / 100, im.height * crop.h / 100);
       c.drawImageRect(im, src, dst, Paint()..filterQuality = FilterQuality.medium);
     } else {
-      c.drawRect(dst, Paint()..color = const Color(0xFF8A7A66));
+      c.drawRect(dst, Paint()..color = const Color(0xFFDDE5F5));
     }
     c.restore();
     c.drawRect(Rect.fromCenter(center: Offset(cx, cy), width: rug.w, height: rug.h),
         Paint()
-          ..color = big ? const Color(0xFF8C1D25) : const Color(0x40000000)
+          ..color = big ? const Color(0xFFB4352F) : const Color(0x40000000)
           ..style = PaintingStyle.stroke
           ..strokeWidth = big ? 5 : 1.5);
 
     // مبلمان
-    final fur = Paint()..color = const Color(0xD0F2EADA), edge = Paint()..color = const Color(0xFF2B1D15)..style = PaintingStyle.stroke..strokeWidth = 2;
+    final fur = Paint()..color = const Color(0xD9F4F6F9), edge = Paint()..color = const Color(0xFF8A92A3)..style = PaintingStyle.stroke..strokeWidth = 2;
     final sofaW = min(220.0, L * .5), sx = L / 2 - sofaW / 2, sy = W - 90.0 - 12;
     final sofa = RRect.fromRectAndRadius(Rect.fromLTWH(sx, sy, sofaW, 90), const Radius.circular(10));
     c.drawRRect(sofa, fur);
@@ -360,16 +363,16 @@ class _PlanPainter extends CustomPainter {
       }
     }
     final table = RRect.fromRectAndRadius(Rect.fromLTWH(L / 2 - 55, W / 2 - 10, 110, 55), const Radius.circular(4));
-    c.drawRRect(table, Paint()..color = const Color(0x8C7A4E2B));
+    c.drawRRect(table, Paint()..color = const Color(0x8CC3D0EC));
     c.drawRRect(table, edge);
-    c.drawCircle(Offset(L - 34.0, 34), 22, Paint()..color = const Color(0x8C2E8B57));
+    c.drawCircle(Offset(L - 34.0, 34), 22, Paint()..color = const Color(0x8C0D7146));
     c.drawCircle(Offset(L - 34.0, 34), 22, edge);
 
     // اندازه‌ها
     final fs = max(L, W) / 26;
-    void label(String s, Offset at, {Color bg = const Color(0xFF1B3768), Color fg = const Color(0xFFF3E9D3), bool box = true}) {
+    void label(String s, Offset at, {Color bg = const Color(0xFF1D3F8F), Color fg = Colors.white, bool box = true}) {
       final tp = TextPainter(
-        text: TextSpan(text: s, style: TextStyle(fontFamily: kFont, fontSize: fs, fontWeight: FontWeight.w800, color: box ? fg : const Color(0xFF5A4536))),
+        text: TextSpan(text: s, style: TextStyle(fontFamily: kFont, fontSize: fs, fontWeight: FontWeight.w800, color: box ? fg : const Color(0xFF5A6377))),
         textDirection: TextDirection.rtl,
       )..layout();
       final r = Rect.fromCenter(center: at, width: tp.width + fs * .8, height: tp.height + fs * .2);
@@ -381,7 +384,7 @@ class _PlanPainter extends CustomPainter {
     if (!big) {
       final x0 = cx - rug.w / 2, y0 = cy - rug.h / 2;
       final ax = cx + rug.w * .22, ay = cy + rug.h * .22;
-      final ln = Paint()..color = const Color(0xFF1B3768)..strokeWidth = 2;
+      final ln = Paint()..color = const Color(0xFF1D3F8F)..strokeWidth = 2;
       void dimLine(Offset a, Offset b, double v) {
         if (v <= 1) return;
         c.drawLine(a, b, ln);

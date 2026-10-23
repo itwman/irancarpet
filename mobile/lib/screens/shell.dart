@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api.dart';
+import '../core/format.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import 'account.dart';
@@ -75,6 +76,44 @@ class _ShellState extends State<Shell> {
     );
   }
 
+  /// نوار پایین فرشستان: سفید با خط بالایی، نشانگر آبی روشن و شمارندهٔ طلایی سبد
+  Widget _houseNav(int count) {
+    Widget cart(bool on) => Badge(
+          isLabelVisible: count > 0,
+          label: Text(faDigits(count), style: const TextStyle(fontWeight: FontWeight.w800)),
+          backgroundColor: C.gold,
+          textColor: C.goldInk,
+          child: Icon(on ? Icons.shopping_cart_rounded : Icons.shopping_cart_outlined, color: on ? C.brand : null),
+        );
+    return DecoratedBox(
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          indicatorColor: C.brand50,
+          iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? C.brand : C.muted, size: 24)),
+          labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(
+              fontFamily: kFont, fontSize: 11.5, fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500,
+              color: s.contains(WidgetState.selected) ? C.brand : C.muted)),
+        ),
+        child: NavigationBar(
+          height: 64,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shadowColor: Colors.transparent,
+          selectedIndex: _i,
+          onDestinationSelected: go,
+          destinations: [
+            const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'خانه'),
+            const NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view_rounded), label: 'دسته‌بندی'),
+            NavigationDestination(icon: cart(false), selectedIcon: cart(true), label: 'سبد خرید'),
+            const NavigationDestination(icon: Icon(Icons.favorite_border_rounded), selectedIcon: Icon(Icons.favorite_rounded), label: 'علاقه‌مندی‌ها'),
+            const NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'حساب من'),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final count = context.watch<Cart>().count;
@@ -85,7 +124,7 @@ class _ShellState extends State<Shell> {
       },
       child: Scaffold(
         body: IndexedStack(index: _i, children: _pages),
-        bottomNavigationBar: NavigationBarTheme(
+        bottomNavigationBar: kHouse ? _houseNav(count) : NavigationBarTheme(
           data: NavigationBarThemeData(
             indicatorColor: C.pinkTint,
             labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(
@@ -94,13 +133,13 @@ class _ShellState extends State<Shell> {
           ),
           child: NavigationBar(
             height: 66,
-            backgroundColor: kHouse ? C.soft : Colors.white,
-            surfaceTintColor: kHouse ? C.soft : Colors.white,
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
             selectedIndex: _i,
             onDestinationSelected: go,
             destinations: [
               const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded, color: C.pink), label: 'خانه'),
-              const NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view_rounded, color: C.pink), label: kHouse ? 'تالارها' : 'دسته‌ها'),
+              const NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view_rounded, color: C.pink), label: 'دسته‌ها'),
               NavigationDestination(
                 icon: Badge(isLabelVisible: count > 0, label: Text('$count'), backgroundColor: C.pink, child: const Icon(Icons.shopping_bag_outlined)),
                 selectedIcon: Badge(isLabelVisible: count > 0, label: Text('$count'), backgroundColor: C.ink, child: const Icon(Icons.shopping_bag_rounded, color: C.pink)),
