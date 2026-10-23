@@ -212,6 +212,6 @@ class ShopFlowTests(TestCase):
 
     def test_legacy_urls(self):
         self.assertEqual(self.client.get("/checkout-2/").status_code, 301)
-        r = self.client.get("/my-account/orders/")
+        r = self.client.get("/my-account/downloads/")
         self.assertRedirects(r, "/my-account/", fetch_redirect_response=False)
         self.assertEqual(self.client.get("/cart/").status_code, 200)

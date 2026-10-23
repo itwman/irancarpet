@@ -1,0 +1,16 @@
+{% extends "accounts/_layout.html" %}{% load fa %}
+{% block acc %}
+<header class="acc2-title"><h1>خبرم کن‌ها</h1><p>وقتی فرشی موجود یا ارزان شود، با پیامک خبرتان می‌کنیم.</p></header>
+<section class="acc2-card">
+  <h2>در انتظار</h2>
+  {% if waiting %}<ul class="acc2-alerts">{% for a in waiting %}<li>
+    {% if a.product.image %}<img src="{{ a.product.image|thumb:240 }}" alt="" loading="lazy">{% endif %}
+    <div><a href="{{ a.product.get_absolute_url }}">{{ a.product.title|fa_num }}</a><small>{{ a.get_kind_display }} · از {{ a.created_at|jdate:"%d %B" }}{% if a.price_at %} · قیمت آن روز {{ a.price_at|toman }} تومان{% endif %}</small></div>
+    <form method="post">{% csrf_token %}<button class="pill" name="delete" value="{{ a.pk }}">حذف</button></form>
+  </li>{% endfor %}</ul>
+  {% else %}<p class="muted mb-0">خبرم کنی در انتظار ندارید. در صفحهٔ فرش ناموجود «موجود شد خبرم کن» و در بقیه «ارزان شد خبرم کن» را بزنید.</p>{% endif %}
+</section>
+{% if done %}<section class="acc2-card"><h2>خبر داده شد</h2>
+  <ul class="acc2-alerts">{% for a in done %}<li>{% if a.product.image %}<img src="{{ a.product.image|thumb:240 }}" alt="" loading="lazy">{% endif %}<div><a href="{{ a.product.get_absolute_url }}">{{ a.product.title|fa_num }}</a><small>{{ a.get_kind_display }} · پیامک {{ a.sent_at|jdate:"%d %B" }}</small></div></li>{% endfor %}</ul>
+</section>{% endif %}
+{% endblock %}

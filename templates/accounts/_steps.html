@@ -1,0 +1,2 @@
+{% load fa %}{% if s %}<ol class="acc2-steps" aria-label="مراحل سفارش">{% for x in s %}<li class="is-{{ x.state }}"{% if x.state == "now" %} aria-current="step"{% endif %}><i aria-hidden="true"></i><span>{{ x.label }}</span></li>{% endfor %}</ol>
+{% else %}<p class="acc2-cancel">این سفارش لغو شده است.</p>{% endif %}

@@ -1,0 +1,29 @@
+{% extends "accounts/_layout.html" %}{% load fa %}
+{% block acc %}
+<header class="acc2-title"><h1>اطلاعات حساب و آدرس</h1><p>آدرسی که اینجا بنویسید، در خرید بعدی خودکار پر می‌شود.</p></header>
+<form method="post" class="acc2-form">{% csrf_token %}
+  <section class="acc2-card">
+    <h2>اطلاعات شما</h2>
+    <div class="grid-2">
+      <div class="field"><label for="fn">نام</label><input id="fn" name="first_name" value="{{ user.first_name }}" autocomplete="given-name"></div>
+      <div class="field"><label for="ln">نام خانوادگی</label><input id="ln" name="last_name" value="{{ user.last_name }}" autocomplete="family-name"></div>
+      <div class="field"><label>موبایل</label><input value="{{ profile.mobile|default:''|fa_num }}" disabled class="ltr"><small>برای تغییر شماره با پشتیبانی تماس بگیرید.</small></div>
+      <div class="field{% if errors.email %} has-err{% endif %}"><label for="em">ایمیل (اختیاری)</label><input id="em" name="email" type="email" value="{{ user.email }}" class="ltr">{% if errors.email %}<span class="err">{{ errors.email }}</span>{% endif %}</div>
+    </div>
+  </section>
+  <section class="acc2-card">
+    <h2>آدرس ارسال</h2>
+    <div class="grid-2">
+      <div class="field"><label for="pv">استان</label><select id="pv" name="province"><option value="">—</option>{% for p in provinces %}<option{% if p == profile.province %} selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="ct">شهر</label><input id="ct" name="city" value="{{ profile.city }}"></div>
+    </div>
+    <div class="field"><label for="ad">آدرس کامل</label><textarea id="ad" name="address" rows="3">{{ profile.address }}</textarea></div>
+    <div class="field{% if errors.postal_code %} has-err{% endif %}"><label for="pc">کد پستی</label><input id="pc" name="postal_code" value="{{ profile.postal_code|default:'' }}" inputmode="numeric" class="ltr" style="max-width:240px">{% if errors.postal_code %}<span class="err">{{ errors.postal_code }}</span>{% endif %}</div>
+  </section>
+  <section class="acc2-card">
+    <h2>رمز عبور</h2>
+    <div class="field{% if errors.password %} has-err{% endif %}"><label for="pw">رمز تازه</label><input id="pw" name="password" type="password" autocomplete="new-password" class="ltr" style="max-width:320px"><small>با رمز، بدون پیامک هم وارد می‌شوید. اگر نمی‌خواهید عوض کنید، خالی بگذارید.</small>{% if errors.password %}<span class="err">{{ errors.password }}</span>{% endif %}</div>
+  </section>
+  <button class="btn-ic btn-ic--ink" type="submit">ذخیرهٔ اطلاعات</button>
+</form>
+{% endblock %}

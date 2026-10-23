@@ -1,0 +1,70 @@
+{% extends "accounts/_layout.html" %}{% load fa brand %}
+{% block acc %}
+<header class="acc2-hello">
+  <div>
+    <h1>سلام{% if acc_name %} {{ user.first_name|default:acc_name }}{% endif %}</h1>
+    <p>{% if current %}یک سفارش در جریان دارید؛ مرحله‌به‌مرحله همین‌جا می‌بینید.{% elif nav.orders %}خوشحالیم که دوباره سر زدید.{% else %}به {% brand %} خوش آمدید؛ اولین فرشتان را با خیال راحت انتخاب کنید.{% endif %}</p>
+  </div>
+  <dl class="acc2-stats">
+    <div><dt>سفارش‌ها</dt><dd>{{ nav.orders|fa_num }}</dd>{% if nav.open %}<small>{{ nav.open|fa_num }} در جریان</small>{% endif %}</div>
+    {% if club and club.enabled %}<div><dt>امتیاز باشگاه</dt><dd>{{ club.balance|fa_num }}</dd>{% if club.value %}<small>معادل {{ club.value|toman }} تومان</small>{% endif %}</div>{% endif %}
+    <div><dt>کد تخفیف فعال</dt><dd>{{ nav.codes|fa_num }}</dd></div>
+  </dl>
+</header>
+
+{% if current %}
+<section class="acc2-current" aria-labelledby="curT">
+  <div class="acc2-current__head">
+    {% if current_item.product.image %}<img src="{{ current_item.product.image|thumb:240 }}" alt="" width="88" height="88">{% endif %}
+    <div>
+      <h2 id="curT">سفارش {{ current.number|fa_num }} <span class="st st-{{ current.status }}">{{ current.status_label }}</span></h2>
+      <p>{{ current_item.title|fa_num }}{% if current.items.all|length > 1 %} و {{ current.items.all|length|add:"-1"|fa_num }} کالای دیگر{% endif %} · {{ current.created_at|jdate:"%d %B" }}</p>
+      <p class="acc2-current__sum">{{ current.items_total|toman }} <small>تومان</small>{% if current.is_paid and current.remaining %} · مانده {{ current.remaining|toman }} تومان{% endif %}</p>
+    </div>
+  </div>
+  {% include "accounts/_steps.html" with s=current_steps %}
+  <div class="acc2-current__acts">
+    {% if current.can_pay %}<a class="btn-ic btn-ic--pink btn-ic--sm" href="{{ current.get_absolute_url }}#pay">پرداخت {{ current.online_amount|toman }} تومان</a>{% endif %}
+    {% if current.tracking_code %}<span class="acc2-track">کد رهگیری مرسوله: <b dir="ltr">{{ current.tracking_code|fa_num }}</b></span>{% endif %}
+    <a class="btn-ic btn-ic--teal btn-ic--sm" href="{{ current.get_absolute_url }}">جزئیات سفارش</a>
+  </div>
+</section>
+{% endif %}
+
+<div class="acc2-grid">
+  <section class="acc2-card">
+    <div class="acc2-card__head"><h2>آخرین سفارش‌ها</h2>{% if nav.orders %}<a href="/my-account/orders/">همه</a>{% endif %}</div>
+    {% if recent or current %}
+    <ul class="acc2-mini">{% for o in recent %}<li><a href="{{ o.get_absolute_url }}"><b>{{ o.number|fa_num }}</b><span>{{ o.created_at|jdate:"%d %B %Y" }}</span><span>{{ o.items_total|toman }} تومان</span><span class="st st-{{ o.status }}">{{ o.status_label }}</span></a></li>{% empty %}<li class="muted">سفارش دیگری نیست.</li>{% endfor %}</ul>
+    {% else %}
+    <div class="acc2-empty"><p>هنوز سفارشی ثبت نکرده‌اید.</p><a class="btn-ic btn-ic--pink btn-ic--sm" href="/store/">دیدن فرش‌ها</a></div>
+    {% endif %}
+  </section>
+  <section class="acc2-card acc2-quick" aria-label="دسترسی سریع">
+    <a href="/cart/"><svg><use href="#ai-shop"/></svg><b>سبد خرید</b><span>{% if cart_count %}{{ cart_count|fa_num }} کالا منتظر شماست{% else %}خالی است{% endif %}</span></a>
+    <a href="/carpets-price-list/"><svg><use href="#ai-box"/></svg><b>لیست قیمت</b><span>قیمت روز همهٔ سایزها</span></a>
+    <a href="/خرید-اقساطی-فرش/"><svg><use href="#ai-gift"/></svg><b>خرید اقساطی</b><span>محاسبهٔ قسط پیش از خرید</span></a>
+    <a href="/farsh-yab/"><svg><use href="#ai-heart"/></svg><b>فرش‌یاب</b><span>بگو چه فرشی می‌خواهی</span></a>
+  </section>
+</div>
+
+<section class="acc2-card">
+  <div class="acc2-card__head"><h2>علاقه‌مندی‌ها</h2>{% if fav %}<a href="/my-account/wishlist/">همه</a>{% endif %}</div>
+  {% if fav %}
+  <div class="acc2-fav">{% for p in fav %}<a href="{{ p.get_absolute_url }}">{% if p.image %}<img src="{{ p.image|thumb:480 }}" alt="" loading="lazy">{% endif %}<b>{{ p.title|fa_num }}</b>{% if p.min_price %}<span>از {{ p.min_price|toman }} تومان</span>{% endif %}</a>{% endfor %}</div>
+  {% else %}
+  <div class="acc2-empty"><p>در صفحهٔ هر فرش با زدن <span class="acc2-heart" aria-hidden="true">♥</span> آن را اینجا نگه دارید تا بعداً راحت پیدایش کنید.</p></div>
+  {% endif %}
+</section>
+
+{% if codes or referral %}
+<section class="acc2-card">
+  <div class="acc2-card__head"><h2>تخفیف‌های شما</h2><a href="/my-account/codes/">همه</a></div>
+  <div class="acc2-codes">
+    {% for c in codes %}<div class="acc2-code"><code dir="ltr">{{ c.code }}</code><span>{{ c.label|fa_num }}{% if c.min_order %} · خرید بالای {{ c.min_order|toman }}{% endif %}{% if c.ends_at %} · تا {{ c.ends_at|jdate:"%d %B" }}{% endif %}</span><button class="pill" type="button" data-copy="{{ c.code }}">کپی</button></div>{% endfor %}
+    {% if referral %}<div class="acc2-code acc2-code--ref"><code dir="ltr">{{ referral.code }}</code><span>کد دعوت شما؛ دوستتان {{ shop.referral_percent|fa_num }}٪ تخفیف می‌گیرد و شما بعد از خریدش هدیه</span><button class="pill" type="button" data-copy="{{ referral.code }}">کپی</button></div>{% endif %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>document.addEventListener("click",function(e){var b=e.target.closest("[data-copy]");if(!b)return;var t=b.getAttribute("data-copy");(navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(t):Promise.reject()).catch(function(){var a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(x){}a.remove()});var o=b.textContent;b.textContent="کپی شد ✓";setTimeout(function(){b.textContent=o},1500)});</script>{% endblock %}

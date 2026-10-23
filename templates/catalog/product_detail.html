@@ -28,7 +28,12 @@
     </div>
     <div class="col-lg-6">
       {% if product.brand %}<a class="product__brand" href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}
-      <h1 class="product__title">{{ product.title|fa_num }}</h1>
+      <div class="product__titlerow">
+        <h1 class="product__title">{{ product.title|fa_num }}</h1>
+        <form method="post" action="/my-account/wishlist/{{ product.pk }}/" class="fav-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="fav-btn{% if faved %} on{% endif %}" aria-pressed="{% if faved %}true{% else %}false{% endif %}" aria-label="نگه داشتن در علاقه‌مندی‌ها" title="علاقه‌مندی‌ها"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/></svg></button>
+        </form>
+      </div>
       <div class="product__meta">
         {% if product.rating_count %}{% stars product.rating_avg %} <a href="#reviews">{{ product.rating_count|fa_num }} نظر</a>{% endif %}
         {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}

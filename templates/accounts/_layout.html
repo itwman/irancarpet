@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load fa %}
+{% block content %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ai-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-box" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z M3 7.5l9 4.5 9-4.5 M12 12v9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-gift" viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7S10.5 3 8 3.5 7.5 7 12 7zm0 0s1.5-4 4-3.5S16.5 7 12 7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20.5c1.2-4 4.3-6 8-6s6.8 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="ai-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="ai-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1 11H5zM8 9V7a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="ai-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+</svg>
+<div class="container acc2">
+  <aside class="acc2-side">
+    <div class="acc2-me">
+      <span class="acc2-avatar" aria-hidden="true">{{ acc_initial }}</span>
+      <div><b>{{ acc_name|default:"مشتری عزیز" }}</b><small dir="ltr">{{ profile.mobile|default:''|fa_num }}</small></div>
+    </div>
+    <nav class="acc2-nav" aria-label="بخش‌های حساب">
+      <a href="/my-account/"{% if section == "home" %} aria-current="page"{% endif %}><svg><use href="#ai-home"/></svg>پیشخوان</a>
+      <a href="/my-account/orders/"{% if section == "orders" %} aria-current="page"{% endif %}><svg><use href="#ai-box"/></svg>سفارش‌ها{% if nav.open %}<em>{{ nav.open|fa_num }}</em>{% endif %}</a>
+      <a href="/my-account/wishlist/"{% if section == "wishlist" %} aria-current="page"{% endif %}><svg><use href="#ai-heart"/></svg>علاقه‌مندی‌ها{% if nav.wishlist %}<em>{{ nav.wishlist|fa_num }}</em>{% endif %}</a>
+      <a href="/my-account/alerts/"{% if section == "alerts" %} aria-current="page"{% endif %}><svg><use href="#ai-bell"/></svg>خبرم کن‌ها{% if nav.alerts %}<em>{{ nav.alerts|fa_num }}</em>{% endif %}</a>
+      <a href="/my-account/codes/"{% if section == "codes" %} aria-current="page"{% endif %}><svg><use href="#ai-gift"/></svg>تخفیف‌ها و دعوت{% if nav.codes %}<em>{{ nav.codes|fa_num }}</em>{% endif %}</a>
+      <a href="/my-account/club/"><svg><use href="#ai-star"/></svg>باشگاه مشتریان</a>
+      <a href="/my-account/profile/"{% if section == "profile" %} aria-current="page"{% endif %}><svg><use href="#ai-user"/></svg>اطلاعات و آدرس</a>
+      {% if nav.affiliate %}<a href="/my-account/affiliate/"><svg><use href="#ai-share"/></svg>پنل همکاری در فروش</a>
+      {% elif nav.aff_on %}<a href="/affiliate/"><svg><use href="#ai-share"/></svg>همکار فروش شوید</a>{% endif %}
+      {% if nav.seller %}<a href="/seller/"><svg><use href="#ai-shop"/></svg>پنل فروشنده</a>{% endif %}
+    </nav>
+    {% with ms=site_settings.messengers %}{% if ms or site_settings.phone %}
+    <div class="acc2-help">
+      <b>سؤال یا مشکلی دارید؟</b>
+      <div class="acc2-help__btns">{% for key, name, url in ms %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{% endfor %}{% if site_settings.phone %}<a href="tel:{{ site_settings.phone|cut:'-' }}">تماس</a>{% endif %}</div>
+    </div>
+    {% endif %}{% endwith %}
+    <form method="post" action="/my-account/logout/" class="acc2-out">{% csrf_token %}<button type="submit">خروج از حساب</button></form>
+  </aside>
+  <main class="acc2-main">
+    {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}">{{ m|fa_num }}</div>{% endfor %}
+    {% block acc %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

@@ -69,3 +69,18 @@
     apply();
   });
 })();
+
+/* ♥ علاقه‌مندی‌ها: بدون رفتن از صفحه؛ مهمان به ورود فرستاده می‌شود */
+(function () {
+  var f = document.querySelector(".fav-form"); if (!f) return;
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var b = f.querySelector(".fav-btn");
+    fetch(f.action, { method: "POST", body: new FormData(f), credentials: "same-origin", headers: { "X-Requested-With": "fetch" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.login) { location.href = d.login; return; }
+        b.classList.toggle("on", d.on); b.setAttribute("aria-pressed", d.on ? "true" : "false");
+      }).catch(function () { f.submit(); });
+  });
+})();

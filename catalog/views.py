@@ -321,6 +321,8 @@ def product_detail(request, slug):
                              ensure_ascii=False),
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
         "warranty": _warranty(product),
+        "faved": request.user.is_authenticated and __import__("api.models", fromlist=["Wishlist"]).Wishlist.objects.filter(
+            user=request.user, product=product).exists(),
         "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
     }
     if product.is_purchasable and product.min_price and not product.seller_id:  # کالای فروشندگان اقساطی فروخته نمی‌شود

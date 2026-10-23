@@ -1,0 +1,24 @@
+{% extends "accounts/_layout.html" %}{% load fa %}
+{% block acc %}
+<header class="acc2-title"><h1>سفارش‌های من</h1><p>مرحلهٔ هر سفارش، پرداخت و کد رهگیری مرسوله.</p></header>
+{% for r in rows %}{% with o=r.o %}
+<article class="acc2-order">
+  <a class="acc2-order__img" href="{{ o.get_absolute_url }}">{% if r.first.product.image %}<img src="{{ r.first.product.image|thumb:240 }}" alt="" loading="lazy">{% endif %}{% if r.more %}<em>+{{ r.more|fa_num }}</em>{% endif %}</a>
+  <div class="acc2-order__body">
+    <div class="acc2-order__top">
+      <h2><a href="{{ o.get_absolute_url }}">سفارش {{ o.number|fa_num }}</a></h2>
+      <span class="st st-{{ o.status }}">{{ o.status_label }}</span>
+    </div>
+    <p class="acc2-order__meta">{{ o.created_at|jdate:"%d %B %Y" }} · {{ r.first.title|fa_num|truncatechars:60 }} · <b>{{ o.items_total|toman }} تومان</b>{% if o.is_installment %} · اقساطی{% endif %}</p>
+    {% include "accounts/_steps.html" with s=r.steps %}
+    <div class="acc2-order__acts">
+      {% if o.can_pay %}<a class="btn-ic btn-ic--pink btn-ic--sm" href="{{ o.get_absolute_url }}#pay">پرداخت {{ o.online_amount|toman }} تومان</a>{% endif %}
+      {% if o.tracking_code %}<span class="acc2-track">کد رهگیری: <b dir="ltr">{{ o.tracking_code|fa_num }}</b></span>{% endif %}
+      <a class="pill" href="{{ o.get_absolute_url }}">جزئیات</a>
+    </div>
+  </div>
+</article>
+{% endwith %}{% empty %}
+<div class="acc2-card acc2-empty"><p>هنوز سفارشی ثبت نکرده‌اید.</p><a class="btn-ic btn-ic--pink btn-ic--sm" href="/store/">دیدن فرش‌ها</a></div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "accounts/_layout.html" %}{% load fa %}
+{% block acc %}
+<header class="acc2-title"><h1>علاقه‌مندی‌ها</h1><p>فرش‌هایی که با ♥ نگه داشته‌اید. اگر ناموجود شد، «موجود شد خبرم کن» را در صفحه‌اش بزنید.</p></header>
+{% if items %}
+<div class="acc2-fav acc2-fav--all">{% for p in items %}
+  <div class="acc2-favc">
+    <a href="{{ p.get_absolute_url }}">{% if p.image %}<img src="{{ p.image|thumb:480 }}" alt="" loading="lazy">{% endif %}<b>{{ p.title|fa_num }}</b>
+      {% if p.stock_status == "outofstock" %}<span class="muted">ناموجود</span>{% elif p.min_price %}<span>از {{ p.min_price|toman }} تومان</span>{% endif %}</a>
+    <form method="post" action="/my-account/wishlist/{{ p.pk }}/">{% csrf_token %}<input type="hidden" name="next" value="/my-account/wishlist/"><button type="submit" class="acc2-unfav" aria-label="برداشتن از علاقه‌مندی‌ها">♥</button></form>
+  </div>{% endfor %}
+</div>
+{% else %}
+<div class="acc2-card acc2-empty"><p>هنوز فرشی را نگه نداشته‌اید. در صفحهٔ هر فرش، دکمهٔ <span class="acc2-heart">♥</span> کنار نام فرش را بزنید.</p><a class="btn-ic btn-ic--teal btn-ic--sm" href="/store/">دیدن فرش‌ها</a></div>
+{% endif %}
+{% endblock %}

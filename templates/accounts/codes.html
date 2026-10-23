@@ -1,0 +1,18 @@
+{% extends "accounts/_layout.html" %}{% load fa brand %}
+{% block acc %}
+<header class="acc2-title"><h1>تخفیف‌ها و دعوت دوستان</h1><p>کدهایی که مخصوص شماست؛ در سبد خرید، در کادر «کد تخفیف» بزنید.</p></header>
+<section class="acc2-card">
+  <h2>کدهای فعال</h2>
+  {% if codes %}<div class="acc2-codes">{% for c in codes %}<div class="acc2-code"><code dir="ltr">{{ c.code }}</code><span><b>{{ c.label|fa_num }}</b>{% if c.title %} · {{ c.title }}{% endif %}{% if c.min_order %} · خرید بالای {{ c.min_order|toman }} تومان{% endif %}{% if c.ends_at %} · تا {{ c.ends_at|jdate:"%d %B %Y" }}{% endif %}</span><button class="pill" type="button" data-copy="{{ c.code }}">کپی</button></div>{% endfor %}</div>
+  {% else %}<p class="muted mb-0">کد فعالی ندارید.{% if club %} امتیازهای <a href="/my-account/club/">باشگاه مشتریان</a> را می‌توانید به کد تخفیف تبدیل کنید.{% endif %}</p>{% endif %}
+</section>
+{% if referral %}
+<section class="acc2-card acc2-invite">
+  <h2>دوستانتان را دعوت کنید</h2>
+  <p>دوستتان با کد شما در اولین خرید {{ shop.referral_percent|fa_num }}٪ تخفیف می‌گیرد (تا {{ shop.referral_max|toman }} تومان) و بعد از خریدش، یک کد هدیهٔ {{ shop.referral_reward|toman }} تومانی برای شما پیامک می‌شود.</p>
+  <div class="acc2-code acc2-code--ref"><code dir="ltr">{{ referral.code }}</code><span>کد دعوت شما</span><button class="pill" type="button" data-copy="{{ referral.code }}">کپی</button>
+    <a class="pill" href="https://wa.me/?text={% brand as BR %}{{ 'کد تخفیف '|add:BR|add:' برای اولین خرید فرش: '|urlencode }}{{ referral.code }}%20{{ SITE_URL|urlencode }}" target="_blank" rel="noopener">واتساپ</a></div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>document.addEventListener("click",function(e){var b=e.target.closest("[data-copy]");if(!b)return;var t=b.getAttribute("data-copy");(navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(t):Promise.reject()).catch(function(){var a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(x){}a.remove()});var o=b.textContent;b.textContent="کپی شد ✓";setTimeout(function(){b.textContent=o},1500)});</script>{% endblock %}
