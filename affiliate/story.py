@@ -51,7 +51,7 @@ def _wrap(draw, s, f, max_w, lines=2):
     return out
 
 
-def render(product, code, percent, offer=None, site="irancarpet.net"):
+def render(product, code, label="", offer=None, site="irancarpet.net", note=""):
     img = Image.new("RGB", (W, H), INK)
     d = ImageDraw.Draw(img, "RGBA")
     # نوار رنگی بالای تصویر، مثل لبهٔ فوتر سایت
@@ -62,7 +62,7 @@ def render(product, code, percent, offer=None, site="irancarpet.net"):
     text(d, (W - PAD, 132), "فرش ماشینی کاشان، بی‌واسطه", font(32), (201, 203, 230))
 
     # عکس فرش
-    top, box_w, box_h = 210, W - 2 * PAD, 1010
+    top, box_w, box_h = 210, W - 2 * PAD, 950
     ph = _photo(product, box_w, box_h)
     if ph is not None:
         img.paste(ph, (PAD, top), _rounded(ph, 36))
@@ -97,16 +97,19 @@ def render(product, code, percent, offer=None, site="irancarpet.net"):
     text(d, (W - PAD, y), f"قیمت امروز، {date_label()} · خرید نقدی و اقساطی", font(30), (201, 203, 230))
 
     # کد تخفیف همکار
-    y = H - 330
+    y = max(H - 360, y + 110)
     d.rounded_rectangle((PAD, y, W - PAD, y + 170), 34, fill=(255, 255, 255, 255))
     for x in range(PAD + 20, W - PAD - 20, 28):  # لبهٔ بریدنی بالای کوپن
         d.line((x, y + 8, x + 14, y + 8), fill=(229, 57, 91, 120), width=3)
     text(d, (W - PAD - 40, y + 30), "کد تخفیف شما در سبد خرید", font(34, "Bold"), INK)
-    if percent:
-        text(d, (W - PAD - 40, y + 86), f"{fa_num(percent)}٪ تخفیف ویژهٔ شما", font(32), PINK)
+    if label:
+        lf = font(32)
+        text(d, (W - PAD - 40, y + 88), fit(d, fa_num(label), lf, W - 2 * PAD - 80 - int(width(d, code, font(76, "Black"))) - 30), lf, PINK)
+    if note:
+        text(d, (W // 2, y + 186), fa_num(note), font(30), (201, 203, 230), anchor="ma")
     d.text((PAD + 40, y + 52), code, font=font(76, "Black"), fill=PINK, anchor="la")
 
-    text(d, (W // 2, H - 110), f"{site} · ارسال به سراسر ایران", font(34, "Bold"), WHITE, anchor="ma")
+    text(d, (W // 2, H - 96), f"{site} · ارسال به سراسر ایران", font(34, "Bold"), WHITE, anchor="ma")
     out = io.BytesIO()
     img.save(out, "JPEG", quality=88, optimize=True, progressive=True)
     return out.getvalue()

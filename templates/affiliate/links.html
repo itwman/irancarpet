@@ -14,7 +14,7 @@
   {% if coupon %}
   <section class="acc2-card aff2-coupon">
     <h2>کد تخفیف اختصاصی</h2>
-    <p class="muted">برای پست و استوری که پیوندش کلیک نمی‌شود: مشتری کد را در سبد خرید می‌زند و {{ s.coupon_percent|fa_num }}٪ تخفیف{% if s.coupon_max %} (تا {{ s.coupon_max|toman }} تومان){% endif %} می‌گیرد.</p>
+    <p class="muted">برای پست و استوری که پیوندش کلیک نمی‌شود: مشتری کد را در سبد خرید می‌زند و {{ s.coupon_label }} می‌گیرد.</p>
     <div class="aff-code"><code dir="ltr">{{ coupon.code }}</code><button class="pill" type="button" data-copy="{{ coupon.code }}">کپی کد</button></div>
   </section>
   {% endif %}

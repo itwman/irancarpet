@@ -86,7 +86,7 @@ FORMS = {
     "seo": (SeoSettings, ["indexnow_enabled", "bing_verification", "llms_about", "rewrite_enabled", "rewrite_hour", "rewrite_per_day",
                           "rewrite_review_days", "rewrite_repo", "rewrite_branch"]),
     "affiliate": (AffiliateSettings, ["enabled", "auto_approve", "attribution_days", "tier_period", "tier_mode", "new_customers_only",
-                                      "min_payout", "coupon_enabled", "coupon_percent", "coupon_max", "short_domain", "terms"]),
+                                      "min_payout", "coupon_enabled", "coupon_kind", "coupon_percent", "coupon_max", "coupon_amount", "coupon_min_order", "short_domain", "terms"]),
     "market": (MarketSettings, ["enabled", "signup_open", "default_commission", "accept_hours", "auto_deliver_days", "hold_days",
                                 "min_payout", "terms"]),
     "crm": (CrmSettings, ["order_sms", "order_text", "order_installment_text", "admin_sms", "admin_text", "contact_admin_sms", "paid_text", "admin_paid_text",

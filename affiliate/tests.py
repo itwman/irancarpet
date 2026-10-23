@@ -177,6 +177,13 @@ class AffiliateTests(TestCase):
         self.assertEqual((r.status_code, r["Content-Type"]), (200, "image/jpeg"))
         self.assertEqual(r.content[:2], b"\xff\xd8")
         self.assertEqual(self.client.get("/my-account/affiliate/story/999999/").status_code, 404)
+        AffiliateSettings.objects.update(coupon_kind="fixed", coupon_amount=500_000, coupon_min_order=10_000_000)
+        self.assertContains(self.client.get("/my-account/affiliate/links/"), "۵۰۰ هزار تومان تخفیف برای خرید بالای ۱۰ میلیون تومان")
+        from shop.models import Coupon
+
+        c = Coupon.objects.get(code="ALIHOME")
+        self.assertEqual((c.kind, c.value, c.max_discount, c.min_order), ("fixed", 500_000, 0, 10_000_000))
+        self.assertEqual(self.client.get(f"/my-account/affiliate/story/{self.p.pk}/").status_code, 200)
         r = self.client.post("/my-account/affiliate/", {"action": "bank", "sheba": "IR820540102680020817909002", "account_holder": "علی"})
         self.assertEqual(r.status_code, 302)
         a.refresh_from_db()

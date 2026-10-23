@@ -43,8 +43,14 @@ class AffiliateSettings(models.Model):
     coupon_enabled = models.BooleanField("کد تخفیف اختصاصی برای هر بازاریاب", default=True,
                                          help_text="برای اینستاگرام و جاهایی که پیوند کلیک‌خور نیست: مشتری کد را در سبد خرید می‌زند، "
                                                    "تخفیف می‌گیرد و خرید به نام بازاریاب ثبت می‌شود.")
-    coupon_percent = models.PositiveSmallIntegerField("درصد تخفیف کد بازاریاب", default=2)
-    coupon_max = models.PositiveBigIntegerField("سقف تخفیف کد بازاریاب (تومان)", default=2_000_000, help_text="۰ یعنی بی‌سقف")
+    coupon_kind = models.CharField("نوع تخفیف کد بازاریاب", max_length=10, default="percent",
+                                   choices=[("percent", "درصدی"), ("fixed", "مبلغ ثابت (تومان)")],
+                                   help_text="مبلغ ثابت در استوری و پست گویاتر است («۵۰۰ هزار تومان تخفیف»)؛ حتماً حداقل مبلغ سبد بگذارید.")
+    coupon_percent = models.PositiveSmallIntegerField("درصد تخفیف کد بازاریاب", default=2, help_text="برای نوع درصدی")
+    coupon_max = models.PositiveBigIntegerField("سقف تخفیف کد بازاریاب (تومان)", default=2_000_000, help_text="برای نوع درصدی؛ ۰ یعنی بی‌سقف")
+    coupon_amount = models.PositiveBigIntegerField("مبلغ تخفیف کد بازاریاب (تومان)", default=500_000, help_text="برای نوع مبلغ ثابت")
+    coupon_min_order = models.PositiveBigIntegerField("حداقل مبلغ سبد برای کد بازاریاب (تومان)", default=10_000_000,
+                                                      help_text="کد روی سفارش کمتر از این مبلغ کار نمی‌کند؛ ۰ یعنی بی‌حداقل.")
     short_domain = models.CharField("دامنهٔ پیوند کوتاه", max_length=60, default="crpt.ir",
                                     help_text="باید رکورد DNS آن به سرور اشاره کند. خالی: پیوندها با دامنهٔ خود سایت ساخته می‌شوند.")
     terms = models.TextField("قوانین همکاری", default=DEFAULT_TERMS, help_text="هر خط یک بند. {روز} = ماندگاری پیوند")
@@ -60,6 +66,28 @@ class AffiliateSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def coupon_value(self):
+        """(نوع، مقدار، سقف) برای کد تخفیف هر بازاریاب."""
+        if self.coupon_kind == "fixed":
+            return "fixed", self.coupon_amount, 0
+        return "percent", self.coupon_percent, self.coupon_max
+
+    def coupon_label(self, short=False):
+        """«۵۰۰ هزار تومان تخفیف» یا «۲٪ تخفیف (تا ۲ میلیون تومان)»؛ با حداقل سبد اگر short نباشد."""
+        from core.templatetags.fa import fa_num
+
+        from .views import money_label
+
+        if self.coupon_kind == "fixed":
+            t = f"{money_label(self.coupon_amount)} تومان تخفیف"
+        else:
+            t = f"{fa_num(self.coupon_percent)}٪ تخفیف"
+            if self.coupon_max and not short:
+                t += f" (تا {money_label(self.coupon_max)} تومان)"
+        if self.coupon_min_order and not short:
+            t += f" برای خرید بالای {money_label(self.coupon_min_order)} تومان"
+        return t
 
     def terms_list(self):
         return [x.lstrip("-• ").strip().replace("{روز}", str(self.attribution_days))

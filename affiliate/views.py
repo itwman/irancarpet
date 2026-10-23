@@ -63,13 +63,17 @@ def _coupon_for(a, s):
         code = re.sub(r"[^A-Z0-9]", "", a.code.upper())[:12] or "IC"
         if len(code) < 4 or Coupon.objects.filter(code=code).exists():
             code = code[:8] + secrets.token_hex(2).upper()
-        c = Coupon.objects.create(code=code, title=f"کد همکار فروش ({a.name})"[:120], kind=Coupon.Kind.PERCENT,
-                                  value=s.coupon_percent, max_discount=s.coupon_max, per_user_limit=0, is_active=active)
+        kind, value, cap = s.coupon_value()
+        c = Coupon.objects.create(code=code, title=f"کد همکار فروش ({a.name})"[:120], kind=kind, value=value, max_discount=cap,
+                                  min_order=s.coupon_min_order, per_user_limit=0, is_active=active)
         Affiliate.objects.filter(pk=a.pk).update(coupon=c)
         a.coupon = c
-    elif (c.value, c.max_discount, c.is_active) != (s.coupon_percent, s.coupon_max, active):
-        c.value, c.max_discount, c.is_active = s.coupon_percent, s.coupon_max, active
-        c.save(update_fields=["value", "max_discount", "is_active"])
+    else:
+        kind, value, cap = s.coupon_value()
+        want = (kind, value, cap, s.coupon_min_order, active)
+        if (c.kind, c.value, c.max_discount, c.min_order, c.is_active) != want:
+            c.kind, c.value, c.max_discount, c.min_order, c.is_active = want
+            c.save(update_fields=["kind", "value", "max_discount", "min_order", "is_active"])
     return c
 
 
@@ -184,7 +188,7 @@ def faq(s):
          ("هرچه جمع فروش " + ("همان ماه" if s.tier_period == "month" else "شما از ابتدای همکاری") +
           " بیشتر شود، به پلهٔ بالاتر می‌رسید و درصد همهٔ پورسانت‌های تسویه‌نشدهٔ آن دوره هم خودکار بالا می‌رود.")),
         ("در اینستاگرام که پیوند پست کلیک نمی‌شود، چه کنم؟",
-         (f"پیوند کوتاه عمومی را در بیو بگذارید و در پست و استوری کد تخفیف اختصاصی‌تان را بنویسید؛ مشتری با کد شما {fa_num(s.coupon_percent)}٪ تخفیف می‌گیرد و خریدش به نام شما ثبت می‌شود."
+         (f"پیوند کوتاه عمومی را در بیو بگذارید و در پست و استوری کد تخفیف اختصاصی‌تان را بنویسید؛ مشتری با کد شما {s.coupon_label(short=True)} می‌گیرد و خریدش به نام شما ثبت می‌شود."
           if s.coupon_enabled else "پیوند کوتاه عمومی را در بیو بگذارید و در استوری از برچسب «لینک» استفاده کنید.")),
         ("قیمت را خودم تعیین می‌کنم؟",
          "نه؛ مشتری با همان قیمت سایت می‌خرد و پرداخت، ارسال، ضمانت و پشتیبانی با ایران کارپت است. شما فقط معرفی می‌کنید."),
@@ -354,7 +358,8 @@ def story(request, pk):
 
     offer = next((o for o in live_offers() if o.product_id == p.pk and o.price), None)
     c = _coupon_for(a, s)
-    data = S.render(p, c.code if c else a.code.upper(), s.coupon_percent if c else 0, offer)
+    note = f"برای خرید بالای {money_label(s.coupon_min_order)} تومان" if c and s.coupon_min_order else ""
+    data = S.render(p, c.code if c else a.code.upper(), s.coupon_label(short=True) if c else "", offer, note=note)
     r = HttpResponse(data, content_type="image/jpeg")
     r["Content-Disposition"] = f'inline; filename="story-{p.pk}.jpg"'
     r["Cache-Control"] = "private, max-age=1800"

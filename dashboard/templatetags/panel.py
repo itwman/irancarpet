@@ -6,7 +6,7 @@ register = template.Library()
 
 EXTRA_NAV = {
     "فروش": [("کارمندان", "/panel/customers/?is_staff=1", "shield")],
-    "فروشگاه": [("ساخت گروهی فرش", "/panel/products/bulk/", "plus"), ("جایگزینی متن و لینک‌ها", "/panel/content-tools/", "search")],
+    "فروشگاه": [("افزودن سریع فرش‌های آلبوم", "/panel/products/quick/", "plus"), ("ساخت گروهی یک نقشه", "/panel/products/bulk/", "layers"), ("جایگزینی متن و لینک‌ها", "/panel/content-tools/", "search")],
     "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
     "رسانه": [("رسانه‌های بی‌استفاده", "/panel/media/unused/", "trash")],
     "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
