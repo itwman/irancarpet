@@ -276,3 +276,17 @@ class MatchKeyTests(TestCase):
                          key({"t": "فرش ارکیده 700 شانه زمینه سرمه ای - آکریلیک", "c": "سرمه"})[:3])
         self.assertGreaterEqual(_sim(("ارم", "باغ"), ("VIP", "ارم", "باغ")), .84)
         self.assertLess(_sim(("ارم", "باغ"), ("سروناز",)), .5)
+
+
+class MatchTieTests(TestCase):
+    def test_tie_same_design_prefers_available(self):
+        from mirror import match
+
+        rows = [{"id": 1, "t": "فرش 700 شانه نقشه ورساچه زمینه دودی", "ss": "available", "v": [[1, "", 1, 0, False, None, None]]},
+                {"id": 2, "t": "فرش 700 شانه نقشه ورساچه زمینه دودی", "ss": "available", "v": [[2, "", 1, 0, True, None, None]]}]
+        legacy = Product.objects.create(title="فرش طرح وینتیج ورساچه دودی - 700 شانه تمام آکریلیک", slug="vv", status="publish")
+        with mock.patch("mirror.match.get_json", return_value={"products": rows}), \
+                mock.patch("mirror.match.legacy_products", lambda: Product.objects.filter(pk=legacy.pk)):
+            (p, r, why, _b), = match.plan()
+        self.assertEqual(r["id"], 2)
+        self.assertIn("نقشهٔ نزدیک", why)

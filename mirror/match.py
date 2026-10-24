@@ -43,6 +43,10 @@ def _sim(a, b):
     return difflib.SequenceMatcher(None, "".join(a), "".join(b)).ratio()
 
 
+def _live(r):
+    return r.get("ss") == "available" and any(v[4] for v in r.get("v", []))
+
+
 def legacy_products():
     from catalog.models import Product
 
@@ -73,19 +77,22 @@ def plan():
         elif d and n:
             cands, why = by_dn.get((d, n)), "نقشه و شانه یکی است (رنگ در عنوان قدیمی نبود)"
         if not cands and d and c and n:
-            scored = sorted(((_sim(d, d2), r, rel2) for r, rel2, d2 in by_cn.get((c, n), [])), key=lambda x: -x[0])
-            if scored and scored[0][0] >= FUZZY_MIN and (len(scored) == 1 or scored[1][0] < scored[0][0]):
-                cands = [(scored[0][1], scored[0][2])]
-                why = f"نقشهٔ نزدیک ({round(scored[0][0] * 100)}٪)، رنگ و شانه یکی است"
+            scored = sorted(((_sim(d, d2), r, rel2, d2) for r, rel2, d2 in by_cn.get((c, n), [])), key=lambda x: -x[0])
+            top = [x for x in scored if scored and x[0] == scored[0][0]]
+            # چند نامزد هم‌امتیاز: اگر همه یک نقشه‌اند (مثلاً دو محصول از یک فرش)، بافت یکسان و موجود اول
+            if top and top[0][0] >= FUZZY_MIN and len({x[3] for x in top}) == 1:
+                top.sort(key=lambda x: (x[2] != rel, not _live(x[1]), x[1]["id"]))
+                cands = [(top[0][1], top[0][2])]
+                why = f"نقشهٔ نزدیک ({round(top[0][0] * 100)}٪)، رنگ و شانه یکی است"
             elif scored:
-                best = scored[0]
+                best = scored[0][:2]
         if not cands:
             if best is None and d:  # برای گزارش: نزدیک‌ترین فرش با همان شانه، هر رنگی
                 pool = [(_sim(d, d2), r) for r, (d2, c2, n2, _) in keyed if n2 == n and d2]
                 best = max(pool, key=lambda x: x[0], default=None)
             out.append((p, None, "فرش هم‌نقشه و هم‌رنگ در ایران کارپت پیدا نشد", best))
             continue
-        same = [x for x in cands if x[1] == rel] or cands
+        same = sorted([x for x in cands if x[1] == rel] or cands, key=lambda x: (not _live(x[0]), x[0]["id"]))
         r = same[0][0]
         if r["id"] in used:
             out.append((p, r, f"تکراری؛ همین فرش قبلاً با «{used[r['id']]}» جفت شد", None))
