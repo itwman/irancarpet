@@ -116,13 +116,18 @@ def report_csv(items):
 
 
 def _unavailable(p):
-    """کالای قدیمی بی‌جفت: صفحه می‌ماند (رتبهٔ گوگل) ولی ناموجود می‌شود؛ «خبرم کن» فعال است."""
+    """کالای قدیمی بی‌جفت: صفحه می‌ماند (رتبهٔ گوگل) ولی ناموجود می‌شود؛ «خبرم کن» فعال است.
+    قیمت‌های کهنه (آلبوم قدیمی فرشستان) هم پاک می‌شود تا در صفحه، اسکیما، ترب و اپ نیاید؛ اگر بعداً جفت شود،
+    همگام‌سازی آلبوم و قیمت ایران کارپت را می‌گذارد."""
     from catalog.models import Variation
+    from shop.models import SpecialOffer
 
-    Variation.objects.filter(product=p).update(is_available=False)
-    type(p).objects.filter(pk=p.pk).update(sale_status="unavailable")
-    p.sale_status = "unavailable"
-    p.refresh_price_cache()
+    Variation.objects.filter(product=p).update(is_available=False, manual_price=None, override_price=None,
+                                               sale_price=None, final_price=None, purchase_price=None)
+    SpecialOffer.objects.filter(product=p, is_active=True).update(is_active=False)
+    type(p).objects.filter(pk=p.pk).update(sale_status="unavailable", album=None, custom_base_price=None,
+                                           min_price=None, max_price=None, stock_status="outofstock")
+    p.sale_status, p.album, p.min_price, p.max_price = "unavailable", None, None, None
 
 
 def _redirect_to(p, target):

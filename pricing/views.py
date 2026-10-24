@@ -184,11 +184,14 @@ def album_detail(request, slug, page=1):
         if album and album.slug:
             return HttpResponsePermanentRedirect(album.get_absolute_url())
         raise Http404
-    if not (album.is_active and album.in_price_list) and not request.user.is_staff:
-        raise Http404
     from blog.models import Page
 
     list_page = Page.objects.filter(template="price_list").first()
+    if album.mirror_pk is None and pricelist.mirror_only():
+        # فرشستان: آلبوم قدیمی خود سایت (قیمت کهنه) ← لیست قیمت اصلی که از ایران کارپت است
+        return HttpResponsePermanentRedirect(list_page.get_absolute_url() if list_page else pricelist.PRICE_LIST_PATH)
+    if not (album.is_active and album.in_price_list) and not request.user.is_staff:
+        raise Http404
     list_title = list_page.title if list_page else "لیست قیمت فرش ماشینی"
     rows = pricelist.album_rows(album)
     base = next((r["price"] for r in rows if r["size"].pk == album.base_size_id), None)

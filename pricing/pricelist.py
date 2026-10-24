@@ -14,10 +14,20 @@ MAIN_SIZES = ["12-meter", "9-meter", "6-meter"]  # ستون‌هایی که رو
 JALALI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
 
 
+def mirror_only():
+    """فرشستان با همگام‌سازی روشن: فقط آلبوم‌های ایران کارپت؛ آلبوم‌های قدیمی خود سایت قیمت کهنه دارند."""
+    from mirror.models import MirrorSettings
+
+    return MirrorSettings.load().is_target
+
+
 def albums_qs():
     """آلبوم‌هایی که در لیست قیمت نمایش داده می‌شوند (فعال، با قیمت و دست‌کم یک فرش منتشرشده)."""
+    qs = Album.objects.filter(is_active=True, in_price_list=True)
+    if mirror_only():
+        qs = qs.filter(mirror_pk__isnull=False)
     return (
-        Album.objects.filter(is_active=True, in_price_list=True).filter(Q(base_price__gt=0) | Q(mirror_rows__isnull=False))
+        qs.filter(Q(base_price__gt=0) | Q(mirror_rows__isnull=False))
         .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True))
         .filter(n__gt=0)
         .select_related("base_size")
@@ -38,7 +48,7 @@ def bump(*args, **kwargs):
 
 def _version():
     agg = Album.objects.aggregate(t=Max("last_updated"), n=Count("id"))
-    return f"{cache.get(GEN_KEY, 0)}:{agg['t'] and agg['t'].timestamp()}:{agg['n']}"
+    return f"{cache.get(GEN_KEY, 0)}:{agg['t'] and agg['t'].timestamp()}:{agg['n']}:{int(mirror_only())}"
 
 
 def _sizes():

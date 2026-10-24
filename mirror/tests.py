@@ -199,7 +199,10 @@ class MirrorTests(TestCase):
         own = "<p>" + "متن اختصاصی فرشستان دربارهٔ نقشهٔ زرین و داستان آن. " * 10 + "</p>"
         legacy = Product.objects.create(title="فرش طرح زرین سیلور ۷۰۰ شانه برجسته", slug="legacy-zarin", status="publish",
                                         content=own)
-        lonely = Product.objects.create(title="تابلو فرش منظره", slug="legacy-tablo", status="publish")
+        lonely = Product.objects.create(title="تابلو فرش منظره", slug="legacy-tablo", status="publish", album=self.album)
+        sync_album_variations([lonely], reset=True)
+        lonely.refresh_price_cache()
+        self.assertTrue(lonely.min_price)
         # در آزمون منبع و مقصد یک دیتابیس‌اند: خوراک فقط فرش منبع و «کالای قدیمی» فقط دو محصول بالا
         MirrorPick.objects.all().delete()   # جفت کردن خودش فرش منبع را برای فرشستان انتخاب می‌کند
         src_only = mock.patch("mirror.feed.own_products", lambda picked=True: Product.objects.filter(
@@ -219,7 +222,28 @@ class MirrorTests(TestCase):
         self.assertEqual((legacy.use_template, legacy.content), (False, own))   # متن یکتای خودش می‌ماند
         lonely.refresh_from_db()
         self.assertEqual((lonely.status, lonely.sale_status), ("publish", "unavailable"))   # صفحه می‌ماند، ناموجود
+        # قیمت کهنهٔ آلبوم قدیمی هیچ‌جا نمی‌ماند
+        self.assertEqual((lonely.album_id, lonely.min_price, lonely.stock_status), (None, None, "outofstock"))
+        self.assertFalse(lonely.variations.exclude(final_price=None).exists())
+        self.assertNotIn('"offers"', self.client.get(lonely.get_absolute_url()).content.decode())
         self.assertFalse(Redirect.objects.filter(source=Redirect.normalize("/product/legacy-tablo/")).exists())
+
+    def test_price_list_only_source_albums(self):
+        from pricing import pricelist
+        from mirror.sync import run
+
+        run()
+        ids = [a.pk for a in pricelist.albums_qs()]
+        self.assertEqual(ids, [self.mirrored().album_id])            # آلبوم قدیمی (قیمت کهنه) نمی‌آید
+        # آلبوم قدیمی فرشستان با نامک دیگر (هم‌نام‌ها را خود همگام‌سازی کنار می‌گذارد)
+        old = Album.objects.create(name="گیشا قدیمی", code="OLD", slug="old-gisha", base_size=self.s12, base_price=Decimal("1000000"))
+        r = self.client.get(old.get_absolute_url())
+        self.assertEqual((r.status_code, r["Location"]), (301, pricelist.PRICE_LIST_PATH))
+        self.assertEqual(self.client.get(self.mirrored().album.get_absolute_url()).status_code, 200)
+        st = MirrorSettings.load()
+        st.enabled = False                                           # ایران کارپت: همه مثل قبل
+        st.save()
+        self.assertEqual(self.client.get(old.get_absolute_url()).status_code, 200)   # بدون همگام‌سازی، مثل قبل
 
     def test_orders_pushed_once_and_updated(self):
         from mirror.orders import push_all
