@@ -56,8 +56,17 @@ def design_label(p):
 
 def color_of(p):
     """رنگ زمینه؛ اگر در عنوان آمده («… زمینه کرم») همان، چون مشتری همان را می‌بیند."""
-    m = re.search(r"زمینه\s+(.+?)(?:\s+(?:سایز|طرح|کد)\b|\s+[0-9۰-۹]|\s+[-–]|$)", p.title or "")
+    m = re.search(r"زمینه\s+(.+?)(?:\s+(?:سایز|طرح|کد|حاشیه)\b|\s+[0-9۰-۹]|\s+[-–]|$)", p.title or "")
     return (m.group(1).strip(" -–") if m else "") or spec(p, "رنگ زمینه") or spec(p, "رنگ")
+
+
+def border_of(p):
+    """رنگ حاشیه (ویژگی «رنگ حاشیه» یا «… حاشیه سرمه ای» در عنوان)."""
+    b = spec(p, "رنگ حاشیه")
+    if b:
+        return b
+    m = re.search(r"حاشیه\s+(.+?)(?:\s+(?:سایز|طرح|کد)\b|\s+[0-9۰-۹]|\s+[-–]|$)", p.title or "")
+    return m.group(1).strip(" -–") if m else ""
 
 
 def brand_of(p):
@@ -173,6 +182,7 @@ class Ctx:
             "عنوان": lambda: fa_num(p.title),
             "نقشه": lambda: design_label(p),
             "رنگ": lambda: color_of(p),
+            "حاشیه": lambda: border_of(p),
             "شانه": lambda: fa_num(spec(p, "شانه")),
             "تراکم": lambda: fa_num(spec(p, "تراکم")),
             "جنس_نخ": lambda: pile_of(p),

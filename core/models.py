@@ -118,6 +118,13 @@ class SiteSettings(models.Model):
         help_text='فهرست [عنوان، توضیح]؛ مثل [["ارسال رایگان", "برای سفارش‌های بالای ۵۰ میلیون تومان"]]',
     )
     footer_html = models.TextField("HTML فوتر", blank=True)
+    feature_enabled = models.BooleanField("بخش «دستهٔ ویژه» در صفحهٔ اول", default=False,
+                                          help_text="برای تبلیغ یک دسته (مثل فرش موکا). اگر دسته کمتر از ۴ فرش موجود داشته باشد، نمایش داده نمی‌شود.")
+    feature_category = models.ForeignKey("catalog.Category", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                         verbose_name="دستهٔ ویژه")
+    feature_title = models.CharField("تیتر دستهٔ ویژه", max_length=120, blank=True)
+    feature_text = models.TextField("متن دستهٔ ویژه", blank=True, help_text="دو سه جمله؛ کوتاه بنویسید.")
+    feature_button = models.CharField("متن دکمهٔ دستهٔ ویژه", max_length=60, blank=True, default="دیدن همهٔ فرش‌ها")
     home_about = models.TextField(
         "متن «دربارهٔ ایران کارپت» صفحهٔ اول", blank=True,
         help_text="بالای فوتر صفحهٔ اول، بسته‌شده نمایش داده می‌شود. خالی = تیترها و پاراگراف‌های نوشتاری برگهٔ صفحهٔ اول "

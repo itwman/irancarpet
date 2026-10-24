@@ -35,6 +35,8 @@ class Category(SeoFields):
     description = models.TextField("توضیحات (HTML)", blank=True)
     image = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     order = models.IntegerField("ترتیب", default=0)
+    mirror_auto = models.BooleanField("فرش‌های این دسته خودکار برای فرشستان انتخاب شوند", default=False,
+                                      help_text="فقط روی ایران کارپت معنا دارد؛ هر فرشی که به این دسته اضافه شود، در فرشستان هم منتشر می‌شود.")
 
     class Meta:
         verbose_name = "دستهٔ محصول"

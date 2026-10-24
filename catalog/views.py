@@ -157,10 +157,14 @@ def _archive_info(archive, base_qs, heading, intro):
 
         logging.getLogger(__name__).exception("archive info")
         data = None
+    # پرسش‌هایی که در متن دسته با <details><summary> نوشته شده‌اند هم در نشانه‌گذاری FAQ می‌آیند
+    extra = [{"q": strip_tags(q).strip(), "a": strip_tags(a).strip()} for q, a in
+             _re.findall(r"<details[^>]*>\s*<summary[^>]*>(.*?)</summary>(.*?)</details>", intro or "", _re.S)]
+    extra = [x for x in extra if x["q"] and x["a"]]
     if not data:
-        return {}
+        return {"jsonld": json.dumps(archive_info.faq_jsonld({"faqs": extra}), ensure_ascii=False)} if extra else {}
     out = {"ainfo": data, "ainfo_lead": len(strip_tags(intro or "").strip()) < 200}
-    faq = archive_info.faq_jsonld(data)
+    faq = archive_info.faq_jsonld({"faqs": data.get("faqs", []) + extra})
     if faq:
         out["jsonld"] = json.dumps(faq, ensure_ascii=False)
     return out

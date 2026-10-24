@@ -95,6 +95,9 @@ def build_title(row, pattern):
     if not design:
         return re.sub(r"^فرش\s+(?:طرح|نقشه)\s+", "فرش ماشینی طرح ", norm(row.get("t")))[:300]
     t = pattern or MirrorSettings._meta.get_field("title_pattern").default
+    border = next((norm(x.get("name")) for x in row.get("specs") or [] if x.get("attr") == "border-color"), "")
+    if color and border and border != color:  # «زمینه کرم حاشیه سرمه ای» تا دو فرش هم‌نقشه یک عنوان نگیرند
+        color = f"{color} حاشیه {border}"
     if not color:
         t = re.sub(r"زمینه\s*\{رنگ\}", "", t)
     if not reeds:

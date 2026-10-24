@@ -202,8 +202,32 @@ def home(request):
         **_home_offers(), "posts": posts, "categories": cats,
         "room": room, "jsonld": json.dumps(graph if len(graph) > 1 else org, ensure_ascii=False), **data,
         "direct": direct,
-        "aff": _aff_home(), "mk": _market_home(),
+        "aff": _aff_home(), "mk": _market_home(), "feature": _home_feature(site),
     })
+
+
+def _home_feature(site=None):
+    """بخش «دستهٔ ویژه» صفحهٔ اول (مثل فرش موکا) — فقط اگر دسته دست‌کم ۴ فرش موجود داشته باشد."""
+    from django.core.cache import cache
+
+    site = site or SiteSettings.load()
+    if not site.feature_enabled or not site.feature_category_id:
+        return None
+    key = f"home_feature:{site.feature_category_id}"
+    data = cache.get(key)
+    if data is None:
+        from catalog.models import BLOCKED_SALE_STATUSES
+
+        cat = site.feature_category
+        qs = (Product.objects.published().filter(categories__in=cat.descendant_ids(), image__isnull=False, min_price__gt=0)
+              .exclude(stock_status="outofstock").exclude(sale_status__in=BLOCKED_SALE_STATUSES).distinct())
+        data = {"count": qs.count(), "products": list(qs.select_related("image").order_by("-published_at")[:8]),
+                "url": cat.get_absolute_url(), "name": cat.name}
+        cache.set(key, data, 600)
+    if data["count"] < 4:
+        return None
+    return {**data, "title": site.feature_title or data["name"], "text": site.feature_text,
+            "button": site.feature_button or "دیدن همهٔ فرش‌ها"}
 
 
 def _market_home():

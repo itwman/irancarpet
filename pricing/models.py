@@ -183,6 +183,8 @@ class Album(models.Model):
                                                  verbose_name="دستهٔ اصلی پیش‌فرض")
     default_tags = models.ManyToManyField("catalog.ProductTag", blank=True, related_name="+", verbose_name="برچسب‌های پیش‌فرض")
     embossed = models.BooleanField("فرش‌های این آلبوم گل برجسته‌اند", default=False)
+    title_word = models.CharField("کلمهٔ ویژهٔ عنوان", max_length=40, blank=True,
+                                  help_text="مثل «موکا»؛ در افزودن سریع بعد از «… شانه» در عنوان فرش‌های تازه می‌آید.")
     # فرشستان: آلبوم همگام با ایران کارپت (فقط برای لیست قیمت؛ قیمت فرش‌ها مستقیم از منبع می‌آید)
     mirror_pk = models.PositiveIntegerField("شناسه در سایت منبع", null=True, blank=True, unique=True, editable=False)
     mirror_rows = models.JSONField("قیمت سایزها از سایت منبع", null=True, blank=True, editable=False)

@@ -476,7 +476,9 @@ def quick(request):
                                           "view": p.get_absolute_url()} for p in created],
                              "warnings": warnings, "list": f"/panel/products/?album={album.pk}&sort=-published_at"})
     color = color_attribute()
-    attrs = [a for a in Attribute.objects.order_by("order", "label") if not color or a.pk != color.pk]
+    border = Q.border_attribute()
+    skip = {x.pk for x in (color, border) if x}
+    attrs = [a for a in Attribute.objects.order_by("order", "label") if a.pk not in skip]
     cats = _category_tree()
     albums = list(Album.objects.filter(is_active=True).order_by("sort_order", "name"))
     return render(request, "content/quick.html", {
@@ -522,7 +524,8 @@ def quick_album(request, pk):
         ids = [int(x) for x in (request.GET.get("specs") or "").split(",") if x.strip().isdigit()]
         terms = list(AttributeTerm.objects.filter(pk__in=ids).select_related("attribute"))
         brand = Brand.objects.filter(pk=request.GET.get("brand") or 0).first() if (request.GET.get("brand") or "").isdigit() else None
-        return JsonResponse({"template": Q.title_template(album, terms, brand, request.GET.get("emb") == "1"),
+        word = request.GET.get("word")
+        return JsonResponse({"template": Q.title_template(album, terms, brand, request.GET.get("emb") == "1", word),
                              "material": Q.material_of_terms(terms)})
     return JsonResponse(Q.album_payload(album))
 

@@ -1,0 +1,12 @@
+{% load fa %}{# بخش «دستهٔ ویژه» صفحهٔ اول فرشستان؛ از پنل ← تنظیمات ← عمومی #}
+<section class="wrap sec fsf" aria-labelledby="fsfT">
+  <div class="fsf__band">
+    <div class="fsf__copy">
+      <ul class="fsf__sw" aria-hidden="true"><li style="--c:#EFE4D6"></li><li style="--c:#DCC6A8"></li><li style="--c:#A47864"></li><li style="--c:#7B5B4B"></li><li style="--c:#8E9AA6"></li></ul>
+      <h2 id="fsfT">{{ feature.title }}</h2>
+      {% if feature.text %}<p>{{ feature.text|fa_num }}</p>{% endif %}
+    </div>
+    <div class="fsf__go"><a class="btn-ic btn-ic--pink" href="{{ feature.url }}">{{ feature.button }}</a><small>{{ feature.count|fa_num }} طرح موجود</small></div>
+  </div>
+  <div class="rail" data-rail><div class="rail-track">{% for p in feature.products %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
+</section>

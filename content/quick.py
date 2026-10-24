@@ -25,13 +25,28 @@ def color_attribute():
     return ca()
 
 
+def border_attribute():
+    return Attribute.objects.filter(slug="border-color").first() or Attribute.objects.filter(label__contains="رنگ حاشیه").first()
+
+
+def with_word(title, word):
+    """«موکا» بعد از «… شانه» (یا بعد از «فرش» اگر شانه نبود)."""
+    word = re.sub(r"\s+", " ", (word or "").strip())
+    if not word or norm(word) in norm(title):
+        return title
+    if re.search(r"شانه", title):
+        return re.sub(r"(شانه)", r"\1 " + word, title, count=1)
+    return re.sub(r"^(فرش)", r"\1 " + word, title, count=1) if title.startswith("فرش") else f"{word} {title}"
+
+
 def defaults_of(album):
     """{specs: [term], brand, categories, primary, tags, embossed, saved} — اول از آلبوم، وگرنه از یک فرش نمونهٔ آلبوم."""
     color = color_attribute()
+    skip = {x.pk for x in (color, border_attribute()) if x}
     specs = list(album.default_specs.select_related("attribute"))
     saved = bool(specs or album.default_brand_id or album.default_categories.exists())
     if saved:
-        return {"specs": [t for t in specs if not color or t.attribute_id != color.pk], "brand": album.default_brand,
+        return {"specs": [t for t in specs if t.attribute_id not in skip], "brand": album.default_brand,
                 "categories": list(album.default_categories.all()), "primary": album.default_primary_category,
                 "tags": list(album.default_tags.all()), "embossed": album.embossed, "saved": True}
     from .views import sample_of
@@ -39,7 +54,7 @@ def defaults_of(album):
     s = sample_of(album)
     if s is None:
         return {"specs": [], "brand": None, "categories": [], "primary": None, "tags": [], "embossed": album.embossed, "saved": False}
-    return {"specs": [t for t in s.specs.select_related("attribute") if not color or t.attribute_id != color.pk],
+    return {"specs": [t for t in s.specs.select_related("attribute") if t.attribute_id not in skip],
             "brand": s.brand, "categories": list(s.categories.all()), "primary": s.primary_category,
             "tags": list(s.tags.all()), "embossed": album.embossed or "برجسته" in (s.title or ""), "saved": False}
 
@@ -55,7 +70,7 @@ def _spec(terms, *keys):
     return ""
 
 
-def title_template(album, terms, brand, embossed):
+def title_template(album, terms, brand, embossed, word=None):
     """الگوی عنوان با جای خالی نقشه و رنگ؛ پلی‌استر « - پلی استر» در آخر."""
     from .views import make_title, template_for_album
 
@@ -69,6 +84,7 @@ def title_template(album, terms, brand, embossed):
     if D not in t or C not in t:  # الگو به خاطر خالی بودن شانه یا… خالی شد: الگوی ساده
         reeds = fa_num(_spec(terms, "شانه"))
         t = "فرش" + (f" {reeds} شانه" if reeds else "") + (" گل برجسته" if embossed else "") + f" نقشه {D} زمینه {C}"
+    t = with_word(t, album.title_word if word is None else word)
     if material_of_terms(terms) == "polyester" and "پلی استر" not in t:
         t += POLY_SUFFIX
     return t
@@ -80,11 +96,14 @@ def is_code(design):
     return d.isdigit()
 
 
-def make(template, design, color):
+def make(template, design, color, border=""):
     if is_code(design):
         template = template.replace("نقشه " + D, "کد " + D).replace("نقشهٔ " + D, "کد " + D)
         design = fa_num(design.strip())
-    t = template.replace(D, design.strip()).replace(C, color.strip())
+    color = color.strip()
+    if border and norm(border) != norm(color):  # «زمینه کرم حاشیه سرمه ای»؛ حاشیهٔ هم‌رنگ در عنوان نمی‌آید
+        color = f"{color} حاشیه {border.strip()}"
+    t = template.replace(D, design.strip()).replace(C, color)
     return re.sub(r"\s+", " ", t).strip()
 
 
@@ -108,11 +127,19 @@ def album_payload(album):
         "categories": [c.pk for c in d["categories"]], "primary": d["primary"].pk if d["primary"] else None,
         "tags": [{"value": str(t.pk), "text": t.name} for t in d["tags"]],
         "template": title_template(album, d["specs"], d["brand"], d["embossed"]),
+        "title_word": album.title_word,
+        "borders": _border_names(),
         "material": material_of_terms(d["specs"]),
         "designs": designs,
         "colors": list(AttributeTerm.objects.filter(attribute=color).order_by("name").values_list("name", flat=True)) if color else [],
         "count": Product.objects.filter(album=album).count(),
     }
+
+
+def _border_names():
+    b = border_attribute()
+    names = set(AttributeTerm.objects.filter(attribute=b).values_list("name", flat=True)) if b else set()
+    return sorted(names)
 
 
 def rules_payload():
@@ -153,20 +180,24 @@ def create(album, data, request=None):
     """data: {specs:{attr:[...]}, brand, categories:[], primary, tags:[], embossed, save_defaults, status, rows:[{design, color, images}]}
     خروجی: (فرش‌های ساخته‌شده، هشدارها)"""
     color_attr = color_attribute()
-    terms = [t for t in _terms_from(data.get("specs") or {}) if not color_attr or t.attribute_id != color_attr.pk]
+    skip = {x.pk for x in (color_attr, border_attribute()) if x}
+    terms = [t for t in _terms_from(data.get("specs") or {}) if t.attribute_id not in skip]
     brand = Brand.objects.filter(pk=data.get("brand") or 0).first() if str(data.get("brand") or "").isdigit() else None
     brand = brand_for(terms) or brand
     cats = list(Category.objects.filter(pk__in=[int(x) for x in data.get("categories") or [] if str(x).isdigit()]))
     primary = Category.objects.filter(pk=data.get("primary") or 0).first() if str(data.get("primary") or "").isdigit() else None
     tags = list(ProductTag.objects.filter(pk__in=[int(x) for x in data.get("tags") or [] if str(x).isdigit()]))
     embossed = bool(data.get("embossed"))
+    word = re.sub(r"\s+", " ", str(data.get("title_word") or "").strip())[:40]
     if data.get("save_defaults"):
+        album.title_word = word
         album.default_specs.set(terms)
         album.default_categories.set(cats)
         album.default_tags.set(tags)
         album.default_brand, album.default_primary_category, album.embossed = brand, primary, embossed
-        album.save(update_fields=["default_brand", "default_primary_category", "embossed"])
-    template = title_template(album, terms, brand, embossed)
+        album.save(update_fields=["default_brand", "default_primary_category", "embossed", "title_word"])
+    template = title_template(album, terms, brand, embossed, word)
+    border_attr = border_attribute()
     publish = data.get("status") == "publish"
     warnings, created, learn_rows = [], [], []
     existing = {norm(t) for t in Product.objects.values_list("title", flat=True)}
@@ -177,7 +208,8 @@ def create(album, data, request=None):
             if not design or not color:
                 warnings.append(f"ردیف {fa_num(i + 1)}: نقشه و رنگ زمینه لازم است؛ ساخته نشد.")
                 continue
-            title = (str(row.get("title") or "").strip() or make(template, design, color))[:300]
+            border = re.sub(r"\s+", " ", str(row.get("border") or "").strip())[:120]
+            title = (str(row.get("title") or "").strip() or make(template, design, color, border))[:300]
             if norm(title) in existing:
                 warnings.append(f"«{title}» از قبل هست؛ دوباره ساخته نشد.")
                 continue
@@ -196,13 +228,15 @@ def create(album, data, request=None):
                         primary_category=primary or (next(iter(row_cats.values())) if row_cats else None),
                         image_id=images[0] if images else None, published_at=timezone.now(), modified_at=timezone.now())
             p.save()
-            p.specs.set(terms + ([color_term] if color_term else []))
+            border_term = term_named(border_attr, border) if border_attr and border else None
+            p.specs.set(terms + [t for t in (color_term, border_term) if t])
             p.categories.set(list(row_cats.values()))
             p.tags.set(list(row_tags.values()))
             ProductImage.objects.bulk_create([ProductImage(product=p, media_id=m, order=k) for k, m in enumerate(images)])
             Media.objects.filter(pk__in=images, alt="").update(alt=title[:500])
             created.append(p)
-            learn_rows.append({"dl": row.get("dl"), "cl": row.get("cl"), "design": design, "color": color})
+            learn_rows.append({"dl": row.get("dl"), "cl": row.get("cl"), "bl": row.get("bl"), "design": design, "color": color,
+                               "border": border})
         if created:
             from .finglish import learn
 

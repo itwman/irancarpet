@@ -27,6 +27,10 @@ COLORS = {
     "golbehi": "گلبهی", "kalbasi": "کالباسی", "dolfini": "دلفینی", "delfini": "دلفینی",
     "zeytooni": "زیتونی", "zeituni": "زیتونی", "zeytuni": "زیتونی", "yashmi": "یشمی", "abrishami": "ابریشمی",
     "estekhani": "استخوانی", "shiri": "شیری", "nabati": "نباتی", "anabi": "عنابی", "shokolati": "شکلاتی",
+    "sadafi": "صدفی", "sadafy": "صدفی", "ronasi": "روناسی", "roonasi": "روناسی", "dolphini": "دلفینی",
+    "moka": "موکا", "moca": "موکا", "mocha": "موکا", "titanium": "تیتانیوم", "sorbi": "سربی", "zoghali": "زغالی",
+    "termei": "ترمه ای", "termeei": "ترمه ای", "oqianusi": "اقیانوسی", "oghianoosi": "اقیانوسی", "mooshi": "موشی", "mushi": "موشی",
+    "gerdooei": "گردویی", "gerdui": "گردویی", "asali": "عسلی", "metalik": "متالیک", "carbon": "کاربنی", "karbani": "کاربنی",
     "nesfekafe": "نسکافه ای", "nescafe": "نسکافه ای", "mesi": "مسی", "ajori": "آجری", "yasi": "یاسی",
 }
 
@@ -41,6 +45,8 @@ DESIGNS = {
     "golnaz": "گلناز", "golsa": "گلسا", "elnaz": "الناز", "romina": "رومینا", "helen": "هلن", "diba": "دیبا",
     "kashan": "کاشان", "isfahan": "اصفهان", "esfahan": "اصفهان", "tabriz": "تبریز", "heris": "هریس", "kerman": "کرمان",
     "shahrzad": "شهرزاد", "shayan": "شایان", "royal": "رویال", "classic": "کلاسیک", "modern": "مدرن", "mehrab": "محراب",
+    "avin": "آوین", "faraz": "فراز", "javaher": "جواهر", "lux": "لوکس", "mandegar": "ماندگار", "meshkat": "مشکات",
+    "naein": "نائین", "nain": "نائین", "rolex": "رولکس", "savis": "ساویس", "soroush": "سروش", "touska": "توسکا", "tuska": "توسکا",
     "hezar": "هزار", "golestan": "گلستان", "bita": "بیتا", "ariana": "آریانا", "artemis": "آرتمیس", "sina": "سینا",
 }
 
@@ -137,40 +143,71 @@ def _colors_match(name, colors_fa):
     return name
 
 
-def guess(name, designs=(), colors=(), learned=None):
-    """{design, color, dl, cl} — dl و cl نوشتهٔ اصلی نقشه و رنگ در نام فایل (برای یادگرفتن اصلاح‌ها)."""
-    learned = learned or _learned()
-    toks = [t for t in SEP.split((name or "").strip()) if t]
-    # شمارهٔ عکس دوم یک فرش (Rayan-Doodi-2) حذف شود
-    while len(toks) > 2 and toks[-1].isdigit() and len(toks[-1]) <= 2:
-        toks.pop()
-    if not toks:
-        return {"design": "", "color": "", "dl": "", "cl": ""}
-    # رنگ: بلندترین دنبالهٔ آخر نام که یک‌جا یاد گرفته شده، وگرنه کلمه‌به‌کلمه از آخر
-    color_toks, color = [], ""
+BORDER_WORDS = {"hashiye", "hashie", "hashiyeh", "hashieh", "hashye", "hashiya", "border", "hashiyeh"}
+
+
+def _field_color(toks, colors, learned):
+    """(رنگ، کلمه‌های رنگ) از آخر کلمه‌ها؛ دست‌کم یک کلمه برای نقشه می‌ماند."""
     for n in range(min(3, len(toks) - 1), 1, -1):
         k = key("".join(toks[-n:]))
         if k in learned["color"]:
-            color_toks, color = toks[-n:], learned["color"][k]
+            return learned["color"][k], toks[-n:]
+    parts, used, i = [], [], len(toks) - 1
+    while i >= 1:
+        c = _color_word(toks[i], colors, learned)
+        if not c:
             break
-    if not color_toks:
-        parts = []
-        i = len(toks) - 1
-        while i >= 1:  # دست‌کم یک کلمه برای نقشه بماند
-            c = _color_word(toks[i], colors, learned)
-            if not c:
-                break
-            parts.insert(0, c)
-            color_toks.insert(0, toks[i])
-            i -= 1
-        if parts:
-            color = _colors_match(" ".join(parts), colors)
-        elif len(toks) >= 2:  # رنگ ناشناخته: کلمهٔ آخر، با نوشتن تقریبی
-            color_toks = [toks[-1]]
-            color = toks[-1] if PERSIAN.search(toks[-1]) else rough(toks[-1])
+        parts.insert(0, c)
+        used.insert(0, toks[i])
+        i -= 1
+    if parts:
+        return _colors_match(" ".join(parts), colors), used
+    if len(toks) >= 2:  # رنگ ناشناخته: کلمهٔ آخر، با نوشتن تقریبی
+        return (toks[-1] if PERSIAN.search(toks[-1]) else rough(toks[-1])), [toks[-1]]
+    return "", []
+
+
+def _border_color(toks, colors, learned):
+    k = key("".join(toks))
+    if not k:
+        return ""
+    if k in learned["color"]:
+        return learned["color"][k]
+    words = [_color_word(t, colors, learned) or (t if PERSIAN.search(t) else rough(t)) for t in toks]
+    return _colors_match(" ".join(w for w in words if w), colors)
+
+
+def guess(name, designs=(), colors=(), learned=None):
+    """{design, color, border, dl, cl, bl, n, group}
+
+    dl، cl و bl نوشتهٔ اصلی نقشه، رنگ زمینه و رنگ حاشیه در نام فایل‌اند (برای یادگرفتن اصلاح‌ها).
+    n شمارهٔ عکس («Touska-Dolfini2» عکس دوم است) و group برای چسباندن عکس‌های یک فرش به هم.
+    """
+    learned = learned or _learned()
+    toks = [t for t in SEP.split((name or "").strip()) if t]
+    n = 1
+    if toks and not toks[-1].isdigit():  # شمارهٔ چسبیده: Dolfini2
+        m = re.match(r"^(.*?\D)(\d{1,2})$", toks[-1])
+        if m and len(toks) > 1:
+            toks[-1], n = m.group(1), int(m.group(2))
+    while len(toks) > 2 and toks[-1].isdigit() and len(toks[-1]) <= 2:  # Rayan-Doodi-2
+        n = int(toks.pop())
+    empty = {"design": "", "color": "", "border": "", "dl": "", "cl": "", "bl": "", "n": n, "group": ""}
+    if not toks:
+        return empty
+    # حاشیه: هرچه بعد از Hashiye بیاید
+    border, btoks = "", []
+    hi = next((i for i, t in enumerate(toks) if key(t) in BORDER_WORDS or t in ("حاشیه",)), None)
+    if hi is not None and hi >= 1:
+        btoks = toks[hi + 1:]
+        border = _border_color(btoks, colors, learned)
+        toks = toks[:hi]
+    color, color_toks = _field_color(toks, colors, learned)
     d_toks = toks[:len(toks) - len(color_toks)]
     design = _design(d_toks, designs, learned)
-    return {"design": design, "color": color, "dl": key("".join(d_toks)), "cl": key("".join(color_toks))}
+    dl, cl, bl = key("".join(d_toks)), key("".join(color_toks)), key("".join(btoks))
+    return {"design": design, "color": color, "border": border, "dl": dl, "cl": cl, "bl": bl, "n": n,
+            "group": f"{dl}|{cl}|{bl}" if dl else ""}
 
 
 def _design(toks, designs, learned):
@@ -199,7 +236,8 @@ def learn(rows):
     from .models import NameHint
 
     for r in rows:
-        for kind, latin, fa in (("design", r.get("dl"), r.get("design")), ("color", r.get("cl"), r.get("color"))):
+        for kind, latin, fa in (("design", r.get("dl"), r.get("design")), ("color", r.get("cl"), r.get("color")),
+                                ("color", r.get("bl"), r.get("border"))):
             latin, fa = key(latin)[:80], (fa or "").strip()[:120]
             if not latin or not fa or latin.isdigit() or PERSIAN.search(latin):
                 continue

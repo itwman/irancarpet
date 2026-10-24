@@ -94,6 +94,8 @@
 
 <section class="wrap" aria-label="خدمات {% brand %}">{% include "partials/_trust.html" %}</section>
 
+{% if feature %}{% include "partials/_feature.html" %}{% endif %}
+
 {# ------------------------------------------------ دسته‌ها #}
 {% if ac.arches %}
 <section class="wrap sec" aria-labelledby="hCats">

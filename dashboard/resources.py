@@ -295,7 +295,7 @@ register(Resource(
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("order", "ترتیب", lambda o: fa_num(o.order), "order")],
     search=["name", "slug"], ordering=("order", "name"), slug_from="name",
     queryset=lambda qs: qs.select_related("parent", "image").annotate(_n=Count("products")),
-    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image"], "side"), SEO],
+    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image", "mirror_auto"], "side"), SEO],
     view_url=lambda o: o.get_absolute_url(),
 ))
 register(Resource(
@@ -435,7 +435,7 @@ register(Resource(
                ("قیمت", ["base_size", "base_price", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to"], "side"),
                ("وضعیت", ["is_active", "sort_order"], "side"),
                ("پیش‌فرض فرش‌های این آلبوم", ["default_specs", "default_brand", "default_primary_category", "default_categories",
-                                             "default_tags", "embossed"], "main")],
+                                             "default_tags", "embossed", "title_word"], "main")],
     readonly=[("افزودن سریع فرش", lambda o: format_html('<a class="btn btn-pink btn-sm" href="/panel/products/quick/?album={}">افزودن سریع فرش به این آلبوم</a>', o.pk) if o.pk else "—"),
               ("قیمت فروش سایزها", lambda o: _album_preview(o)),
               ("محصولات با قیمت جدا از آلبوم", lambda o: _album_own_prices(o))],

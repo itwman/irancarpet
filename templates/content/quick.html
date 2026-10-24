@@ -32,6 +32,8 @@
         <div class="fld"><label>برچسب‌ها</label>
           <select multiple data-ac="/panel/ac/product_tag/" data-ac-create="1" id="qaTags"></select></div>
         <div class="fld"><label class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" id="qaEmb"> گل برجسته (در عنوان می‌آید)</label></div>
+        <div class="fld"><label for="qaWord">کلمهٔ ویژهٔ عنوان</label><input class="form-control" id="qaWord" placeholder="مثل موکا" maxlength="40">
+          <small class="hint">بعد از «… شانه» در عنوان می‌آید؛ اگر قانون کلمه داشته باشد، دسته‌اش هم خودکار تیک می‌خورد.</small></div>
       </div>
       <div class="qa-cats">
         <div class="d-flex justify-content-between align-items-center"><label class="qa-k2">دسته‌ها</label>
@@ -51,7 +53,7 @@
         <strong>عکس‌ها را اینجا بکشید یا بزنید تا انتخاب کنید</strong>
         <span>هر عکس یک فرش می‌شود؛ عکس‌های اضافهٔ یک فرش را روی ردیف همان فرش بکشید. نقشه و رنگ از نام فایل حدس زده می‌شود، فارسی یا فینگلیش: <span dir="ltr">Bahar-Doodi-Noqrei.jpg</span> ← بهار، دودی نقره ای؛ <span dir="ltr">5006-Laki.jpg</span> ← کد ۵۰۰۶، لاکی. اصلاح‌های شما یاد گرفته می‌شود.</span>
       </label>
-      <datalist id="qaDesigns"></datalist><datalist id="qaColors"></datalist>
+      <datalist id="qaDesigns"></datalist><datalist id="qaColors"></datalist><datalist id="qaBorders"></datalist>
       <div class="qa-rows" id="qaRows"></div>
       <p class="muted small mt-2 mb-0" id="qaEmpty">هنوز فرشی اضافه نشده.</p>
     </section>
@@ -104,6 +106,9 @@
       $("qaPrimary").value = d.primary || "";
       $("qaDesigns").innerHTML = d.designs.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
       $("qaColors").innerHTML = d.colors.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
+      var bs = (d.borders || []).concat(d.colors.filter(function (c) { return (d.borders || []).indexOf(c) < 0; }));
+      $("qaBorders").innerHTML = bs.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
+      $("qaWord").value = d.title_word || "";
       st.tpl = d.template;
       $("qaBody").hidden = false;
       refreshTpl();
@@ -122,7 +127,8 @@
     clearTimeout(tplTimer);
     tplTimer = setTimeout(function () {
       if (!st.album) return;
-      fetch("/panel/products/quick/album/" + st.album + "/?tpl=1&specs=" + specIds().join(",") + "&emb=" + ($("qaEmb").checked ? 1 : 0),
+      fetch("/panel/products/quick/album/" + st.album + "/?tpl=1&specs=" + specIds().join(",") + "&emb=" + ($("qaEmb").checked ? 1 : 0) +
+            "&word=" + encodeURIComponent($("qaWord").value.trim()),
             { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
         st.tpl = d.template;
         $("qaTpl").innerHTML = esc(st.tpl).replace(D, "<i>[نقشه]</i>").replace(C, "<i>[رنگ زمینه]</i>");
@@ -131,6 +137,7 @@
     }, 150);
   }
   $("qaEmb").addEventListener("change", refreshTpl);
+  $("qaWord").addEventListener("input", refreshTpl);
   document.querySelector(".qa-specs").addEventListener("change", function () { refreshTpl(); checkReq(); });
   function checkReq() {
     document.querySelectorAll(".qa-req").forEach(function (b) {
@@ -150,14 +157,17 @@
   function addRow(images, g) {
     var last = st.rows[st.rows.length - 1];
     var r = { id: ++uid, images: images || [], design: (g && g.design) || (g ? "" : (last ? last.design : "")), color: (g && g.color) || "",
-              dl: (g && g.dl) || "", cl: (g && g.cl) || "", guessed: !!(g && (g.design || g.color)), title: "", custom: false };
+              border: (g && g.border) || "", dl: (g && g.dl) || "", cl: (g && g.cl) || "", bl: (g && g.bl) || "", group: (g && g.group) || "",
+              guessed: !!(g && (g.design || g.color)), title: "", custom: false };
     st.rows.push(r); return r;
   }
   function isCode(d) { return /^[0-9۰-۹]+$/.test(String(d || "").trim()); }
   function titleOf(r) {
     if (r.custom) return r.title;
     var t = isCode(r.design) ? st.tpl.replace("نقشه " + D, "کد " + D).replace("نقشهٔ " + D, "کد " + D) : st.tpl;
-    return t.replace(D, isCode(r.design) ? fa(r.design.trim()) : (r.design || "…")).replace(C, r.color || "…");
+    var c = r.color || "…";
+    if (r.border && norm(r.border) !== norm(r.color)) c += " حاشیه " + r.border;  // حاشیهٔ هم‌رنگ در عنوان نمی‌آید
+    return t.replace(D, isCode(r.design) ? fa(r.design.trim()) : (r.design || "…")).replace(C, c);
   }
   function ruleChips(title) {
     var t = norm(title);
@@ -183,7 +193,8 @@
         }).join("") + '<label class="qa-addimg" title="افزودن عکس به همین فرش">+<input type="file" accept="image/*" multiple hidden data-upto="' + r.id + '"></label></div>' +
         '<div class="qa-fields">' +
           '<div class="qa-two"><input class="form-control qa-design" list="qaDesigns" placeholder="نقشه (مثل افشان درباری)" value="' + esc(r.design) + '">' +
-          '<input class="form-control qa-color" list="qaColors" placeholder="رنگ زمینه (مثل سرمه‌ای)" value="' + esc(r.color) + '"></div>' +
+          '<input class="form-control qa-color" list="qaColors" placeholder="رنگ زمینه (مثل سرمه‌ای)" value="' + esc(r.color) + '">' +
+          '<input class="form-control qa-border" list="qaBorders" placeholder="رنگ حاشیه (اختیاری)" value="' + esc(r.border) + '"></div>' +
           '<input class="form-control form-control-sm qa-title" aria-label="عنوان">' +
           (r.guessed ? '<small class="qa-guess">نقشه و رنگ از نام فایل حدس زده شد؛ اگر درست نیست اصلاح کنید.</small>' : "") +
           '<div class="qa-rules"></div>' +
@@ -205,6 +216,7 @@
     var r = rowOf(e.target); if (!r) return;
     if (e.target.classList.contains("qa-design")) r.design = e.target.value.trim();
     if (e.target.classList.contains("qa-color")) r.color = e.target.value.trim();
+    if (e.target.classList.contains("qa-border")) r.border = e.target.value.trim();
     if (e.target.classList.contains("qa-title")) { r.custom = true; r.title = e.target.value; }
     renderTitle(r); count();
   });
@@ -243,7 +255,12 @@
   function addFiles(list) {
     window.panelUpload(list, function (files) {
       guessAll(files.map(function (f) { return f.text || ""; }), function (gs) {
-        files.forEach(function (f, i) { addRow([f], gs[i] || null); });
+        // عکس اصلی هر فرش اول؛ «Touska-Dolfini2» عکس دوم همان فرش است، نه فرش تازه
+        var idx = files.map(function (f, i) { return i; }).sort(function (a, b) { return ((gs[a] || {}).n || 1) - ((gs[b] || {}).n || 1) || a - b; });
+        idx.forEach(function (i) {
+          var g = gs[i] || null, same = g && g.group && st.rows.filter(function (r) { return r.group === g.group; })[0];
+          if (same) same.images.push(files[i]); else addRow([files[i]], g);
+        });
         draw();
       });
     });
@@ -265,9 +282,10 @@
       album: st.album, specs: specs,
       tags: $("qaTags").tomselect ? $("qaTags").tomselect.getValue() : [],
       categories: Array.prototype.filter.call(document.querySelectorAll("#qaCats input"), function (c) { return c.checked; }).map(function (c) { return c.value; }),
-      primary: $("qaPrimary").value, embossed: $("qaEmb").checked, save_defaults: $("qaSave").checked, status: $("qaStatus").value,
+      primary: $("qaPrimary").value, embossed: $("qaEmb").checked, title_word: $("qaWord").value.trim(), save_defaults: $("qaSave").checked, status: $("qaStatus").value,
       rows: st.rows.filter(function (r) { return r.design && r.color; }).map(function (r) {
-        return { design: r.design, color: r.color, dl: r.dl, cl: r.cl, title: r.custom ? r.title : "", images: r.images.map(function (m) { return m.value; }) };
+        return { design: r.design, color: r.color, border: r.border, dl: r.dl, cl: r.cl, bl: r.bl, title: r.custom ? r.title : "",
+                 images: r.images.map(function (m) { return m.value; }) };
       })
     };
     btn.disabled = true; btn.textContent = "در حال ساختن…";

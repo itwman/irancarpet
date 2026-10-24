@@ -468,7 +468,7 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 .qa-imgs .x{position:absolute;top:3px;inset-inline-end:3px;border:0;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;line-height:18px;padding:0}
 .qa-addimg{width:84px;height:84px;border-radius:9px;border:2px dashed #cfd3e6;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--muted);cursor:pointer;margin:0}
 .qa-fields{display:flex;flex-direction:column;gap:.4rem;min-width:0}
-.qa-two{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.qa-two{display:grid;grid-template-columns:1fr 1fr .9fr;gap:.5rem}
 .qa-title{background:var(--soft);font-weight:600}
 .qa-rules{display:flex;gap:.3rem;flex-wrap:wrap}
 .qa-rule{font-size:.75rem;background:var(--teal-t);color:var(--teal-d);padding:.05rem .5rem;border-radius:99px}

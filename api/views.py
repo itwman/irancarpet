@@ -234,6 +234,8 @@ def categories(request):
         for c in by_parent.get(pid, []):
             children, ids = tree(c.pk)
             ids = ids | own.get(c.pk, set())
+            if not ids:  # دستهٔ خالی (مثل دستهٔ تازه‌ای که هنوز فرشی ندارد) در اپ نمی‌آید
+                continue
             out.append(({"id": c.pk, "name": c.name, "count": len(ids), **S.cat_image(c, ids),
                          "children": children}, ids))
         return [x for x, _ in out], set().union(*[i for _, i in out]) if out else set()

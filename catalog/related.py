@@ -26,7 +26,7 @@ def _specs(p):
     color, reeds = set(), set()
     for t in p.specs.all():
         label = (t.attribute.label or "").replace("‌", " ")
-        if "رنگ" in label:
+        if "رنگ" in label and "حاشیه" not in label:
             color.add(t.pk)
         elif "شانه" in label:
             reeds.add(t.pk)

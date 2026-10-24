@@ -1,0 +1,20 @@
+{% load fa %}{# بخش «دستهٔ ویژه» صفحهٔ اول؛ از پنل ← تنظیمات ← عمومی #}
+<section class="feat" aria-labelledby="featT">
+  <div class="container feat__in">
+    <div class="feat__copy">
+      <ul class="feat__swatch" aria-hidden="true"><li style="--c:#EFE4D6"></li><li style="--c:#DCC6A8"></li><li style="--c:#A47864"></li><li style="--c:#7B5B4B"></li><li style="--c:#8E9AA6"></li></ul>
+      <h2 id="featT">{{ feature.title }}</h2>
+      {% if feature.text %}<p>{{ feature.text|fa_num }}</p>{% endif %}
+      <div class="feat__acts">
+        <a class="btn-ic feat__btn" href="{{ feature.url }}">{{ feature.button }}</a>
+        <span class="feat__n">{{ feature.count|fa_num }} طرح موجود</span>
+      </div>
+    </div>
+    <ul class="feat__rugs">
+      {% for p in feature.products|slice:":4" %}<li><a href="{{ p.get_absolute_url }}">
+        <span class="feat__img"><img src="{{ p.image|thumb:480 }}" alt="{{ p.image.alt|default:p.title }}" loading="lazy" decoding="async"{% if p.image.width %} width="{{ p.image.width }}" height="{{ p.image.height }}"{% endif %}></span>
+        <b>{{ p.title|fa_num }}</b>{% if p.min_price %}<small>از {{ p.min_price|toman }} تومان</small>{% endif %}
+      </a></li>{% endfor %}
+    </ul>
+  </div>
+</section>

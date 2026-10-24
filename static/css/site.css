@@ -1804,3 +1804,34 @@ body.has-app-bar{padding-bottom:64px}
   .aff-grid--4{gap:.6rem}
 }
 .aff2 .orders .st{white-space:nowrap}.aff2 .orders td,.aff2 .orders th{white-space:nowrap}
+/* صفحهٔ اول: دستهٔ ویژه (پالت موکا و…) */
+.feat{background:#F3EBE3;color:#3E2C23;padding:2.6rem 0;position:relative;overflow:hidden}
+.feat::after{content:"";position:absolute;inset-block:0;inset-inline-end:0;width:14px;background:repeating-linear-gradient(180deg,#A47864 0 10px,transparent 10px 16px);opacity:.55}
+.feat__in{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);gap:2.5rem;align-items:center}
+.feat__swatch{list-style:none;padding:0;margin:0 0 1.1rem;display:flex;gap:0}
+.feat__swatch li{width:42px;height:42px;background:var(--c)}
+.feat__swatch li:first-child{border-start-start-radius:12px;border-end-start-radius:12px}
+.feat__swatch li:last-child{border-start-end-radius:12px;border-end-end-radius:12px}
+.feat h2{font-size:clamp(1.6rem,3.2vw,2.4rem);font-weight:900;margin:0 0 .6rem;color:#3E2C23;line-height:1.4}
+.feat p{color:#5C4639;line-height:2;margin:0 0 1.2rem;max-width:30em}
+.feat__acts{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.feat__btn{background:#7B5B4B;color:#fff!important;border-radius:999px;padding:.7rem 1.5rem;font-weight:800}
+.feat__btn:hover{background:#5E4436}
+.feat__n{font-weight:700;color:#7B5B4B;font-size:.92rem}
+.feat__rugs{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;align-items:end}
+.feat__rugs li:nth-child(even){transform:translateY(1.4rem)}
+.feat__rugs a{display:flex;flex-direction:column;gap:.35rem;color:#3E2C23}
+.feat__img{display:block;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:#E6D9CC;box-shadow:0 14px 30px -18px rgba(62,44,35,.6)}
+.feat__img img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.feat__rugs a:hover img{transform:scale(1.04)}
+.feat__rugs b{font-size:.84rem;line-height:1.7;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feat__rugs small{color:#7B5B4B;font-size:.8rem;font-weight:700}
+@media (max-width:991px){
+  .feat__in{grid-template-columns:minmax(0,1fr);gap:1.4rem}
+  .feat__rugs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:.75rem;padding-bottom:.4rem;scrollbar-width:none}
+  .feat__rugs li{flex:0 0 42%;scroll-snap-align:start}
+  .feat__rugs li:nth-child(even){transform:none}
+  .feat::after{display:none}
+}
+@media (prefers-reduced-motion:reduce){.feat__img img{transition:none}}
+.archive-intro details{border-bottom:1px solid var(--line);padding:.7rem 0;max-width:80ch}.archive-intro summary{font-weight:800;cursor:pointer}.archive-intro details p{margin:.5rem 0 0;color:var(--ink-2)}

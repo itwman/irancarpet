@@ -341,6 +341,38 @@ class QuickAddTests(Base):
         code.use_template = True
         self.assertIn("کد ۵۰۰۶", R.build(code)["html"])
 
+    def test_border_word_and_second_image(self):
+        import json
+
+        from catalog import mocha
+        from catalog.models import Attribute
+
+        g = self.client.post("/panel/products/quick/guess/", json.dumps({"album": self.album.pk, "names": [
+            "Javaher-Sadafi-Hashiye Dolfini", "Javaher-Sadafi-Hashiye Dolfini2", "Mandegar-Bej_Sabz", "Rolex-Sadafi Talaei",
+            "Rolex-Sadafi_Hashiye Talaei"]}), content_type="application/json").json()["guesses"]
+        self.assertEqual([(x["design"], x["color"], x["border"]) for x in g], [
+            ("جواهر", "صدفی", "دلفینی"), ("جواهر", "صدفی", "دلفینی"), ("ماندگار", "بژ سبز", ""), ("رولکس", "صدفی طلایی", ""),
+            ("رولکس", "صدفی", "طلایی")])
+        self.assertEqual((g[1]["n"], g[1]["group"]), (2, g[0]["group"]))  # عکس دوم همان فرش
+        self.assertNotEqual(g[3]["group"], g[4]["group"])
+        tpl = self.client.get(f"/panel/products/quick/album/{self.album.pk}/?tpl=1&specs={self.t1500.pk}&word=موکا").json()["template"]
+        self.assertTrue(tpl.startswith("فرش ۱۵۰۰ شانه موکا "), tpl)
+        d = self.post(specs={str(self.reeds.pk): [str(self.t1500.pk)]}, title_word="موکا", save_defaults=True, status="publish", rows=[
+            {"design": "جواهر", "color": "صدفی", "border": "دلفینی"},
+            {"design": "آوین", "color": "کرم", "border": "کرم"}])
+        self.assertEqual(len(d["created"]), 2, d)
+        p = Product.objects.get(title="فرش ۱۵۰۰ شانه موکا نقشه جواهر زمینه صدفی حاشیه دلفینی")
+        same = Product.objects.get(title="فرش ۱۵۰۰ شانه موکا نقشه آوین زمینه کرم")  # حاشیهٔ هم‌رنگ در عنوان نمی‌آید
+        border = Attribute.objects.get(slug="border-color")
+        self.assertEqual(p.specs.get(attribute=border).name, "دلفینی")
+        self.assertEqual(same.specs.get(attribute=border).name, "کرم")
+        self.assertEqual((R.color_of(p), R.border_of(p)), ("صدفی", "دلفینی"))
+        self.assertIn(mocha.SLUG, list(p.categories.values_list("slug", flat=True)))  # قانون کلمهٔ «موکا»
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.title_word, "موکا")
+        p.use_template = True
+        self.assertIn("حاشیهٔ دلفینی", R.build(p)["html"])
+
     def test_product_form_specs_and_missing(self):
         from .quick import missing_required
 
