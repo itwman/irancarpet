@@ -198,7 +198,7 @@ class MirrorTests(TestCase):
         self.addCleanup(src_only.stop)
         with mock.patch("mirror.match.legacy_products", lambda: Product.objects.filter(pk__in=[legacy.pk, lonely.pk]).order_by("pk")):
             items = match.run(do_apply=True, out=lambda m: None)
-        self.assertEqual({p.pk: (r or {}).get("id") for p, r, _ in items}, {legacy.pk: self.src.pk, lonely.pk: None})
+        self.assertEqual({p.pk: (r or {}).get("id") for p, r, _w, _b in items}, {legacy.pk: self.src.pk, lonely.pk: None})
         self.assertTrue(MirrorPick.objects.filter(product=self.src, by_match=True).exists())
         run()
         legacy.refresh_from_db()
@@ -207,8 +207,8 @@ class MirrorTests(TestCase):
         self.assertNotEqual(legacy.slug, "legacy-zarin")
         self.assertEqual(Redirect.objects.get(source=Redirect.normalize("/product/legacy-zarin/")).target, legacy.get_absolute_url())
         lonely.refresh_from_db()
-        self.assertEqual(lonely.status, "draft")
-        self.assertTrue(Redirect.objects.filter(source=Redirect.normalize("/product/legacy-tablo/")).exists())
+        self.assertEqual((lonely.status, lonely.sale_status), ("publish", "unavailable"))   # صفحه می‌ماند، ناموجود
+        self.assertFalse(Redirect.objects.filter(source=Redirect.normalize("/product/legacy-tablo/")).exists())
 
     def test_orders_pushed_once_and_updated(self):
         from mirror.orders import push_all
@@ -263,3 +263,16 @@ class MirrorPanelTests(TestCase):
         p = Product.objects.create(title="فرش طرح آزمون", slug="t1", status="publish")
         self.assertContains(self.client.get(f"/panel/products/{p.pk}/edit/"), "در فرشستان منتشر شود")
         self.assertContains(self.client.get("/panel/products/?in_fs=0"), "ارسال به فرشستان")
+
+
+class MatchKeyTests(TestCase):
+    def test_keys(self):
+        from mirror.match import _sim, key
+
+        a = key({"t": "فرش طرح وینتیج ورساچه دودی - 700 شانه تمام آکریلیک"})
+        b = key({"t": "فرش 700 شانه نقشه ورساچه وینتیج زمینه دودی"})
+        self.assertEqual(a[:3], b[:3])                                   # ترتیب واژه‌ها مهم نیست
+        self.assertEqual(key({"t": "فرش طرح ارکیده سرمه ای - 700 شانه"})[:3],
+                         key({"t": "فرش ارکیده 700 شانه زمینه سرمه ای - آکریلیک", "c": "سرمه"})[:3])
+        self.assertGreaterEqual(_sim(("ارم", "باغ"), ("VIP", "ارم", "باغ")), .84)
+        self.assertLess(_sim(("ارم", "باغ"), ("سروناز",)), .5)

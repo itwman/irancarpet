@@ -16,10 +16,31 @@ from .models import MirrorLink, MirrorSettings
 from .sync import _retire, norm, parts
 
 
+import difflib
+
+GENERIC = {"فرش", "طرح", "نقشه", "زمینه", "برجسته", "بافت", "ممتاز", "تمام", "آکریلیک", "اکریلیک", "پلی", "استر", "ماشینی"}
+FUZZY_MIN = .84
+
+
+def _color(c):
+    return re.sub(r"\s+", "", re.sub(r"\s*ای$", "", c or ""))   # «سرمه ای» و «سرمه» یکی‌اند
+
+
 def key(row):
+    """(واژه‌های نقشه به ترتیب الفبا، رنگ، شانه، بافت) — ترتیب واژه‌ها مهم نیست: «وینتیج ورساچه» = «ورساچه وینتیج»."""
     design, color, reeds, relief = parts(row)
-    color = re.sub(r"\s*ای$", "", color)   # «سرمه ای» و «سرمه» یکی‌اند
-    return re.sub(r"\s+", "", design), re.sub(r"\s+", "", color), reeds, relief
+    words = tuple(sorted(w for w in norm(design).split() if w not in GENERIC))
+    return words, _color(color), reeds, relief
+
+
+def _sim(a, b):
+    """شباهت دو نقشه: زیرمجموعه (مثل «باغ ارم» و «باغ ارم VIP») ۰٫۹، وگرنه شباهت نویسه‌ای."""
+    if not a or not b:
+        return 0
+    sa, sb = set(a), set(b)
+    if (sa <= sb or sb <= sa) and len("".join(min(a, b, key=len))) >= 3:
+        return .9
+    return difflib.SequenceMatcher(None, "".join(a), "".join(b)).ratio()
 
 
 def legacy_products():
@@ -29,30 +50,48 @@ def legacy_products():
 
 
 def plan():
-    """[(محصول قدیمی، ردیف منبع یا None، توضیح)]"""
+    """[(محصول قدیمی، ردیف منبع یا None، توضیح، بهترین نامزد برای بی‌جفت‌ها)]
+    ترتیب: ۱) نقشه + رنگ + شانه دقیق ۲) اگر شانه یا رنگ در عنوان قدیمی نبود، بدون همان ۳) نقشهٔ نزدیک با رنگ و شانهٔ یکسان."""
     rows = get_json("/api/mirror/v1/stock/", {"all": "1"}, timeout=180)["products"]
-    full, loose = {}, {}
-    for r in rows:
-        d, c, n, rel = key(r)
+    keyed = [(r, key(r)) for r in rows]
+    full, by_cn, by_dn, by_dc = {}, {}, {}, {}
+    for r, (d, c, n, rel) in keyed:
         if not d:
             continue
         full.setdefault((d, c, n), []).append((r, rel))
-        loose.setdefault((d, c), []).append((r, rel))
+        by_cn.setdefault((c, n), []).append((r, rel, d))
+        by_dn.setdefault((d, n), []).append((r, rel))
+        by_dc.setdefault((d, c), []).append((r, rel))
     out, used = [], {}
     for p in legacy_products():
         d, c, n, rel = key({"t": p.title, "d": p.design_name})
-        cands = full.get((d, c, n)) if n else loose.get((d, c))
-        why = "نقشه، رنگ و شانه یکی است" if n else "نقشه و رنگ یکی است (شانه در عنوان قدیمی نبود)"
+        cands, why, best = None, "", None
+        if d and c and n:
+            cands, why = full.get((d, c, n)), "نقشه، رنگ و شانه یکی است"
+        elif d and c:
+            cands, why = by_dc.get((d, c)), "نقشه و رنگ یکی است (شانه در عنوان قدیمی نبود)"
+        elif d and n:
+            cands, why = by_dn.get((d, n)), "نقشه و شانه یکی است (رنگ در عنوان قدیمی نبود)"
+        if not cands and d and c and n:
+            scored = sorted(((_sim(d, d2), r, rel2) for r, rel2, d2 in by_cn.get((c, n), [])), key=lambda x: -x[0])
+            if scored and scored[0][0] >= FUZZY_MIN and (len(scored) == 1 or scored[1][0] < scored[0][0]):
+                cands = [(scored[0][1], scored[0][2])]
+                why = f"نقشهٔ نزدیک ({round(scored[0][0] * 100)}٪)، رنگ و شانه یکی است"
+            elif scored:
+                best = scored[0]
         if not cands:
-            out.append((p, None, "فرش هم‌نقشه و هم‌رنگ در ایران کارپت پیدا نشد"))
+            if best is None and d:  # برای گزارش: نزدیک‌ترین فرش با همان شانه، هر رنگی
+                pool = [(_sim(d, d2), r) for r, (d2, c2, n2, _) in keyed if n2 == n and d2]
+                best = max(pool, key=lambda x: x[0], default=None)
+            out.append((p, None, "فرش هم‌نقشه و هم‌رنگ در ایران کارپت پیدا نشد", best))
             continue
         same = [x for x in cands if x[1] == rel] or cands
         r = same[0][0]
         if r["id"] in used:
-            out.append((p, r, f"تکراری؛ همین فرش قبلاً با «{used[r['id']]}» جفت شد"))
+            out.append((p, r, f"تکراری؛ همین فرش قبلاً با «{used[r['id']]}» جفت شد", None))
             continue
         used[r["id"]] = p.title
-        out.append((p, r, why + ("" if len(same) == 1 else f" ({len(same)} گزینه؛ اولی انتخاب شد)")))
+        out.append((p, r, why + ("" if len(same) == 1 else f" ({len(same)} گزینه؛ اولی انتخاب شد)"), None))
     return out
 
 
@@ -61,36 +100,63 @@ def report_csv(items):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
-        w.writerow(["شناسهٔ فرشستان", "عنوان فرشستان", "نشانی", "شناسهٔ ایران کارپت", "عنوان ایران کارپت", "نتیجه"])
-        for p, r, why in items:
-            w.writerow([p.pk, p.title, p.get_absolute_url(), r["id"] if r else "", r["t"] if r else "", why])
+        w.writerow(["شناسهٔ فرشستان", "عنوان فرشستان", "نشانی", "شناسهٔ ایران کارپت", "عنوان ایران کارپت", "نتیجه",
+                    "نزدیک‌ترین فرش ایران کارپت (برای بی‌جفت‌ها)", "شباهت"])
+        for p, r, why, best in items:
+            w.writerow([p.pk, p.title, p.get_absolute_url(), r["id"] if r else "", r["t"] if r else "", why,
+                        best[1]["t"] if best else "", f"{round(best[0] * 100)}٪" if best else ""])
     return path
+
+
+def _unavailable(p):
+    """کالای قدیمی بی‌جفت: صفحه می‌ماند (رتبهٔ گوگل) ولی ناموجود می‌شود؛ «خبرم کن» فعال است."""
+    from catalog.models import Variation
+
+    Variation.objects.filter(product=p).update(is_available=False)
+    type(p).objects.filter(pk=p.pk).update(sale_status="unavailable")
+    p.sale_status = "unavailable"
+    p.refresh_price_cache()
+
+
+def _redirect_to(p, target):
+    """تکراری: همان فرش دو بار در فرشستان بود؛ دومی پیش‌نویس و ۳۰۱ به اولی."""
+    from seo.models import Redirect
+
+    _retire(p)
+    Redirect.objects.filter(source=Redirect.normalize(p.get_absolute_url())).update(target=target.get_absolute_url())
 
 
 @transaction.atomic
 def apply(items):
-    matched = retired = 0
+    from catalog.models import Product
+
+    matched = unavailable = merged = 0
     links = {lk.source_pk: lk for lk in MirrorLink.objects.select_related("product")}
-    for p, r, why in items:
-        if r is None or why.startswith("تکراری"):
-            _retire(p)
-            retired += 1
+    first = {}  # شناسهٔ منبع ← کالای قدیمی جفت‌شده
+    for p, r, why, _best in items:
+        if r is not None and not why.startswith("تکراری"):
+            first[r["id"]] = p
+    for p, r, why, _best in items:
+        if r is None:
+            _unavailable(p)
+            unavailable += 1
+            continue
+        if why.startswith("تکراری"):
+            _redirect_to(p, first.get(r["id"]) or p)
+            merged += 1
             continue
         lk = links.get(r["id"])
         if lk and lk.product_id and lk.product_id != p.pk:
             # این فرش منبع قبلاً محصول جدا گرفته است؛ نشانی قدیمی به همان می‌رود
-            _retire(p)
-            from seo.models import Redirect
-
-            Redirect.objects.filter(source=Redirect.normalize(p.get_absolute_url())).update(target=lk.product.get_absolute_url())
-            retired += 1
+            _redirect_to(p, Product.objects.get(pk=lk.product_id))
+            merged += 1
             continue
         lk = lk or MirrorLink(source_pk=r["id"])
         lk.product, lk.legacy, lk.source_title = p, True, r["t"][:300]
         lk.source_modified, lk.stock_hash, lk.synced_at = "", "", None   # همگام‌سازی بعدی کامل می‌گیرد
         lk.save()
         matched += 1
-    return matched, retired
+    return matched, unavailable, merged
 
 
 def run(do_apply=False, out=print):
@@ -102,21 +168,23 @@ def run(do_apply=False, out=print):
     ok = [x for x in items if x[1] is not None and not x[2].startswith("تکراری")]
     none = [x for x in items if x[1] is None]
     dup = [x for x in items if x[2].startswith("تکراری")]
+    fuzzy = [x for x in ok if x[2].startswith("نقشهٔ نزدیک")]
     path = report_csv(items)
-    out(f"کالاهای قدیمی فرشستان: {len(items)} · جفت‌شده: {len(ok)} · بی‌جفت: {len(none)} · تکراری: {len(dup)}")
-    for p, r, why in ok[:12]:
-        out(f"  ✔ {norm(p.title)}  ←  {norm(r['t'])}")
+    out(f"کالاهای قدیمی فرشستان: {len(items)} · جفت‌شده: {len(ok)} (با نقشهٔ نزدیک: {len(fuzzy)}) · بی‌جفت: {len(none)} · تکراری: {len(dup)}")
+    for p, r, why, _b in (fuzzy[:10] + [x for x in ok if x not in fuzzy][:4]):
+        out(f"  ✔ {norm(p.title)}  ←  {norm(r['t'])}" + (f"  [{why}]" if why.startswith("نقشهٔ نزدیک") else ""))
     if none:
-        out("نمونهٔ بی‌جفت‌ها (پیش‌نویس می‌شوند و ۳۰۱ به دسته‌شان می‌روند):")
-        for p, _r, _w in none[:12]:
-            out(f"  ✖ {norm(p.title)}")
+        out("نمونهٔ بی‌جفت‌ها (صفحه می‌ماند ولی ناموجود می‌شود) و نزدیک‌ترین فرش ایران کارپت:")
+        for p, _r, _w, best in none[:15]:
+            out(f"  ✖ {norm(p.title)}" + (f"   ~ {norm(best[1]['t'])} ({round(best[0] * 100)}٪)" if best else ""))
     out(f"فهرست کامل: {path}")
     if do_apply:
-        ids = [r["id"] for _p, r, why in ok]
+        ids = [r["id"] for _p, r, _w, _b in ok]
         for i in range(0, len(ids), 500):  # این فرش‌ها در ایران کارپت برای فرشستان انتخاب می‌شوند
             get_json("/api/mirror/v1/pick/", body={"ids": ids[i:i + 500]}, timeout=60)
-        m, r = apply(items)
-        out(f"اعمال شد: {m} جفت، {r} پیش‌نویس با ۳۰۱. همگام‌سازی بعدی عنوان، نامک و قیمت جفت‌شده‌ها را از ایران کارپت می‌گیرد.")
+        m, u, g = apply(items)
+        out(f"اعمال شد: {m} جفت، {u} ناموجود (صفحه ماند)، {g} تکراری ۳۰۱ به فرش اصلی. "
+            "همگام‌سازی بعدی عنوان، نامک، قیمت و موجودی جفت‌شده‌ها را از ایران کارپت می‌گیرد.")
     else:
         out("هنوز چیزی تغییر نکرده است. برای اعمال: manage.py mirror_match --apply")
     return items
