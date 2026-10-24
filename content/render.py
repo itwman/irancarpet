@@ -405,9 +405,9 @@ def render(src, ctx):
             out.append("<ul>" + "".join(f"<li>{x}</li>" for x in items) + "</ul>")
             items.clear()
 
-    from .smart import variants
+    from .smart import site_seed, variants
 
-    seed = ctx.p.pk or ctx.p.title
+    seed = site_seed(ctx.p)
     for raw in (src or "").replace("\r\n", "\n").split("\n"):
         s = variants(raw.strip(), seed, raw.strip()[:40]) if "{{" in raw else raw.strip()
         if not s:

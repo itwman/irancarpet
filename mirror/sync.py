@@ -323,6 +323,13 @@ def _retire(p, why=""):
             "target": target, "status_code": 301, "is_active": True, "origin": "mirror"})
 
 
+def own_text(p):
+    """کالای قدیمی متن دست‌نوشتهٔ خودش را دارد (نه چند خط کوتاه)."""
+    from django.utils.html import strip_tags
+
+    return len(re.sub(r"\s+", " ", strip_tags(p.content or "")).strip()) >= 300
+
+
 @transaction.atomic
 def apply_full(row, link, s):
     from catalog.models import Product, ProductImage
@@ -344,7 +351,9 @@ def apply_full(row, link, s):
     p.kind = row.get("kind") or p.kind
     p.status = "publish"
     p.sale_status = row["ss"]
-    p.use_template = True       # متن از «قالب متن محصول» همین سایت؛ با منبع یکی نمی‌شود
+    if p.pk is None or not own_text(p):
+        p.use_template = True   # متن از «قالب متن فرشستان» همین سایت (template.py)؛ با منبع یکی نمی‌شود
+    # کالای قدیمی جفت‌شده که متن اختصاصی خودش را دارد: همان متن می‌ماند (یکتا و در گوگل)، فقط داده‌ها تازه می‌شوند
     p.content = "" if p.pk is None else p.content
     p.album, p.custom_base_price, p.seller = local_album(row.get("a")), None, None
     p.brand = _brand(row.get("brand"))
@@ -403,6 +412,9 @@ def run(report=None, out=None):
         say(f"خطا: {e}")
         return s.last_result
     if live:
+        from .template import ensure_template
+
+        ensure_template(s)
         try:
             sync_albums(s)
         except MirrorError as e:

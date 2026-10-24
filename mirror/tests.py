@@ -114,6 +114,14 @@ class MirrorTests(TestCase):
         self.assertEqual(p.title, "فرش ماشینی زرین زمینه سیلور 700 شانه برجسته")
         self.assertNotEqual(p.slug, self.src.slug)
         self.assertTrue(p.use_template and p.status == "publish" and p.seller_id is None)
+        # قالب متن جدای فرشستان یک بار ساخته و پیش‌فرض می‌شود
+        from content.models import ContentTemplate
+        from content.render import template_for
+        from mirror.template import NAME
+
+        self.assertTrue(MirrorSettings.load().template_ready)
+        self.assertEqual(template_for(p).name, NAME)
+        self.assertEqual(ContentTemplate.objects.filter(is_default=True).count(), 1)
         self.assertEqual(p.album.mirror_pk, self.album.pk)          # آلبوم نمایشی برای لیست قیمت
         src_prices = {v.size.slug: v.price for v in self.src.variations.select_related("size")}
         self.assertEqual({v.size.slug: v.price for v in p.variations.select_related("size")}, src_prices)
@@ -188,7 +196,9 @@ class MirrorTests(TestCase):
         from mirror import match
         from mirror.sync import run
 
-        legacy = Product.objects.create(title="فرش طرح زرین سیلور ۷۰۰ شانه برجسته", slug="legacy-zarin", status="publish")
+        own = "<p>" + "متن اختصاصی فرشستان دربارهٔ نقشهٔ زرین و داستان آن. " * 10 + "</p>"
+        legacy = Product.objects.create(title="فرش طرح زرین سیلور ۷۰۰ شانه برجسته", slug="legacy-zarin", status="publish",
+                                        content=own)
         lonely = Product.objects.create(title="تابلو فرش منظره", slug="legacy-tablo", status="publish")
         # در آزمون منبع و مقصد یک دیتابیس‌اند: خوراک فقط فرش منبع و «کالای قدیمی» فقط دو محصول بالا
         MirrorPick.objects.all().delete()   # جفت کردن خودش فرش منبع را برای فرشستان انتخاب می‌کند
@@ -206,6 +216,7 @@ class MirrorTests(TestCase):
         self.assertEqual(legacy.title, "فرش ماشینی زرین زمینه سیلور 700 شانه برجسته")
         self.assertNotEqual(legacy.slug, "legacy-zarin")
         self.assertEqual(Redirect.objects.get(source=Redirect.normalize("/product/legacy-zarin/")).target, legacy.get_absolute_url())
+        self.assertEqual((legacy.use_template, legacy.content), (False, own))   # متن یکتای خودش می‌ماند
         lonely.refresh_from_db()
         self.assertEqual((lonely.status, lonely.sale_status), ("publish", "unavailable"))   # صفحه می‌ماند، ناموجود
         self.assertFalse(Redirect.objects.filter(source=Redirect.normalize("/product/legacy-tablo/")).exists())
@@ -290,3 +301,20 @@ class MatchTieTests(TestCase):
             (p, r, why, _b), = match.plan()
         self.assertEqual(r["id"], 2)
         self.assertIn("نقشهٔ نزدیک", why)
+
+
+class SiteSeedTests(TestCase):
+    def test_same_rug_other_site_other_wording(self):
+        from django.test import override_settings
+
+        from catalog.models import Product
+        from content.smart import pick, site_seed
+
+        p = Product(pk=7, title="x")
+        self.assertEqual(site_seed(p), 7)               # ایران کارپت: همان جمله‌های قبلی
+        opts = [str(i) for i in range(50)]
+        with override_settings(SITE_THEME="farshestan"):
+            self.assertEqual(site_seed(p), "farshestan:7")
+            fs = [pick(opts, site_seed(Product(pk=i, title="x")), "o") for i in range(1, 30)]
+        ic = [pick(opts, i, "o") for i in range(1, 30)]
+        self.assertLess(sum(a == b for a, b in zip(fs, ic)), 5)

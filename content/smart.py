@@ -15,6 +15,16 @@ VARIANT_RE = re.compile(r"\{\{((?:[^{}]|\{[^{}]*\})*)\}\}")
 
 
 # ------------------------------------------------------------------ انتخاب ثابت برای هر فرش
+def site_seed(p):
+    """دانهٔ انتخاب جمله‌ها برای هر فرش. روی سایت دوم (مثل فرشستان) نام قالب سایت هم در آن است تا
+    همان فرش در دو سایت جمله‌بندی دیگری بگیرد؛ روی ایران کارپت (بدون قالب) همان قبلی می‌ماند."""
+    from django.conf import settings
+
+    base = p.pk or p.title
+    theme = getattr(settings, "SITE_THEME", "")
+    return f"{theme}:{base}" if theme else base
+
+
 def pick(options, seed, salt=""):
     """یکی از گزینه‌ها؛ برای یک فرش همیشه همان (با تغییر قیمت یا ذخیرهٔ دوباره عوض نمی‌شود)."""
     options = [o for o in options if o]
@@ -182,7 +192,7 @@ def fa_latin(s):
 class Smart:
     def __init__(self, ctx):
         self.ctx, self.p = ctx, ctx.p
-        self.seed = self.p.pk or self.p.title
+        self.seed = site_seed(self.p)
 
     def _pick(self, opts, salt):
         return pick(opts, self.seed, salt)

@@ -35,6 +35,7 @@ class MirrorSettings(models.Model):
     push_orders = models.BooleanField("سفارش‌ها در پنل منبع هم ثبت شوند", default=True)
     orders_since = models.DateTimeField("ارسال سفارش‌های ثبت‌شده از", null=True, blank=True,
                                         help_text="خالی = از لحظهٔ روشن شدن همگام‌سازی")
+    template_ready = models.BooleanField("قالب متن فرشستان ساخته شده", default=False, editable=False)
     last_sync_at = models.DateTimeField("آخرین همگام‌سازی", null=True, blank=True, editable=False)
     last_result = models.JSONField(default=dict, blank=True, editable=False)
 
