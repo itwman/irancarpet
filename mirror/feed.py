@@ -36,11 +36,13 @@ def guard(view):
     return csrf_exempt(wrapped)
 
 
-def own_products():
+def own_products(picked=True):
     from catalog.models import Product
 
-    # فقط کالای خود سایت (نه فروشندگان بازارچه) و نه کپی‌های همگام‌شده از جای دیگر
-    return Product.objects.published().filter(seller__isnull=True, mirror__isnull=True)
+    # فقط کالای خود سایت (نه فروشندگان بازارچه) و نه کپی‌های همگام‌شده از جای دیگر؛
+    # و فقط فرش‌هایی که در پنل برای فرشستان انتخاب شده‌اند (picked=False فقط برای جفت کردن کالاهای قدیمی)
+    qs = Product.objects.published().filter(seller__isnull=True, mirror__isnull=True)
+    return qs.filter(mirror_pick__isnull=False) if picked else qs
 
 
 def reeds_of(p, specs=None):
@@ -83,10 +85,10 @@ def compact(p):
     return row
 
 
-def _qs(ids=None):
+def _qs(ids=None, picked=True):
     from catalog.models import Variation
 
-    qs = own_products().prefetch_related(
+    qs = own_products(picked).prefetch_related(
         Prefetch("variations", queryset=Variation.objects.select_related("size").order_by("size__sort_order", "menu_order")),
         "specs__attribute")
     if ids is not None:
@@ -99,7 +101,8 @@ def stock(request):
     ids = None
     if request.GET.get("ids"):
         ids = [int(x) for x in request.GET["ids"].split(",") if x.strip().isdigit()][:200]
-    return JsonResponse({"ok": True, "at": timezone.now().isoformat(), "products": [compact(p) for p in _qs(ids)]},
+    picked = request.GET.get("all") != "1"
+    return JsonResponse({"ok": True, "at": timezone.now().isoformat(), "products": [compact(p) for p in _qs(ids, picked)]},
                         json_dumps_params={"ensure_ascii": False})
 
 
@@ -153,6 +156,20 @@ def albums(request):
                     "rows": [[r["size"].slug, r["price"], r["pair_only"]] for r in rows],
                     "sizes": [_size_row(r["size"]) for r in rows]})
     return JsonResponse({"ok": True, "albums": out}, json_dumps_params={"ensure_ascii": False})
+
+
+@guard
+def pick(request):
+    """(POST) انتخاب خودکار فرش‌هایی که با کالای قدیمی فرشستان جفت شده‌اند."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST"}, status=405)
+    from .models import MirrorPick
+
+    ids = [int(x) for x in json.loads(request.body or b"{}").get("ids", []) if str(x).isdigit()]
+    have = set(MirrorPick.objects.filter(product_id__in=ids).values_list("product_id", flat=True))
+    new = [i for i in own_products(picked=False).filter(pk__in=ids).values_list("pk", flat=True) if i not in have]
+    MirrorPick.objects.bulk_create([MirrorPick(product_id=i, by_match=True) for i in new])
+    return JsonResponse({"ok": True, "added": len(new)})
 
 
 @guard

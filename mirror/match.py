@@ -30,7 +30,7 @@ def legacy_products():
 
 def plan():
     """[(محصول قدیمی، ردیف منبع یا None، توضیح)]"""
-    rows = get_json("/api/mirror/v1/stock/", timeout=120)["products"]
+    rows = get_json("/api/mirror/v1/stock/", {"all": "1"}, timeout=180)["products"]
     full, loose = {}, {}
     for r in rows:
         d, c, n, rel = key(r)
@@ -112,6 +112,9 @@ def run(do_apply=False, out=print):
             out(f"  ✖ {norm(p.title)}")
     out(f"فهرست کامل: {path}")
     if do_apply:
+        ids = [r["id"] for _p, r, why in ok]
+        for i in range(0, len(ids), 500):  # این فرش‌ها در ایران کارپت برای فرشستان انتخاب می‌شوند
+            get_json("/api/mirror/v1/pick/", body={"ids": ids[i:i + 500]}, timeout=60)
         m, r = apply(items)
         out(f"اعمال شد: {m} جفت، {r} پیش‌نویس با ۳۰۱. همگام‌سازی بعدی عنوان، نامک و قیمت جفت‌شده‌ها را از ایران کارپت می‌گیرد.")
     else:

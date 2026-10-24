@@ -354,6 +354,9 @@ def apply_full(row, link, s):
     p.save()
     if old_url and old_url != p.get_absolute_url():
         _redirect_old_url(old_url, p)
+    from seo.models import Redirect
+
+    Redirect.objects.filter(source=Redirect.normalize(p.get_absolute_url()), origin="mirror").delete()  # دوباره منتشر شد
     cats = [_category(c) for c in row.get("categories", [])]
     p.categories.set(cats)
     prim = next((c for c, d in zip(cats, row.get("categories", [])) if d["slug"] == row.get("primary_category")), None)

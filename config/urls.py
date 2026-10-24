@@ -65,6 +65,7 @@ urlpatterns = [
     path("api/mirror/v1/products/", mirror_feed.products),
     path("api/mirror/v1/orders/", mirror_feed.orders),
     path("api/mirror/v1/albums/", mirror_feed.albums),
+    path("api/mirror/v1/pick/", mirror_feed.pick),
     path("llms.txt", seo_views.llms_txt),
     re_path(r"^(?P<key>[0-9a-f]{32})\.txt$", seo_views.indexnow_key),
     path("sitemap_index.xml", sitemaps.index),

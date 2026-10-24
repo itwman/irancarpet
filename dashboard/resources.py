@@ -159,11 +159,30 @@ register(Resource(
         "set_album": ("تغییر آلبوم قیمت", lambda r, qs: _set_album(r, qs), "آلبوم", lambda: _album_choices()),
         "follow_album": ("پیروی کامل از قیمت آلبوم (حذف قیمت‌های اختصاصی و حراج)", lambda r, qs: _follow_album(qs)),
         "clear_sale": ("حذف قیمت حراج", lambda r, qs: _clear_sale(qs)),
+        "mirror_on": ("ارسال به فرشستان", lambda r, qs: _mirror_pick(qs, True)),
+        "mirror_off": ("برداشتن از فرشستان", lambda r, qs: _mirror_pick(qs, False)),
     },
     custom_filters={"own_price": ("قیمت جدا از آلبوم", [
         ("any", "هر نوع"), ("custom", "قیمت پایهٔ اختصاصی"), ("override", "قیمت خرید اختصاصی سایز"), ("sale", "قیمت حراج"),
-    ], lambda qs, v: qs.filter(_override_q(v)).distinct())},
+    ], lambda qs, v: qs.filter(_override_q(v)).distinct()),
+        "in_fs": ("در فرشستان", [("1", "ارسال‌شده به فرشستان"), ("0", "نه")],
+                  lambda qs, v: qs.filter(mirror_pick__isnull=(v != "1")))},
 ))
+
+
+def _mirror_pick(qs, on):
+    """فرش‌های انتخاب‌شده برای فرشستان (منبع کاتالوگ). فرشستان در نوبت بعد (حداکثر ۱۰ دقیقه) می‌گیرد یا برمی‌دارد."""
+    from mirror.models import MirrorPick, MirrorSettings
+
+    if not MirrorSettings.load().feed_enabled:
+        return "این سایت منبع کاتالوگ نیست؛ اول در «تنظیمات ← همگام‌سازی کاتالوگ» روشنش کنید."
+    ids = set(qs.filter(seller__isnull=True).values_list("pk", flat=True))
+    if on:
+        have = set(MirrorPick.objects.filter(product_id__in=ids).values_list("product_id", flat=True))
+        MirrorPick.objects.bulk_create([MirrorPick(product_id=i) for i in ids - have])
+        return f"{fa_num(len(ids - have))} فرش برای فرشستان انتخاب شد (روی هم {fa_num(MirrorPick.objects.count())})؛ تا ۱۰ دقیقهٔ دیگر آن‌جا منتشر می‌شود."
+    n = MirrorPick.objects.filter(product_id__in=ids).delete()[0]
+    return f"{fa_num(n)} فرش از فرشستان برداشته شد؛ در نوبت بعد آن‌جا پیش‌نویس و به دسته‌اش ۳۰۱ می‌شود."
 
 
 def _album_choices():

@@ -21,7 +21,7 @@ from pricing.models import Album, Size, seed_sizes
 from seo.models import Redirect
 from shop.models import Order, OrderItem
 
-from .models import MirrorLink, MirrorOrder, MirrorSettings
+from .models import MirrorLink, MirrorOrder, MirrorPick, MirrorSettings
 
 MEDIA = tempfile.mkdtemp()
 
@@ -62,6 +62,7 @@ class MirrorTests(TestCase):
         self.src.categories.add(cat)
         sync_album_variations([self.src], reset=True)
         self.src.refresh_price_cache()
+        MirrorPick.objects.create(product=self.src)
         st = MirrorSettings.load()
         st.feed_enabled = st.enabled = st.live = True
         st.api_key, st.source_url = "k-123", "http://testserver"
@@ -143,6 +144,31 @@ class MirrorTests(TestCase):
         got = self.mirrored().variations.get(size=self.s12).price
         self.assertEqual(got, round(new_prices["12-meter"] * 1.02 / 10000) * 10000)
 
+    def test_only_picked_products_and_panel_actions(self):
+        from django.contrib.auth.models import User
+
+        from mirror.sync import run
+
+        other = Product.objects.create(title="فرش طرح آرشان کرم 1200 شانه", slug="arshan", status="publish")
+        r = run()
+        self.assertEqual(r["source"], 1)                        # فقط فرش انتخاب‌شده
+        self.client.force_login(User.objects.create_superuser("boss", "", "x"))
+        self.client.post("/panel/products/", {"action": "mirror_on", "ids": [other.pk]})
+        self.assertTrue(MirrorPick.objects.filter(product=other).exists())
+        r = run()
+        self.assertEqual((r["source"], r["new"]), (2, 1))
+        url = MirrorLink.objects.get(source_pk=other.pk).product.get_absolute_url()
+        self.client.post("/panel/products/", {"action": "mirror_off", "ids": [other.pk]})
+        r = run()
+        self.assertEqual(r["removed"], 1)
+        self.assertEqual(MirrorLink.objects.get(source_pk=other.pk).product.status, "draft")
+        # دوباره انتخاب ← با همان نشانی برمی‌گردد و ریدایرکت پاک می‌شود
+        MirrorPick.objects.create(product=other)
+        run()
+        p = MirrorLink.objects.get(source_pk=other.pk).product
+        self.assertEqual((p.status, p.get_absolute_url()), ("publish", url))
+        self.assertFalse(Redirect.objects.filter(source=Redirect.normalize(url)).exists())
+
     def test_unavailable_and_removed(self):
         from mirror.sync import run
 
@@ -165,12 +191,15 @@ class MirrorTests(TestCase):
         legacy = Product.objects.create(title="فرش طرح زرین سیلور ۷۰۰ شانه برجسته", slug="legacy-zarin", status="publish")
         lonely = Product.objects.create(title="تابلو فرش منظره", slug="legacy-tablo", status="publish")
         # در آزمون منبع و مقصد یک دیتابیس‌اند: خوراک فقط فرش منبع و «کالای قدیمی» فقط دو محصول بالا
-        src_only = mock.patch("mirror.feed.own_products", lambda: Product.objects.filter(pk=self.src.pk))
+        MirrorPick.objects.all().delete()   # جفت کردن خودش فرش منبع را برای فرشستان انتخاب می‌کند
+        src_only = mock.patch("mirror.feed.own_products", lambda picked=True: Product.objects.filter(
+            pk=self.src.pk, **({"mirror_pick__isnull": False} if picked else {})))
         src_only.start()
         self.addCleanup(src_only.stop)
         with mock.patch("mirror.match.legacy_products", lambda: Product.objects.filter(pk__in=[legacy.pk, lonely.pk]).order_by("pk")):
             items = match.run(do_apply=True, out=lambda m: None)
         self.assertEqual({p.pk: (r or {}).get("id") for p, r, _ in items}, {legacy.pk: self.src.pk, lonely.pk: None})
+        self.assertTrue(MirrorPick.objects.filter(product=self.src, by_match=True).exists())
         run()
         legacy.refresh_from_db()
         self.assertEqual(self.mirrored().pk, legacy.pk)                # همان محصول قدیمی (نظرها و سفارش‌هایش می‌ماند)
@@ -230,3 +259,7 @@ class MirrorPanelTests(TestCase):
         self.assertGreater(len(key), 30)
         self.assertContains(self.client.get("/panel/settings/?tab=mirror"), key)
         self.assertEqual(self.client.get("/panel/mirror-links/").status_code, 200)
+        MirrorSettings.objects.update(feed_enabled=True)
+        p = Product.objects.create(title="فرش طرح آزمون", slug="t1", status="publish")
+        self.assertContains(self.client.get(f"/panel/products/{p.pk}/edit/"), "در فرشستان منتشر شود")
+        self.assertContains(self.client.get("/panel/products/?in_fs=0"), "ارسال به فرشستان")

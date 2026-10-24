@@ -125,6 +125,11 @@
           <select id="fp_in_feed" name="fp_in_feed" class="form-select"><option value="">طبق تنظیمات کلی</option><option value="1"{% if fp and fp.in_feed == True %} selected{% endif %}>بله</option><option value="0"{% if fp and fp.in_feed == False %} selected{% endif %}>خیر</option></select></div>
         {% if obj %}{% if fp_off %}<p class="hint">{{ fp_off }}</p>{% else %}<button class="btn btn-light btn-sm w-100" type="submit" form="fpForm">ارسال همین الان</button>{% endif %}{% endif %}
       </section>
+      {% if mirror_src %}<section class="card-p" id="farshestan"><h2>فرشستان</h2>
+        <input type="hidden" name="mirror_pick_shown" value="1">
+        <label class="d-flex gap-2 align-items-center"><input type="checkbox" name="mirror_pick" value="1"{% if mirror_on %} checked{% endif %}> در فرشستان منتشر شود</label>
+        <p class="hint mb-0 mt-1">با عنوان، متن و عکس اختصاصی فرشستان و قیمت و موجودی همین‌جا؛ تا ۱۰ دقیقه بعد از ذخیره آن‌جا می‌آید یا برداشته می‌شود. گروهی: فهرست محصولات ← «ارسال به فرشستان».</p>
+      </section>{% endif %}
       <section class="card-p"><h2>سئو</h2>{% for name in groups.seo %}{% with f=form|get_field:name %}{% include "dashboard/_field.html" %}{% endwith %}{% endfor %}</section>
     </div>
   </div>

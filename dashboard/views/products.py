@@ -88,6 +88,7 @@ def product_edit(request, pk=None):
                     else:  # از قبل همه بسته بودند (مثلاً از سایت قبلی) و فرش «موجود» است ← همه باز می‌شوند
                         opened = p.open_all_sizes()
                 save_fp_flags(request, p)
+                save_mirror_pick(request, p)
             _redirect_old_url(old_url, p)
             log(request, "create" if created else "update", "محصولات", p)
             from content.quick import missing_required, sync_brand
@@ -122,6 +123,10 @@ def product_edit(request, pk=None):
         }
         if own["custom"] is None and not own["override"] and not own["sale"]:
             own = None
+    from mirror.models import MirrorPick, MirrorSettings
+
+    mirror_src = MirrorSettings.load().feed_enabled and not (product and product.seller_id)
+    mirror_on = bool(product and MirrorPick.objects.filter(product=product).exists())
     fp_item = FarshPlusItem.objects.filter(product=product).first() if product else None
     gallery = [pi.media for pi in ProductImage.objects.filter(product=product).select_related("media").order_by("order")] if product else []
     from content.render import template_for
@@ -131,6 +136,7 @@ def product_edit(request, pk=None):
         "tpl": tpl, **_tax_ctx(form, product),
         "obj": product, "form": form, "vfs": vfs, "ffs": ffs, "gallery": gallery, "own": own,
         "gallery_ids": ",".join(str(m.pk) for m in gallery), "fp": fp_item, "fp_off": inactive_reason(),
+        "mirror_src": mirror_src, "mirror_on": mirror_on,
         "groups": {"main": MAIN, "text": SIDE_TEXT, "publish": SIDE_PUBLISH, "price": SIDE_PRICE, "tax": SIDE_TAX, "image": SIDE_IMAGE, "seo": SEO},
     })
 
@@ -210,6 +216,18 @@ def product_duplicate(request, pk):
 
 def _tri(v):
     return {"1": True, "0": False}.get(v)
+
+
+def save_mirror_pick(request, product):
+    """تیک «در فرشستان منتشر شود» (فقط روی سایت منبع کاتالوگ)."""
+    from mirror.models import MirrorPick
+
+    if "mirror_pick_shown" not in request.POST or product.seller_id:
+        return
+    if request.POST.get("mirror_pick"):
+        MirrorPick.objects.get_or_create(product=product)
+    else:
+        MirrorPick.objects.filter(product=product).delete()
 
 
 def save_fp_flags(request, product):

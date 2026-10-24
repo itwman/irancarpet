@@ -55,6 +55,18 @@ class MirrorSettings(models.Model):
         return bool(self.enabled and self.api_key and self.source_url)
 
 
+class MirrorPick(models.Model):
+    """منبع (ایران کارپت): فرشی که برای انتشار در فرشستان انتخاب شده است. فقط همین‌ها در خوراک می‌آیند."""
+
+    product = models.OneToOneField("catalog.Product", on_delete=models.CASCADE, related_name="mirror_pick", verbose_name="محصول")
+    by_match = models.BooleanField("خودکار (جفت کالای قدیمی فرشستان)", default=False)
+    created_at = models.DateTimeField("تاریخ انتخاب", default=timezone.now)
+
+    class Meta:
+        verbose_name = "فرش انتخاب‌شده برای فرشستان"
+        verbose_name_plural = "فرش‌های انتخاب‌شده برای فرشستان"
+
+
 class MirrorLink(models.Model):
     """مقصد: پیوند محصول این سایت به محصول منبع."""
 
