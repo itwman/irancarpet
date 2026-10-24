@@ -7,7 +7,7 @@ import '../core/api.dart';
 import '../core/theme.dart';
 
 /// اجزای مشترک ظاهر «فروشگاه تخصصی فرش» اپ فرشستان:
-/// نشان ستارهٔ هشت‌پر، سرتیتر بخش‌ها، نشان‌ها (badge)، عکس فرش با برش کادر و «صحنهٔ عکس استودیویی».
+/// نشان «ف»، سرتیتر بخش‌ها، نشان‌ها (badge)، عکس فرش با برش کادر و «صحنهٔ عکس استودیویی».
 
 /// «فرش طرح زرین سیلور 700 شانه برجسته تمام آکریلیک» ← «زرین سیلور» (همان rug_name سایت)
 String rugName(String title) {
@@ -20,51 +20,60 @@ String rugName(String title) {
   return w.isEmpty ? t : w.take(4).join(' ');
 }
 
-/// نشان فرشستان: دو مربع لاجوردی چرخیده (ستارهٔ هشت‌پر)، ستارهٔ خطی سفید و مرکز طلایی (از SVG پروتوتایپ)
+/// نشان فرشستان: حرف «ف» لاجوردی با نقطهٔ لوزی طلایی و ریشهٔ فرش زیر کاسه (همان logo.svg سایت)
 class FarshestanMark extends StatelessWidget {
-  const FarshestanMark({super.key, this.size = 40});
+  const FarshestanMark({super.key, this.size = 40, this.light = false});
   final double size;
+  final bool light;
   @override
   Widget build(BuildContext context) =>
-      Semantics(excludeSemantics: true, child: CustomPaint(size: Size.square(size), painter: const _MarkPainter()));
+      Semantics(excludeSemantics: true, child: CustomPaint(size: Size.square(size), painter: _MarkPainter(light)));
 }
 
 class _MarkPainter extends CustomPainter {
-  const _MarkPainter();
-  static const _pts = [
-    [24.0, 12.5], [27.0, 18.7], [33.6, 16.8], [31.7, 23.4], [37.9, 26.4], [31.7, 29.4], [33.6, 36.0], [27.0, 34.1],
-    [24.0, 40.3], [21.0, 34.1], [14.4, 36.0], [16.3, 29.4], [10.1, 26.0], [16.3, 23.0], [14.4, 16.4], [21.0, 18.3],
-  ];
+  const _MarkPainter(this.light);
+  final bool light;
   @override
   void paint(Canvas c, Size s) {
+    // مختصات در فضای ۱۰۲۴ (مثل SVG)؛ کادر تنگ نشانه: x از ۱۳۳ و y از ۹۷، ضلع ۷۳۰
     c.save();
-    c.scale(s.width / 48);
-    final sq = RRect.fromRectAndRadius(const Rect.fromLTWH(9, 9, 30, 30), const Radius.circular(3));
-    final blue = Paint()..color = C.brand;
-    c.drawRRect(sq, blue);
-    c.save();
-    c.translate(24, 24);
-    c.rotate(pi / 4);
-    c.translate(-24, -24);
-    c.drawRRect(sq, blue);
-    c.restore();
-    final star = Path()..moveTo(_pts[0][0], _pts[0][1] - 2);
-    for (final p in _pts.skip(1)) {
-      star.lineTo(p[0], p[1] - 2);
-    }
+    c.scale(s.width / 730);
+    c.translate(-133, -97);
+    final ink = Paint()
+      ..color = light ? Colors.white : C.brand
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 92
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    c.drawCircle(const Offset(640, 430), 104, ink);
     c.drawPath(
-        star..close(),
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.6
-          ..strokeJoin = StrokeJoin.round);
-    c.drawCircle(const Offset(24, 24), 4.2, Paint()..color = C.gold);
+        Path()
+          ..moveTo(744, 430)
+          ..lineTo(744, 560)
+          ..quadraticBezierTo(744, 668, 636, 668)
+          ..lineTo(360, 668)
+          ..quadraticBezierTo(252, 668, 252, 560)
+          ..lineTo(252, 500),
+        ink);
+    final gold = Paint()..color = C.gold;
+    c.save();
+    c.translate(640, 198);
+    c.rotate(pi / 4);
+    c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(-62, -62, 124, 124), const Radius.circular(12)), gold);
+    c.restore();
+    final fringe = Paint()
+      ..color = C.gold
+      ..strokeWidth = 28
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 5; i++) {
+      final x = 370.0 + i * 56;
+      c.drawLine(Offset(x, 728), Offset(x, i.isEven ? 800 : 782), fringe);
+    }
     c.restore();
   }
 
   @override
-  bool shouldRepaint(_MarkPainter o) => false;
+  bool shouldRepaint(_MarkPainter o) => o.light != light;
 }
 
 /// نشان + نام «فرشستان» + شعار کوتاه
@@ -76,7 +85,7 @@ class FarshestanLogo extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
         label: kAppName,
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          FarshestanMark(size: mark),
+          FarshestanMark(size: mark, light: light),
           SizedBox(width: mark * .25),
           Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(kAppName,

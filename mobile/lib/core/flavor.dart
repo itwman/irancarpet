@@ -11,4 +11,4 @@ const bool kHouse = _app == 'farshestan';
 final bool kIsFinder = !kHouse && (_app == 'finder' || appFlavor == 'finder');
 final String kAppName = kHouse ? 'فرشستان' : (kIsFinder ? 'فرش‌یاب' : 'ایران کارپت');
 final String kScheme = kHouse ? 'farshestan' : (kIsFinder ? 'farshyab' : 'irancarpet');
-final String kAppVersion = kHouse ? '1.1.0' : (kIsFinder ? '1.0.3' : '1.0.8');
+final String kAppVersion = kHouse ? '1.1.1' : (kIsFinder ? '1.0.3' : '1.0.8');
