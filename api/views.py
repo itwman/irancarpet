@@ -573,6 +573,12 @@ def order_create(request):
         errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
     if summary["has_problem"]:
         errors["cart"] = "بعضی کالاهای سبد الان قابل خرید نیستند؛ آن‌ها را از سبد حذف کنید."
+    if not errors:  # فرشستان: قیمت و موجودی لحظهٔ آخر از ایران کارپت
+        from mirror.live import check as mirror_check
+
+        changed = mirror_check(summary["lines"])
+        if changed:
+            errors["cart"] = changed
     if errors:
         first = next(iter(errors.values()))
         return fail(first if len(errors) == 1 else "لطفاً خطاها را برطرف کنید.", errors=errors)

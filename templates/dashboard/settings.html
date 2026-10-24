@@ -149,6 +149,30 @@
       <div class="kv"><span>درگاه آزمایشی</span><strong>{% if info.fake %}<span class="dot warn"></span>روشن (فقط نسخهٔ آزمایشی){% else %}<span class="dot off"></span>خاموش{% endif %}</strong></div>
       <div class="kv"><span>درگاه‌های نمایش داده‌شده به مشتری</span><strong>{{ info.active|length|fa_num }}</strong></div>
     </section>
+    {% if mr %}<section class="card-p"><h2>همگام‌سازی کاتالوگ</h2>
+      {% if mr.new_key %}<div class="alert alert-warning py-2">کلید تازه (فقط همین یک بار نمایش داده می‌شود؛ در پنل سایت دیگر همین را بگذارید):<br><code class="ltr-num" style="user-select:all">{{ mr.new_key }}</code></div>{% endif %}
+      <p class="hint">ایران کارپت: فقط «این سایت منبع کاتالوگ است» را روشن کنید و کلید بسازید. فرشستان: نشانی ایران کارپت و همان کلید را بگذارید، «محصولات از سایت منبع گرفته شوند» را روشن کنید و اول با «اعمال تغییرات» خاموش، گزارش را ببینید.</p>
+      {% if mr.s.feed_enabled %}<div class="kv"><span>این سایت منبع است؛ سفارش‌های دریافتی از فرشستان</span><strong>{{ mr.orders_in|fa_num }}</strong></div>{% endif %}
+      {% if mr.s.enabled %}
+        <div class="kv"><span>حالت</span><strong>{% if mr.s.live %}<span class="dot on"></span>اعمال تغییرات{% else %}<span class="dot warn"></span>فقط گزارش{% endif %}</strong></div>
+        {% if mr.s.last_sync_at %}<div class="kv"><span>آخرین همگام‌سازی</span><strong>{{ mr.s.last_sync_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
+        {% if mr.r.error %}<div class="alert alert-danger py-2">{{ mr.r.error }}</div>{% endif %}
+        {% if mr.r.source %}<div class="kv"><span>فرش در منبع</span><strong>{{ mr.r.source|fa_num }}</strong></div>
+        <div class="kv"><span>تازه (هنوز نیامده)</span><strong>{{ mr.r.new|fa_num }}</strong></div>
+        <div class="kv"><span>ویرایش‌شده در منبع</span><strong>{{ mr.r.changed|fa_num }}</strong></div>
+        <div class="kv"><span>فقط قیمت یا موجودی عوض شده</span><strong>{{ mr.r.stock|fa_num }}</strong></div>
+        <div class="kv"><span>حذف‌شده در منبع</span><strong>{{ mr.r.removed|fa_num }}</strong></div>{% endif %}
+        <div class="kv"><span>فرش‌های همگام این سایت</span><strong>{{ mr.links|fa_num }}{% if mr.legacy %} <small class="muted">({{ mr.legacy|fa_num }} کالای قدیمی جفت‌شده)</small>{% endif %}</strong></div>
+        {% if mr.errors %}<div class="kv"><span>دارای خطا</span><strong><a href="/panel/mirror-links/">{{ mr.errors|fa_num }}</a></strong></div>{% endif %}
+        <div class="kv"><span>سفارش فرستاده‌شده به منبع</span><strong>{{ mr.orders_out|fa_num }}{% if mr.orders_err %} <small class="text-danger">({{ mr.orders_err|fa_num }} با خطا)</small>{% endif %}</strong></div>
+        {% if mr.r.sample_new %}<p class="hint mt-2 mb-1">نمونهٔ عنوان فرش‌های تازه در این سایت:</p><ul class="hint">{% for t in mr.r.sample_new %}<li>{{ t|fa_num }}</li>{% endfor %}</ul>{% endif %}
+      {% endif %}
+      <div class="d-flex gap-2 flex-wrap mt-2">
+        <form method="post" onsubmit="return confirm('کلید تازه ساخته شود؟ کلید قبلی دیگر کار نمی‌کند و باید در سایت دیگر هم عوض شود.')">{% csrf_token %}<input type="hidden" name="tab" value="mirror"><button class="btn btn-light" name="do" value="mirror_key">ساخت کلید تازه</button></form>
+        {% if mr.s.enabled %}<form method="post">{% csrf_token %}<input type="hidden" name="tab" value="mirror"><button class="btn btn-light" name="do" value="mirror_test">بررسی اتصال</button></form>
+        <a class="btn btn-light" href="/panel/mirror-links/">فهرست فرش‌های همگام</a>{% endif %}
+      </div>
+    </section>{% endif %}
     {% if fp %}<section class="card-p"><h2>وضعیت فرش پلاس</h2>
       {% if fp.inactive %}<div class="alert alert-warning py-2">{{ fp.inactive }}</div>{% endif %}
       {% if fp.s.paused %}<div class="alert alert-warning py-2">سقف روزانه پر شده؛ ارسال تا {{ fp.s.rate_limited_until|jdate:"%d %B ساعت %H:%M" }} متوقف است.</div>{% endif %}

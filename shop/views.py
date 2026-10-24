@@ -212,6 +212,12 @@ def checkout(request):
             errors["cart"] = paused
         if summary["coupon_error"]:
             errors["coupon"] = summary["coupon_error"] + " کد را از سبد حذف کنید یا کد دیگری بزنید."
+        if not errors:  # فرشستان: قیمت و موجودی لحظهٔ آخر از ایران کارپت
+            from mirror.live import check as mirror_check
+
+            changed = mirror_check(summary["lines"])
+            if changed:
+                errors["cart"] = changed
         if not errors:
             from affiliate.track import ref_from_request
 

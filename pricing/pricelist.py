@@ -17,7 +17,7 @@ JALALI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "
 def albums_qs():
     """آلبوم‌هایی که در لیست قیمت نمایش داده می‌شوند (فعال، با قیمت و دست‌کم یک فرش منتشرشده)."""
     return (
-        Album.objects.filter(is_active=True, in_price_list=True, base_price__gt=0)
+        Album.objects.filter(is_active=True, in_price_list=True).filter(Q(base_price__gt=0) | Q(mirror_rows__isnull=False))
         .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True))
         .filter(n__gt=0)
         .select_related("base_size")
@@ -48,6 +48,11 @@ def _sizes():
 def album_rows(album, sizes=None):
     """قیمت تک‌تک سایزهای یک آلبوم: [{size, price, per_m2, pair_only}] به ترتیب سایزها."""
     sizes = sizes if sizes is not None else _sizes()
+    if album.mirror_rows is not None:  # آلبوم همگام با ایران کارپت (فرشستان)
+        got = {r[0]: r for r in album.mirror_rows}
+        return [{"size": s, "price": got[s.slug][1], "pair_only": bool(got[s.slug][2]),
+                 "per_m2": int(round(got[s.slug][1] / float(s.area))) if s.area else 0}
+                for s in sizes if s.slug in got and got[s.slug][1]]
     even = {s.pk for s in album.even_sizes.all()}
     rows = []
     for s in sizes:

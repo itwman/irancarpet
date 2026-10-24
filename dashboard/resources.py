@@ -806,3 +806,41 @@ import affiliate.panel  # noqa: E402,F401  همکاری در فروش
 import market.panel  # noqa: E402,F401  مارکت‌پلیس
 import crm.panel  # noqa: E402,F401  باشگاه مشتریان
 import blog.panel  # noqa: E402,F401  برنامهٔ بازنویسی مقاله‌ها
+
+
+# ================================================================ همگام‌سازی کاتالوگ (فرشستان ← ایران کارپت)
+from mirror.models import MirrorLink  # noqa: E402
+
+
+def _mirror_set(qs, excluded):
+    from mirror.sync import _retire
+
+    n = 0
+    for lk in qs.select_related("product"):
+        lk.excluded = excluded
+        lk.stock_hash, lk.source_modified = "", ""   # بازگرداندن: همگام‌سازی بعدی کامل می‌گیرد
+        lk.save(update_fields=["excluded", "stock_hash", "source_modified"])
+        if excluded:
+            _retire(lk.product)
+        n += 1
+    return n
+
+
+register(Resource(
+    key="mirror-links", model=MirrorLink, title="فرش‌های همگام با ایران کارپت", single="فرش", group="فروشگاه", icon="arrow",
+    columns=[Col("thumb", "", lambda o: thumb()(o.product) if o.product_id else "", cls="w-thumb"),
+             Col("product", "در این سایت", lambda o: format_html('<a href="{}" target="_blank" rel="noopener">{}</a>',
+                                                                 o.product.get_absolute_url(), fa_num(o.product.title)) if o.product_id else "—"),
+             Col("source_title", "در ایران کارپت", lambda o: fa_num(o.source_title)),
+             Col("legacy", "قدیمی", lambda o: "جفت‌شده" if o.legacy else ""),
+             Col("excluded", "وضعیت", lambda o: "نیاید" if o.excluded else ("حذف در منبع" if o.removed else "همگام")),
+             Col("synced_at", "آخرین همگام‌سازی", jd("synced_at", "%Y/%m/%d %H:%M"), "synced_at"),
+             Col("error", "خطا", lambda o: format_html('<span class="text-danger small">{}</span>', o.error[:90]) if o.error else "")],
+    search=["source_title", "product__title"], filters=["legacy", "excluded", "removed"], ordering=("-synced_at",),
+    queryset=lambda qs: qs.select_related("product__image"), can_add=False, can_delete=False, nav=False,
+    edit_url=lambda o: f"/panel/products/{o.product_id}/edit/" if o.product_id else "#",
+    actions={"exclude": ("در این سایت نیاید", lambda r, qs: f"{_mirror_set(qs, True)} فرش پنهان شد."),
+             "include": ("دوباره بیاید", lambda r, qs: f"{_mirror_set(qs, False)} فرش در همگام‌سازی بعدی برمی‌گردد.")},
+    help="قیمت، موجودی، مشخصات و عکس این فرش‌ها از ایران کارپت می‌آید و ویرایش دستی‌شان در همگام‌سازی بعدی برمی‌گردد. "
+         "تنظیمات در «تنظیمات ← همگام‌سازی کاتالوگ».",
+))

@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "market",
     "crm",
     "stats",
+    "mirror",
 ]
 
 MIDDLEWARE = [

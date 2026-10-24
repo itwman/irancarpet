@@ -121,6 +121,21 @@ def run_all(out=print):
             done["قطعی شدن پرداخت ترب‌پی"] = n
     except Exception:  # noqa: BLE001
         log.exception("torobpay settle")
+    try:  # فرشستان: کاتالوگ، قیمت و موجودی از ایران کارپت؛ سفارش‌ها به پنل ایران کارپت
+        from mirror.models import MirrorSettings
+
+        if MirrorSettings.load().is_target:
+            from mirror.orders import push_all
+            from mirror.sync import run as mirror_run
+
+            r = mirror_run(out=out) or {}
+            if r.get("done"):
+                done["همگام‌سازی کاتالوگ"] = r["done"]
+            n = push_all(out=out)
+            if n:
+                done["سفارش فرستاده‌شده به سایت منبع"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("mirror")
     try:  # سطل بازیافت رسانه: پاک کردن فایل‌های بیش از ۳۰ روز
         from core.media_clean import purge
 

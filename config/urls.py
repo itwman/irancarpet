@@ -19,6 +19,7 @@ from stats import track as stats_track
 from shop import offers_page as shop_offers_page
 from shop import wc_api as shop_wc_api
 from growth import views as growth_views
+from mirror import feed as mirror_feed
 from installments import views as installments_views
 from landing import views as landing_views
 from pricing import views as pricing_views
@@ -60,6 +61,10 @@ urlpatterns = [
     path("farshplus-gift/", farshplus_views.gift_page, name="farshplus_gift"),
     path("product/<str:slug>/review/", growth_views.product_review),
     path("product/<str:slug>/question/", growth_views.product_question),
+    path("api/mirror/v1/stock/", mirror_feed.stock),
+    path("api/mirror/v1/products/", mirror_feed.products),
+    path("api/mirror/v1/orders/", mirror_feed.orders),
+    path("api/mirror/v1/albums/", mirror_feed.albums),
     path("llms.txt", seo_views.llms_txt),
     re_path(r"^(?P<key>[0-9a-f]{32})\.txt$", seo_views.indexnow_key),
     path("sitemap_index.xml", sitemaps.index),

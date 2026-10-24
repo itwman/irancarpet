@@ -18,6 +18,7 @@ from shop.models import ShopSettings
 from api.models import AppSettings
 from affiliate.models import AffiliateSettings
 from market.models import MarketSettings
+from mirror.models import MirrorSettings
 from content.models import ContentSettings
 from crm.models import CrmSettings
 from rajyar.models import RajyarSettings
@@ -48,6 +49,7 @@ TABS = [
     ("market", "مارکت‌پلیس"),
     ("crm", "پیامک سفارش و باشگاه"),
     ("manix", "مانیکس پلاس (حسابداری)"),
+    ("mirror", "همگام‌سازی کاتالوگ"),
 ]
 
 FORMS = {
@@ -103,6 +105,8 @@ FORMS = {
                           "w_set", "w_design", "w_click", "w_color", "w_reeds", "w_size", "w_recent", "calendar_preview",
                           "vip_total", "vip_orders", "short_links", "marketing_footer"]),
     "manix": (ShopSettings, ["manix_enabled", "manix_start"]),
+    "mirror": (MirrorSettings, ["feed_enabled", "enabled", "live", "source_url", "api_key", "price_percent", "round_to",
+                                "title_pattern", "skip_categories", "batch", "push_orders", "orders_since"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty_polyester", "warranty_acrylic", "warranty",
                                 "pair_colors", "pair_note"]),
 }
@@ -249,6 +253,19 @@ def rewrite_summary():
             "next": (approved + ready)[:5]}
 
 
+def mirror_info(request):
+    from mirror.models import MirrorLink, MirrorOrder
+
+    s = MirrorSettings.load()
+    return {"s": s, "r": s.last_result or {}, "new_key": request.session.pop("mirror_key", None),
+            "links": MirrorLink.objects.filter(product__isnull=False, removed=False, excluded=False).count(),
+            "legacy": MirrorLink.objects.filter(legacy=True).count(),
+            "errors": MirrorLink.objects.exclude(error="").count(),
+            "orders_out": MirrorOrder.objects.filter(role="out").count(),
+            "orders_err": MirrorOrder.objects.filter(role="out").exclude(error="").count(),
+            "orders_in": MirrorOrder.objects.filter(role="in").count()}
+
+
 @staff_required
 def settings_view(request):
     tab = request.GET.get("tab") or request.POST.get("tab") or "site"
@@ -346,6 +363,25 @@ def settings_view(request):
                 log(request, "action", "مانیکس پلاس", None, "ساخت کلید تازه")
                 messages.success(request, "کلید تازه ساخته شد؛ کلید قبلی دیگر کار نمی‌کند.")
             return redirect("/panel/settings/?tab=manix")
+        if request.POST.get("do") == "mirror_test":
+            from mirror.client import MirrorError, get_json
+
+            try:
+                n = len(get_json("/api/mirror/v1/stock/", {"ids": "0"}, timeout=15)["products"])
+                messages.success(request, "اتصال به سایت منبع برقرار است و کلید پذیرفته شد." if n == 0 else "اتصال برقرار است.")
+            except MirrorError as e:
+                messages.error(request, f"اتصال برقرار نشد: {e}")
+            return redirect("/panel/settings/?tab=mirror")
+        if request.POST.get("do") == "mirror_key":
+            import secrets
+
+            s = MirrorSettings.load()
+            s.api_key = secrets.token_urlsafe(32)
+            s.save(update_fields=["api_key"])
+            request.session["mirror_key"] = s.api_key
+            log(request, "action", "همگام‌سازی کاتالوگ", None, "ساخت کلید تازه")
+            messages.success(request, "کلید تازه ساخته شد؛ همین را در پنل سایت دیگر هم وارد کنید.")
+            return redirect("/panel/settings/?tab=mirror")
         if request.POST.get("do", "").startswith("fp_"):
             return farshplus_action(request, request.POST["do"])
         model, _ = FORMS[tab]
@@ -366,6 +402,13 @@ def settings_view(request):
             log(request, "update", "تنظیمات", None, dict(TABS)[tab])
             clear_site_cache()
             msg = "تنظیمات ذخیره شد."
+            if tab == "mirror":  # قیمت یا الگوی عنوان عوض شد ← همهٔ فرش‌ها در نوبت بعد دوباره حساب شوند
+                from mirror.models import MirrorLink
+
+                if {"price_percent", "round_to"} & set(form.changed_data):
+                    MirrorLink.objects.update(stock_hash="")
+                if "title_pattern" in form.changed_data:
+                    MirrorLink.objects.update(source_modified="")
             if tab == "torob":
                 from django.core.cache import cache
 
@@ -394,6 +437,7 @@ def settings_view(request):
         "short_test": __import__("crm.links", fromlist=["shorten"]).shorten("/my-account/club/", "k") if tab == "crm" else "",
         "rj_next": __import__("rajyar.auto", fromlist=["next_runs"]).next_runs(RajyarSettings.load()) if tab == "rajyar" else [], "SITE_URL": django_settings.SITE_URL,
         "manix": ShopSettings.load() if tab == "manix" else None,
+        "mr": mirror_info(request) if tab == "mirror" else None,
         "manix_new": request.session.pop("manix_new", None) if tab == "manix" else None,
         "manix_url": django_settings.SITE_URL,
         "callback_sep": request.build_absolute_uri("/pay/sep/callback/"),
