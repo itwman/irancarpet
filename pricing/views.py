@@ -195,6 +195,17 @@ def album_detail(request, slug, page=1):
     list_title = list_page.title if list_page else "لیست قیمت فرش ماشینی"
     rows = pricelist.album_rows(album)
     base = next((r["price"] for r in rows if r["size"].pk == album.base_size_id), None)
+    m2 = None
+    if album.is_m2:  # کناره و سجاده‌ای: فقط قیمت هر متر مربع
+        from .m2 import fmt, widths_of
+        from .models import M2_SLUG
+
+        price = (next((r[1] for r in album.mirror_rows if r[0] == M2_SLUG), None) if album.mirror_rows is not None
+                 else album.size_price(album.base_size))
+        ws = widths_of(album.m2_widths)
+        m2 = {"price": price, "widths": "، ".join(fmt(w) for w in ws), "min_narrow": fmt(album.m2_min_narrow),
+              "min_wide": fmt(album.m2_min_wide), "note": album.m2_note}
+        base = None
     vars_ = _ctx_vars()
     s = SiteSettings.load()
     sep = s.title_separator or "-"
@@ -202,6 +213,9 @@ def album_detail(request, slug, page=1):
              if album.seo_title else f"قیمت {album.title} {vars_['currentdate']} {sep} {s.site_name}")
     if album.seo_description:
         desc = seo.render(album.seo_description, {**vars_, "title": album.title, "sitename": s.site_name})
+    elif m2 and m2["price"]:
+        desc = (f"قیمت {album.title} به‌روز {vars_['currentdate']}: هر متر مربع {toman(m2['price'])} تومان؛ "
+                f"عرض {m2['widths']} متر و طول دلخواه. خرید مستقیم و اقساطی از {brand.name()}.")
     else:
         sizes = "، ".join(f"{r['size'].label} {toman(r['price'])}" for r in rows[:4])
         desc = f"لیست قیمت {album.title} به‌روز {vars_['currentdate']}: {sizes} تومان. خرید مستقیم و اقساطی از {brand.name()}."
@@ -220,7 +234,7 @@ def album_detail(request, slug, page=1):
         request, album.products.all(), page=page, path=album.get_absolute_url(),
         meta={"kind": "custom", "override": meta}, heading=f"لیست قیمت {album.title}", intro=album.list_intro,
         crumbs=crumbs, template="pricing/album_detail.html",
-        extra={"album": album, "rows": rows, "base": base, "teaser": teaser, "month": vars_["currentdate"],
+        extra={"album": album, "rows": rows, "base": base, "teaser": teaser, "month": vars_["currentdate"], "m2": m2,
                "list_url": pricelist.PRICE_LIST_PATH,
                "jsonld": json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)},
     )

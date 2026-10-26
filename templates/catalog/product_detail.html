@@ -71,7 +71,17 @@
       </div>
       {% endfor %}
 
-      {% if variations and pricing.show_size_table %}
+      {% if m2 %}
+      <form class="size-table m2-form" method="post" action="/cart/add/" id="buyForm">{% csrf_token %}
+        {% include "catalog/_m2_calc.html" %}
+        <div class="buy-row">
+          <label class="qty">تعداد <input type="number" name="qty" value="1" min="1" max="20" inputmode="numeric"></label>
+          <button class="btn-ic btn-ic--pink flex-grow-1" type="submit"{% if not product.is_purchasable %} disabled data-na{% endif %}>افزودن به سبد خرید</button>
+        </div>
+        {% if inst_teaser %}<a class="inst-teaser" href="{{ inst_teaser.url|default:'#' }}?amount={{ inst_teaser.amount }}" id="instTeaser" data-base="{{ inst_teaser.url }}">
+          <span class="inst-teaser__ico" aria-hidden="true"><i></i><i></i><i></i></span><span><strong>خرید اقساطی</strong> قسط‌ها را برای اندازهٔ خودتان حساب کنید</span><span class="inst-teaser__go">محاسبه</span></a>{% endif %}
+      </form>
+      {% elif variations and pricing.show_size_table %}
       <form class="size-table" method="post" action="/cart/add/" id="buyForm">
         {% csrf_token %}
         <h2 class="h6">قیمت سایزها</h2>

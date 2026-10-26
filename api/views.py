@@ -441,13 +441,23 @@ def me(request):
 
 
 # ------------------------------------------------------------------ سبد و سفارش
-class _Line:
+def _Line(v, qty, width=None, length=None):
+    """سطر سبد اپ: فرش متری با عرض و طول (همان shop.cart.Line)، بقیه مثل قبل."""
+    if width is not None or v.product.is_m2:
+        from shop.cart import MAX_QTY, Line
+
+        return Line(v, max(1, min(int(qty), MAX_QTY)), width, length)
+    return _SizeLine(v, qty)
+
+
+class _SizeLine:
     """سطر سبد (هم‌شکل shop.cart.Line)."""
 
     def __init__(self, v, qty):
         from shop.cart import Cart
 
         self.variation, self.product = v, v.product
+        self.width = self.length = None
         self.qty = Cart.fix_qty(v, qty)
         self.unit_price = v.price or 0
         self.problem = ""
@@ -474,14 +484,19 @@ class _Line:
 
 
 def _summary(items):
+    from pricing.m2 import num
+
     qty = {}
     for it in items or []:
         vid, q = _int(it.get("variation")), _int(it.get("qty"), 1)
+        w, ln = (num(it.get("width")), num(it.get("length"))) if it.get("width") else (None, None)
         if vid and q > 0:
-            qty[vid] = qty.get(vid, 0) + q
-    vs = {v.pk: v for v in Variation.objects.filter(pk__in=list(qty)[:50]).select_related("product__image", "product__album", "product__seller", "size")
-          .prefetch_related("attributes")}
-    lines = [_Line(vs[k], q) for k, q in qty.items() if k in vs]
+            k = (vid, w, ln)
+            qty[k] = qty.get(k, 0) + q
+    vs = {v.pk: v for v in Variation.objects.filter(pk__in=[k[0] for k in qty][:50])
+          .select_related("product__image", "product__album", "product__seller", "size")
+          .prefetch_related("attributes", "product__variations__size")}
+    lines = [_Line(vs[k[0]], q, k[1], k[2]) for k, q in qty.items() if k[0] in vs]
     good = [x for x in lines if not x.problem]
     from shop.offers import offer_total
 
@@ -493,6 +508,7 @@ def _summary_json(summary, shop, mode="full"):
     total = summary["total"]
     return {
         "lines": [{"variation": x.variation.pk, "product_id": x.product.pk, "title": x.product.title, "size": x.size_label,
+                   "width": float(x.width) if x.width is not None else None, "length": float(x.length) if x.length is not None else None,
                    "image": S.thumb_url(x.product.image, 240), "unit_price": x.unit_price, "qty": x.qty, "total": x.total,
                    "pair_only": x.variation.is_pair_only, "problem": x.problem,
                    "regular_price": getattr(x, "regular_price", x.unit_price), "special_offer": bool(getattr(x, "offer", None)),
@@ -504,9 +520,15 @@ def _summary_json(summary, shop, mode="full"):
                    if summary.get("coupon") else None),
         "coupon_error": summary.get("coupon_error", ""),
         "deposit": shop.deposit_amount(total), "remaining_after_deposit": total - shop.deposit_amount(total),
-        "free_shipping": total >= shop.free_shipping_min, "free_shipping_min": shop.free_shipping_min,
-        "shipping": {m: shop.shipping_for(m, total) for m in ("full", "deposit")},
+        "free_shipping": _own(summary) >= shop.free_shipping_min, "free_shipping_min": shop.free_shipping_min,
+        "shipping": {m: shop.shipping_for(m, _own(summary)) for m in ("full", "deposit")},
     }
+
+
+def _own(summary):
+    from market.cart import own_total
+
+    return own_total(summary["lines"])
 
 
 @endpoint(methods=("POST",))

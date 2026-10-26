@@ -267,6 +267,8 @@ class Product(SeoFields):
     # کش برای فهرست و مرتب‌سازی
     min_price = models.PositiveBigIntegerField("کمترین قیمت", null=True, blank=True, editable=False, db_index=True)
     max_price = models.PositiveBigIntegerField("بیشترین قیمت", null=True, blank=True, editable=False)
+    price_unit = models.CharField("واحد قیمت", max_length=4, blank=True, editable=False,
+                                  help_text="m2 = فرش متری (کناره، سجاده‌ای): قیمت محصول قیمت هر متر مربع است")
     stock_status = models.CharField("موجودی", max_length=20, choices=STOCK_CHOICES, default="instock", db_index=True)
 
     rating_avg = models.DecimalField("میانگین امتیاز", max_digits=3, decimal_places=2, default=0)
@@ -313,14 +315,21 @@ class Product(SeoFields):
             if base and base.price:
                 self.min_price = base.price
         self.max_price = agg["hi"]
+        from pricing.models import M2_SLUG
+
+        self.price_unit = "m2" if vs.filter(size__slug=M2_SLUG).exists() else ""
         if self.sale_status != "available":
             self.stock_status = "outofstock" if self.sale_status == "unavailable" else "onbackorder"
         elif vs.exists():
             self.stock_status = "instock" if live.exists() else "outofstock"
         if save:
             Product.objects.filter(pk=self.pk).update(
-                min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status
+                min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status, price_unit=self.price_unit
             )
+
+    @property
+    def is_m2(self):
+        return self.price_unit == "m2"
 
     @property
     def material(self):

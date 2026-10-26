@@ -56,8 +56,9 @@ def gather(m):
     cart = []
     snap = CartSnapshot.objects.filter(user__in=users).order_by("-updated_at").first()
     if snap and snap.data:
-        vs = {str(v.pk): v for v in Variation.objects.filter(pk__in=[int(k) for k in snap.data]).select_related("product", "size")}
-        cart = [(vs[k], q) for k, q in snap.data.items() if k in vs]
+        vid = {k: str(k).split("@")[0] for k in snap.data}  # فرش متری: «۱۲۳@0.50x2.30»
+        vs = {str(v.pk): v for v in Variation.objects.filter(pk__in=[int(x) for x in vid.values() if x.isdigit()]).select_related("product", "size")}
+        cart = [(vs[vid[k]], q) for k, q in snap.data.items() if vid[k] in vs]
 
     return {
         "m": m, "c": c, "name": name or "مشتری بی‌نام", "users": users, "acct": user, "cprofile": profile, "orders": orders,

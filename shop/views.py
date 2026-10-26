@@ -41,6 +41,7 @@ def cart_view(request):
 
     shop = ShopSettings.load()
     return render(request, "shop/cart.html", {"meta": {**META, "title": "سبد خرید"}, **summary, "shop": shop,
+                                              "has_m2": any(getattr(ln, "width", None) is not None for ln in summary["lines"]),
                                               "inst_teaser": teaser(summary["total"]) if summary["total"] else None,
                                               "season": state(shop=shop), "pause_error": pause_error(summary["lines"], shop=shop)})
 
@@ -73,6 +74,21 @@ def cart_add(request):
     except ValueError:
         qty = 1
     cart = Cart(request)
+    if v.product.is_m2 or request.POST.get("width"):  # فرش متری: عرض و طول
+        from pricing import m2
+
+        r = m2.rules(v.product)
+        w, ln = m2.num(request.POST.get("width")), m2.num(request.POST.get("length"))
+        err = m2.check(r, w, ln) if r else "این فرش متری نیست."
+        if err:
+            messages.error(request, err)
+            return redirect(v.product.get_absolute_url())
+        cart.add(v, max(1, qty), w, ln)
+        messages.success(request, f"«{v.product.title}» ({m2.label(w, ln)}) به سبد اضافه شد.")
+        from stats.track import event
+
+        event(request, "c", v.product_id, v.product.get_absolute_url())
+        return redirect("/cart/")
     if offer and request.POST.get("offer"):  # دکمه‌های فرصت ویژه: دقیقاً همین تعداد
         total = cart.set(v, qty if qty in offer.allowed else offer.allowed[0])
     else:
@@ -96,10 +112,10 @@ def cart_update(request):
         cart.remove(rm)
         return redirect("/cart/")
     for line in cart.lines():
-        val = request.POST.get(f"qty-{line.variation.pk}")
+        val = request.POST.get(f"qty-{line.key}")
         if val is not None:
             try:
-                cart.set(line.variation, int(latin_digits(val)))
+                cart.set(line.variation, int(latin_digits(val)), line.key)
             except ValueError:
                 pass
     go = request.POST.get("go")
@@ -243,6 +259,7 @@ def checkout(request):
         "plans_json": plans_payload(plans),
         "deposit": shop.deposit_amount(total), "remaining": total - shop.deposit_amount(total),
         "free_shipping": own_total(summary["lines"]) >= shop.free_shipping_min, "has_sellers": has_sellers,
+        "has_m2": any(getattr(ln, "width", None) is not None for ln in summary["lines"]),
         "own_total": own_total(summary["lines"]),
         "seller_groups": seller_groups(summary["lines"]) if has_sellers else [],
         "gw_hidden": _hidden_for_staff(request, shop, gws, summary["total"]),
@@ -284,9 +301,13 @@ def create_order(user, form, summary, shop, source="web", installment=None, ref=
     OrderItem.objects.bulk_create([
         OrderItem(order=order, product=line.product, variation=line.variation, title=line.product.title[:300],
                   size_label=line.size_label[:150], unit_price=line.unit_price, quantity=line.qty,
+                  width=getattr(line, "width", None), length=getattr(line, "length", None),
                   offer=getattr(line, "offer", None))
         for line in summary["lines"] if not line.problem
     ])
+    if any(getattr(line, "width", None) is not None for line in summary["lines"] if not line.problem):
+        Order.objects.filter(pk=order.pk).update(admin_note=(order.admin_note + "\n" if order.admin_note else "") +
+                                                  "ارسال فرش متری (کناره/سجاده‌ای) پس‌کرایه است.")
     if any(getattr(line, "offer", None) for line in summary["lines"]):
         from .offers import clear
 

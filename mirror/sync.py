@@ -189,6 +189,11 @@ def sync_albums(s):
         a.base_price = 0
         a.last_updated = parse_datetime(d["updated"]) or timezone.now()
         a.mirror_rows = [[slug_, adj(price, s), pair] for slug_, price, pair in d["rows"]]
+        a.unit = d.get("unit") or "size"
+        m = d.get("m2") or {}
+        if m:  # فرش متری: همان قاعده‌های عرض و طول منبع
+            a.m2_widths, a.m2_round, a.m2_note = m["widths"], m["round"], m.get("note", "")
+            a.m2_min_narrow, a.m2_min_wide, a.m2_max_length = Decimal(m["min_narrow"]), Decimal(m["min_wide"]), Decimal(m["max"])
         a.save()
     Album.objects.filter(mirror_pk__isnull=False).exclude(mirror_pk__in=seen).update(is_active=False)
     from pricing.pricelist import bump

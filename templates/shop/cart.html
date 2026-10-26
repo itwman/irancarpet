@@ -12,17 +12,17 @@
           <h3><a href="{{ line.product.get_absolute_url }}">{{ line.product.title|fa_num }}</a></h3>
           <div class="meta">{{ line.size_label|fa_num }}{% if line.variation.is_pair_only %} · فقط جفت{% endif %}</div>
           {% if line.product.seller_id %}<div class="cart-seller">فروشنده: <a href="{{ line.product.seller.get_absolute_url }}">{{ line.product.seller.name }}</a> · ارسال از {{ line.product.seller.city }}</div>{% endif %}
-          {% if line.problem %}<div class="problem">{{ line.problem }}</div>{% elif line.offer %}<div class="meta"><span class="offer-tag">فرصت ویژه</span> <del class="muted">{{ line.regular_price|toman }}</del> <strong>{{ line.unit_price|toman }}</strong> تومان</div>{% else %}<div class="meta">قیمت واحد: {{ line.unit_price|toman }} تومان</div>{% endif %}
+          {% if line.problem %}<div class="problem">{{ line.problem }}</div>{% elif line.offer %}<div class="meta"><span class="offer-tag">فرصت ویژه</span> <del class="muted">{{ line.regular_price|toman }}</del> <strong>{{ line.unit_price|toman }}</strong> تومان</div>{% elif line.m2 %}<div class="meta">هر متر مربع {{ line.m2.per_m2|toman }} · هر تخته <strong>{{ line.unit_price|toman }}</strong> تومان</div>{% else %}<div class="meta">قیمت واحد: {{ line.unit_price|toman }} تومان</div>{% endif %}
           {% if line.offer_hint %}<div class="meta offer-hint">{{ line.offer_hint }}</div>{% endif %}
         </div>
         <div class="end">
           <div class="qty-box" data-step="{% if line.variation.is_pair_only %}2{% else %}1{% endif %}">
             <button type="button" data-d="-1" aria-label="کم کردن">−</button>
-            <input name="qty-{{ line.variation.pk }}" value="{{ line.qty }}" inputmode="numeric" aria-label="تعداد">
+            <input name="qty-{{ line.key }}" value="{{ line.qty }}" inputmode="numeric" aria-label="تعداد">
             <button type="button" data-d="1" aria-label="زیاد کردن">+</button>
           </div>
           {% if not line.problem %}<strong>{{ line.total|toman }} <small class="muted">تومان</small></strong>{% endif %}
-          <button class="link-btn" name="remove" value="{{ line.variation.pk }}" type="submit">حذف</button>
+          <button class="link-btn" name="remove" value="{{ line.key }}" type="submit">حذف</button>
         </div>
       </div>
       {% endfor %}
@@ -44,7 +44,7 @@
         <input name="coupon" placeholder="کد تخفیف" autocomplete="off" dir="ltr" class="ltr-num" value="{{ coupon_code }}"><button class="pill" type="submit" name="go" value="coupon">اعمال</button>{% endif %}
       </div>
       {% if fp_gift and not coupon %}<a class="fp-cart" href="{{ fp_gift.url }}" target="_blank" rel="noopener">کد تخفیف ندارید؟ با دنبال کردن ما در فرش پلاس <b>{{ fp_gift.amount|toman }} تومان</b> هدیه بگیرید</a>{% endif %}
-      <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.</p>
+      <p class="small muted mb-0">با پرداخت کامل آنلاینِ سفارش‌های {{ shop.free_shipping_min|toman }} تومان به بالا، ارسال رایگان است. در غیر این صورت هزینهٔ ارسال موقع تحویل پرداخت می‌شود.{% if has_m2 %} ارسال کناره و فرش سجاده‌ای همیشه پس‌کرایه است.{% endif %}</p>
       {% if has_problem %}<div class="alert-ic mt-3 mb-0">کالاهای ناموجود را حذف کنید تا بتوانید ادامه دهید.</div>{% endif %}
       {% if pause_error %}<div class="alert-ic mt-3 mb-0">{{ pause_error|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژهٔ آمادهٔ ارسال</a></div>
       {% elif season.busy %}<p class="small muted mt-3 mb-0">{{ season.busy }}</p>{% endif %}

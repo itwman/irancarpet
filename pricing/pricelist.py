@@ -115,6 +115,7 @@ def build():
         if not updated or a.last_updated > updated:
             updated = a.last_updated
     out = []
+    m2_rows = _m2_albums()
     by_slug = {s.slug: s for s in sizes}
     for reeds, g in sorted(groups.items(), key=lambda kv: (not kv[0], int(kv[0]) if kv[0].isdigit() else 0)):
         g["albums"].sort(key=lambda x: (x["order"], x["base_price"] or x["min_price"]))
@@ -147,11 +148,32 @@ def build():
         out.append(g)
     for z in sizes:
         z.short = (z.label or "").split("(")[0].strip()
-    data = {"groups": out, "updated": updated, "albums": sum(len(g["albums"]) for g in out),
+    data = {"groups": out, "m2": m2_rows, "updated": updated, "albums": sum(len(g["albums"]) for g in out) + len(m2_rows),
             "products": sum(g["count"] for g in out),
             "main_sizes": [by_slug[x] for x in MAIN_SIZES if x in by_slug], "main_size_slugs": MAIN_SIZES}
     cache.set(key, data, CACHE_SECONDS)
     return data
+
+
+def _m2_albums():
+    """آلبوم‌های متری (کناره، سجاده‌ای): فقط قیمت هر متر مربع و بازهٔ عرض."""
+    from .m2 import fmt, widths_of
+    from .models import M2_SLUG
+
+    out = []
+    for a in albums_qs().filter(unit="m2"):
+        if a.mirror_rows is not None:
+            price = next((r[1] for r in a.mirror_rows if r[0] == M2_SLUG), None)
+        else:
+            price = a.size_price(a.base_size)
+        if not price:
+            continue
+        ws = widths_of(a.m2_widths)
+        out.append({"id": a.pk, "title": a.title, "url": a.get_absolute_url(), "company": a.company, "count": a.n, "per_m2": price,
+                    "widths": f"{fmt(ws[0])} تا {fmt(ws[-1])} متر" if len(ws) > 1 else (f"{fmt(ws[0])} متر" if ws else ""),
+                    "updated": a.last_updated, "reeds": _album_reeds(a)})
+    out.sort(key=lambda x: (x["reeds"] or "9999", x["per_m2"]))
+    return out
 
 
 def month_year(dt=None):

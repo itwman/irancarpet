@@ -38,7 +38,7 @@ def album_audience(album_id, days=90):
     mobiles, users = set(), set()
     users |= set(ProductView.objects.filter(product__album_id=album_id, seen_at__gte=since).values_list("user_id", flat=True))
     for snap in CartSnapshot.objects.filter(updated_at__gte=since).only("user_id", "data"):
-        ids = [int(k) for k in (snap.data or {})]
+        ids = [int(str(k).split("@")[0]) for k in (snap.data or {}) if str(k).split("@")[0].isdigit()]
         if ids and Variation.objects.filter(pk__in=ids, product__album_id=album_id).exists():
             users.add(snap.user_id)
     for m in ProductAlert.objects.filter(product__album_id=album_id, created_at__gte=since).values_list("mobile", flat=True):

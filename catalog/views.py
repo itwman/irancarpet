@@ -341,9 +341,21 @@ def product_detail(request, slug):
         from shop.bnpl import torob_widget
 
         ctx["torob"] = torob_widget(product.min_price)
+    from pricing import m2 as M2
+
+    r = M2.rules(product) if product.is_m2 else None
+    if r:  # فرش متری: ماشین‌حساب عرض × طول به‌جای جدول سایزها
+        ctx["m2"] = r
+        ctx["m2_widths"] = [{"v": f"{w:.2f}", "label": f"{M2.fmt(w * 100)} سانت" if w < 1 else f"{M2.fmt(w)} متر"} for w in r["widths"]]
+        if ctx.get("inst_teaser") and r["price"]:
+            from installments.services import teaser
+
+            w0 = r["widths"][0]
+            ctx["inst_teaser"] = teaser(M2.price(r["price"], w0, M2.min_length(r, w0), r["round"]))
+        ctx.pop("torob", None)
     from pricing.custom import product_block
 
-    ctx["custom_calc"] = product_block(request, product)
+    ctx["custom_calc"] = "" if r else product_block(request, product)
     if not product.seller_id:
         from shop.season import state
 
@@ -410,6 +422,10 @@ def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
                 **({"sku": v.sku} if v.sku else {}),
             } for v in priced[:30]],
         }
+        if product.is_m2:  # فرش متری: قیمت هر متر مربع (UnitPriceSpecification با واحد MTK)
+            for o in data["offers"]["offers"]:
+                o["priceSpecification"] = {"@type": "UnitPriceSpecification", "price": o["price"], "priceCurrency": "IRR",
+                                           "referenceQuantity": {"@type": "QuantitativeValue", "value": 1, "unitCode": "MTK"}}
     if product.rating_count:
         data["aggregateRating"] = {"@type": "AggregateRating", "ratingValue": float(product.rating_avg), "reviewCount": product.rating_count}
     breadcrumb = {

@@ -136,7 +136,29 @@ def public_title(name, public_name=""):
     return t if t.startswith("فرش") else f"فرش {t}"
 
 
+M2_SLUG = "per-m2"  # سایز «هر متر مربع» برای فرش‌های متری (کناره، سجاده‌ای)
+M2_WIDTHS = "0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2,2.1"
+
+
+def m2_size():
+    s = Size.objects.filter(slug=M2_SLUG).first()
+    if s is None:
+        s = Size.objects.create(slug=M2_SLUG, label="هر متر مربع", type=Size.Type.CUSTOM, width=1, length=1, area=1, sort_order=999)
+    return s
+
+
+def fix_m2_sizes(album):
+    s = m2_size()
+    if list(album.sizes.values_list("pk", flat=True)) != [s.pk]:
+        album.sizes.set([s])
+    album.even_sizes.clear()
+
+
 class Album(models.Model):
+    class Unit(models.TextChoices):
+        SIZE = "size", "سایزهای ثابت"
+        M2 = "m2", "متری (کناره، سجاده‌ای؛ قیمت هر متر مربع)"
+
     class WasteType(models.TextChoices):
         FIXED = "fixed", "مبلغ ثابت"
         PERCENT = "percent", "درصدی"
@@ -183,6 +205,17 @@ class Album(models.Model):
                                                  verbose_name="دستهٔ اصلی پیش‌فرض")
     default_tags = models.ManyToManyField("catalog.ProductTag", blank=True, related_name="+", verbose_name="برچسب‌های پیش‌فرض")
     embossed = models.BooleanField("فرش‌های این آلبوم گل برجسته‌اند", default=False)
+    # فرش متری: مشتری عرض را انتخاب و طول را می‌نویسد؛ قیمت = عرض × طول × قیمت هر متر مربع
+    unit = models.CharField("نوع قیمت", max_length=10, choices=Unit.choices, default=Unit.SIZE,
+                            help_text="متری: «قیمت خرید» قیمت خرید هر متر مربع است و فرش‌ها به‌جای سایزهای ثابت، عرض و طول دلخواه دارند.")
+    m2_widths = models.CharField("عرض‌ها (متر)", max_length=200, default=M2_WIDTHS, blank=True,
+                                 help_text="با ویرگول؛ مثل ۰٫۵، ۰٫۶ … ۲٫۱ برای کناره یا ۱، ۱٫۱، ۱٫۲، ۱٫۲۵ … برای سجاده‌ای")
+    m2_min_narrow = models.DecimalField("کمترین طول برای عرض کمتر از ۱ متر", max_digits=5, decimal_places=2, default=Decimal("2"))
+    m2_min_wide = models.DecimalField("کمترین طول برای عرض ۱ متر و بیشتر", max_digits=5, decimal_places=2, default=Decimal("1.5"))
+    m2_max_length = models.DecimalField("بیشترین طول (متر)", max_digits=6, decimal_places=2, default=Decimal("30"))
+    m2_round = models.PositiveIntegerField("گرد کردن قیمت هر تخته به (تومان)", default=100_000, help_text="رو به بالا")
+    m2_note = models.CharField("نکتهٔ کنار ماشین‌حساب", max_length=200, blank=True,
+                               help_text="مثل «هر توپ سجاده‌ای حدود ۲۵ تا ۳۰ متر است»")
     title_word = models.CharField("کلمهٔ ویژهٔ عنوان", max_length=40, blank=True,
                                   help_text="مثل «موکا»؛ در افزودن سریع بعد از «… شانه» در عنوان فرش‌های تازه می‌آید.")
     # فرشستان: آلبوم همگام با ایران کارپت (فقط برای لیست قیمت؛ قیمت فرش‌ها مستقیم از منبع می‌آید)
@@ -266,6 +299,10 @@ class Album(models.Model):
             return None
         return buy * Decimal(size.area) / self._base_area()
 
+    @property
+    def is_m2(self):
+        return self.unit == self.Unit.M2
+
     def size_ids(self):
         if not hasattr(self, "_size_ids"):
             self._size_ids = set(self.sizes.values_list("pk", flat=True)) if self.pk else set()
@@ -289,6 +326,8 @@ class Album(models.Model):
         return f"ALB-{max(nums, default=0) + 1:03d}"
 
     def save(self, *args, **kwargs):
+        if self.is_m2:  # سایز پایه = «هر متر مربع» تا همهٔ قیمت‌گذاری موجود (سود، گرد کردن…) قیمت هر متر مربع بدهد
+            self.base_size = m2_size()
         if not (self.code or "").strip():
             self.code = self.next_code()
         if not (self.slug or "").strip():
@@ -303,6 +342,8 @@ class Album(models.Model):
                 if old["base_price"] and self.base_price and old["base_size_id"] == self.base_size_id:
                     ratio = Decimal(self.base_price) / Decimal(old["base_price"])
         super().save(*args, **kwargs)
+        if self.is_m2:
+            fix_m2_sizes(self)
         if changed:
             self.reprice(ratio)
 

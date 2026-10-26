@@ -73,7 +73,9 @@
       </div>
       {% endfor %}
 
-      {% if variations and pricing.show_size_table %}
+      {% if m2 %}
+      <div class="blk" id="buy">{% include "catalog/_m2_calc.html" %}</div>
+      {% elif variations and pricing.show_size_table %}
       <div class="blk" id="buy">
         <div class="blk-hd" id="szT">انتخاب سایز <span id="szSel"></span></div>
         <div class="size-grid" role="radiogroup" aria-labelledby="szT">
@@ -111,7 +113,13 @@
         <div><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>ارسال به سراسر کشور</div>
         {% if season.paused %}<div class="season"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>{{ season.paused|fa_num }} <a href="/فرش-جشنواره-ای/">فرصت‌های ویژه</a></span></div>{% elif season.busy %}<div class="season"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>{{ season.busy }}</span></div>{% endif %}
       </div>
-      {% if variations and pricing.show_size_table %}
+      {% if m2 %}
+      <div class="buy-price" aria-live="polite"><div class="pr-now">{{ m2.price|toman }}<small>تومان هر متر مربع</small></div><div class="pr-note" data-m2-total></div></div>
+      <div class="qty-row">
+        <div class="qty2" role="group" aria-label="تعداد"><button type="button" data-q="1" aria-label="یکی بیشتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input form="buyForm" type="number" name="qty" value="1" min="1" max="20" inputmode="numeric" aria-label="تعداد"><button type="button" data-q="-1" aria-label="یکی کمتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div>
+        <button class="fbtn fbtn--primary fbtn--lg" type="submit" form="buyForm"{% if not product.is_purchasable %} disabled data-na{% endif %}>{% if product.is_purchasable %}افزودن به سبد خرید{% else %}ناموجود{% endif %}</button>
+      </div>
+      {% elif variations and pricing.show_size_table %}
       <div class="buy-price" id="buyPrice" aria-live="polite">{% if out == "outofstock" or product.sale_status == "unavailable" %}<div class="pr-now out">ناموجود</div><div class="pr-note">{% if offers %}قیمت ویژه در کادر پیشنهاد ویژه{% else %}با «خبرم کن» از موجود شدنش باخبر شوید.{% endif %}</div>{% elif product.min_price and product.is_purchasable %}<div class="pr-now"><small>از</small> {{ product.min_price|toman }}<small>تومان</small></div>{% else %}<div class="pr-note">استعلام قیمت</div>{% endif %}</div>
       <div class="qty-row">
         <div class="qty2" role="group" aria-label="تعداد"><button type="button" data-q="1" aria-label="یکی بیشتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-plus"/></svg></button><input form="buyForm" type="number" name="qty" value="1" min="1" max="20" inputmode="numeric" aria-label="تعداد"><button type="button" data-q="-1" aria-label="یکی کمتر"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-minus"/></svg></button></div>
@@ -255,7 +263,7 @@
 {% if variations and pricing.show_size_table %}
 <div class="mbuy" aria-label="خرید">
   <button class="fbtn fbtn--primary fbtn--lg" type="submit" form="buyForm" {% if not product.is_purchasable %}disabled{% endif %}>{% if product.is_purchasable %}افزودن به سبد{% else %}ناموجود{% endif %}</button>
-  <div class="mp" id="mPrice">{% if out == "outofstock" or product.sale_status == "unavailable" %}<b class="out">ناموجود</b>{% elif product.min_price %}<b><small>از</small> {{ product.min_price|toman }} <small>تومان</small></b>{% endif %}</div>
+  <div class="mp" id="mPrice">{% if out == "outofstock" or product.sale_status == "unavailable" %}<b class="out">ناموجود</b>{% elif product.min_price %}<b><small>{% if m2 %}متری{% else %}از{% endif %}</small> {{ product.min_price|toman }} <small>تومان</small></b>{% endif %}</div>
 </div>
 
 <div class="fmodal" id="roomModal" hidden>

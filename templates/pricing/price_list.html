@@ -55,6 +55,24 @@
   {% empty %}
   <div class="alert-ic alert-ic--warn">لیست قیمت در حال به‌روزرسانی است. برای قیمت روز با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>
   {% endfor %}
+  {% if data.m2 %}
+  <section class="pl-group" id="m2" aria-labelledby="m2-h">
+    <div class="pl-group__head">
+      <h2 id="m2-h">قیمت کناره و فرش سجاده‌ای (هر متر مربع)</h2>
+      <p>عرض را انتخاب و طول را به دلخواه سفارش دهید؛ قیمت هر تخته = عرض × طول × قیمت هر متر مربع.</p>
+    </div>
+    <div class="pl-table-wrap" role="region" aria-label="قیمت هر متر مربع کناره و سجاده‌ای" tabindex="0">
+      <table class="pl-table">
+        <caption>قیمت هر متر مربع به تومان، {{ month }}</caption>
+        <thead><tr><th scope="col" class="pl-name">لیست قیمت</th><th scope="col">عرض</th><th scope="col">هر متر مربع</th></tr></thead>
+        <tbody>{% for a in data.m2 %}<tr>
+          <th scope="row" class="pl-name"><a href="{{ a.url }}">{{ a.title|fa_num }}</a><small>{{ a.count|fa_num }} فرش{% if a.company %} · {{ a.company }}{% endif %}</small></th>
+          <td>{{ a.widths }}</td><td>{{ a.per_m2|toman }}</td>
+        </tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
   {% if data.groups %}<p class="small muted">«—» یعنی آن سایز در آن لیست بافته نمی‌شود. قیمت‌ها به تومان و برای یک تخته است؛ سایزهای «فقط جفت» جفتی فروخته می‌شوند.</p>{% endif %}
 
   {% if teaser %}

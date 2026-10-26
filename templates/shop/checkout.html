@@ -77,6 +77,7 @@
       <div class="sum-row"><span>پرداخت الان</span><strong id="payNow">{{ total|toman }} تومان</strong></div>
       <div class="sum-row" id="laterRow" hidden><span id="laterLabel">موقع تحویل</span><strong id="payLater"></strong></div>
       <div class="ship-note {% if free_shipping %}free{% else %}cod{% endif %}" id="shipNote"{% if has_sellers and not own_total %} hidden{% endif %}>{% if free_shipping %}ارسال رایگان است.{% else %}هزینهٔ ارسال موقع تحویل به شرکت حمل پرداخت می‌شود (پس‌کرایه).{% endif %}</div>
+      {% if has_m2 %}<div class="ship-note cod">ارسال کناره و فرش سجاده‌ای پس‌کرایه است (هزینهٔ حمل موقع تحویل با شما).</div>{% endif %}
       {% for sl, group in seller_groups %}{% if sl %}<div class="ship-note {% if sl.shipping == 'free' %}free{% else %}cod{% endif %}">«{{ sl.name }}» کالاهایش را خودش از {{ sl.city }} می‌فرستد؛ {% if sl.shipping == "free" %}ارسال رایگان{% else %}پس‌کرایه{% endif %}، آماده‌سازی {{ sl.prep_days|fa_num }} روز کاری.</div>{% endif %}{% endfor %}
 
       <div id="gwBlock">

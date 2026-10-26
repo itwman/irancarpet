@@ -112,9 +112,11 @@ def format_row(p, s):
     if s.guarantee_attr:
         guarantee = "، ".join(p.specs.filter(attribute__slug=s.guarantee_attr).values_list("name", flat=True))
     title = p.title + (f" - {s.title_suffix}" if s.title_suffix else "")
+    if p.is_m2:  # فرش متری: قیمت فید قیمت هر متر مربع است
+        title += " (قیمت هر متر مربع)"
     return {
         "title": title,
-        "subtitle": "",
+        "subtitle": "قیمت هر متر مربع؛ عرض و طول دلخواه" if p.is_m2 else "",
         "page_unique": unique_of(p),
         "product_group_id": "",
         "current_price": adjust(current, s),

@@ -2,9 +2,14 @@
 {% block above_list %}
 <section class="al-prices" aria-labelledby="alPricesH">
   <div class="al-prices__head">
-    <h2 id="alPricesH">قیمت سایزها</h2>
+    <h2 id="alPricesH">{% if m2 %}قیمت هر متر مربع{% else %}قیمت سایزها{% endif %}</h2>
     <p class="muted">{% if album.company %}{{ album.company }} · {% endif %}به‌روز {{ album.last_updated|jdate:"%d %B %Y" }} · <a href="{{ list_url }}">همهٔ لیست‌های قیمت</a></p>
   </div>
+  {% if m2 %}
+  <div class="al-sizes"><div class="al-size is-base"><span class="al-size__label">هر متر مربع</span><strong class="al-size__price">{{ m2.price|toman }} <small>تومان</small></strong>
+    <span class="al-size__m2">عرض‌ها: {{ m2.widths }} متر</span></div></div>
+  <p class="muted small">طول دلخواه است (برای عرض کمتر از ۱ متر دست‌کم {{ m2.min_narrow }} متر و از ۱ متر به بالا دست‌کم {{ m2.min_wide }} متر). قیمت هر تخته = عرض × طول × قیمت هر متر مربع؛ در صفحهٔ هر فرش حساب می‌شود.{% if m2.note %} {{ m2.note|fa_num }}{% endif %}</p>
+  {% endif %}
   <div class="al-sizes">
     {% for r in rows %}
     <div class="al-size{% if r.size.pk == album.base_size_id %} is-base{% endif %}">

@@ -47,6 +47,7 @@ def check(lines):
         if v is None or getattr(ln, "offer", None):
             continue
         now = Variation.objects.filter(pk=v.pk).first()
-        if now is None or not now.is_available or (now.price and now.price != ln.unit_price):
+        unit = (ln.m2 or {}).get("per_m2") if getattr(ln, "m2", None) else ln.unit_price  # فرش متری: قیمت هر متر مربع
+        if now is None or not now.is_available or (now.price and now.price != unit):
             changed = True
     return CHANGED if changed else None

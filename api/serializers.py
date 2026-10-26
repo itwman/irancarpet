@@ -59,6 +59,7 @@ def card(p):
         "crop": crop(p.image),
         "price": p.min_price or 0,
         "price_is_from": not p.album_id,
+        "price_unit": p.price_unit,  # "m2" = قیمت هر متر مربع (کناره، سجاده‌ای)
         "in_stock": p.stock_status != "outofstock" and p.sale_status not in ("unavailable",),
         "rating": float(p.rating_avg or 0),
         "rating_count": p.rating_count or 0,
@@ -106,6 +107,15 @@ def offer_json(o, with_product=False):
     return d
 
 
+def _m2(p):
+    if not p.is_m2:
+        return None
+    from pricing import m2
+
+    r = m2.rules(p)
+    return {**m2.payload(r), "variation": r["variation"].pk, "note": r["note"]} if r else None
+
+
 def product_detail(p, gallery, variations, specs, reviews, faqs, related):
     from content.render import build, color_siblings, full_text, to_text
 
@@ -132,6 +142,7 @@ def product_detail(p, gallery, variations, specs, reviews, faqs, related):
         "colors": [{"id": x["product"].pk, "title": x["product"].title, "color": x["color"], "current": x["current"],
                     "image": thumb_url(x["product"].image, 240) if x["product"].image_id else ""} for x in color_siblings(p)],
         "sizes": [size_row(v) for v in variations],
+        "m2": _m2(p),  # فرش متری: عرض‌ها و قیمت هر متر مربع؛ در سبد width و length بفرستید
         "specs": specs,
         "categories": [{"id": c.pk, "name": c.name} for c in p.categories.all()],
         "tags": [t.name for t in p.tags.all()],

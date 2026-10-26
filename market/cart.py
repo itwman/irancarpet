@@ -17,7 +17,9 @@ def restrict_modes(modes, lines):
 
 def own_total(lines):
     """جمع کالاهای خود ایران کارپت (برای ارسال رایگان که فقط شامل کالای خود ماست)."""
-    return sum(ln.total for ln in lines if not ln.problem and not getattr(ln.product, "seller_id", None))
+    # فرش متری (کناره، سجاده‌ای) ارسال رایگان ندارد و در حد ارسال رایگان حساب نمی‌شود
+    return sum(ln.total for ln in lines if not ln.problem and not getattr(ln.product, "seller_id", None)
+               and getattr(ln, "width", None) is None)
 
 
 def groups(lines):

@@ -1132,3 +1132,30 @@ body.has-tray{padding-bottom:84px}
 .fsf__go small{color:#7B5B4B;font-weight:700;font-size:12.5px}
 @media (max-width:640px){.fsf__band{padding:18px}.fsf__go{width:100%;align-items:stretch;text-align:center}}
 .cat-intro details{border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;background:#fff;padding:0 16px}.cat-intro summary{font-weight:700;font-size:14.5px;cursor:pointer;padding:12px 0}.cat-intro details p{margin:0 0 12px;color:var(--ink-2)}
+/* فرش متری: ماشین‌حساب عرض × طول */
+.m2c{display:flex;flex-direction:column;gap:.9rem}
+.m2c__price{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;border-bottom:1px dashed var(--line);padding-bottom:.7rem}
+.m2c__price span{font-weight:700;color:var(--ink-2)}
+.m2c__price strong{font-size:1.5rem;font-weight:900;color:var(--ink)}
+.m2c__price small{font-size:.85rem;font-weight:600;color:var(--muted)}
+.m2c__w{border:0;margin:0;padding:0;min-width:0}
+.m2c__w legend{font-size:.95rem;font-weight:800;margin-bottom:.5rem;float:none;width:auto}
+.m2c__chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.m2c__chips label{position:relative;cursor:pointer}
+.m2c__chips input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.m2c__chips span{display:inline-block;min-width:4.4rem;text-align:center;padding:.45rem .7rem;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:.88rem;transition:border-color .15s,background .15s}
+.m2c__chips input:checked+span{border-color:var(--ink);background:var(--ink);color:#fff}
+.m2c__chips input:focus-visible+span{outline:3px solid var(--saffron);outline-offset:2px}
+.m2c__chips input:disabled+span{opacity:.5;cursor:not-allowed}
+.m2c__l{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.3rem .8rem;align-items:center;font-weight:800;font-size:.95rem}
+.m2c__l input{border:2px solid var(--line);border-radius:12px;padding:.6rem .9rem;font:inherit;font-size:1.15rem;font-weight:800;text-align:left;max-width:220px;width:100%}
+.m2c__l input:focus{outline:none;border-color:var(--teal)}
+.m2c__l small{grid-column:2;color:var(--muted);font-weight:600;font-size:.8rem}
+.m2c__out{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--soft);border-radius:14px;padding:.8rem 1rem;min-height:3.4rem}
+.m2c__out strong{font-size:1.35rem;font-weight:900}
+.m2c__out small{font-size:.8rem;font-weight:600;color:var(--muted)}
+.m2c__dim{font-weight:700;color:var(--ink-2)}
+.m2c__out .err{color:#b4233f;font-weight:700;font-size:.9rem}
+.m2c__note,.m2c__ship{margin:0;font-size:.85rem;color:var(--ink-2)}
+.m2c__ship::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--saffron);margin-inline-end:.45rem;vertical-align:middle}
+.blk .m2c__price{border-color:var(--line)}

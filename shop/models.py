@@ -289,6 +289,8 @@ class OrderItem(models.Model):
     size_label = models.CharField("سایز", max_length=150, blank=True)
     unit_price = models.PositiveBigIntegerField("قیمت واحد")
     quantity = models.PositiveIntegerField("تعداد", default=1)
+    width = models.DecimalField("عرض (متر)", max_digits=5, decimal_places=2, null=True, blank=True, help_text="فقط فرش متری")
+    length = models.DecimalField("طول (متر)", max_digits=6, decimal_places=2, null=True, blank=True, help_text="فقط فرش متری")
     offer = models.ForeignKey("shop.SpecialOffer", null=True, blank=True, on_delete=models.SET_NULL, related_name="items",
                               verbose_name="فرصت ویژه")
     seller_order = models.ForeignKey("market.SellerOrder", null=True, blank=True, on_delete=models.SET_NULL, related_name="items",

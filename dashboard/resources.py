@@ -557,8 +557,9 @@ register(Resource(
     key="albums", model=Album, title="آلبوم‌های قیمت", single="آلبوم", group="قیمت‌گذاری", icon="layers",
     columns=[Col("name", "نام", sort="name"), Col("code", "کد"), Col("company", "شرکت"),
              Col("base_size", "سایز پایه", lambda o: o.base_size.label if o.base_size else "—"),
-             Col("base_price", "خرید ۱۲ متری", money("base_price"), "base_price"),
-             Col("sale12", "فروش ۱۲ متری", lambda o: format_html('<span class="num">{}</span>', toman(o.size_price(o.base_size)) or "—")),
+             Col("base_price", "خرید ۱۲ متری / هر متر", money("base_price"), "base_price"),
+             Col("sale12", "فروش ۱۲ متری / هر متر", lambda o: format_html('<span class="num">{}</span>{}', toman(o.size_price(o.base_size)) or "—",
+                                                                            " متری" if o.is_m2 else "")),
              Col("profit_percent", "سود", lambda o: fa_num(o.profit_percent.normalize()) + "٪", "profit_percent"),
              Col("waste", "پرتی", lambda o: (toman(int(o.waste_value or 0)) or "۰") + ("٪" if o.waste_type == "percent" else "")),
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("is_active", "فعال", yesno("is_active")),
@@ -569,7 +570,8 @@ register(Resource(
     fieldsets=[("آلبوم", ["name", "code", "company", "description"], "main"),
                ("سایزها", ["sizes", "even_sizes"], "main"),
                ("صفحهٔ لیست قیمت سایت", ["in_price_list", "public_name", "slug", "list_intro", "seo_title", "seo_description"], "main"),
-               ("قیمت", ["base_size", "base_price", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to"], "side"),
+               ("قیمت", ["unit", "base_size", "base_price", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to"], "side"),
+               ("فرش متری (کناره، سجاده‌ای)", ["m2_widths", "m2_min_narrow", "m2_min_wide", "m2_max_length", "m2_round", "m2_note"], "side"),
                ("وضعیت", ["is_active", "sort_order"], "side"),
                ("پیش‌فرض فرش‌های این آلبوم", ["default_specs", "default_brand", "default_primary_category", "default_categories",
                                              "default_tags", "embossed", "title_word"], "main")],
@@ -583,6 +585,7 @@ register(Resource(
              "percent": ("تغییر درصدی قیمت پایه", lambda r, qs: _album_percent(r, qs), "درصد (مثلاً ۵ یا -۳)"),
              "follow": ("پیروی کامل همهٔ محصولات این آلبوم‌ها از قیمت آلبوم", lambda r, qs: _album_follow(qs))},
     help="قیمت فروش ۱۲ متری = قیمت خرید × (۱ + درصد سود) + هزینهٔ ارسال؛ بقیهٔ سایزها به نسبت متراژ، رو به بالا گرد می‌شوند. "
+         "آلبوم «متری» (کناره، سجاده‌ای): قیمت خرید هر متر مربع را بزنید؛ سایز پایه و سایزها خودکار «هر متر مربع» می‌شود. "
          "مشتری برای محصولات آلبوم همهٔ «سایزهای آلبوم» را می‌بیند و با هر تغییر، قیمت‌ها خودکار به‌روز می‌شوند.",
 ))
 def _album_saved(request, obj, created, form):
@@ -590,7 +593,11 @@ def _album_saved(request, obj, created, form):
     from pricing.albums import sync_album_variations
 
     _album_log(request, obj, created, form)
-    if created or {"sizes", "even_sizes"} & set(form.changed_data):
+    if obj.is_m2:  # فرم سایزهای قبلی را ذخیره کرده؛ آلبوم متری فقط «هر متر مربع» دارد
+        from pricing.models import fix_m2_sizes
+
+        fix_m2_sizes(obj)
+    if created or obj.is_m2 or {"sizes", "even_sizes", "unit"} & set(form.changed_data):
         sync_album_variations(list(Product.objects.filter(album=obj).select_related("album")))
 
 

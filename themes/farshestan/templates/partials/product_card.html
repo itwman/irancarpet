@@ -8,6 +8,6 @@
     <div class="pc-meta">{% if r %}<span><svg class="dens dens-xs" aria-hidden="true"><use href="#d-{{ r }}"/></svg>{{ r|fa_num }} شانه</span>{% endif %}{% if "برجسته" in p.title %}<span>برجسته</span>{% endif %}{% if p.brand %}<span>{{ p.brand.name }}</span>{% endif %}</div>
     <h3 class="pc-title"><a class="stretch" href="{{ p.get_absolute_url }}" title="{{ p.title|fa_num }}">{{ p.title|fa_num }}</a></h3>
     {% if p.rating_count %}<span class="rate" aria-label="امتیاز {{ p.rating_avg|floatformat:1|fa_dec }} از ۵ با {{ p.rating_count|fa_num }} دیدگاه"><svg class="ic ic-fill" aria-hidden="true"><use href="#i-star"/></svg>{{ p.rating_avg|floatformat:1|fa_dec }}<span>({{ p.rating_count|fa_num }})</span></span>{% endif %}
-    <div class="pc-price">{% if st == "outofstock" and not p.offer %}<span class="out">ناموجود</span><span class="pr-note">خبرم کن در صفحهٔ فرش</span>{% elif p.min_price %}<div class="pr-now"><small>از</small> {{ p.min_price|toman }}<small>تومان</small></div>{% else %}<span class="pr-note">استعلام قیمت</span>{% endif %}</div>
+    <div class="pc-price">{% if st == "outofstock" and not p.offer %}<span class="out">ناموجود</span><span class="pr-note">خبرم کن در صفحهٔ فرش</span>{% elif p.min_price %}<div class="pr-now">{% if p.price_unit == "m2" %}<small>متری</small>{% else %}<small>از</small>{% endif %} {{ p.min_price|toman }}<small>تومان</small></div>{% else %}<span class="pr-note">استعلام قیمت</span>{% endif %}</div>
   </div>
 </article>{% endwith %}

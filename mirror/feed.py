@@ -153,7 +153,10 @@ def albums(request):
         out.append({"id": a.pk, "name": a.name, "code": a.code, "company": a.company, "public_name": a.public_name,
                     "slug": a.slug, "active": a.is_active, "in_list": a.in_price_list, "order": a.sort_order,
                     "embossed": a.embossed, "updated": a.last_updated.isoformat(), "base_size": _size_row(a.base_size),
-                    "rows": [[r["size"].slug, r["price"], r["pair_only"]] for r in rows],
+                    "rows": [[r["size"].slug, r["price"], r["pair_only"]] for r in rows]
+                    + ([[a.base_size.slug, a.size_price(a.base_size), False]] if a.is_m2 and a.is_active else []),
+                    "unit": a.unit, "m2": {"widths": a.m2_widths, "min_narrow": str(a.m2_min_narrow), "min_wide": str(a.m2_min_wide),
+                                           "max": str(a.m2_max_length), "round": a.m2_round, "note": a.m2_note},
                     "sizes": [_size_row(r["size"]) for r in rows]})
     return JsonResponse({"ok": True, "albums": out}, json_dumps_params={"ensure_ascii": False})
 

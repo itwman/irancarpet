@@ -1,0 +1,49 @@
+{% load fa %}{# فرش متری (کناره، سجاده‌ای): عرض از فهرست، طول دلخواه؛ ورودی‌ها با form="buyForm" به فرم خرید هر قالب وصل‌اند #}
+<div class="m2c" data-m2c data-price="{{ m2.price }}" data-round="{{ m2.round }}" data-min-narrow="{{ m2.min_narrow|stringformat:'s' }}" data-min-wide="{{ m2.min_wide|stringformat:'s' }}" data-max="{{ m2.max_length|stringformat:'s' }}">
+  <input type="hidden" form="buyForm" name="variation" value="{{ m2.variation.pk }}">
+  <div class="m2c__price"><span>قیمت هر متر مربع</span><strong>{{ m2.price|toman }} <small>تومان</small></strong></div>
+  <fieldset class="m2c__w"><legend>عرض</legend>
+    <div class="m2c__chips">{% for w in m2_widths %}<label><input type="radio" form="buyForm" name="width" value="{{ w.v }}"{% if forloop.first %} checked{% endif %}{% if not product.is_purchasable %} disabled{% endif %}><span>{{ w.label }}</span></label>{% endfor %}</div>
+  </fieldset>
+  <label class="m2c__l"><span>طول (متر)</span>
+    <input form="buyForm" name="length" inputmode="decimal" autocomplete="off" placeholder="مثلاً ۲٫۳۰" dir="ltr" data-m2-len{% if not product.is_purchasable %} disabled{% endif %}>
+    <small data-m2-hint></small></label>
+  <div class="m2c__out" aria-live="polite" data-m2-out><span class="muted">طول را بنویسید تا قیمت حساب شود.</span></div>
+  {% if m2.note %}<p class="m2c__note">{{ m2.note|fa_num }}</p>{% endif %}
+  <p class="m2c__ship">برش به اندازهٔ شما؛ ارسال پس‌کرایه (هزینهٔ حمل موقع تحویل).</p>
+</div>
+<script>
+(function () {
+  "use strict";
+  var box = document.querySelector("[data-m2c]"); if (!box) return;
+  var FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(s) { return String(s).replace(/\d/g, function (d) { return FA[d]; }).replace(/\./g, "٫"); }
+  function money(n) { return fa(Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")); }
+  function num(s) { s = String(s || "").replace(/[۰-۹]/g, function (d) { return FA.indexOf(d); }).replace(/[٫/,،]/g, ".").replace(/[^\d.]/g, ""); var n = parseFloat(s); return isNaN(n) ? 0 : n; }
+  function short(n) { return fa((Math.round(n * 100) / 100).toString()); }
+  var price = +box.dataset.price, step = +box.dataset.round || 0, mn = +box.dataset.minNarrow, mw = +box.dataset.minWide, mx = +box.dataset.max;
+  var len = box.querySelector("[data-m2-len]"), out = box.querySelector("[data-m2-out]"), hint = box.querySelector("[data-m2-hint]");
+  var buttons = document.querySelectorAll('button[type=submit][form=buyForm], #buyForm button[type=submit]');
+  function width() { var c = document.querySelector('input[name=width][form=buyForm]:checked'); return c ? +c.value : 0; }
+  function upd() {
+    var w = width(), l = num(len.value), lo = w >= 1 ? mw : mn, ok = false;
+    hint.textContent = "کمترین " + short(lo) + "، بیشترین " + short(mx) + " متر";
+    if (!l) { out.innerHTML = '<span class="muted">طول را بنویسید تا قیمت حساب شود.</span>'; }
+    else if (l < lo) { out.innerHTML = '<span class="err">کمترین طول برای عرض ' + short(w) + " متر، " + short(lo) + " متر است.</span>"; }
+    else if (l > mx) { out.innerHTML = '<span class="err">بیشترین طول ' + short(mx) + " متر است؛ برای طول بیشتر با ما تماس بگیرید.</span>"; }
+    else {
+      var area = Math.round(w * l * 10000) / 10000, total = area * price;
+      if (step) total = Math.ceil(total / step - 1e-9) * step;
+      out.innerHTML = '<span class="m2c__dim">' + short(w) + " × " + short(l) + " = " + short(area) + ' متر مربع</span><strong>' + money(total) + " <small>تومان</small></strong>";
+      ok = true;
+      var t = document.getElementById("instTeaser"); if (t && t.dataset.base) t.href = t.dataset.base + "?amount=" + total;
+      var bp = document.querySelector("[data-m2-total]"); if (bp) bp.textContent = "این تخته: " + money(total) + " تومان";
+    }
+    if (!ok) { var bp2 = document.querySelector("[data-m2-total]"); if (bp2) bp2.textContent = ""; }
+    buttons.forEach(function (b) { b.disabled = !ok || b.hasAttribute("data-na"); });
+  }
+  document.addEventListener("change", function (e) { if (e.target.name === "width") upd(); });
+  len.addEventListener("input", upd);
+  upd();
+})();
+</script>
