@@ -35,6 +35,7 @@ class Resource:
     columns: list = field(default_factory=list)
     search: list = field(default_factory=list)
     filters: list = field(default_factory=list)
+    auto_columns: dict = field(default_factory=dict)  # ستون اختیاری -> فیلتری که با روشن شدنش خودکار نمایش داده می‌شود
     custom_filters: dict = field(default_factory=dict)  # نام -> (برچسب، [(مقدار، برچسب)]، تابع(qs, مقدار))
     date_filter: Optional[str] = None
     ordering: tuple = ("-pk",)

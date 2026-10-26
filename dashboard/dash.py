@@ -153,6 +153,13 @@ def cart_value(snaps):
     return total
 
 
+def _no_album():
+    from catalog.models import Product
+    from pricing.suggest import missing_q
+
+    return Product.objects.filter(missing_q(), status="publish").count()
+
+
 def todo(manager):
     from blog.models import Comment
     from catalog.models import Product, Review
@@ -198,6 +205,9 @@ def todo(manager):
          "n": Product.objects.filter(manix_draft=True).exclude(status="trash").filter(
              Q(album__isnull=True) | Q(image__isnull=True)).count(),
          "url": "/panel/products/?manix_draft=1", "hot": True},
+        {"label": "فرش منتشرشده بدون آلبوم قیمت", "n": _no_album(),
+         "url": "/panel/products/?album_state=missing&status=publish", "hot": True,
+         "sub": "قیمتشان به‌روز نمی‌شود؛ به آلبوم وصلشان کنید"},
         {"label": "فرش منتشرشدهٔ ناموجود", "n": Product.objects.filter(status="publish", stock_status="outofstock").count(),
          "url": "/panel/products/?stock_status=outofstock&status=publish", "quiet": True},
         {"label": "آدرس خراب (۴۰۴)", "n": NotFoundLog.objects.count(), "url": "/panel/notfound/", "quiet": True},

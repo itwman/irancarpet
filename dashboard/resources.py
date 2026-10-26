@@ -158,11 +158,16 @@ register(Resource(
         "unavailable": ("وضعیت فروش: ناموجود", lambda r, qs: _set_sale(qs, "unavailable")),
         "set_album": ("تغییر آلبوم قیمت", lambda r, qs: _set_album(r, qs), "آلبوم", lambda: _album_choices()),
         "follow_album": ("پیروی کامل از قیمت آلبوم (حذف قیمت‌های اختصاصی و حراج)", lambda r, qs: _follow_album(qs)),
+        "suggest_album": ("وصل به آلبوم پیشنهادی (فرش‌های بی‌آلبوم)", lambda r, qs: _assign_suggested(qs)),
         "clear_sale": ("حذف قیمت حراج", lambda r, qs: _clear_sale(qs)),
         "mirror_on": ("ارسال به فرشستان", lambda r, qs: _mirror_pick(qs, True)),
         "mirror_off": ("برداشتن از فرشستان", lambda r, qs: _mirror_pick(qs, False)),
     },
-    custom_filters={"own_price": ("قیمت جدا از آلبوم", [
+    auto_columns={"suggest_album": "album_state"},
+    custom_filters={"album_state": ("اتصال به آلبوم قیمت", [
+        ("missing", "بدون آلبوم یا آلبوم غیرفعال"), ("none", "بدون آلبوم"), ("inactive", "آلبوم غیرفعال"),
+    ], lambda qs, v: qs.filter(_missing_q(v))),
+        "own_price": ("قیمت جدا از آلبوم", [
         ("any", "هر نوع"), ("custom", "قیمت پایهٔ اختصاصی"), ("override", "قیمت خرید اختصاصی سایز"), ("sale", "قیمت حراج"),
     ], lambda qs, v: qs.filter(_override_q(v)).distinct()),
         "in_fs": ("در فرشستان", [("1", "ارسال‌شده به فرشستان"), ("0", "نه")],
@@ -197,7 +202,6 @@ def _set_album(request, qs):
     from django.utils import timezone
 
     from catalog.models import Variation
-    from pricing.albums import sync_album_variations
 
     val = (request.POST.get("action_value") or "").strip()
     album = Album.objects.filter(pk=val, is_active=True).first() if val.isdigit() and val != "0" else None
@@ -215,11 +219,40 @@ def _set_album(request, qs):
             Product.objects.filter(pk__in=ids).update(album=None, custom_base_price=None, modified_at=timezone.now())
             Variation.reprice_queryset(Variation.objects.filter(product_id__in=ids), scale_sale=False)
             return f"{fa_num(len(ids))} محصول از آلبوم خارج شد؛ قیمت فعلی‌شان به‌صورت قیمت دستی ماند."
-        Product.objects.filter(pk__in=ids).update(album=album, custom_base_price=None, modified_at=timezone.now())
-        Variation.objects.filter(product_id__in=ids).update(override_price=None)
-        st = sync_album_variations(list(Product.objects.filter(pk__in=ids).select_related("album")))
+        st = _assign(ids, album)
     return (f"{fa_num(len(ids))} محصول به آلبوم «{album.name}» رفت و قیمت‌ها به‌روز شد"
             f" ({fa_num(st['created'])} سایز تازه، {fa_num(st['deleted'])} سایز خارج از آلبوم حذف شد).")
+
+
+def _assign(ids, album):
+    """فرش‌ها به آلبوم؛ قیمت‌های اختصاصی پاک و سایزها با آلبوم هماهنگ می‌شوند."""
+    from django.utils import timezone
+
+    from catalog.models import Variation
+    from pricing.albums import sync_album_variations
+
+    Product.objects.filter(pk__in=ids).update(album=album, custom_base_price=None, modified_at=timezone.now())
+    Variation.objects.filter(product_id__in=ids).update(override_price=None)
+    return sync_album_variations(list(Product.objects.filter(pk__in=ids).select_related("album")))
+
+
+def _assign_suggested(qs):
+    """هر فرش بی‌آلبوم به آلبوم پیشنهادی‌اش (فقط پیشنهادهای بی‌ابهام)."""
+    from django.db import transaction
+
+    from pricing.suggest import suggest_ids
+
+    items = list(qs.select_related("album"))
+    sug = suggest_ids(items)
+    by = {}
+    for pid, aid in sug.items():
+        by.setdefault(aid, []).append(pid)
+    with transaction.atomic():
+        for aid, ids in by.items():
+            _assign(ids, Album.objects.get(pk=aid))
+    skipped = len(items) - len(sug)
+    return (f"{fa_num(len(sug))} فرش به آلبوم پیشنهادی‌اش وصل شد و قیمتش به‌روز شد."
+            + (f" {fa_num(skipped)} فرش پیشنهاد بی‌ابهام نداشت یا آلبوم داشت؛ آن‌ها را با «تغییر آلبوم قیمت» دستی وصل کنید." if skipped else ""))
 
 
 def _chips(items, param=None):
@@ -250,10 +283,26 @@ def _product_extra_columns():
         Col("brand", "برند", lambda o: _link_chip(o.brand, "brand")),
         Col("sale_status", "وضعیت فروش", badge("sale_status"), "sale_status"),
         Col("views", "بازدید", lambda o: fa_num(o.views), "views"),
+        Col("suggest_album", "آلبوم پیشنهادی", _suggest_col),
     ]
     for a in Attribute.objects.order_by("order", "label"):
         cols.append(Col(f"attr_{a.pk}", a.label, (lambda aid: lambda o: _chips([t for t in o.specs.all() if t.attribute_id == aid], "specs"))(a.pk)))
     return cols
+
+
+def _missing_q(kind):
+    from pricing.suggest import missing_q
+
+    return missing_q(kind)
+
+
+def _suggest_col(o):
+    if o.album_id and o.album.is_active:
+        return "—"
+    from pricing.suggest import suggestion
+
+    a = suggestion(o)
+    return _link_chip(a, "album", a.name) if a else format_html('<span class="text-muted small">{}</span>', "نامعلوم؛ دستی")
 
 
 def _override_q(kind):

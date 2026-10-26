@@ -163,6 +163,7 @@ def list_columns(res, request):
     else:
         chosen = request.session.get(skey, [])
     cols = list(res.columns)
+    chosen = list(chosen) + [c for c, f in res.auto_columns.items() if request.GET.get(f) and c not in chosen]
     extra_on = [c for c in extra if c.name in chosen]
     cols[-1:-1] = extra_on   # پیش از آخرین ستون (تاریخ)
     return cols, [(c.name, c.label, c.name in chosen) for c in extra]
