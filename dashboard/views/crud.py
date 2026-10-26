@@ -329,7 +329,9 @@ def edit_view(request, key, pk=None):
             if nxt == "add":
                 return redirect(res.url() + "add/")
             return redirect(res.obj_url(o))
-        messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
+        from ..forms import error_summary
+
+        messages.error(request, error_summary(form))
     else:
         initial = None
         if not obj:

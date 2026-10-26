@@ -95,3 +95,32 @@ class M2Tests(TestCase):
         self.assertTrue(d["lines"][1]["problem"])  # بدون اندازه
         p = self.client.get(f"/api/app/v1/products/{self.k.pk}/").json()
         self.assertEqual(p["m2"]["price"], 2_300_000)
+
+
+class DecimalFormTests(TestCase):
+    def test_album_decimal_fields_save(self):
+        from django.contrib.auth import get_user_model
+
+        from dashboard.forms import DecimalClean
+
+        f = DecimalClean(max_digits=5, decimal_places=2)
+        self.assertEqual(f.clean("۱٫۵"), Decimal("1.5"))
+        self.assertEqual(f.clean("1.50"), Decimal("1.5"))
+        seed_sizes()
+        a = Album.objects.create(name="آلبوم", code="AX", base_size=Size.objects.get(slug="12-meter"), base_price=Decimal("60000000"))
+        self.client.force_login(get_user_model().objects.create_superuser("adm", password="x"))
+        html = self.client.get(f"/panel/albums/{a.pk}/").content.decode()
+        import re
+
+        data = {}
+        for m in re.finditer(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', html):
+            data[m.group(1)] = m.group(2)
+        for m in re.finditer(r'<select[^>]*name="([^"]+)"[^>]*>(.*?)</select>', html, re.S):
+            sel = re.findall(r'<option value="([^"]*)"[^>]*selected', m.group(2))
+            if sel:
+                data[m.group(1)] = sel if "multiple" in m.group(0) else sel[0]
+        data.update(base_price="63,000,000", profit_percent="۱۲٫۵", is_active="on", in_price_list="on")
+        r = self.client.post(f"/panel/albums/{a.pk}/", data)
+        self.assertEqual(r.status_code, 302, re.findall(r'has-err[^>]*>.{0,300}', r.content.decode(), re.S)[:2])
+        a.refresh_from_db()
+        self.assertEqual((a.base_price, a.profit_percent, a.m2_min_wide), (Decimal("63000000"), Decimal("12.5"), Decimal("1.5")))

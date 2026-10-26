@@ -103,7 +103,9 @@ def product_edit(request, pk=None):
             if request.POST.get("_next") == "list":
                 return redirect("/panel/products/")
             return redirect(f"/panel/products/{p.pk}/edit/")
-        messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
+        from ..forms import error_summary
+
+        messages.error(request, error_summary(form))
     else:
         form = style_form(ProductForm(instance=product, initial=None if product else {"status": "publish", "published_at": timezone.now()}))
         vfs = VariationFS(instance=product or Product(), prefix="v", queryset=Variation.objects.select_related("size").order_by("menu_order", "pk"))

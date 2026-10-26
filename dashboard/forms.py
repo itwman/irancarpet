@@ -158,6 +158,27 @@ class NumberClean(forms.IntegerField):
         return super().to_python(value)
 
 
+def error_summary(*forms_):
+    """«لطفاً خطاهای فرم را برطرف کنید: «درصد سود»: …» — تا فیلد پنهان یا پایین صفحه هم پیدا شود."""
+    parts = []
+    for f in forms_:
+        if f is None or not hasattr(f, "errors"):
+            continue
+        errs = f.errors if isinstance(f.errors, dict) else {}
+        for name, es in errs.items():
+            label = f.fields[name].label if name in getattr(f, "fields", {}) and f.fields[name].label else ("فرم" if name == "__all__" else name)
+            parts.append(f"«{label}»: {' '.join(str(e) for e in es)}")
+    return "لطفاً خطاهای فرم را برطرف کنید" + (": " + "؛ ".join(parts[:6]) if parts else ".")
+
+
+class DecimalClean(forms.DecimalField):
+    """عدد اعشاری: ارقام فارسی و «٫» یا «/» به‌جای نقطه پذیرفته می‌شود."""
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = to_en(value).replace(",", "").replace("٬", "").replace("٫", ".").replace("/", ".").strip()
+        return super().to_python(value)
+
+
 class Editor(forms.Textarea):
     def __init__(self, attrs=None):
         base = {"class": "rich", "rows": 12}
@@ -216,6 +237,12 @@ def formfield_for(db_field, ac_urls, **kwargs):
         ff.required = False
         ff.help_text = ff.help_text or "خالی بگذارید تا خودکار از عنوان ساخته شود."
         ff.widget.attrs["class"] = "form-control ltr-num"
+    elif isinstance(ff, forms.DecimalField) and not isinstance(ff.widget, forms.HiddenInput):
+        # forms.DecimalField زیرکلاس IntegerField است؛ بدون این شاخه «۱٫۵» و «۰٫۴۰» رد می‌شد
+        f2 = DecimalClean(label=ff.label, required=ff.required, help_text=ff.help_text, max_digits=ff.max_digits,
+                          decimal_places=ff.decimal_places, min_value=getattr(ff, "min_value", None), initial=ff.initial)
+        f2.widget = forms.TextInput(attrs={"inputmode": "decimal", "class": "form-control ltr-num"})
+        return f2
     elif isinstance(ff, forms.IntegerField) and not isinstance(ff.widget, forms.HiddenInput):
         f2 = NumberClean(label=ff.label, required=ff.required, help_text=ff.help_text, min_value=getattr(ff, "min_value", None),
                          initial=ff.initial)

@@ -425,7 +425,9 @@ def settings_view(request):
                     commission.recalc_open(obj)
             messages.success(request, msg)
             return redirect(f"/panel/settings/?tab={tab}")
-        messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
+        from ..forms import error_summary
+
+        messages.error(request, error_summary(form))
     else:
         form = make_form(tab)
     return render(request, "dashboard/settings.html", {
