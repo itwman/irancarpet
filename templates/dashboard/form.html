@@ -120,4 +120,20 @@
   names.forEach(function (n) { var el = form.elements[n]; if (el) { el.addEventListener("change", later); el.addEventListener("input", later); } });
   run();
 })();
+</script>{% endif %}{% if res.key == "albums" %}<script>
+/* آلبوم «متری»: فیلدهای سایز، پرتی و ارسال پنهان؛ «قیمت خرید» یعنی قیمت خرید هر متر مربع */
+(function () {
+  var unit = document.getElementById("id_unit"); if (!unit) return;
+  function fld(n) { var el = document.getElementById("id_" + n); return el && el.closest(".fld"); }
+  function sec(title) { return Array.prototype.filter.call(document.querySelectorAll(".edit section.card-p"), function (s) { var h = s.querySelector("h2"); return h && h.textContent.trim().indexOf(title) === 0; })[0]; }
+  var lab = document.querySelector('label[for="id_base_price"]'), orig = lab ? lab.innerHTML : "";
+  function upd() {
+    var m2 = unit.value === "m2";
+    ["base_size", "shipping_fixed", "waste_type", "waste_value"].forEach(function (n) { var f = fld(n); if (f) f.hidden = m2; });
+    var s1 = sec("سایزها"), s2 = sec("فرش متری");
+    if (s1) s1.hidden = m2; if (s2) s2.hidden = !m2;
+    if (lab) lab.innerHTML = m2 ? orig.replace(/قیمت خرید ۱۲ متری/, "قیمت خرید هر متر مربع") : orig;
+  }
+  unit.addEventListener("change", upd); upd();
+})();
 </script>{% endif %}{% endblock %}

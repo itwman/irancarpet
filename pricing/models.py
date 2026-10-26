@@ -258,7 +258,8 @@ class Album(models.Model):
     def sale_base(self, buy=None):
         """قیمت فروش سایز پایه (قبل از گرد کردن)."""
         buy = Decimal(buy if buy is not None else self.base_price)
-        return buy * (1 + Decimal(self.profit_percent) / 100) + Decimal(self.shipping_fixed)
+        ship = 0 if self.is_m2 else Decimal(self.shipping_fixed)  # فرش متری: ارسال پس‌کرایه با مشتری
+        return buy * (1 + Decimal(self.profit_percent) / 100) + ship
 
     def _waste(self, price, size):
         if size.needs_waste and self.waste_value:
@@ -289,7 +290,7 @@ class Album(models.Model):
 
     def price_from_purchase(self, purchase, size):
         """قیمت خرید اختصاصی یک سایز → قیمت فروش (سود + سهم ارسال به نسبت متراژ)."""
-        ship = Decimal(self.shipping_fixed) * Decimal(size.area or 0) / self._base_area()
+        ship = 0 if self.is_m2 else Decimal(self.shipping_fixed) * Decimal(size.area or 0) / self._base_area()
         return self.round_up(Decimal(purchase) * (1 + Decimal(self.profit_percent) / 100) + ship)
 
     def purchase_price(self, size, buy=None):

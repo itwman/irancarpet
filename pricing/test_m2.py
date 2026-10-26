@@ -22,6 +22,7 @@ class M2Tests(TestCase):
         cache.clear()
         self.album = Album.objects.create(name="کناره 500 شانه", code="K500", base_size=Size.objects.get(slug="12-meter"),
                                           base_price=Decimal("2000000"), profit_percent=Decimal("15"), round_to=10_000, unit="m2",
+                                          shipping_fixed=500_000,  # برای متری حساب نمی‌شود
                                           slug="kenare-500")
         self.k = Product.objects.create(title="کناره فرش برشی 500 شانه نقشه حوض زمینه سرمه ای", slug="kenare", status="publish", album=self.album)
         from pricing.albums import sync_album_variations
@@ -30,6 +31,14 @@ class M2Tests(TestCase):
         self.k.refresh_from_db()
         self.v = self.k.variations.get()
         ShopSettings.objects.update(free_shipping_min=1_000_000)
+
+    def test_album_form_hides_size_fields(self):
+        from django.contrib.auth import get_user_model
+
+        self.client.force_login(get_user_model().objects.create_superuser("adm", password="x"))
+        r = self.client.get(f"/panel/albums/{self.album.pk}/")
+        self.assertContains(r, "قیمت خرید هر متر مربع")
+        self.assertContains(r, 'id="id_m2_widths"')
 
     def test_album_and_product(self):
         self.album.refresh_from_db()
