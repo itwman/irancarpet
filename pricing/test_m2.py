@@ -124,3 +124,23 @@ class DecimalFormTests(TestCase):
         self.assertEqual(r.status_code, 302, re.findall(r'has-err[^>]*>.{0,300}', r.content.decode(), re.S)[:2])
         a.refresh_from_db()
         self.assertEqual((a.base_price, a.profit_percent, a.m2_min_wide), (Decimal("63000000"), Decimal("12.5"), Decimal("1.5")))
+
+
+class OnlySizesTests(TestCase):
+    def test_only_sizes_outside_album(self):
+        """«فقط این سایزها»: گرد قطر ۱ و ۱٫۵ که جزو سایزهای آلبوم نیستند؛ فقط همین دو سایز با قیمت فرمول آلبوم."""
+        from pricing.albums import sync_album_variations
+
+        seed_sizes()
+        s12 = Size.objects.get(slug="12-meter")
+        rounds = list(Size.objects.filter(type="round").order_by("diameter")[:2])
+        self.assertEqual(len(rounds), 2)
+        a = Album.objects.create(name="700", code="A7", base_size=s12, base_price=Decimal("60000000"), profit_percent=0, round_to=0)
+        a.sizes.set([s12, Size.objects.get(slug="6-meter")])
+        p = Product.objects.create(title="فرش گرد 700 شانه", slug="round", status="publish", album=a)
+        p.only_sizes.set(rounds)
+        sync_album_variations([Product.objects.select_related("album").get(pk=p.pk)])
+        vs = list(p.variations.select_related("size"))
+        self.assertEqual({v.size_id for v in vs}, {r.pk for r in rounds})
+        for v in vs:
+            self.assertEqual(v.final_price, a.size_price(v.size))  # از فرمول آلبوم، نه قیمت دستی

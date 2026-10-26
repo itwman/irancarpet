@@ -25,8 +25,10 @@ def sync_album_variations(products, reset=False):
             even_cache[album.pk] = set(album.even_sizes.values_list("pk", flat=True))
         sizes = sizes_cache[album.pk]
         only = set(p.only_sizes.values_list("pk", flat=True)) if p.pk else set()
-        if only:  # محصول جدا برای یک یا چند سایز خاص آلبوم (مثل گرد قطر ۱٫۵)
-            sizes = [s for s in sizes if s.pk in only] or sizes
+        if only:  # محصول جدا برای یک یا چند سایز خاص (مثل گرد قطر ۱ و ۱٫۵)؛ حتی اگر جزو سایزهای آلبوم نباشد، قیمتش از فرمول آلبوم
+            from .models import Size
+
+            sizes = list(Size.objects.filter(pk__in=only, is_active=True).order_by("sort_order", "pk")) or sizes
         single = set(p.single_sizes.values_list("pk", flat=True)) if p.pk else set()
         if not sizes:
             continue

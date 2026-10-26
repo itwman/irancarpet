@@ -327,6 +327,12 @@ class Product(SeoFields):
                 min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status, price_unit=self.price_unit
             )
 
+    def only_size_ids(self):
+        """«فقط این سایزهای آلبوم»؛ قیمت این سایزها هم از فرمول آلبوم است حتی اگر جزو سایزهای آلبوم نباشند."""
+        if not hasattr(self, "_only_ids"):
+            self._only_ids = set(self.only_sizes.values_list("pk", flat=True)) if self.pk else set()
+        return self._only_ids
+
     @property
     def is_m2(self):
         return self.price_unit == "m2"
@@ -454,7 +460,7 @@ class Variation(models.Model):
         product = product or self.product
         album = product.album
         size = self.size if self.size_id else None
-        if album and album.is_active and size and size.is_active and album.offers(size):
+        if album and album.is_active and size and size.is_active and (album.offers(size) or size.pk in product.only_size_ids()):
             if self.override_price is not None:
                 final = album.price_from_purchase(self.override_price, size)
                 purchase = self.override_price
@@ -479,7 +485,11 @@ class Variation(models.Model):
         st = PricingSettings.load()
         items = list(qs.select_related("product__album__base_size", "size"))
         product_ids, album_sizes = set(), {}
+        only = {}
+        for pid, sid in Product.only_sizes.through.objects.filter(product_id__in={v.product_id for v in items}).values_list("product_id", "size_id"):
+            only.setdefault(pid, set()).add(sid)
         for v in items:
+            v.product._only_ids = only.get(v.product_id, set())
             a = v.product.album
             if a is not None:
                 if a.pk not in album_sizes:
