@@ -113,6 +113,16 @@ def run_all(out=print):
             log.exception("crm jobs")
     else:
         out("خط پیامک تنظیم نشده؛ پیامک‌ها فرستاده نمی‌شوند.")
+    try:  # سفارش‌ها: لغو خودکار بی‌پرداخت‌های قدیمی و پیامک روزانهٔ عقب‌افتاده‌ها به مدیران
+        from shop.orderflow import auto_cancel, daily_admin_sms
+
+        n = auto_cancel()
+        if n:
+            done["لغو خودکار سفارش پرداخت‌نشده"] = n
+        if sms_ready() and daily_admin_sms():
+            done["پیامک عقب‌افتاده‌ها به مدیر"] = 1
+    except Exception:  # noqa: BLE001
+        log.exception("order flow")
     try:  # ترب‌پی: پرداخت‌های تأییدشده‌ای که هنوز قطعی (settle) نشده‌اند
         from shop.bnpl import retry_settles
 

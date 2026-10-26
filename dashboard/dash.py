@@ -153,6 +153,12 @@ def cart_value(snaps):
     return total
 
 
+def _late_n():
+    from shop.orderflow import late_summary
+
+    return late_summary()["total"]
+
+
 def _no_album():
     from catalog.models import Product
     from pricing.suggest import missing_q
@@ -186,7 +192,9 @@ def todo(manager):
             offers_soon.append(o)
     items = [
         {"label": "سفارش منتظر ارسال", "n": Order.objects.filter(status__in=["deposit_paid", "paid", "processing"]).count(),
-         "url": "/panel/orders/?status=paid", "hot": True},
+         "url": "/panel/orders/?stage=to_ship", "hot": True},
+        {"label": "سفارش عقب‌افتاده", "n": _late_n(), "url": "/panel/orders/?late=late", "hot": True,
+         "sub": "از موعد آماده‌سازی، ارسال یا بررسی گذشته"},
         {"label": "اقساطی منتظر بررسی", "n": Order.objects.filter(status="on_hold").count(), "url": "/panel/orders/?status=on_hold", "hot": True},
         {"label": "پرداخت‌نشده (۷ روز)", "n": pend["n"] or 0, "url": "/panel/orders/?status=pending",
          "sub": (f"{short_money(pend['s'])[0]} {short_money(pend['s'])[1]}" if manager and pend["s"] else "شاید نیاز به تماس")},

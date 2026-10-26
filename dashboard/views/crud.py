@@ -172,8 +172,10 @@ def list_columns(res, request):
 def action_specs(res):
     out = []
     for k, a in res.actions.items():
+        opt = a[4] if len(a) > 4 else {}
         out.append({"key": k, "label": a[0], "input": a[2] if len(a) > 2 else "",
-                    "choices": a[3]() if len(a) > 3 and a[3] else None})
+                    "choices": a[3]() if len(a) > 3 and a[3] else None,
+                    "confirm": opt.get("confirm", ""), "href": opt.get("href", "")})
     return out
 
 
@@ -204,10 +206,10 @@ def list_view(request, key):
                 messages.success(request, f"{n} مورد حذف شد.")
             elif act in res.actions:
                 spec = res.actions[act]
-                if len(spec) > 2 and not request.POST.get("action_value", "").strip():
+                if len(spec) > 2 and spec[2] and not request.POST.get("action_value", "").strip():
                     messages.error(request, f"برای «{spec[0]}» مقدار {spec[2]} را وارد کنید.")
                     return redirect(request.get_full_path())
-                msg = spec[1](request, sel)
+                msg = spec[1](request, sel) if spec[1] else ""
                 log(request, "action", res.title, None, f"{res.actions[act][0]} ({len(ids)} مورد)")
                 if msg:
                     messages.success(request, msg)
@@ -234,9 +236,23 @@ def list_view(request, key):
     params = request.GET.copy()
     params.pop("page", None)
     params.pop("o", None)
+    tabs = []
+    if res.tabs:  # زبانه‌های آماده با شمارنده
+        from django.http import QueryDict
+
+        base = res.model.objects.all()
+        if res.queryset:
+            base = res.queryset(base)
+        cur = {k: v for k, v in request.GET.items() if k not in ("page", "o", "cols", "cols_set")}
+        for t in res.tabs:
+            label, prm = t[0], t[1]
+            qd = QueryDict(mutable=True)
+            qd.update(prm)
+            tabs.append({"label": label, "qs": qd.urlencode(), "on": cur == prm, "hot": len(t) > 2 and t[2],
+                         "n": apply_filters(res, base, type("R", (), {"GET": qd})()).count() if prm else None})
     return render(request, res.list_template, {
         "res": res, "rows": rows, "page": page, "filters": filter_specs(res, request), "o": o,
-        "columns": columns, "col_choices": col_choices, "actions": action_specs(res),
+        "columns": columns, "col_choices": col_choices, "actions": action_specs(res), "tabs": tabs,
         "q": request.GET.get("q", ""), "base_qs": params.urlencode(), "d_from": request.GET.get("d_from", ""),
         "d_to": request.GET.get("d_to", ""), "filtered": any(request.GET.get(k) for k in ["q", "d_from", "d_to", *res.filters, *res.custom_filters]),
     })

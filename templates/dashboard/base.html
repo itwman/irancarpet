@@ -44,6 +44,14 @@
       <input name="q" value="{{ request.GET.q|default:'' }}" placeholder="جستجوی سفارش، محصول، مشتری…" aria-label="جستجو در پنل">
     </form>
     <div class="top__user">
+      <div class="bell" data-bell>
+        <button class="icon-b" type="button" aria-label="اعلان‌ها" aria-expanded="false" data-bell-btn><svg><use href="#i-bell"/></svg><em hidden data-bell-n></em></button>
+        <div class="bell__menu" hidden data-bell-menu>
+          <div class="bell__new" data-bell-new></div>
+          <div class="bell__items" data-bell-items><p class="muted small m-0">در حال خواندن…</p></div>
+          <button type="button" class="bell__perm" hidden data-bell-perm>اعلان سفارش تازه روی مرورگر هم بیاید</button>
+        </div>
+      </div>
       <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
       <form method="post" action="/my-account/logout/">{% csrf_token %}<button class="icon-b" type="submit" title="خروج" aria-label="خروج"><svg><use href="#i-out"/></svg></button></form>
     </div>

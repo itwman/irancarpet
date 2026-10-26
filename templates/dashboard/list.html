@@ -17,6 +17,7 @@
   </div>
 </div>
 {% if res.help %}<p class="help-note">{{ res.help }}</p>{% endif %}
+{% if tabs %}<nav class="tabs-p" aria-label="فهرست‌های آماده">{% for t in tabs %}<a href="?{{ t.qs }}" class="{% if t.on %}on{% endif %}{% if t.hot and t.n %} tab-hot{% endif %}"{% if t.on %} aria-current="page"{% endif %}>{{ t.label }}{% if t.n %}<em>{{ t.n|fa_num }}</em>{% endif %}</a>{% endfor %}</nav>{% endif %}
 {% block before_table %}{% endblock %}
 <form class="filters-p card-p" method="get">
   <div class="filters-p__q"><svg aria-hidden="true"><use href="#i-search"/></svg><input name="q" value="{{ q }}" placeholder="جستجو در {{ res.title }}…" aria-label="جستجو"></div>
@@ -69,7 +70,7 @@
     {% if page.paginator.count > rows|length %}<label class="bulk__all"><input type="checkbox" class="form-check-input" name="all" value="1" data-bulk-all> همهٔ {{ page.paginator.count|fa_num }} مورد{% if filtered %} این فیلتر{% endif %}</label>{% endif %}
     <select name="action" class="form-select form-select-sm" data-bulk-action>
       <option value="">عملیات گروهی…</option>
-      {% for a in actions %}<option value="{{ a.key }}"{% if a.input %} data-input="{{ a.input }}"{% endif %}{% if a.choices %} data-choices="{{ a.key }}"{% endif %}>{{ a.label }}</option>{% endfor %}
+      {% for a in actions %}<option value="{{ a.key }}"{% if a.input %} data-input="{{ a.input }}"{% endif %}{% if a.choices %} data-choices="{{ a.key }}"{% endif %}{% if a.confirm %} data-confirm="{{ a.confirm }}"{% endif %}{% if a.href %} data-href="{{ a.href }}"{% endif %}>{{ a.label }}</option>{% endfor %}
       {% if res.can_delete %}<option value="delete" data-danger="1">حذف</option>{% endif %}
     </select>
     <input name="action_value" class="form-control form-control-sm" hidden disabled data-bulk-input>

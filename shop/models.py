@@ -28,6 +28,17 @@ class ShopSettings(models.Model):
     admin_mobiles = models.CharField(
         "موبایل مدیران برای اطلاع از سفارش", max_length=200, blank=True, help_text="با ویرگول جدا کنید",
     )
+    # موعدها: سفارش عقب‌افتاده، لغو خودکار و خبر روزانه به مدیر
+    prep_days = models.PositiveSmallIntegerField("مهلت آماده‌سازی (روز)", default=14,
+                                                 help_text="از پرداخت تا ارسال؛ بعد از آن سفارش «عقب‌افتاده» است.")
+    transit_days = models.PositiveSmallIntegerField("مهلت رسیدن بار (روز)", default=7,
+                                                    help_text="از «ارسال شد» تا «تحویل شد».")
+    review_days = models.PositiveSmallIntegerField("مهلت بررسی اقساط (روز)", default=2)
+    pending_cancel_days = models.PositiveSmallIntegerField(
+        "لغو خودکار سفارش پرداخت‌نشده بعد از (روز)", default=7,
+        help_text="سفارشی که هیچ پرداختی ندارد بعد از این مدت خودکار لغو می‌شود (اقساطی‌ها نه). ۰ = خاموش.")
+    late_admin_sms = models.BooleanField("پیامک روزانهٔ سفارش‌های عقب‌افتاده به مدیران", default=True,
+                                         help_text="هر روز ساعت ۹، فقط اگر سفارش عقب‌افتاده‌ای باشد.")
     # اتصال به مانیکس پلاس (حسابداری): مانیکس با این کلید سفارش‌ها را می‌خواند (API سازگار با ووکامرس)
     manix_enabled = models.BooleanField("اتصال مانیکس پلاس فعال باشد", default=False)
     manix_key = models.CharField("کلید مانیکس پلاس", max_length=64, blank=True, editable=False)
@@ -170,6 +181,7 @@ class Order(models.Model):
     created_at = models.DateTimeField("تاریخ ثبت", default=timezone.now, db_index=True)
     paid_at = models.DateTimeField("تاریخ پرداخت", null=True, blank=True)
     updated_at = models.DateTimeField("آخرین تغییر", default=timezone.now, db_index=True, editable=False)
+    status_at = models.DateTimeField("تاریخ آخرین تغییر وضعیت", null=True, blank=True, editable=False, db_index=True)
 
     NUMBER_START = 200001
 
@@ -191,6 +203,14 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         # زمان آخرین تغییر (مانیکس پلاس سفارش‌های تغییرکرده را با همین می‌خواند)
         self.updated_at = timezone.now()
+        if self.pk:  # زمان تغییر وضعیت، برای موعدها (عقب‌افتاده)
+            old = Order.objects.filter(pk=self.pk).values_list("status", flat=True).first()
+            if old is not None and old != self.status:
+                self.status_at = self.updated_at
+                if kwargs.get("update_fields") is not None:
+                    kwargs["update_fields"] = list(set(kwargs["update_fields"]) | {"status_at"})
+        elif not self.status_at:
+            self.status_at = self.updated_at
         if kwargs.get("update_fields") is not None:
             kwargs["update_fields"] = list(set(kwargs["update_fields"]) | {"updated_at"})
         if not self.number:

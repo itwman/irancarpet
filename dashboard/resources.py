@@ -46,11 +46,99 @@ register(Resource(
                  format_html(' <span class="badge-ic b-inst-{}">{}</span>', o.installment_state, o.get_installment_state_display())
                  if o.installment_state else "")),
              Col("status", "وضعیت", badge("status"), "status"),
+             Col("due", "موعد", lambda o: _due_col(o)),
              Col("created_at", "تاریخ", jd("created_at", "%Y/%m/%d %H:%M"), "created_at")],
-    search=["=number", "mobile", "first_name", "last_name", "email", "city"],
+    search=["=number", "mobile", "first_name", "last_name", "email", "city", "tracking_code"],
     filters=["status", "payment_mode", "installment_state", "installment_plan", "shipping_mode", "province"], date_filter="created_at",
     ordering=("-created_at",), can_add=False, edit_url=lambda o: f"/panel/orders/{o.pk}/view/",
+    custom_filters={
+        "stage": ("مرحله", [("today", "ثبت‌شدهٔ امروز"), ("to_ship", "منتظر ارسال"), ("review", "اقساطی منتظر بررسی"),
+                            ("unpaid", "پرداخت‌نشده"), ("shipped", "ارسال‌شده (تحویل‌نشده)")], lambda qs, v: qs.filter(_stage_q(v))),
+        "late": ("موعد", [("late", "عقب‌افتاده"), ("soon", "نزدیک موعد (۲ روز)")], lambda qs, v: qs.filter(_late_q(v))),
+    },
+    tabs=[("همه", {}), ("امروز", {"stage": "today"}), ("منتظر ارسال", {"stage": "to_ship"}), ("عقب‌افتاده", {"late": "late"}, True),
+          ("نزدیک موعد", {"late": "soon"}), ("اقساطی منتظر بررسی", {"stage": "review"}, True), ("پرداخت‌نشده", {"stage": "unpaid"}),
+          ("ارسال‌شده", {"stage": "shipped"})],
+    actions={
+        "processing": ("وضعیت: در حال آماده‌سازی", lambda r, qs: _orders_bulk(r, qs, "processing")),
+        "ship": ("ارسال شد (با کد رهگیری)…", None, "", None, {"href": "/panel/orders/ship/"}),
+        "complete": ("تحویل شد", lambda r, qs: _orders_bulk(r, qs, "completed"), "", None,
+                     {"confirm": "سفارش‌های انتخاب‌شده «تحویل شد» شوند؟ پورسانت همکاران قابل تسویه و پرداخت ترب‌پی/دیجی‌پی قطعی می‌شود."}),
+        "cancel": ("لغو (فقط پرداخت‌نشده‌ها)", lambda r, qs: _orders_bulk(r, qs, "cancelled"), "", None,
+                   {"confirm": "سفارش‌های پرداخت‌نشدهٔ انتخاب‌شده لغو شوند؟ سفارش‌هایی که پرداخت دارند دست نمی‌خورند."}),
+        "print": ("چاپ فاکتور", None, "", None, {"href": "/panel/orders/print/"}),
+        "labels": ("چاپ برچسب ارسال", None, "", None, {"href": "/panel/orders/print/?mode=label"}),
+    },
 ))
+
+
+def _due_col(o):
+    from core.templatetags.fa import jdate
+    from shop.orderflow import due, state
+
+    st = state(o, _shop_settings())
+    if st is None:
+        return "—"
+    d = due(o, _shop_settings())
+    label = {"late": "عقب‌افتاده", "soon": "نزدیک موعد", "ok": "تا"}[st]
+    return format_html('<span class="due due--{}" title="موعد: {}">{} {}</span>', st, jdate(d, "%d %B"), label,
+                       jdate(d, "%d %B") if st != "late" else "")
+
+
+_SS = {"at": 0, "obj": None}
+
+
+def _shop_settings():
+    """تنظیمات فروش برای ستون موعد (۳۰ ثانیه نگه داشته می‌شود تا هر ردیف پرس‌وجو نکند)."""
+    import time
+
+    from shop.models import ShopSettings
+
+    if time.time() - _SS["at"] > 30:
+        _SS.update(at=time.time(), obj=ShopSettings.load())
+    return _SS["obj"]
+
+
+def _late_q(v):
+    from shop.orderflow import late_q
+
+    return late_q("soon" if v == "soon" else "late")
+
+
+def _stage_q(v):
+    from datetime import datetime, time
+
+    from django.db.models import Q
+    from django.utils import timezone
+
+    from shop.orderflow import PREP
+
+    if v == "today":
+        return Q(created_at__gte=timezone.make_aware(datetime.combine(timezone.localdate(), time.min)))
+    return {"to_ship": Q(status__in=PREP), "review": Q(status="on_hold"), "unpaid": Q(status="pending"),
+            "shipped": Q(status="shipped")}.get(v, Q())
+
+
+def _orders_bulk(request, qs, new):
+    from shop import orderflow as F
+
+    allowed = {"processing": ("deposit_paid", "paid"), "completed": ("deposit_paid", "paid", "processing", "shipped"),
+               "cancelled": ("pending", "on_hold")}[new]
+    paid = 0
+    if new == "cancelled":  # پول مشتری پیش ماست؛ لغو تک‌تک و با بازگرداندن پول
+        paid = qs.exclude(paid_amount=0).count()
+        qs = qs.filter(paid_amount=0)
+    done, skipped, msgs = F.bulk(qs, new, allowed, request)
+    names = {"processing": "در حال آماده‌سازی", "completed": "تحویل شد", "cancelled": "لغو شد"}
+    out = f"{fa_num(len(done))} سفارش «{names[new]}» شد."
+    if skipped:
+        out += f" {fa_num(len(skipped))} سفارش به خاطر وضعیتش دست نخورد."
+    if paid:
+        out += f" {fa_num(paid)} سفارش پرداخت دارد و لغو نشد؛ آن‌ها را از صفحهٔ خود سفارش و با بازگرداندن پول لغو کنید."
+    bad = [m for ok, m in msgs if not ok]
+    if bad:
+        out += " هشدار: " + "؛ ".join(bad[:3])
+    return out
 
 register(Resource(
     key="payments", model=Payment, title="تراکنش‌ها", single="تراکنش", group="فروش", icon="card",

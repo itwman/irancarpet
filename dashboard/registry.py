@@ -37,12 +37,13 @@ class Resource:
     filters: list = field(default_factory=list)
     auto_columns: dict = field(default_factory=dict)  # ستون اختیاری -> فیلتری که با روشن شدنش خودکار نمایش داده می‌شود
     custom_filters: dict = field(default_factory=dict)  # نام -> (برچسب، [(مقدار، برچسب)]، تابع(qs, مقدار))
+    tabs: list = field(default_factory=list)            # [(برچسب، {پارامترهای فیلتر})] زبانه‌های آماده بالای فهرست
     date_filter: Optional[str] = None
     ordering: tuple = ("-pk",)
     fieldsets: list = field(default_factory=list)   # [(عنوان، [فیلدها]، "main"|"side")]
     readonly: list = field(default_factory=list)    # [(برچسب، تابع obj)]
     inlines: list = field(default_factory=list)
-    actions: dict = field(default_factory=dict)     # key -> (برچسب، تابع(request, qs) -> پیام[، برچسب ورودی[، تابع گزینه‌ها]])
+    actions: dict = field(default_factory=dict)     # key -> (برچسب، تابع(request, qs) -> پیام[، برچسب ورودی[، تابع گزینه‌ها[، {confirm, href}]]])
     can_add: bool = True
     can_delete: bool = True
     slug_from: Optional[str] = None
