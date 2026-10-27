@@ -123,6 +123,13 @@ def run_all(out=print):
             done["پیامک عقب‌افتاده‌ها به مدیر"] = 1
     except Exception:  # noqa: BLE001
         log.exception("order flow")
+    try:  # فرش جشنواره‌ای: فرصت تمام‌شده یا رو به پایان ← پیامک روزانه به مدیر
+        from shop.offerflow import daily_admin_sms as offer_sms
+
+        if sms_ready() and offer_sms():
+            done["پیامک پایان فرش جشنواره‌ای به مدیر"] = 1
+    except Exception:  # noqa: BLE001
+        log.exception("offer flow")
     try:  # ترب‌پی: پرداخت‌های تأییدشده‌ای که هنوز قطعی (settle) نشده‌اند
         from shop.bnpl import retry_settles
 

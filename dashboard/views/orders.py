@@ -172,6 +172,13 @@ def notify(request):
             {"label": "پیام تازهٔ «تماس با ما»", "n": ContactMessage.objects.filter(status="new").count(),
              "url": "/panel/contact-messages/?status=new", "hot": True},
         ]
+        from shop.offerflow import counts as offer_counts
+
+        oc = offer_counts()
+        counts += [
+            {"label": "فرش جشنواره‌ای تمام‌شده؛ تمدید شود؟", "n": oc["waiting"], "url": "/panel/special-offers/?offer_state=waiting", "hot": True},
+            {"label": "فرش جشنواره‌ای رو به پایان (۳ روز)", "n": oc["ending"], "url": "/panel/special-offers/?offer_state=ending"},
+        ]
         cache.set("panel:notify", counts, 60)
     return JsonResponse({"latest": latest, "new": new, "items": counts,
                          "alert": sum(x["n"] for x in counts if x.get("hot"))})

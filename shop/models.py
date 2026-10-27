@@ -39,6 +39,8 @@ class ShopSettings(models.Model):
         help_text="سفارشی که هیچ پرداختی ندارد بعد از این مدت خودکار لغو می‌شود (اقساطی‌ها نه). ۰ = خاموش.")
     late_admin_sms = models.BooleanField("پیامک روزانهٔ سفارش‌های عقب‌افتاده به مدیران", default=True,
                                          help_text="هر روز ساعت ۹، فقط اگر سفارش عقب‌افتاده‌ای باشد.")
+    offer_admin_sms = models.BooleanField("پیامک روزانهٔ پایان فرش‌های جشنواره‌ای به مدیران", default=True,
+                                          help_text="هر روز ساعت ۹، فقط اگر فرصت ویژه‌ای تمام شده و منتظر تمدید است یا تا ۳ روز دیگر تمام می‌شود.")
     # اتصال به مانیکس پلاس (حسابداری): مانیکس با این کلید سفارش‌ها را می‌خواند (API سازگار با ووکامرس)
     manix_enabled = models.BooleanField("اتصال مانیکس پلاس فعال باشد", default=False)
     manix_key = models.CharField("کلید مانیکس پلاس", max_length=64, blank=True, editable=False)

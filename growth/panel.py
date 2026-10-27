@@ -100,6 +100,9 @@ def _offer_state(o):
     if not o.is_active:
         return format_html('<span class="badge-ic b-draft">خاموش</span>')
     if o.ends_at and o.ends_at <= now:
+        if o.remaining > 0 and now - o.ends_at < _tz.timedelta(days=60):
+            return format_html('<span class="badge-ic b-on_hold">تمام شد؛ تمدید شود؟</span> <small class="muted">{} تخته مانده</small>',
+                               fa_num(o.remaining))
         return format_html('<span class="badge-ic b-cancelled">تمام شد</span>')
     if o.starts_at > now:
         return format_html('<span class="badge-ic b-pending">هنوز شروع نشده</span>')
@@ -120,6 +123,28 @@ def _renew(request, qs):
         o.save()
         n += 1
     return f"{fa_num(n)} فرصت ۲۴ ساعت تمدید شد."
+
+
+def _offer_state_filter(qs, v):
+    from shop.offerflow import state_filter
+
+    return state_filter(qs, v)
+
+
+def _renew_month(request, qs):
+    from shop.offerflow import renew
+
+    done = renew(qs)
+    if not done:
+        return "فرصتی انتخاب نشده بود."
+    ends = sorted({jdate(e, "%-d %B") for _, e in done})
+    return f"{fa_num(len(done))} فرصت تا {fa_num('، '.join(ends))} تمدید شد و دوباره در صفحهٔ فرش جشنواره‌ای است."
+
+
+def _close(request, qs):
+    from shop.offerflow import close
+
+    return f"{fa_num(close(qs))} فرصت بسته شد و دیگر اعلان نمی‌شود."
 
 
 def _end(request, qs):
@@ -169,6 +194,10 @@ register(Resource(
              Col("ends_at", "پایان", lambda o: jdate(o.ends_at, "%Y/%m/%d %H:%M") if o.ends_at else "تا فروش", "ends_at")],
     search=["product__title", "note"], filters=["is_active"], ordering=("-created_at",),
     queryset=lambda qs: qs.select_related("product", "size"),
+    custom_filters={"offer_state": ("پایان", [("waiting", "تمام‌شده، منتظر تصمیم"), ("ending", "رو به پایان (۳ روز)")],
+                                    lambda qs, v: _offer_state_filter(qs, v))},
+    tabs=[("همه", {}), ("منتظر تصمیم", {"offer_state": "waiting"}, True), ("رو به پایان", {"offer_state": "ending"}),
+          ("فعال", {"is_active": "1"})],
     fieldsets=[("فرصت", ["product", "size", "percent", "fixed_price", "quantity"], "main"),
                ("قیمت پیش از تخفیف (فقط اگر سایز قیمت ندارد)", ["base_album", "base_price"], "main"),
                ("زمان", ["starts_at", "ends_at", "is_active"], "side"), ("انبار", ["note"], "side")],
@@ -177,7 +206,10 @@ register(Resource(
               ("فروخته‌شده", lambda o: fa_num(o.sold) if o.pk else "—")],
     view_url=lambda o: o.product.get_absolute_url(),
     quick={"ends_at": offer_end_choices},
-    actions={"end": ("پایان همین حالا", _end), "renew": ("تمدید ۲۴ ساعت (برای فرصت‌های زمان‌دار)", _renew)},
+    actions={"renew_month": ("تمدید تا آخر ماه بعد (همان درصد و تعداد)", _renew_month),
+             "close": ("تمدید نمی‌شود (بستن)", _close, "", None,
+                       {"confirm": "فرصت‌های انتخاب‌شده بسته شوند؟ از صفحهٔ فرش جشنواره‌ای و اعلان‌ها بیرون می‌روند."}),
+             "end": ("پایان همین حالا", _end), "renew": ("تمدید ۲۴ ساعت (برای فرصت‌های زمان‌دار)", _renew)},
     help="تک‌تخته‌های انبار با تخفیف: فرش و سایز را انتخاب کنید (حتی اگر فرش یا آن سایز در سایت «ناموجود» باشد). "
          "قیمت ویژه فقط برای تعدادهایی است که بعد از خرید، تختهٔ تک در انبار نماند (باقی‌مانده صفر یا زوج): "
          "۲ تخته ← فقط جفت؛ ۳ ← ۱ یا ۳؛ ۴ ← ۲ یا ۴؛ ۵ ← ۱، ۳ یا ۵. تعداد دیگر با قیمت معمول حساب می‌شود و کد تخفیف روی فرصت اعمال نمی‌شود. "

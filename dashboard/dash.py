@@ -166,6 +166,12 @@ def _no_album():
     return Product.objects.filter(missing_q(), status="publish").count()
 
 
+def _offer_counts():
+    from shop.offerflow import counts
+
+    return counts()
+
+
 def todo(manager):
     from blog.models import Comment
     from catalog.models import Product, Review
@@ -188,7 +194,7 @@ def todo(manager):
             continue
         if o.remaining <= 0:
             offers_done.append(o)
-        elif o.ends_at and o.ends_at - now < timedelta(hours=48):
+        elif o.ends_at and o.ends_at - now < timedelta(days=3):
             offers_soon.append(o)
     items = [
         {"label": "سفارش منتظر ارسال", "n": Order.objects.filter(status__in=["deposit_paid", "paid", "processing"]).count(),
@@ -205,7 +211,9 @@ def todo(manager):
          "hot": True},
         {"label": "نظر منتظر تأیید", "n": Review.objects.filter(is_approved=False).count(), "url": "/panel/reviews/?is_approved=0"},
         {"label": "دیدگاه مجله منتظر تأیید", "n": Comment.objects.filter(is_approved=False).count(), "url": "/panel/comments/?is_approved=0"},
-        {"label": "فرصت ویژهٔ رو به پایان (۴۸ ساعت)", "n": len(offers_soon), "url": "/panel/special-offers/?is_active=1",
+        {"label": "فرش جشنواره‌ای تمام‌شده، منتظر تمدید", "n": _offer_counts()["waiting"], "url": "/panel/special-offers/?offer_state=waiting",
+         "hot": True, "sub": "تمدید تا آخر ماه بعد یا بستن؛ از فهرست با یک کلیک"},
+        {"label": "فرصت ویژهٔ رو به پایان (۳ روز)", "n": len(offers_soon), "url": "/panel/special-offers/?offer_state=ending",
          "sub": "، ".join(fa_num(o.product.title)[:40] for o in offers_soon[:2])},
         {"label": "فرصت ویژهٔ فروخته‌شده (هنوز فعال)", "n": len(offers_done), "url": "/panel/special-offers/?is_active=1",
          "sub": "می‌توانید غیرفعالش کنید یا تخته اضافه کنید" if offers_done else ""},
