@@ -289,6 +289,15 @@ def missing_required(product):
 _CODE = re.compile(r"کد\s+([0-9۰-۹]+)")
 
 
+def _same_design(a, b):
+    """«افسانه» و «افسانه ۱۲۰۵۹» یکی‌اند (یکی کد ندارد)؛ «افسانه ۱۲۰۵۹» و «افسانه ۱۲۰۶۰» نه."""
+    if a == b:
+        return True
+    ca, cb = re.sub(r"\D", "", a), re.sub(r"\D", "", b)
+    na, nb = re.sub(r"\d", "", a), re.sub(r"\d", "", b)
+    return bool(na) and na == nb and (not ca or not cb)
+
+
 class DupCheck:
     """پیش از ساختن: آیا این نقشه و رنگ در همین آلبوم (یا در فرش‌های بی‌آلبومی که به این آلبوم می‌خورند) هست؟
 
@@ -345,7 +354,7 @@ class DupCheck:
         out = {"level": "", "items": [], "colors": [], "row": None}
         if not d:
             return out
-        same = [it for it in self.items if it["d"] == d]
+        same = [it for it in self.items if _same_design(it["d"], d)]
         dup = [it for it in same if it["key"] == k]
         pk = self.titles.get(norm(title)) if title else None
         if pk and pk not in {it["id"] for it in dup}:

@@ -53,6 +53,8 @@ DESIGNS = {
 # رنگ‌های فارسی که در نام فایل با فاصله نوشته می‌شوند («نقره ای»، «سرمه ای») یا در فهرست فینگلیش نیستند
 FA_EXTRA = {"قرمز", "لاکی", "سیلور", "نقره", "خاکستری", "توسی", "سورمه ای", "سیاه", "گلد", "پسته ای", "کرم", "بژ", "دودی", "آبی",
             "فیروزه", "نیلی", "کرمی", "بژی", "طلایی", "مسی", "یاقوتی", "لاجوردی", "گلبهی", "کالباسی", "خردلی", "زیتونی"}
+# نام نماهای یک فرش که برنامهٔ جداکردن عکس آلبومی به آخر نام می‌گذارد: «افسانه نقره ای 12059-2-یک‌چهارم»
+VIEWS = {"تمامقد", "یکچهارم", "مرکز", "گوشه", "کامل", "زوم", "جزئیات", "نزدیک"}
 SEP = re.compile(r"[\s_\-.()\[\]]+")
 PERSIAN = re.compile(r"[؀-ۿ]")
 
@@ -68,8 +70,15 @@ def tight(s):
 
 
 def gkey(s):
-    """کلید گروه‌بندی عکس‌ها؛ برای نام فارسی هم کار می‌کند."""
-    return key(s) or tight(s)
+    """کلید گروه‌بندی عکس‌ها. نام فارسی کامل مقایسه می‌شود، نه فقط عددهایش
+    (وگرنه «افسانه نقره ای 12059» و «افسانه کرم 12059» یکی می‌شدند)."""
+    return tight(s) if PERSIAN.search(s or "") else key(s)
+
+
+def _spaced(name):
+    """«کرم۱۲۰۲۹» ← «کرم ۱۲۰۲۹» (عدد چسبیده به حرف فارسی)."""
+    name = re.sub(r"([آ-ی])([0-9۰-۹])", r"\1 \2", name or "")
+    return re.sub(r"([0-9۰-۹])([آ-ی])", r"\1 \2", name)
 
 
 def fa_norm(s):
@@ -233,7 +242,10 @@ def guess(name, designs=(), colors=(), learned=None):
     n شمارهٔ عکس («Touska-Dolfini2» عکس دوم است) و group برای چسباندن عکس‌های یک فرش به هم.
     """
     learned = learned or _learned()
-    toks = [t for t in SEP.split((name or "").strip()) if t]
+    toks = [t for t in SEP.split(_spaced(name).strip()) if t]
+    persian = bool(PERSIAN.search(name or ""))
+    while len(toks) > 2 and tight(toks[-1]) in VIEWS:  # «-2-یک‌چهارم»: نمای دیگری از همان فرش
+        toks.pop()
     n = 1
     if toks and not toks[-1].isdigit():  # شمارهٔ چسبیده: Dolfini2
         m = re.match(r"^(.*?\D)(\d{1,2})$", toks[-1])
@@ -241,6 +253,9 @@ def guess(name, designs=(), colors=(), learned=None):
             toks[-1], n = m.group(1), int(m.group(2))
     while len(toks) > 2 and toks[-1].isdigit() and len(toks[-1]) <= 2:  # Rayan-Doodi-2
         n = int(toks.pop())
+    code = ""
+    if persian and len(toks) > 2 and toks[-1].isdigit() and len(toks[-1]) >= 3:  # «افسانه نقره ای 12059»: کد نقشه
+        code = toks.pop()
     empty = {"design": "", "color": "", "border": "", "dl": "", "cl": "", "bl": "", "n": n, "group": ""}
     if not toks:
         return empty
@@ -254,6 +269,11 @@ def guess(name, designs=(), colors=(), learned=None):
     color, color_toks = _field_color(toks, colors, learned)
     d_toks = toks[:len(toks) - len(color_toks)]
     design = _design(d_toks, designs, learned)
+    if code:
+        from core.templatetags.fa import fa_num
+
+        d_toks = d_toks + [code]
+        design = f"{design} {fa_num(str(int(code)))}" if design else code
     dl, cl, bl = key("".join(d_toks)), key("".join(color_toks)), key("".join(btoks))
     g = [gkey("".join(x)) for x in (d_toks, color_toks, btoks)]
     return {"design": design, "color": color, "border": border, "dl": dl, "cl": cl, "bl": bl, "n": n,

@@ -437,3 +437,19 @@ class QuickDupTests(Base):
         self.assertEqual([p["title"] for p in res["created"]], ["فرش ۱۵۰۰ شانه نقشه آرشان زمینه کرم",
                                                                "فرش ۱۵۰۰ شانه نقشه کرشمه طلا کوب زمینه قرمز حاشیه کرم"])
         self.assertIn("ساخته نشد", res["warnings"][0])
+
+    def test_split_album_names(self):
+        """نام‌هایی که برنامهٔ جداکردن عکس آلبومی می‌سازد: «نام رنگ کد-شماره-نما»."""
+        g = self.j("/panel/products/quick/guess/", names=[
+            "افسانه نقره ای 12059-1-تمام‌قد", "افسانه نقره ای 12059-2-یک‌چهارم", "افسانه نقره ای 12059-3-مرکز",
+            "افسانه کرم 12059-1-تمام‌قد", "آونگ نسکافه ای-1-تمام‌قد", "آونگ نسکافه ای-2-یک‌چهارم", "افشان فرنگ کرم۱۲۰۲۹"])["guesses"]
+        self.assertEqual([(x["design"], x["color"], x["n"]) for x in g], [
+            ("افسانه ۱۲۰۵۹", "نقره ای", 1), ("افسانه ۱۲۰۵۹", "نقره ای", 2), ("افسانه ۱۲۰۵۹", "نقره ای", 3),
+            ("افسانه ۱۲۰۵۹", "کرم", 1), ("آونگ", "نسکافه ای", 1), ("آونگ", "نسکافه ای", 2), ("افشان فرنگ ۱۲۰۲۹", "کرم", 1)])
+        self.assertEqual(len({g[0]["group"], g[1]["group"], g[2]["group"]}), 1)  # سه نمای یک فرش
+        self.assertNotEqual(g[0]["group"], g[3]["group"])                        # افسانه کرم فرش دیگری است
+        self.assertEqual(g[4]["group"], g[5]["group"])
+        self.make("فرش 1500 شانه نقشه افسانه زمینه نقره ای", "afsaneh", self.cream)
+        d = self.j("/panel/products/quick/check/", rows=[{"design": "افسانه ۱۲۰۵۹", "color": "سیلور"},
+                                                          {"design": "افسانه ۱۲۰۵۹", "color": "کرم"}])["rows"]
+        self.assertEqual([x["level"] for x in d], ["dup", "same"])
