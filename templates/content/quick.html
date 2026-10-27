@@ -51,9 +51,10 @@
       <label class="qa-drop" id="qaDrop">
         <input type="file" accept="image/*" multiple hidden id="qaFiles">
         <strong>عکس‌ها را اینجا بکشید یا بزنید تا انتخاب کنید</strong>
-        <span>هر عکس یک فرش می‌شود؛ عکس‌های اضافهٔ یک فرش را روی ردیف همان فرش بکشید. نقشه و رنگ از نام فایل حدس زده می‌شود، فارسی یا فینگلیش: <span dir="ltr">Bahar-Doodi-Noqrei.jpg</span> ← بهار، دودی نقره ای؛ <span dir="ltr">5006-Laki.jpg</span> ← کد ۵۰۰۶، لاکی. اصلاح‌های شما یاد گرفته می‌شود.</span>
+        <span>هر عکس یک فرش می‌شود؛ عکس‌های اضافهٔ یک فرش را روی ردیف همان فرش بکشید. نقشه و رنگ از نام فایل حدس زده می‌شود، فارسی یا فینگلیش: «افشان شاهی نقره ای.jpg» ← افشان شاهی، نقره ای؛ <span dir="ltr">Bahar-Doodi-Noqrei.jpg</span> ← بهار، دودی نقره ای؛ <span dir="ltr">5006-Laki.jpg</span> ← کد ۵۰۰۶، لاکی. اصلاح‌های شما یاد گرفته می‌شود.</span>
       </label>
       <datalist id="qaDesigns"></datalist><datalist id="qaColors"></datalist><datalist id="qaBorders"></datalist>
+      <p class="qa-sum" id="qaSum" hidden></p>
       <div class="qa-rows" id="qaRows"></div>
       <p class="muted small mt-2 mb-0" id="qaEmpty">هنوز فرشی اضافه نشده.</p>
     </section>
@@ -133,6 +134,7 @@
         st.tpl = d.template;
         $("qaTpl").innerHTML = esc(st.tpl).replace(D, "<i>[نقشه]</i>").replace(C, "<i>[رنگ زمینه]</i>");
         st.rows.forEach(renderTitle);
+        if (st.rows.length) checkDups();
       });
     }, 150);
   }
@@ -158,7 +160,7 @@
     var last = st.rows[st.rows.length - 1];
     var r = { id: ++uid, images: images || [], design: (g && g.design) || (g ? "" : (last ? last.design : "")), color: (g && g.color) || "",
               border: (g && g.border) || "", dl: (g && g.dl) || "", cl: (g && g.cl) || "", bl: (g && g.bl) || "", group: (g && g.group) || "",
-              guessed: !!(g && (g.design || g.color)), title: "", custom: false };
+              guessed: !!(g && (g.design || g.color)), title: "", custom: false, dup: null, force: false };
     st.rows.push(r); return r;
   }
   function isCode(d) { return /^[0-9۰-۹]+$/.test(String(d || "").trim()); }
@@ -180,7 +182,56 @@
     var inp = el.querySelector(".qa-title");
     if (!r.custom) inp.value = titleOf(r);
     el.querySelector(".qa-rules").innerHTML = ruleChips(inp.value);
-    el.classList.toggle("is-ready", !!(r.design && r.color));
+    el.classList.toggle("is-ready", ready(r));
+  }
+  // تکراری: همان نقشه و رنگ در آلبوم هست؛ پیش‌فرض ساخته نمی‌شود مگر «با این حال بساز» زده شود
+  function blocked(r) { return !!(r.dup && r.dup.level === "dup" && !r.force); }
+  function ready(r) { return !!(r.design && r.color) && !blocked(r); }
+  var STATUS = { draft: "پیش‌نویس", pending: "در انتظار بررسی", private: "خصوصی" };
+  function dupHtml(r) {
+    var d = r.dup; if (!d || !d.level || !r.design || !r.color) return "";
+    if (d.level === "same") return '<div class="qa-dup is-same">این نقشه در همین آلبوم با رنگ دیگر هم هست: ' + esc(d.colors.join("، ")) + "</div>";
+    var list = d.items.map(function (p) {
+      var tags = [STATUS[p.status], p.orphan ? "بدون آلبوم" : ""].filter(Boolean);
+      return '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.title) + "</a>" + (tags.length ? " (" + tags.join("، ") + ")" : "");
+    });
+    if (d.row) list.push("ردیف " + fa(d.row) + " همین فهرست (اگر عکس دیگری از همان فرش است، عکس را روی آن ردیف بکشید)");
+    return '<div class="qa-dup is-dup"><b>احتمالاً قبلاً منتشر شده.</b> همین نقشه و رنگ: ' + list.join("؛ ") +
+      (d.colors.length ? '<br><span class="muted">رنگ‌های دیگر این نقشه: ' + esc(d.colors.join("، ")) + "</span>" : "") +
+      '<label class="qa-force"><input type="checkbox"' + (r.force ? " checked" : "") + "> فرش دیگری است؛ با این حال بساز</label></div>";
+  }
+  function renderDup(r) {
+    var el = document.querySelector('[data-row="' + r.id + '"] .qa-dupbox'); if (!el) return;
+    el.innerHTML = dupHtml(r);
+    el.closest("[data-row]").classList.toggle("is-dup", blocked(r));
+    el.closest("[data-row]").classList.toggle("is-ready", ready(r));
+  }
+  function summary() {
+    var box = $("qaSum"), n = st.rows.length;
+    if (!n) { box.hidden = true; return; }
+    var dup = st.rows.filter(function (r) { return r.dup && r.dup.level === "dup"; }).length,
+        same = st.rows.filter(function (r) { return r.dup && r.dup.level === "same"; }).length;
+    var parts = [fa(n - dup - same) + " تازه"];
+    if (same) parts.push(fa(same) + " هم‌نقشه با رنگ دیگر");
+    if (dup) parts.push('<b class="text-danger">' + fa(dup) + " تکراری</b>");
+    box.innerHTML = fa(n) + " فرش: " + parts.join("، ");
+    box.hidden = false;
+  }
+  var chkTimer, chkSeq = 0;
+  function checkDups() {
+    clearTimeout(chkTimer);
+    chkTimer = setTimeout(function () {
+      if (!st.album || !st.rows.length) { summary(); return; }
+      var seq = ++chkSeq, rows = st.rows.slice();
+      fetch("/panel/products/quick/check/", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() },
+        body: JSON.stringify({ album: st.album, rows: rows.map(function (r) { return { design: r.design, color: r.color, border: r.border, title: titleOf(r) }; }) }) })
+        .then(function (x) { return x.json(); }).then(function (d) {
+          if (seq !== chkSeq) return;  // پاسخ کهنه
+          rows.forEach(function (r, i) { r.dup = (d.rows || [])[i] || null; renderDup(r); });
+          summary(); count();
+        }).catch(function () {});
+    }, 400);
   }
   function draw() {
     var box = $("qaRows");
@@ -197,17 +248,19 @@
           '<input class="form-control qa-border" list="qaBorders" placeholder="رنگ حاشیه (اختیاری)" value="' + esc(r.border) + '"></div>' +
           '<input class="form-control form-control-sm qa-title" aria-label="عنوان">' +
           (r.guessed ? '<small class="qa-guess">نقشه و رنگ از نام فایل حدس زده شد؛ اگر درست نیست اصلاح کنید.</small>' : "") +
-          '<div class="qa-rules"></div>' +
+          '<div class="qa-rules"></div><div class="qa-dupbox"></div>' +
         "</div>" +
         '<button type="button" class="qa-del" aria-label="حذف ردیف">×</button></div>';
     }).join("");
     st.rows.forEach(renderTitle);
+    st.rows.forEach(renderDup);
     $("qaEmpty").hidden = st.rows.length > 0;
     count();
+    checkDups();
   }
   function count() {
-    var ok = st.rows.filter(function (r) { return r.design && r.color; }).length;
-    $("qaCount").textContent = fa(ok) + " فرش آماده" + (st.rows.length > ok ? " · " + fa(st.rows.length - ok) + " ردیف ناقص" : "");
+    var ok = st.rows.filter(ready).length, dup = st.rows.filter(blocked).length, bad = st.rows.length - ok - dup;
+    $("qaCount").textContent = fa(ok) + " فرش آماده" + (bad > 0 ? " · " + fa(bad) + " ردیف ناقص" : "") + (dup ? " · " + fa(dup) + " تکراری ساخته نمی‌شود" : "");
     $("qaGo").disabled = !ok;
     $("qaGo").textContent = ok ? "ساختن " + fa(ok) + " فرش" : "ساختن فرش‌ها";
   }
@@ -219,9 +272,11 @@
     if (e.target.classList.contains("qa-border")) r.border = e.target.value.trim();
     if (e.target.classList.contains("qa-title")) { r.custom = true; r.title = e.target.value; }
     renderTitle(r); count();
+    if (!e.target.classList.contains("qa-title") || r.custom) checkDups();
   });
   $("qaRows").addEventListener("click", function (e) {
     var r = rowOf(e.target); if (!r) return;
+    if (e.target.closest(".qa-force") && e.target.type === "checkbox") { r.force = e.target.checked; renderDup(r); count(); return; }
     if (e.target.classList.contains("qa-del")) { st.rows.splice(st.rows.indexOf(r), 1); draw(); }
     var un = e.target.getAttribute("data-unimg");
     if (un) { r.images = r.images.filter(function (m) { return m.value !== un; }); draw(); }
@@ -283,8 +338,8 @@
       tags: $("qaTags").tomselect ? $("qaTags").tomselect.getValue() : [],
       categories: Array.prototype.filter.call(document.querySelectorAll("#qaCats input"), function (c) { return c.checked; }).map(function (c) { return c.value; }),
       primary: $("qaPrimary").value, embossed: $("qaEmb").checked, title_word: $("qaWord").value.trim(), save_defaults: $("qaSave").checked, status: $("qaStatus").value,
-      rows: st.rows.filter(function (r) { return r.design && r.color; }).map(function (r) {
-        return { design: r.design, color: r.color, border: r.border, dl: r.dl, cl: r.cl, bl: r.bl, title: r.custom ? r.title : "",
+      rows: st.rows.filter(ready).map(function (r) {
+        return { design: r.design, color: r.color, border: r.border, dl: r.dl, cl: r.cl, bl: r.bl, title: r.custom ? r.title : "", force: r.force,
                  images: r.images.map(function (m) { return m.value; }) };
       })
     };
@@ -297,7 +352,7 @@
           (d.warnings.length ? '<div class="alert alert-warning py-2 small">' + d.warnings.map(esc).join("<br>") + "</div>" : "") +
           "<ul>" + d.created.map(function (p) { return '<li><a href="' + p.url + '">' + esc(p.title) + '</a> · <a href="' + p.view + '" target="_blank" rel="noopener">دیدن</a></li>'; }).join("") + "</ul>" +
           '<a class="btn btn-light btn-sm" href="' + d.list + '">فهرست فرش‌های این آلبوم</a></section>';
-        st.rows = st.rows.filter(function (r) { return !(r.design && r.color); }); draw();
+        st.rows = st.rows.filter(function (r) { return !ready(r); }); draw();
         $("qaResult").scrollIntoView({ behavior: "smooth" });
       })
       .catch(function () { $("qaResult").innerHTML = '<div class="alert alert-danger mt-3">ارتباط برقرار نشد؛ دوباره بزنید.</div>'; count(); });

@@ -512,6 +512,28 @@ def quick_guess(request):
 
 
 @staff_required
+def quick_check(request):
+    """پیش از ساختن: کدام ردیف‌ها تکراری‌اند یا هم‌نقشه با رنگ دیگر در همین آلبوم هستند."""
+    import json
+
+    from django.http import JsonResponse
+
+    from .quick import DupCheck
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except ValueError:
+        data = {}
+    album = Album.objects.filter(pk=data.get("album") or 0).first()
+    rows = (data.get("rows") or [])[:300]
+    if album is None:
+        return JsonResponse({"rows": [{"level": ""} for _ in rows]})
+    chk = DupCheck(album)
+    return JsonResponse({"rows": [chk.check(str(r.get("design") or ""), str(r.get("color") or ""), str(r.get("border") or ""),
+                                            str(r.get("title") or ""), n=i + 1) for i, r in enumerate(rows)]})
+
+
+@staff_required
 def quick_album(request, pk):
     from django.http import JsonResponse
 

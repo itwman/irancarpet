@@ -50,12 +50,26 @@ DESIGNS = {
     "hezar": "هزار", "golestan": "گلستان", "bita": "بیتا", "ariana": "آریانا", "artemis": "آرتمیس", "sina": "سینا",
 }
 
-SEP = re.compile(r"[\s_\-.]+")
+# رنگ‌های فارسی که در نام فایل با فاصله نوشته می‌شوند («نقره ای»، «سرمه ای») یا در فهرست فینگلیش نیستند
+FA_EXTRA = {"قرمز", "لاکی", "سیلور", "نقره", "خاکستری", "توسی", "سورمه ای", "سیاه", "گلد", "پسته ای", "کرم", "بژ", "دودی", "آبی",
+            "فیروزه", "نیلی", "کرمی", "بژی", "طلایی", "مسی", "یاقوتی", "لاجوردی", "گلبهی", "کالباسی", "خردلی", "زیتونی"}
+SEP = re.compile(r"[\s_\-.()\[\]]+")
 PERSIAN = re.compile(r"[؀-ۿ]")
 
 
 def key(s):
     return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def tight(s):
+    """برای مقایسه: بدون فاصله و نیم‌فاصله، «ی/ک» فارسی، رقم لاتین («طلا کوب» = «طلاکوب»)."""
+    s = fa_norm(s).replace(" ", "").lower()
+    return s.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+
+
+def gkey(s):
+    """کلید گروه‌بندی عکس‌ها؛ برای نام فارسی هم کار می‌کند."""
+    return key(s) or tight(s)
 
 
 def fa_norm(s):
@@ -121,6 +135,9 @@ def _learned():
 
 
 def _color_word(tok, colors_fa, learned):
+    if PERSIAN.search(tok):
+        n = tight(tok)
+        return next((fa_norm(c) for c in fa_colors(colors_fa) if tight(c) == n), None)
     k = key(tok)
     if not k:
         return None
@@ -128,19 +145,47 @@ def _color_word(tok, colors_fa, learned):
         return learned["color"][k]
     if k in COLORS:
         return COLORS[k]
-    if PERSIAN.search(tok):
-        n = fa_norm(tok)
-        if any(fa_norm(c) == n for c in colors_fa):
-            return n
     return None
 
 
+def fa_colors(colors_fa=()):
+    """همهٔ رنگ‌های فارسی شناخته‌شده: رنگ‌های سایت، فهرست بالا و رنگ‌های هم‌معنی تنظیمات."""
+    out = list(colors_fa) + sorted(set(COLORS.values()) | FA_EXTRA)
+    for group in synonym_groups():
+        out += group
+    return out
+
+
+def _fa_field_color(toks, colors, learned):
+    """نام فارسی با فاصله: «افشان شاهی نقره ای» ← (نقره ای، [نقره، ای]). رنگ‌های چندکلمه‌ای از آخر نام."""
+    known = {tight(c): fa_norm(c) for c in fa_colors(colors)}
+    parts, used, i = [], [], len(toks)
+    while i > 1:
+        for n in (3, 2, 1):
+            if i - n < 1:  # دست‌کم یک کلمه برای نقشه
+                continue
+            c = known.get(tight("".join(toks[i - n:i])))
+            if c:
+                parts.insert(0, c)
+                used[:0] = toks[i - n:i]
+                i -= n
+                break
+        else:
+            break
+    if parts:
+        return _colors_match(" ".join(parts), colors), used
+    if len(toks) >= 3 and tight(toks[-1]) in ("ای", "ایی"):  # رنگ ناشناخته‌ای مثل «پسته ای»
+        return fa_norm(" ".join(toks[-2:])), toks[-2:]
+    if len(toks) >= 2:
+        return fa_norm(toks[-1]), [toks[-1]]
+    return "", []
+
 def _colors_match(name, colors_fa):
-    n = fa_norm(name)
+    n = tight(name)
     for c in colors_fa:
-        if fa_norm(c) == n:
+        if tight(c) == n:
             return c
-    return name
+    return fa_norm(name) if PERSIAN.search(name) else name
 
 
 BORDER_WORDS = {"hashiye", "hashie", "hashiyeh", "hashieh", "hashye", "hashiya", "border", "hashiyeh"}
@@ -148,6 +193,8 @@ BORDER_WORDS = {"hashiye", "hashie", "hashiyeh", "hashieh", "hashye", "hashiya",
 
 def _field_color(toks, colors, learned):
     """(رنگ، کلمه‌های رنگ) از آخر کلمه‌ها؛ دست‌کم یک کلمه برای نقشه می‌ماند."""
+    if toks and PERSIAN.search(toks[-1]):
+        return _fa_field_color(toks, colors, learned)
     for n in range(min(3, len(toks) - 1), 1, -1):
         k = key("".join(toks[-n:]))
         if k in learned["color"]:
@@ -168,6 +215,8 @@ def _field_color(toks, colors, learned):
 
 
 def _border_color(toks, colors, learned):
+    if toks and PERSIAN.search("".join(toks)):
+        return _colors_match(" ".join(toks), colors)
     k = key("".join(toks))
     if not k:
         return ""
@@ -206,8 +255,9 @@ def guess(name, designs=(), colors=(), learned=None):
     d_toks = toks[:len(toks) - len(color_toks)]
     design = _design(d_toks, designs, learned)
     dl, cl, bl = key("".join(d_toks)), key("".join(color_toks)), key("".join(btoks))
+    g = [gkey("".join(x)) for x in (d_toks, color_toks, btoks)]
     return {"design": design, "color": color, "border": border, "dl": dl, "cl": cl, "bl": bl, "n": n,
-            "group": f"{dl}|{cl}|{bl}" if dl else ""}
+            "group": "|".join(g) if g[0] else ""}
 
 
 def _design(toks, designs, learned):
@@ -216,8 +266,8 @@ def _design(toks, designs, learned):
     raw = " ".join(toks)
     if all(t.isdigit() for t in toks):  # کد نقشه
         return "".join(toks)
-    if PERSIAN.search(raw):
-        return fa_norm(raw)
+    if PERSIAN.search(raw):  # همان نوشتهٔ نقشهٔ موجود آلبوم («کرشمه طلا کوب» ← «کرشمه طلاکوب»)
+        return next((d for d in designs if tight(d) == tight(raw)), fa_norm(raw))
     k = key(raw)
     if k in learned["design"]:
         return learned["design"][k]
@@ -246,3 +296,37 @@ def learn(rows):
                 NameHint.objects.filter(kind=kind, latin=latin).delete()
                 continue
             NameHint.objects.update_or_create(kind=kind, latin=latin, defaults={"persian": fa})
+
+
+# ------------------------------------------------------------------ رنگ‌های هم‌معنی (برای پیدا کردن فرش تکراری)
+def synonym_groups():
+    """[[«لاکی»، «قرمز»], …] از تنظیمات محتوا (هر خط یک گروه)."""
+    try:
+        from .models import ContentSettings
+
+        text = ContentSettings.load().color_synonyms
+    except Exception:  # پیش از مهاجرت
+        text = ""
+    out = []
+    for line in (text or "").splitlines():
+        words = [fa_norm(w) for w in re.split(r"[,،=/]+", line) if fa_norm(w)]
+        if len(words) > 1:
+            out.append(words)
+    return out
+
+
+class ColorCanon:
+    """رنگ ← شکل یکسان برای مقایسه: «سیلور» و «نقره‌ای» یکی، «دودی سیلور» = «دودی نقره ای»."""
+
+    def __init__(self, groups=None):
+        groups = synonym_groups() if groups is None else groups
+        self.map = {}
+        for g in groups:
+            for w in g:
+                self.map.setdefault(tight(w), tight(g[0]))
+        alts = sorted(self.map, key=len, reverse=True)
+        self.rx = re.compile("|".join(re.escape(a) for a in alts)) if alts else None
+
+    def __call__(self, color):
+        t = tight(color)
+        return self.rx.sub(lambda m: self.map[m.group(0)], t) if self.rx else t

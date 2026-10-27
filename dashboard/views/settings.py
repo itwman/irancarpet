@@ -110,7 +110,7 @@ FORMS = {
     "mirror": (MirrorSettings, ["feed_enabled", "enabled", "live", "source_url", "api_key", "price_percent", "round_to",
                                 "title_pattern", "skip_categories", "batch", "push_orders", "orders_since"]),
     "content": (ContentSettings, ["prep_time", "shipping_cost", "cancel_penalty", "warranty_polyester", "warranty_acrylic", "warranty",
-                                "pair_colors", "pair_note"]),
+                                "pair_colors", "pair_note", "color_synonyms"]),
 }
 
 

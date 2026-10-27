@@ -55,6 +55,9 @@ class InfoBlock(models.Model):
         return self.title
 
 
+SYNONYMS = "لاکی، قرمز\nنقره ای، سیلور، نقره\nطوسی، خاکستری، توسی\nسرمه ای، سورمه ای\nمشکی، سیاه\nطلایی، گلد\nکرم، کرمی\nبژ، بژی"
+
+
 class ContentSettings(models.Model):
     """عددها و جمله‌هایی که در قالب‌ها و بخش‌های مشترک به‌کار می‌روند."""
 
@@ -67,6 +70,10 @@ class ContentSettings(models.Model):
     pair_note = models.CharField(
         "جملهٔ جفتی", max_length=300,
         default="فرش‌های زمینهٔ {رنگ} معمولاً جفتی بافته می‌شوند؛ اگر فقط یک تخته می‌خواهید، پیش از سفارش با کارشناس هماهنگ کنید.")
+    color_synonyms = models.TextField(
+        "رنگ‌های هم‌معنی", blank=True, default=SYNONYMS,
+        help_text="هر خط یک گروه، با ویرگول جدا. در افزودن سریع، فرشی با رنگ هم‌معنی در همان آلبوم «تکراری» شناخته می‌شود "
+                  "(مثلاً «آوین سیلور» همان «آوین نقره ای» است). اولین کلمهٔ هر خط شکل اصلی است.")
     warranty = models.CharField("ضمانت (جنس نامعلوم)", max_length=200, default="۲ تا ۷ سال ضمانت",
                                 help_text="متغیر {ضمانت} برای فرشی که جنس نخ خابش ثبت نشده")
     warranty_polyester = models.CharField("ضمانت فرش پلی‌استر", max_length=200, default="۲ سال ضمانت")

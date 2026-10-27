@@ -389,3 +389,51 @@ class QuickAddTests(Base):
         self.assertContains(self.client.get("/panel/products/quick/"), "افزودن سریع")
         j = self.client.get(f"/panel/ac-term/{self.color.pk}/?q=کر").json()
         self.assertEqual([x["text"] for x in j["results"]], ["کرم"])
+
+
+class QuickDupTests(Base):
+    """نام فایل فارسی با فاصله، رنگ‌های هم‌معنی و هشدار فرش تکراری پیش از ساختن."""
+
+    def setUp(self):
+        super().setUp()
+        self.u = get_user_model().objects.create_user("staff", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(self.u)
+
+    def j(self, url, **data):
+        import json
+
+        return self.client.post(url, json.dumps({"album": self.album.pk, **data}), content_type="application/json").json()
+
+    def test_persian_spaced_names(self):
+        self.make("فرش 1500 شانه نقشه کرشمه طلاکوب زمینه کرم", "k-cream", self.cream)
+        g = self.j("/panel/products/quick/guess/", names=[
+            "افشان شاهی دودی", "افشان شاهی نقره ای", "آلبیل سرمه ای", "کرشمه طلا کوب دودی", "ماهلیا سرمه‌ای",
+            "میراث نقره ای 2", "زاگرس پسته ای", "روژین سرمه ای (2)"])["guesses"]
+        self.assertEqual([(x["design"], x["color"]) for x in g], [
+            ("افشان شاهی", "دودی"), ("افشان شاهی", "نقره ای"), ("آلبیل", "سرمه ای"), ("کرشمه طلاکوب", "دودی"),
+            ("ماهلیا", "سرمه ای"), ("میراث", "نقره ای"), ("زاگرس", "پسته ای"), ("روژین", "سرمه ای")])
+        self.assertEqual(g[5]["n"], 2)
+        self.assertTrue(g[5]["group"])  # عکس دوم نام فارسی هم به ردیف خودش می‌چسبد
+        self.assertEqual(g[7]["n"], 2)
+
+    def test_duplicate_warning_and_synonyms(self):
+        cs = ContentSettings.load()
+        self.assertIn("سیلور", cs.color_synonyms)
+        self.make("فرش 1500 شانه نقشه آوین زمینه نقره ای", "avin-silver", self.cream)
+        self.make("فرش 1500 شانه نقشه کرشمه طلاکوب زمینه لاکی حاشیه کرم", "k-red", self.cream)
+        rows = [{"design": "آوین", "color": "سیلور"},                     # هم‌معنی ← تکراری
+                {"design": "آرشان", "color": "کرم"},                       # نقشه هست، رنگ دیگر ← اطلاع
+                {"design": "کرشمه طلا کوب", "color": "قرمز", "border": "کرم"},  # فاصله و هم‌معنی ← تکراری
+                {"design": "کرشمه طلاکوب", "color": "قرمز"},               # حاشیهٔ دیگر ← فرش دیگر
+                {"design": "روژین", "color": "کرم"}, {"design": "روژین", "color": "کرمی"}]  # دوبار در همین فهرست
+        d = self.j("/panel/products/quick/check/", rows=rows)["rows"]
+        self.assertEqual([x["level"] for x in d], ["dup", "same", "dup", "same", "", "dup"])
+        self.assertEqual(d[0]["items"][0]["title"], "فرش ۱۵۰۰ شانه نقشه آوین زمینه نقره ای")
+        self.assertEqual(d[1]["colors"], ["سرمه ای"])
+        self.assertEqual(d[5]["row"], 5)
+        # ساختن: تکراری‌ها رد می‌شوند مگر «با این حال بساز»
+        res = self.j("/panel/products/quick/", specs={str(self.reeds.pk): [str(self.t1500.pk)]}, status="publish",
+                     rows=[dict(rows[0]), dict(rows[1]), dict(rows[2], force=True)])
+        self.assertEqual([p["title"] for p in res["created"]], ["فرش ۱۵۰۰ شانه نقشه آرشان زمینه کرم",
+                                                               "فرش ۱۵۰۰ شانه نقشه کرشمه طلا کوب زمینه قرمز حاشیه کرم"])
+        self.assertIn("ساخته نشد", res["warnings"][0])

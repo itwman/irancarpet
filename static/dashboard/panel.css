@@ -486,6 +486,14 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 .cat-tree--side{columns:1;max-height:260px}
 .spec-fld.is-missing .ts-control{box-shadow:0 0 0 2px var(--pink-t);border-color:var(--pink)!important}
 .qa-guess{display:block;color:#8a5a00;font-size:.75rem;margin-top:.15rem}
+.qa-dup{font-size:.8rem;line-height:1.7;border-radius:9px;padding:.4rem .65rem}
+.qa-dup.is-same{background:#fff6e0;color:#7a5200}
+.qa-dup.is-dup{background:#fde3e8;color:#8f1d33}
+.qa-dup a{color:inherit;font-weight:700}
+.qa-force{display:flex;align-items:center;gap:.35rem;margin-top:.3rem;font-weight:700;cursor:pointer}
+.qa-row.is-dup{border-inline-start-color:#d9415c;background:#fffafb}
+.qa-row.is-dup .qa-imgs{opacity:.6}
+.qa-sum{margin:.8rem 0 0;font-size:.9rem;font-weight:600}
 .tabs-p em{font-style:normal;font-size:.72rem;font-weight:800;background:var(--soft);color:var(--ink-2);border-radius:99px;padding:0 .45rem;margin-inline-start:.35rem}
 .tabs-p a.on em{background:rgba(255,255,255,.2);color:#fff}
 .tabs-p a.tab-hot em{background:#fde3e8;color:#b4233f}

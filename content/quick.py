@@ -201,6 +201,7 @@ def create(album, data, request=None):
     publish = data.get("status") == "publish"
     warnings, created, learn_rows = [], [], []
     existing = {norm(t) for t in Product.objects.values_list("title", flat=True)}
+    dups = DupCheck(album)
     with transaction.atomic():
         for i, row in enumerate(data.get("rows") or []):
             design = re.sub(r"\s+", " ", str(row.get("design") or "").strip())[:120]
@@ -211,7 +212,12 @@ def create(album, data, request=None):
             border = re.sub(r"\s+", " ", str(row.get("border") or "").strip())[:120]
             title = (str(row.get("title") or "").strip() or make(template, design, color, border))[:300]
             if norm(title) in existing:
-                warnings.append(f"«{title}» از قبل هست؛ دوباره ساخته نشد.")
+                warnings.append(f"«{title}» از قبل هست؛ دوباره ساخته نشد. اگر فرش دیگری است، عنوانش را عوض کنید.")
+                continue
+            dup = dups.check(design, color, border, n=i + 1)
+            if dup["level"] == "dup" and not row.get("force"):
+                where = f"ردیف {fa_num(dup['row'])} همین فهرست" if dup["row"] else "«" + dup["items"][0]["title"] + "»"
+                warnings.append(f"«{title}» ساخته نشد؛ همین نقشه و رنگ در {where} هست. اگر فرش دیگری است، «با این حال بساز» را بزنید.")
                 continue
             existing.add(norm(title))
             color_term = term_named(color_attr, color) if color_attr else None
@@ -277,3 +283,91 @@ def missing_required(product):
             continue
         out.append(a.label)
     return out
+
+
+# ------------------------------------------------------------------ فرش تکراری
+_CODE = re.compile(r"کد\s+([0-9۰-۹]+)")
+
+
+class DupCheck:
+    """پیش از ساختن: آیا این نقشه و رنگ در همین آلبوم (یا در فرش‌های بی‌آلبومی که به این آلبوم می‌خورند) هست؟
+
+    تکراری (dup): همان نقشه با همان رنگ زمینه و حاشیه (رنگ‌های هم‌معنی تنظیمات یکی حساب می‌شوند)، یا همان عنوان در سایت،
+    یا دو ردیف یکسان در همین فهرست. هم‌نقشه (same): این نقشه با رنگ‌های دیگر هست؛ فقط برای اطلاع.
+    مقایسهٔ نقشه بدون فاصله و نیم‌فاصله است («کرشمه طلا کوب» = «کرشمه طلاکوب»).
+    """
+
+    def __init__(self, album):
+        from . import render as R
+        from .finglish import ColorCanon, tight
+
+        self.tight, self.canon = tight, ColorCanon()
+        self.items, self.batch = [], {}
+        qs = list(Product.objects.filter(album=album).exclude(status="trash").prefetch_related("specs__attribute"))
+        brands = {p.brand_id for p in qs if p.brand_id}
+        if brands:  # فرش‌های قدیمی (وردپرس) که هنوز آلبوم ندارند ولی به همین آلبوم می‌خورند
+            from pricing.suggest import missing_q, suggest_ids
+
+            orphans = list(Product.objects.filter(missing_q("none"), brand_id__in=brands).exclude(status="trash")
+                           .select_related("album").prefetch_related("specs__attribute"))
+            hit = suggest_ids(orphans)
+            qs += [p for p in orphans if hit.get(p.pk) == album.pk]
+        for p in qs:
+            d = R.design_of(p)
+            if not d:
+                m = _CODE.search(p.title or "")
+                d = m.group(1) if m else ""
+            c, b = R.color_of(p), R.border_of(p)
+            self.items.append({"id": p.pk, "title": fa_num(p.title), "d": tight(d), "key": self._key(c, b),
+                               "label": self._label(c, b), "status": p.status, "orphan": not p.album_id,
+                               "url": f"/panel/products/{p.pk}/edit/", "view": p.get_absolute_url()})
+        self.titles = {}
+        for pk, t in Product.objects.exclude(status="trash").values_list("pk", "title"):
+            self.titles.setdefault(norm(t), pk)
+        self.by_id = {it["id"]: it for it in self.items}
+
+    def _key(self, color, border):
+        c = self.canon(color)
+        return c, (self.canon(border) if border else c)  # حاشیهٔ خالی یعنی هم‌رنگ زمینه
+
+    @staticmethod
+    def _label(color, border):
+        if border and norm(border) != norm(color):
+            return f"{color} حاشیه {border}"
+        return color
+
+    def _brief(self, it):
+        return {k: it[k] for k in ("id", "title", "label", "status", "orphan", "url", "view")}
+
+    def check(self, design, color, border="", title="", n=None):
+        """{level: dup|same|'', items: [فرش‌های تکراری], colors: [رنگ‌های دیگرِ همین نقشه], row: ردیف تکراری همین فهرست}"""
+        d, k = self.tight(design), self._key(color, border)
+        out = {"level": "", "items": [], "colors": [], "row": None}
+        if not d:
+            return out
+        same = [it for it in self.items if it["d"] == d]
+        dup = [it for it in same if it["key"] == k]
+        pk = self.titles.get(norm(title)) if title else None
+        if pk and pk not in {it["id"] for it in dup}:
+            it = self.by_id.get(pk)
+            if it is None:
+                p = Product.objects.filter(pk=pk).first()
+                it = {"id": pk, "title": fa_num(p.title), "label": "", "status": p.status, "orphan": not p.album_id,
+                      "url": f"/panel/products/{pk}/edit/", "view": p.get_absolute_url()}
+            dup.append(it)
+        if (d, k) in self.batch:
+            out["row"] = self.batch[(d, k)]
+        elif n is not None:
+            self.batch[(d, k)] = n
+        if dup or out["row"]:
+            out["level"] = "dup"
+        elif same:
+            out["level"] = "same"
+        out["items"] = [self._brief(it) for it in dup]
+        seen, colors = set(), []
+        for it in same:
+            if it["key"] != k and it["label"] and it["key"] not in seen:
+                seen.add(it["key"])
+                colors.append(it["label"])
+        out["colors"] = colors
+        return out
