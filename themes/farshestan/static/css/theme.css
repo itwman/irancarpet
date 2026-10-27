@@ -1159,3 +1159,7 @@ body.has-tray{padding-bottom:84px}
 .m2c__note,.m2c__ship{margin:0;font-size:.85rem;color:var(--ink-2)}
 .m2c__ship::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--saffron);margin-inline-end:.45rem;vertical-align:middle}
 .blk .m2c__price{border-color:var(--line)}
+/* مجموعهٔ فرش (مثل «پالت موکا») در صفحهٔ فرش */
+.coll-chip{display:inline-flex;align-items:center;gap:.4rem;color:inherit;font-weight:700}
+.coll-chip i{width:1.5rem;height:.5rem;border-radius:99px;background:linear-gradient(90deg,#EFE4D6 0 25%,#DCC6A8 0 50%,#A47864 0 75%,#7B5B4B 0)}
+.coll-sec__note{max-width:52em;line-height:2.1;margin:0 0 1rem;opacity:.85}

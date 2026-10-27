@@ -432,7 +432,8 @@ register(Resource(
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("order", "ترتیب", lambda o: fa_num(o.order), "order")],
     search=["name", "slug"], ordering=("order", "name"), slug_from="name",
     queryset=lambda qs: qs.select_related("parent", "image").annotate(_n=Count("products")),
-    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image", "mirror_auto", "redirect_url"], "side"), SEO],
+    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image", "mirror_auto", "redirect_url"], "side"),
+               ("مجموعه در صفحهٔ فرش", ["collection_label", "collection_note"], "main"), SEO],
     view_url=lambda o: o.get_absolute_url(),
 ))
 register(Resource(

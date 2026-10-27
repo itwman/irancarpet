@@ -37,6 +37,7 @@
       <div class="product__meta">
         {% if product.rating_count %}{% stars product.rating_avg %} <a href="#reviews">{{ product.rating_count|fa_num }} نظر</a>{% endif %}
         {% if product.sku %}<span class="muted">کد: {{ product.sku|fa_num }}</span>{% endif %}
+        {% if collection %}<a class="coll-chip" href="{{ collection.cat.get_absolute_url }}"><i aria-hidden="true"></i>از {{ collection.label }}</a>{% endif %}
       </div>
 
       {% if product.seller_id %}{% with sl=product.seller %}
@@ -186,6 +187,13 @@
   {% if related %}
   <section class="section"><div class="section-head"><h2>فرش‌های مشابه</h2></div>
     <div class="p-grid">{% for p in related %}{% include "partials/product_card.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
+  {% if collection.items %}
+  <section class="section coll-sec" aria-labelledby="collH">
+    <div class="section-head"><h2 id="collH">دیگر فرش‌های {{ collection.label }}</h2><a class="link-more" href="{{ collection.cat.get_absolute_url }}">همهٔ {{ collection.count|fa_num }} فرش {{ collection.label }}</a></div>
+    {% if collection.note %}<p class="coll-sec__note">{{ collection.note|fa_num }}</p>{% endif %}
+    <div class="p-grid">{% for p in collection.items %}{% include "partials/product_card.html" %}{% endfor %}</div>
   </section>
   {% endif %}
 </div>

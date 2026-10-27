@@ -322,6 +322,9 @@ def product_detail(request, slug):
 
     doc = build_doc(product, variations)
     siblings = color_siblings(product)
+    from .related import collection_for
+
+    collection = collection_for(product, [x.pk for x in related] + [s["product"].pk for s in siblings or []])
     if siblings:
         from api.serializers import thumb_url
 
@@ -338,6 +341,7 @@ def product_detail(request, slug):
         "faqs": product.faqs.filter(is_active=True),
         "landing_links": _landing_links(product),
         "tag_links": _tag_links(product),
+        "collection": collection,
         "doc": doc, "siblings": siblings, "offers": offers, "offer_vids": {o.variation.pk for o in offers}, "design": design_of(product) if siblings else "",
         "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
                              ensure_ascii=False),

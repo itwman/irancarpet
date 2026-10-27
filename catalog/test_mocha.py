@@ -56,3 +56,32 @@ class MochaTests(TestCase):
         self.assertIn("زمینه صدفی حاشیه دلفینی", build_title(row, ""))
         row["specs"] = [{"attr": "border-color", "name": "صدفی"}]
         self.assertNotIn("حاشیه", build_title(row, ""))
+
+
+class CollectionRowTests(TestCase):
+    """صفحهٔ فرش دستهٔ موکا: «از پالت موکا» و ردیف «دیگر فرش‌های پالت موکا» (هر نقشه یک بار، بدون تکرار)."""
+
+    def test_collection_row(self):
+        from catalog import mocha as M
+        from core.models import Media
+
+        cat = Category.objects.get(slug=M.SLUG)
+        self.assertEqual(cat.collection_label, "پالت موکا")
+        img = Media.objects.create(title="x", file="x.jpg")
+        ps = []
+        for i, (d, c) in enumerate([("آوین", "نقره ای"), ("آوین", "کرم"), ("سروش", "صدفی"), ("هما", "بژ"), ("هما", "نسکافه ای")]):
+            p = Product.objects.create(title=f"فرش نقشه {d} زمینه {c}", slug=f"m{i}", status="publish", design_name=d, image=img,
+                                       views=10 - i)
+            p.categories.add(cat)
+            ps.append(p)
+        r = self.client.get(ps[0].get_absolute_url())
+        self.assertContains(r, "از پالت موکا")
+        from catalog.related import collection_for
+
+        coll = collection_for(ps[0])                    # بدون ردیف «مشابه»
+        names = [x.design_name for x in coll["items"]]
+        self.assertNotIn("آوین", names)               # نقشهٔ خود فرش (رنگ‌هایش بالای صفحه است)
+        self.assertEqual(names, ["سروش", "هما"])       # هر نقشه یک بار
+        self.assertEqual(coll["count"], 5)
+        rel = {x.pk for x in r.context["related"]}
+        self.assertFalse(rel & {x.pk for x in r.context["collection"]["items"]})  # تکرار با «مشابه» نیست

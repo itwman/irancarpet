@@ -36,6 +36,12 @@ class Category(SeoFields):
     description = models.TextField("توضیحات (HTML)", blank=True)
     image = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     order = models.IntegerField("ترتیب", default=0)
+    collection_label = models.CharField(
+        "نام مجموعه در صفحهٔ فرش", max_length=60, blank=True,
+        help_text="مثل «پالت موکا». اگر پر باشد، در صفحهٔ هر فرش این دسته زیر عنوان «از پالت موکا» و پایین صفحه ردیف "
+                  "«دیگر فرش‌های پالت موکا» با یک بند معرفی می‌آید؛ پیوند داخلی به صفحهٔ دسته و پیشنهاد فرش‌های هم‌پالت با رنگ‌های دیگر.")
+    collection_note = models.TextField("معرفی کوتاه مجموعه در صفحهٔ فرش", blank=True,
+                                       help_text="یک بند کوتاه؛ متنی متفاوت با متن صفحهٔ دسته بنویسید تا تکراری نباشد.")
     redirect_url = models.CharField(
         "انتقال دائمی به", max_length=300, blank=True,
         help_text="اگر پر باشد، این دسته صفحهٔ جدا ندارد: بازدیدکننده و گوگل با ۳۰۱ به این نشانی می‌روند و پیوندهای سایت هم "

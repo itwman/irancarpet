@@ -128,3 +128,39 @@ def related_products(p, cat=None, limit=LIMIT):
     for x in items:
         x.offer = offers.get(x.pk)
     return items
+
+
+# ------------------------------------------------------------------ مجموعه (مثل «پالت موکا»)
+def collection_for(p, exclude=()):
+    """دستهٔ «مجموعه»ای که این فرش در آن است و چند فرش دیگرش با نقشه‌های متفاوت (هر نقشه یک بار).
+
+    خروجی: {cat, label, note, count, items} یا None. فرش‌هایی که در ردیف «مشابه» یا رنگ‌های دیگر همین نقشه آمده‌اند تکرار نمی‌شوند.
+    """
+    from .models import Category
+    from .views import card_queryset
+
+    cat = (Category.objects.filter(products=p, redirect_url="").exclude(collection_label="").order_by("order", "pk").first())
+    if cat is None:
+        return None
+    key = f"coll:{cat.pk}:{p.pk}:{p.modified_at.timestamp() if p.modified_at else 0}"
+    hit = cache.get(key)
+    if hit is None:
+        base = (Product.objects.published().filter(categories__in=cat.descendant_ids(), image__isnull=False)
+                .exclude(pk=p.pk).exclude(stock_status="outofstock").distinct())
+        count = base.count() + 1
+        ids, designs = [], {(p.design_name or "").strip()}
+        for pid, design in base.order_by("-views", "-pk").values_list("pk", "design_name")[:200]:
+            d = (design or "").strip()
+            if d and d in designs:
+                continue
+            designs.add(d)
+            ids.append(pid)
+            if len(ids) >= LIMIT * 2:
+                break
+        hit = {"ids": ids, "count": count}
+        cache.set(key, hit, 900)
+    skip = set(exclude)
+    order = [i for i in hit["ids"] if i not in skip][:LIMIT]
+    by = {x.pk: x for x in card_queryset(Product.objects.filter(pk__in=order))}
+    return {"cat": cat, "label": cat.collection_label, "note": cat.collection_note, "count": hit["count"],
+            "items": [by[i] for i in order if i in by]}

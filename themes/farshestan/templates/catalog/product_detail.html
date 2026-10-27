@@ -53,6 +53,7 @@
         {% if product.rating_count %}<a href="#reviews" class="rate"><svg class="ic ic-fill" aria-hidden="true"><use href="#i-star"/></svg>{{ product.rating_avg|floatformat:1|fa_dec }}<span>({{ product.rating_count|fa_num }} دیدگاه)</span></a><span class="dot-sep"></span>{% endif %}
         <a href="#qa">{% if questions %}{{ questions|length|fa_num }} پرسش{% else %}پرسش دربارهٔ این فرش{% endif %}</a>
         {% if product.sku %}<span class="dot-sep"></span><span>کد کالا: {{ product.sku|fa_num }}</span>{% endif %}
+        {% if collection %}<span class="dot-sep"></span><a class="coll-chip" href="{{ collection.cat.get_absolute_url }}"><i aria-hidden="true"></i>از {{ collection.label }}</a>{% endif %}
       </div>
 
       {% if siblings %}<div class="blk">
@@ -257,6 +258,13 @@
 <section class="wrap sec" id="rel" aria-labelledby="h-sim">
   <div class="sec-hd"><h2 id="h-sim"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>فرش‌های مشابه</h2>{% if product.primary_category %}<a class="link" href="{{ product.primary_category.get_absolute_url }}">مشاهدهٔ همه<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a>{% endif %}</div>
   <div class="rail" data-rail><div class="rail-track">{% for p in related|slice:":10" %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
+</section>
+{% endif %}
+{% if collection.items %}
+<section class="wrap sec coll-sec" aria-labelledby="h-coll">
+  <div class="sec-hd"><h2 id="h-coll"><svg class="star ic-fill" aria-hidden="true"><use href="#i-8star"/></svg>دیگر فرش‌های {{ collection.label }}</h2><a class="link" href="{{ collection.cat.get_absolute_url }}">همهٔ {{ collection.count|fa_num }} فرش<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chl"/></svg></a></div>
+  {% if collection.note %}<p class="coll-sec__note">{{ collection.note|fa_num }}</p>{% endif %}
+  <div class="rail" data-rail><div class="rail-track">{% for p in collection.items %}{% include "partials/product_card.html" %}{% endfor %}</div></div>
 </section>
 {% endif %}
 
