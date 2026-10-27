@@ -23,6 +23,7 @@ urlpatterns = [
     path("media/unused/", media.unused),
     path("products/add/", products.product_edit),
     path("products/bulk/", content_views.bulk),
+    path("products/bulk-edit/", products.products_bulk_edit),
     path("products/quick/", content_views.quick),
     path("products/quick/album/<int:pk>/", content_views.quick_album),
     path("products/quick/guess/", content_views.quick_guess),

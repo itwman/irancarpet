@@ -240,6 +240,7 @@ register(Resource(
     extra_columns=lambda: _product_extra_columns(),
     view_url=lambda o: o.get_absolute_url(), edit_url=lambda o: f"/panel/products/{o.pk}/edit/",
     actions={
+        "bulk_edit": ("ویرایش گروهی (دسته، برچسب، دستهٔ اصلی، کلمهٔ عنوان)…", None, "", None, {"href": "/panel/products/bulk-edit/"}),
         "publish": ("انتشار", lambda r, qs: f"{qs.update(status='publish')} محصول منتشر شد."),
         "draft": ("پیش‌نویس کردن", lambda r, qs: f"{qs.update(status='draft')} محصول پیش‌نویس شد."),
         "available": ("وضعیت فروش: موجود", lambda r, qs: _set_sale(qs, "available")),

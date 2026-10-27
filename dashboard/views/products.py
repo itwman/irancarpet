@@ -270,3 +270,57 @@ def product_farshplus(request, pk):
             messages.error(request, f"فرش پلاس: {e}")
     log(request, "action", "فرش پلاس", product, "ارسال دستی")
     return redirect(f"/panel/products/{pk}/edit/#farshplus")
+
+
+@staff_required
+def products_bulk_edit(request):
+    """ویرایش گروهی فرش‌های انتخاب‌شده (یا همهٔ نتایج فیلتر): دسته‌ها، برچسب‌ها، دستهٔ اصلی و کلمهٔ عنوان."""
+    from catalog import bulkedit as B
+    from content.views import _category_tree
+
+    from ..registry import REGISTRY
+    from .crud import apply_filters
+
+    if request.method == "POST":
+        P = request.POST
+        ids = [int(x) for x in (P.get("ids") or "").split(",") if x.isdigit()]
+        if not ids:
+            messages.warning(request, "فرشی انتخاب نشده بود.")
+            return redirect("/panel/products/")
+        ops = {"primary": P.get("primary") if (P.get("primary") or "").isdigit() else None,
+               "word": P.get("word") or "", "rule": P.get("rule") or ""}
+        for rel, pre, new in (("categories", "c_", "add_cats"), ("tags", "t_", "add_tags")):
+            add, remove = list(P.getlist(new)), []
+            for k, v in P.items():
+                if k.startswith(pre) and k[len(pre):].isdigit():
+                    (add if v == "add" else remove if v == "remove" else []).append(k[len(pre):])
+            ops[rel] = {"add": add, "remove": remove}
+        msgs, edit = B.apply(ids, ops, request.user)
+        if not msgs:
+            messages.info(request, "چیزی برای تغییر انتخاب نشده بود.")
+            return redirect(P.get("back") or "/panel/products/")
+        log(request, "update", "محصولات", None, f"ویرایش گروهی {len(ids)} فرش")
+        clear_site_cache()
+        try:
+            from content import render as R
+
+            R.clear_cache()
+        except Exception:  # noqa: BLE001
+            pass
+        messages.success(request, " ".join(msgs) + (" برای برگرداندن: ابزار محتوا ← سابقهٔ تغییرها." if edit else ""))
+        return redirect(P.get("back") or "/panel/products/")
+    if request.GET.get("all") == "1":
+        qs = apply_filters(REGISTRY["products"], Product.objects.all(), request)
+    else:
+        qs = Product.objects.filter(pk__in=[int(x) for x in request.GET.getlist("ids") if x.isdigit()])
+    ids = list(qs.order_by("pk").values_list("pk", flat=True).distinct()[:5000])
+    if not ids:
+        messages.warning(request, "اول چند فرش را در فهرست تیک بزنید (یا «همهٔ نتایج این فیلتر»).")
+        return redirect("/panel/products/")
+    params = request.GET.copy()
+    for k in ("ids", "all", "page"):
+        params.pop(k, None)
+    return render(request, "dashboard/products_bulk_edit.html", {
+        "d": B.analyze(ids), "ids": ",".join(map(str, ids)), "cats": _category_tree(),
+        "back": "/panel/products/" + (f"?{params.urlencode()}" if params else ""),
+    })

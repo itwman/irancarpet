@@ -438,9 +438,11 @@ def tools(request):
             for row in reversed(edit.backup):
                 if row.get("field") in FIELDS:
                     Product.objects.filter(pk=row["id"]).update(**{row["field"]: row["old"]})
+            from catalog.bulkedit import undo_rows as undo_bulk
             from catalog.tagclean import undo_rows
 
             undo_rows(edit.backup)
+            undo_bulk(list(reversed(edit.backup)))
             edit.undone = True
             edit.save(update_fields=["undone"])
         log(request, "update", "محصولات", None, f"برگرداندن: {edit.summary}")

@@ -1,0 +1,8 @@
+{% load fa %}<div class="be-row" data-n="{{ r.n }}" data-name="{{ r.obj.name }}">
+  <span class="be-name"><b>{{ r.obj.name|fa_num }}</b><small>{{ r.n|fa_num }} از {{ d.n|fa_num }} فرش</small><i class="be-bar-n" style="--p:{% widthratio r.n d.n 100 %}%" aria-hidden="true"></i></span>
+  <span class="be-seg" role="radiogroup" aria-label="{{ r.obj.name }}">
+    <label><input type="radio" name="{{ pre }}{{ r.obj.pk }}" value="" checked><span>بدون تغییر</span></label>
+    <label{% if r.all %} class="is-off" title="همه این را دارند"{% endif %}><input type="radio" name="{{ pre }}{{ r.obj.pk }}" value="add"{% if r.all %} disabled{% endif %}><span>به همه</span></label>
+    <label><input type="radio" name="{{ pre }}{{ r.obj.pk }}" value="remove"><span>از همه بردار</span></label>
+  </span>
+</div>

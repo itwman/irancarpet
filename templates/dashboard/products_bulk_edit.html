@@ -1,0 +1,105 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}ویرایش گروهی {{ d.n|fa_num }} فرش{% endblock %}
+{% block content %}
+<div class="page-top"><div><a href="{{ back }}" class="back">‹ محصولات</a>
+  <h1>ویرایش گروهی {{ d.n|fa_num }} فرش</h1>
+  <p class="muted mb-0">{% for t in d.sample %}{{ t|fa_num }}{% if not forloop.last %}، {% endif %}{% endfor %}{% if d.n > d.sample|length %} و {{ d.n|add:"-5"|fa_num }} فرش دیگر{% endif %}</p></div>
+</div>
+
+<form method="post" id="beForm" class="be">{% csrf_token %}
+  <input type="hidden" name="ids" value="{{ ids }}"><input type="hidden" name="back" value="{{ back }}">
+
+  <section class="card-p">
+    <h2 class="be-h">دسته‌ها</h2>
+    {% if d.cats %}<p class="hint">دسته‌هایی که الان در این فرش‌ها هست؛ کنار هر کدام تعداد فرش‌هایی که آن را دارند.</p>
+    <div class="be-rows">{% for r in d.cats %}{% include "dashboard/_be_row.html" with pre="c_" %}{% endfor %}</div>{% endif %}
+    <details class="be-add"{% if not d.cats %} open{% endif %}><summary>افزودن دستهٔ دیگر به همه</summary>
+      <input type="search" class="form-control form-control-sm be-filter" placeholder="جستجوی دسته…" aria-label="جستجوی دسته">
+      <div class="cat-tree be-tree">{% for c, dep in cats %}<label style="--d:{{ dep }}"{% if c.redirect_url %} class="is-moved" title="به {{ c.redirect_url }} منتقل شده"{% endif %}><input type="checkbox" name="add_cats" value="{{ c.pk }}" data-name="{{ c.name }}"{% if c.mirror_auto %} data-mirror="1"{% endif %}{% if c.redirect_url %} data-moved="1"{% endif %}> {{ c.name }}{% if c.redirect_url %} <small>(منتقل‌شده)</small>{% endif %}</label>{% endfor %}</div>
+    </details>
+    <div class="be-primary">
+      <label for="bePrimary">دستهٔ اصلی (در مسیر بالای صفحهٔ فرش)</label>
+      <select id="bePrimary" name="primary" class="form-select form-select-sm">
+        <option value="">بدون تغییر</option>
+        {% for c, dep in cats %}{% if not c.redirect_url %}<option value="{{ c.pk }}">{% for _ in ""|ljust:dep %}— {% endfor %}{{ c.name }}</option>{% endif %}{% endfor %}
+      </select>
+      <small class="hint">اگر دستهٔ اصلی فرشی را بردارید، خودکار دستهٔ دیگرش جایش را می‌گیرد.</small>
+    </div>
+  </section>
+
+  <section class="card-p">
+    <h2 class="be-h">برچسب‌ها</h2>
+    {% if d.tags %}<div class="be-rows">{% for r in d.tags %}{% include "dashboard/_be_row.html" with pre="t_" %}{% endfor %}</div>{% endif %}
+    <label class="be-lbl" for="beTags">افزودن برچسب به همه</label>
+    <select multiple id="beTags" name="add_tags" data-ac="/panel/ac/product_tag/" data-ac-create="1" data-placeholder="انتخاب یا نوشتن برچسب تازه…"></select>
+  </section>
+
+  <section class="card-p">
+    <h2 class="be-h">کلمه در عنوان</h2>
+    <div class="be-word">
+      <input class="form-control" name="word" id="beWord" maxlength="40" placeholder="مثل موکا" aria-label="کلمه‌ای که به عنوان افزوده شود">
+      <small class="hint">بعد از «… شانه» می‌آید؛ فرش‌هایی که این کلمه را دارند دست نمی‌خورند. نشانی صفحه‌ها عوض نمی‌شود. اگر برای این کلمه قانونی باشد (مثل «موکا» ← دستهٔ فرش موکا)، همان هم اعمال می‌شود.</small>
+    </div>
+  </section>
+
+  {% if d.words %}
+  <section class="card-p be-rule" id="beRule" hidden>
+    <h2 class="be-h">برای فرش‌های بعدی هم</h2>
+    {% for w in d.words %}<label class="form-check"><input class="form-check-input" type="radio" name="rule" value="{{ w }}"> قانون بساز: هر فرشی که «{{ w|fa_num }}» در عنوانش باشد، همین دسته‌ها و برچسب‌های افزوده را خودکار بگیرد</label>{% endfor %}
+    <label class="form-check"><input class="form-check-input" type="radio" name="rule" value="" checked> قانون لازم نیست</label>
+  </section>
+  {% endif %}
+
+  <div class="be-bar">
+    <ul id="beSum" class="be-sum"><li class="muted">هنوز تغییری انتخاب نشده.</li></ul>
+    <button class="btn btn-pink" type="submit" id="beGo" disabled>اعمال روی {{ d.n|fa_num }} فرش</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  "use strict";
+  var FA = "۰۱۲۳۴۵۶۷۸۹", N = {{ d.n }};
+  function fa(s) { return String(s).replace(/\d/g, function (d) { return FA[d]; }); }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+  var form = document.getElementById("beForm"), sum = document.getElementById("beSum"), go = document.getElementById("beGo"),
+      rule = document.getElementById("beRule");
+  function update() {
+    var out = [], adds = 0;
+    form.querySelectorAll(".be-row").forEach(function (r) {
+      var v = (r.querySelector("input:checked") || {}).value, n = +r.dataset.n, name = r.dataset.name;
+      r.classList.toggle("is-add", v === "add"); r.classList.toggle("is-remove", v === "remove");
+      if (v === "add" && N - n) { out.push("«" + name + "» به " + fa(N - n) + " فرش افزوده می‌شود"); adds++; }
+      if (v === "remove") out.push('<b class="text-danger">«' + esc(name) + "» از " + fa(n) + " فرش برداشته می‌شود</b>");
+    });
+    var mirror = false;
+    form.querySelectorAll('input[name="add_cats"]:checked').forEach(function (c) {
+      out.push("دستهٔ «" + esc(c.dataset.name) + "» به همه افزوده می‌شود" + (c.dataset.moved ? ' <span class="text-danger">(این دسته منتقل شده؛ بهتر است برچسب مقصدش را بدهید)</span>' : ""));
+      if (c.dataset.mirror) mirror = true; adds++;
+    });
+    var tg = document.getElementById("beTags").tomselect, tv = tg ? tg.getValue() : [];
+    if (tv.length) { out.push(fa(tv.length) + " برچسب به همه افزوده می‌شود"); adds++; }
+    var pr = document.getElementById("bePrimary");
+    if (pr.value) out.push("دستهٔ اصلی همه «" + esc(pr.selectedOptions[0].textContent.replace(/^[—\s]+/, "")) + "» می‌شود");
+    var w = document.getElementById("beWord").value.trim();
+    if (w) out.push("«" + esc(w) + "» به عنوان فرش‌هایی که آن را ندارند افزوده می‌شود");
+    if (mirror) out.push("فرش‌ها برای فرشستان هم انتخاب می‌شوند (دستهٔ خودکار فرشستان)");
+    if (rule) rule.hidden = !adds;
+    sum.innerHTML = out.length ? out.map(function (x) { return "<li>" + x + "</li>"; }).join("") : '<li class="muted">هنوز تغییری انتخاب نشده.</li>';
+    go.disabled = !out.length;
+  }
+  form.addEventListener("change", update);
+  form.addEventListener("input", function (e) { if (e.target.id === "beWord") update(); });
+  var f = form.querySelector(".be-filter");
+  if (f) f.addEventListener("input", function () {
+    var q = this.value.trim();
+    form.querySelectorAll(".be-tree label").forEach(function (l) { l.hidden = q && l.textContent.indexOf(q) < 0; });
+  });
+  setTimeout(function () { var t = document.getElementById("beTags").tomselect; if (t) t.on("change", update); }, 300);
+  form.addEventListener("submit", function (e) {
+    var rm = form.querySelectorAll('.be-row input[value="remove"]:checked').length;
+    if (!confirm("تغییرها روی " + fa(N) + " فرش اعمال شود؟" + (rm ? " (برداشتن هم دارد)" : "") + " از «ابزار محتوا» برگرداندنی است.")) e.preventDefault();
+  });
+  update();
+})();
+</script>{% endblock %}
