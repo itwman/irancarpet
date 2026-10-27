@@ -145,15 +145,16 @@
   var rules = JSON.parse(document.getElementById("kwRules").textContent || "[]");
   var title = form.querySelector("[name=title]"), album = form.querySelector("[name=album]"), hint = document.getElementById("ruleHint");
   function norm(s) { return String(s || "").replace(/\u200c/g, " ").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim(); }
+  function words(s) { return norm(s).replace(/[^\u0620-\u064A\u0660-\u0669\u066E-\u06D3\u06F0-\u06F9\w]+/g, " ").replace(/\s+/g, " ").trim(); }
   function ts(el) { return el && (el.tomselect || (window.initAc && window.initAc(el))); }
   function check(ids) { ids.forEach(function (id) { var c = form.querySelector('#catTree input[value="' + id + '"]'); if (c) c.checked = true; }); }
   function addTags(tags) { var t = ts(form.querySelector("[name=tags]")); if (!t) return; tags.forEach(function (o) { t.addOption(o); t.addItem(o.value, true); }); }
   // قانون کلمه: «افشان» در عنوان ← دسته و برچسب افشان (فقط تیک می‌زند؛ قابل برداشتن است)
   var applied = {};
   function applyRules() {
-    var t = norm(title.value), names = [];
+    var t = " " + words(title.value) + " ", names = [];
     rules.forEach(function (r) {
-      if (!r.k || t.indexOf(r.k) < 0) return;
+      if (!r.k || t.indexOf(" " + words(r.k) + " ") < 0) return;  // کلمهٔ کامل: «ناز» در «نازنین» نیست
       names.push(r.k + " ← " + ((r.names || []).join("، ") || "برچسب"));
       if (applied[r.k]) return;
       applied[r.k] = 1; check(r.cats); addTags(r.tags);

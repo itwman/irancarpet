@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}دقیق‌کردن برچسب {{ tag.name }}{% endblock %}
+{% block content %}
+<div class="page-top"><div><a href="/panel/tags/" class="back">‹ برچسب‌ها</a>
+  <h1>کدام فرش‌ها واقعاً «{{ tag.name }}» هستند؟</h1>
+  <p class="muted">صفحهٔ برچسب وقتی در گوگل خوب دیده می‌شود که فقط فرش‌های همان موضوع را داشته باشد. فرش‌هایی که «{{ d.word }}» در عنوانشان هست می‌مانند؛ برای بقیه، نقشه‌هایی را که واقعاً {{ d.word }} هستند تیک بزنید.</p></div>
+  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="{{ tag.get_absolute_url }}" target="_blank" rel="noopener">دیدن صفحهٔ برچسب</a></div>
+</div>
+
+<form method="get" class="card-p tc-word">
+  <input type="hidden" name="tag" value="{{ tag.pk }}">
+  <label for="tcWord">کلمه‌ای که در عنوان فرش‌های این برچسب می‌آید</label>
+  <div class="d-flex gap-2"><input id="tcWord" name="word" value="{{ word }}" class="form-control" maxlength="80"><button class="btn btn-light" type="submit">بررسی دوباره</button></div>
+</form>
+
+<div class="tc-stats">
+  <div><b>{{ d.total|fa_num }}</b><span>فرش الان در این برچسب</span></div>
+  <div class="ok"><b>{{ d.keep|fa_num }}</b><span>«{{ d.word }}» در عنوان دارند و می‌مانند</span></div>
+  <div class="ask"><b id="tcAsk">{{ d.groups|length|fa_num }}</b><span>نقشهٔ بدون «{{ d.word }}» در عنوان؛ تصمیم با شما</span></div>
+  <div class="add"><b>{{ d.missing|length|fa_num }}</b><span>«{{ d.word }}» در عنوان دارند ولی برچسب ندارند</span></div>
+</div>
+
+<form method="post" id="tcForm" class="card-p">{% csrf_token %}
+  <input type="hidden" name="tag" value="{{ tag.pk }}"><input type="hidden" name="word" value="{{ word }}"><input type="hidden" name="apply" value="1">
+  {% if d.groups %}
+  <div class="tc-tools">
+    <input type="search" class="form-control form-control-sm" id="tcFilter" placeholder="جستجوی نام نقشه…" aria-label="جستجوی نام نقشه">
+    <button type="button" class="btn btn-light btn-sm" data-all="1">همه بمانند</button>
+    <button type="button" class="btn btn-light btn-sm" data-all="0">هیچ‌کدام</button>
+  </div>
+  <div class="tc-list" id="tcList">
+    {% for g in d.groups %}
+    <label class="tc-row" data-n="{{ g.n }}" data-name="{{ g.label }}">
+      <input type="checkbox" name="keep" value="{{ g.key }}"{% if g.ruled %} checked{% endif %}>
+      {% if g.image %}<img src="{{ g.image|thumb:240 }}" alt="" loading="lazy">{% else %}<span class="tc-noimg"></span>{% endif %}
+      <span class="tc-name"><b>{{ g.label|fa_num }}</b><small>{% for t in g.samples %}{{ t|fa_num }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</small></span>
+      <span class="tc-n">{{ g.n|fa_num }} فرش{% if g.pub != g.n %}<small>{{ g.pub|fa_num }} منتشرشده</small>{% endif %}</span>
+      <span class="tc-state"></span>
+    </label>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mb-0">همهٔ فرش‌های این برچسب «{{ d.word }}» را در عنوان دارند.</p>
+  {% endif %}
+
+  <div class="tc-opts">
+    <label class="form-check"><input class="form-check-input" type="checkbox" name="add" value="1" checked> {{ d.missing|length|fa_num }} فرشی که «{{ d.word }}» در عنوان دارند هم برچسب بگیرند</label>
+    {% if d.albums %}<label class="form-check"><input class="form-check-input" type="checkbox" name="albums" value="1" checked> برچسب از «پیش‌فرض» {{ d.albums|length|fa_num }} آلبوم برداشته شود ({{ d.albums|join:"، "|fa_num|truncatechars:120 }})؛ از این به بعد فقط قانون‌ها برچسب می‌زنند</label>{% endif %}
+  </div>
+  <div class="tc-bar">
+    <span id="tcSum"></span>
+    <button class="btn btn-pink" type="submit" id="tcGo">اعمال</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  "use strict";
+  var FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(s) { return String(s).replace(/\d/g, function (d) { return FA[d]; }); }
+  var list = document.getElementById("tcList"), sum = document.getElementById("tcSum"), go = document.getElementById("tcGo");
+  var rows = list ? Array.prototype.slice.call(list.querySelectorAll(".tc-row")) : [];
+  function update() {
+    var keep = 0, keepN = 0, drop = 0;
+    rows.forEach(function (r) {
+      var on = r.querySelector("input").checked, n = +r.dataset.n;
+      r.classList.toggle("is-keep", on);
+      r.querySelector(".tc-state").textContent = on ? "می‌ماند" : "برداشته می‌شود";
+      if (on) { keep++; keepN += n; } else drop += n;
+    });
+    sum.textContent = rows.length ? fa(keep) + " نقشه می‌ماند و قانون خودکار می‌گیرد؛ " + fa(drop) + " فرش از برچسب برداشته می‌شود" : "";
+    go.textContent = drop ? "اعمال و برداشتن " + fa(drop) + " فرش" : "اعمال";
+  }
+  if (list) {
+    list.addEventListener("change", update);
+    document.querySelectorAll("[data-all]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        rows.forEach(function (r) { if (!r.hidden) r.querySelector("input").checked = b.dataset.all === "1"; });
+        update();
+      });
+    });
+    document.getElementById("tcFilter").addEventListener("input", function () {
+      var q = this.value.trim();
+      rows.forEach(function (r) { r.hidden = q && r.dataset.name.indexOf(q) < 0; });
+    });
+  }
+  document.getElementById("tcForm").addEventListener("submit", function (e) {
+    var drop = rows.filter(function (r) { return !r.querySelector("input").checked; }).reduce(function (a, r) { return a + +r.dataset.n; }, 0);
+    if (drop && !confirm(fa(drop) + " فرش از برچسب «{{ tag.name|escapejs }}» برداشته می‌شود. بعداً از «ابزار محتوا» برگرداندنی است. ادامه؟")) e.preventDefault();
+  });
+  update();
+})();
+</script>{% endblock %}

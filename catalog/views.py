@@ -197,6 +197,10 @@ def category_detail(request, path, page=1):
     cat = get_object_or_404(Category, slug=slugs[-1])
     if cat.path != "/".join(slugs):
         raise Http404
+    if cat.redirect_url:  # دسته‌ای که با صفحهٔ دیگری (مثلاً برچسب هم‌موضوع) یکی شده
+        from django.http import HttpResponsePermanentRedirect
+
+        return HttpResponsePermanentRedirect(cat.redirect_url)
     crumbs = [(c.name, c.get_absolute_url()) for c in cat.ancestors()] + [(cat.name, cat.get_absolute_url())]
     qs = Product.objects.filter(categories__in=cat.descendant_ids())
     return product_listing(
@@ -268,6 +272,15 @@ def _landing_links(product):
         return []
 
 
+def _tag_links(product):
+    """برچسب‌های فرش (مثل «فرش طرح افشان») که صفحهٔ قابل‌ایندکس با دست‌کم ۴ فرش دارند؛ پیوند داخلی به صفحهٔ موضوع."""
+    from django.db.models import Count, Q
+
+    return list(ProductTag.objects.filter(pk__in=product.tags.values("pk")).exclude(robots__contains="noindex")
+                .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True)).filter(n__gte=4)
+                .order_by("-n")[:6])
+
+
 def product_detail(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("image", "brand", "primary_category", "album__base_size", "seller"), slug=slug
@@ -324,6 +337,7 @@ def product_detail(request, slug):
         "crumbs": crumbs, "reviews": reviews, "questions": questions, "related": related, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
         "landing_links": _landing_links(product),
+        "tag_links": _tag_links(product),
         "doc": doc, "siblings": siblings, "offers": offers, "offer_vids": {o.variation.pk for o in offers}, "design": design_of(product) if siblings else "",
         "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
                              ensure_ascii=False),

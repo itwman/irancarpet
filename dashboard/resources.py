@@ -432,7 +432,7 @@ register(Resource(
              Col("n", "محصول", lambda o: fa_num(o._n), "_n"), Col("order", "ترتیب", lambda o: fa_num(o.order), "order")],
     search=["name", "slug"], ordering=("order", "name"), slug_from="name",
     queryset=lambda qs: qs.select_related("parent", "image").annotate(_n=Count("products")),
-    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image", "mirror_auto"], "side"), SEO],
+    fieldsets=[TAX_FIELDS, ("جایگاه", ["parent", "order", "image", "mirror_auto", "redirect_url"], "side"), SEO],
     view_url=lambda o: o.get_absolute_url(),
 ))
 register(Resource(
@@ -447,6 +447,8 @@ register(Resource(
     columns=[Col("name", "نام", sort="name"), Col("slug", "نامک"), Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
     search=["name", "slug"], ordering=("name",), slug_from="name",
     queryset=lambda qs: qs.annotate(_n=Count("products")), fieldsets=[TAX_FIELDS, SEO], view_url=lambda o: o.get_absolute_url(),
+    actions={"cleanup": ("دقیق‌کردن فرش‌های برچسب (کدام نقشه‌ها بمانند)…", None, "", None, {"href": "/panel/tags/cleanup/"})},
+    help="برای صفحه‌ای مثل «فرش طرح افشان»: یک برچسب را تیک بزنید و «دقیق‌کردن فرش‌های برچسب» را بزنید تا فقط فرش‌های واقعاً مرتبط در آن بمانند.",
 ))
 register(Resource(
     key="attributes", model=Attribute, title="ویژگی‌ها (شانه، رنگ و…)", single="ویژگی", group="فروشگاه", icon="sliders",

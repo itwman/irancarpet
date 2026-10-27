@@ -242,7 +242,7 @@
     </section>
 
     {% if faqs %}<section class="psec faq2" id="faq" aria-labelledby="h-faq"><h2 id="h-faq">پرسش‌های پرتکرار</h2>{% for f in faqs %}<details><summary>{{ f.question }}<svg class="ic ic-sm" aria-hidden="true"><use href="#i-chd"/></svg></summary><div class="prose">{{ f.answer|safe }}</div></details>{% endfor %}</section>{% endif %}
-    {% if landing_links %}<nav class="psec" aria-labelledby="lp-h"><h2 id="lp-h">جستجوهای مرتبط</h2><div class="tags2">{% for x in landing_links %}<a href="{{ x.get_absolute_url }}">{{ x.title|fa_num }}</a>{% endfor %}</div></nav>{% endif %}
+    {% if landing_links or tag_links %}<nav class="psec" aria-labelledby="lp-h"><h2 id="lp-h">جستجوهای مرتبط</h2><div class="tags2">{% for t in tag_links %}<a href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% endfor %}{% for x in landing_links %}<a href="{{ x.get_absolute_url }}">{{ x.title|fa_num }}</a>{% endfor %}</div></nav>{% endif %}
   </div>
   {% if variations and pricing.show_size_table %}
   <aside class="side-buy" aria-label="خرید سریع">

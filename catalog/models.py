@@ -1,3 +1,4 @@
+import re
 from django.db import models
 from django.db.models import Max, Min
 from django.urls import reverse
@@ -35,6 +36,10 @@ class Category(SeoFields):
     description = models.TextField("توضیحات (HTML)", blank=True)
     image = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     order = models.IntegerField("ترتیب", default=0)
+    redirect_url = models.CharField(
+        "انتقال دائمی به", max_length=300, blank=True,
+        help_text="اگر پر باشد، این دسته صفحهٔ جدا ندارد: بازدیدکننده و گوگل با ۳۰۱ به این نشانی می‌روند و پیوندهای سایت هم "
+                  "مستقیم به آن اشاره می‌کنند (مثلاً «/product-tag/فرش-طرح-افشان/» تا دو صفحه برای یک کلمه رقابت نکنند).")
     mirror_auto = models.BooleanField("فرش‌های این دسته خودکار برای فرشستان انتخاب شوند", default=False,
                                       help_text="فقط روی ایران کارپت معنا دارد؛ هر فرشی که به این دسته اضافه شود، در فرشستان هم منتشر می‌شود.")
 
@@ -59,7 +64,7 @@ class Category(SeoFields):
         return "/".join([c.slug for c in self.ancestors()] + [self.slug])
 
     def get_absolute_url(self):
-        return f"/product-category/{self.path}/"
+        return self.redirect_url or f"/product-category/{self.path}/"
 
     def descendant_ids(self):
         ids, frontier = [self.pk], [self.pk]
@@ -116,12 +121,18 @@ class KeywordRule(models.Model):
 
     @staticmethod
     def norm(s):
-        return " ".join((s or "").replace("\u200c", " ").replace("ي", "ی").replace("ك", "ک").split())
+        s = (s or "").replace("\u200c", " ").replace("ي", "ی").replace("ك", "ک")
+        return " ".join(re.sub(r"[^\w]+", " ", s).split())
+
+    @classmethod
+    def has(cls, keyword, title):
+        """کلمهٔ کامل: «ناز» در «نازنین» نیست، ولی «افشان» در «فرش افشان پارسا» هست."""
+        k = cls.norm(keyword)
+        return bool(k) and f" {k} " in f" {cls.norm(title)} "
 
     @classmethod
     def matches(cls, title):
-        t = cls.norm(title)
-        return [r for r in cls.objects.filter(is_active=True).prefetch_related("categories", "tags") if r.keyword and cls.norm(r.keyword) in t]
+        return [r for r in cls.objects.filter(is_active=True).prefetch_related("categories", "tags") if cls.has(r.keyword, title)]
 
 
 class Brand(SeoFields):

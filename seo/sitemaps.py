@@ -27,7 +27,8 @@ def sections():
         "product": (Product.objects.published().exclude(robots__contains="noindex").select_related("image").prefetch_related("images__media").order_by("-modified_at"), True),
         "category": (BlogCategory.objects.annotate(n=Count("posts")).filter(n__gt=0), False),
         "product_brand": (Brand.objects.filter(wp_id__isnull=False).annotate(n=Count("products")).filter(n__gt=0), False),
-        "product_cat": (Category.objects.annotate(n=Count("products")).filter(n__gt=0).exclude(robots__contains="noindex"), False),
+        "product_cat": (Category.objects.filter(redirect_url="").annotate(n=Count("products")).filter(n__gt=0)
+                        .exclude(robots__contains="noindex"), False),
         # برچسب‌های فرش با دست‌کم ۴ فرش منتشرشده (در سرچ کنسول نمایش دارند ولی در سایت‌مپ نبودند)
         "product_tag": (ProductTag.objects.exclude(robots__contains="noindex")
                         .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True)).filter(n__gte=4)

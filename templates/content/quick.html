@@ -76,6 +76,7 @@
   function fa(s) { return String(s).replace(/\d/g, function (d) { return FA[d]; }); }
   function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
   function norm(s) { return String(s || "").replace(/‌/g, " ").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim(); }
+  function words(s) { return norm(s).replace(/[^\u0620-\u064A\u0660-\u0669\u066E-\u06D3\u06F0-\u06F9\w]+/g, " ").replace(/\s+/g, " ").trim(); }  // قانون کلمه: کلمهٔ کامل
   function csrf() { var i = document.querySelector("input[name=csrfmiddlewaretoken]"); return i ? i.value : ""; }
   var $ = function (id) { return document.getElementById(id); };
   var rules = JSON.parse($("qaRules").textContent || "[]");
@@ -172,8 +173,8 @@
     return t.replace(D, isCode(r.design) ? fa(r.design.trim()) : (r.design || "…")).replace(C, c);
   }
   function ruleChips(title) {
-    var t = norm(title);
-    return rules.filter(function (x) { return x.k && t.indexOf(x.k) >= 0; }).map(function (x) {
+    var t = " " + words(title) + " ";
+    return rules.filter(function (x) { return x.k && t.indexOf(" " + words(x.k) + " ") >= 0; }).map(function (x) {
       return '<span class="qa-rule">' + esc(x.k) + " ← " + esc((x.names || []).join("، ") || "برچسب") + "</span>";
     }).join("");
   }

@@ -178,9 +178,9 @@
     {% endfor %}
   </section>
 
-  {% if landing_links %}
+  {% if landing_links or tag_links %}
   <nav class="lp-related" aria-label="جستجوهای مرتبط"><h2>جستجوهای مرتبط</h2>
-    <div class="chips">{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
+    <div class="chips">{% for t in tag_links %}<a class="chip" href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% endfor %}{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
   </nav>
   {% endif %}
   {% if related %}
