@@ -13,7 +13,10 @@ from .tidy import _swap_phones
 from core import brand
 
 
-def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
+TAG_MIN_POSTS = 5  # برچسب مجله با کمتر از این تعداد مقاله «noindex» است (سرچ کنسول: ۲۲۵ برچسب «خزش‌شده ولی ایندکس‌نشده»)
+
+
+def _paged(request, qs, page, path, meta, heading, intro="", crumbs=(), robots=""):
     page = int(page or 1)
     paginator = Paginator(qs.select_related("image"), settings.POSTS_PER_PAGE)
     try:
@@ -25,8 +28,11 @@ def _paged(request, qs, page, path, meta, heading, intro="", crumbs=()):
             return HttpResponsePermanentRedirect(path)
         raise Http404
     link = lambda n: path + (f"page/{n}/" if n > 1 else "")  # noqa: E731
+    m = seo.build(**meta, page=page)
+    if robots and "noindex" not in (m.get("robots") or ""):
+        m["robots"] = robots
     return render(request, "blog/post_list.html", {
-        "meta": seo.build(**meta, page=page), "heading": heading, "intro": intro if page == 1 else "",
+        "meta": m, "heading": heading, "intro": intro if page == 1 else "",
         "crumbs": crumbs, "page_obj": page_obj, "posts": page_obj.object_list,
         "prev_url": link(page - 1) if page_obj.has_previous() else "",
         "next_url": link(page + 1) if page_obj.has_next() else "",
@@ -50,8 +56,11 @@ def category_detail(request, path, page=1):
 
 def tag_detail(request, slug, page=1):
     tag = get_object_or_404(BlogTag, slug=slug)
-    return _paged(request, tag.posts.published(), page, tag.get_absolute_url(), {"obj": tag, "kind": "post_tag"},
-                  tag.name, tag.description, [("مجله", "/blog/"), (tag.name, tag.get_absolute_url())])
+    posts = tag.posts.published()
+    thin = posts.count() < TAG_MIN_POSTS
+    return _paged(request, posts, page, tag.get_absolute_url(), {"obj": tag, "kind": "post_tag"},
+                  tag.name, tag.description, [("مجله", "/blog/"), (tag.name, tag.get_absolute_url())],
+                  robots="noindex,follow" if thin else "")
 
 
 def post_detail(request, post, preview=False):

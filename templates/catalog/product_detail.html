@@ -164,7 +164,7 @@
         <label class="rv-file">عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
         <button class="btn-ic btn-ic--ink btn-ic--sm" type="submit">ثبت نظر</button>
       </form>
-      {% else %}<p class="muted">برای ثبت نظر <a href="/my-account/login/?next={{ request.path }}%23reviews">وارد شوید</a>.</p>{% endif %}
+      {% else %}<p class="muted">برای ثبت نظر <a href="/my-account/login/" data-go="/my-account/login/?next={{ request.path }}%23reviews">وارد شوید</a>.</p>{% endif %}
     </details>
     {% for r in reviews %}
       <article class="review">

@@ -209,5 +209,6 @@ class CheckoutTests(TestCase):
         self.album.in_price_list = False
         self.album.save()
         self.client.logout()
-        self.assertEqual(self.client.get(self.album.get_absolute_url()).status_code, 404)
+        r = self.client.get(self.album.get_absolute_url())  # آلبوم بیرون‌رفته از لیست ← خود لیست قیمت (نه ۴۰۴)
+        self.assertEqual((r.status_code, r["Location"]), (301, "/carpets-price-list/"))
         self.assertNotContains(self.client.get("/carpets-price-list/"), "ورجین مهرآوران")

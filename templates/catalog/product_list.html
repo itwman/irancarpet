@@ -15,14 +15,14 @@
         {% for k, v in active.items %}{% if k != "instock" %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}{% if request.GET.sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
         <label class="check"><input type="checkbox" name="instock" value="1" {% if active.instock %}checked{% endif %} onchange="this.form.submit()"> فقط کالاهای موجود</label>
         {% for f in facets %}<fieldset><legend>{{ f.attr.label }}</legend>
-          <div class="chips">{% for t in f.terms %}{% if f.active == t.slug %}<a class="chip on" href="{% query_replace f.attr.slug '' %}" rel="nofollow" title="حذف این فیلتر">{{ t.name|fa_num }}</a>{% else %}<a class="chip" href="{% query_replace f.attr.slug t.slug %}" rel="nofollow">{{ t.name|fa_num }}</a>{% endif %}{% endfor %}</div></fieldset>{% endfor %}
+          <div class="chips">{% for t in f.terms %}{% if f.active == t.slug %}<a class="chip on" href="{{ base_path }}" data-go="{{ base_path }}{% query_replace f.attr.slug '' %}" rel="nofollow" title="حذف این فیلتر">{{ t.name|fa_num }}</a>{% else %}<a class="chip" href="{{ base_path }}" data-go="{{ base_path }}{% query_replace f.attr.slug t.slug %}" rel="nofollow">{{ t.name|fa_num }}</a>{% endif %}{% endfor %}</div></fieldset>{% endfor %}
         {% if active %}<a href="{{ base_path }}" class="small">حذف همهٔ فیلترها</a>{% endif %}
       </form>
     </aside>
     <div class="col-lg-9">
       <div class="sortbar">
         <span>مرتب‌سازی:</span>
-        {% for key, label in sorts %}<a href="{% query_replace sort=key %}" class="{% if sort == key %}on{% endif %}" rel="nofollow">{{ label }}</a>{% endfor %}
+        {% for key, label in sorts %}<a href="{{ base_path }}" data-go="{{ base_path }}{% query_replace sort=key %}" class="{% if sort == key %}on{% endif %}" rel="nofollow">{{ label }}</a>{% endfor %}
       </div>
       {% if products %}
         <div class="p-grid p-grid--3">{% for p in products %}{% include "partials/product_card.html" with eager=True %}{% endfor %}</div>

@@ -204,7 +204,7 @@
       {% if user.is_authenticated %}
       <form class="qa-ask" method="post" action="/product/{{ product.slug }}/question/">{% csrf_token %}<label class="sr-only" for="qaIn">پرسش شما</label><input id="qaIn" name="text" minlength="8" maxlength="1000" placeholder="پرسش خود را دربارهٔ این فرش بنویسید…" required><button class="fbtn fbtn--primary" type="submit">ثبت پرسش</button></form>
       {% else %}
-      <div class="qa-login"><span>برای پرسیدن دربارهٔ این فرش، اول وارد شوید؛ پاسخ کارشناس همین‌جا نمایش داده می‌شود.</span><a class="fbtn fbtn--line" href="/my-account/login/?next={{ request.path|urlencode }}%23qa" rel="nofollow">ورود و ثبت پرسش</a></div>
+      <div class="qa-login"><span>برای پرسیدن دربارهٔ این فرش، اول وارد شوید؛ پاسخ کارشناس همین‌جا نمایش داده می‌شود.</span><a class="fbtn fbtn--line" href="/my-account/login/" data-go="/my-account/login/?next={{ request.path|urlencode }}%23qa" rel="nofollow">ورود و ثبت پرسش</a></div>
       {% endif %}
       {% if questions %}<div class="qa">
         {% for q in questions %}{% if q.replies.all %}<div class="qa-item"><div class="qa-q"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-chat"/></svg><span>{{ q.content|linebreaksbr }}<small>{{ q.author_name }} · {{ q.created_at|jdate:"%-d %B %Y" }}</small></span></div>
@@ -227,7 +227,7 @@
               <label class="rv-file"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-camera"/></svg>عکس فرش در خانه‌تان (تا ۴ عکس، اختیاری)<input type="file" name="photos" accept="image/*" multiple></label>
               <button class="fbtn fbtn--primary" type="submit">ثبت دیدگاه</button>
             </form>
-            {% else %}<p class="muted">برای ثبت دیدگاه <a href="/my-account/login/?next={{ request.path|urlencode }}%23reviews" rel="nofollow">وارد شوید</a>.</p>{% endif %}
+            {% else %}<p class="muted">برای ثبت دیدگاه <a href="/my-account/login/" data-go="/my-account/login/?next={{ request.path|urlencode }}%23reviews" rel="nofollow">وارد شوید</a>.</p>{% endif %}
           </details>
         </div>
       </div>

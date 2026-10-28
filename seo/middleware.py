@@ -95,6 +95,7 @@ class RedirectFallbackMiddleware:
         (re.compile(r"^/برند/(.+)$"), r"/brand/\1"),
         (re.compile(r"^/key/(.+)$"), r"/tag/\1"),
         (re.compile(r"^/\d{4}/\d{1,2}/\d{1,2}/([^/]+)/?$"), r"/\1/"),  # ساختار تاریخ‌دار قدیمی
+        (re.compile(r"^/page/(\d+)/?$"), r"/blog/page/\1/"),           # صفحه‌بندی مقاله‌های صفحهٔ اول وردپرس
     ]
     SUFFIX = [
         (re.compile(r"^(/.+?)/(?:comment-page-\d+|feed|amp|embed|jpe?g|png|webp|attachment/[^/]+)/?$"), r"\1/"),
@@ -150,7 +151,7 @@ class RedirectFallbackMiddleware:
         for b in bases:
             cands = [b] + [rx.sub(repl, b, count=1) for rx, repl in self.SUFFIX if rx.search(b)]
             m = self.POST_PARENT.search(b)
-            if m and self._is_post(m.group(1) + "/"):
+            if m and (self._is_post(m.group(1) + "/") or self._is_page(m.group(1) + "/")):
                 cands.append(m.group(1) + "/")
             for cand in cands:
                 if not cand.endswith("/"):
@@ -169,7 +170,72 @@ class RedirectFallbackMiddleware:
             target = self.truncated(b)
             if target:
                 return target
+        for b in bases:  # فرش حذف‌شده ← همان نقشه؛ دستهٔ شانهٔ قدیمی ← دستهٔ همان شانه؛ برند با املای نزدیک
+            for fn in (self.same_design, self.reeds_page, self.near_brand):
+                cand = fn(b)
+                if cand and cand not in tried:
+                    tried.add(cand)
+                    target = self._try(request, cand)
+                    if target:
+                        return target
         return None
+
+    REEDS = re.compile(r"(?:^|[/-])(500|700|1000|1200|1500)-?(?:reeds?|shane|شانه)(?:[-/]|$)")
+
+    @staticmethod
+    def same_design(path):
+        """/product/فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمین/ (حذف‌شده) ← فرش منتشرشدهٔ دیگری از نقشهٔ «بید مجنون»."""
+        from catalog.models import Product
+
+        m = re.match(r"^/product/[^/]*?نقشه-([^/]+?)/?$", path)
+        if not m:
+            return None
+        words = re.split(r"-زمینه|-حاشیه", m.group(1))[0].split("-")
+        reeds = re.search(r"(\d{3,4})-شانه", path)
+        for n in range(min(3, len(words)), 0, -1):
+            name = " ".join(words[:n])
+            if len(name) < 3:
+                continue
+            qs = Product.objects.published().filter(design_name__iexact=name).exclude(stock_status="outofstock")
+            if reeds:
+                hit = qs.filter(title__contains=reeds.group(1)).order_by("-views").first()
+                if hit:
+                    return hit.get_absolute_url()
+            hit = qs.order_by("-views").first()
+            if hit:
+                return hit.get_absolute_url()
+        return None
+
+    def reeds_page(self, path):
+        """/product-category/1200-reeds-simple/ یا /carpet-1200-reeds/ ← دستهٔ «فرش ۱۲۰۰ شانه» (یا صفحهٔ شانهٔ ۱۲۰۰)."""
+        from catalog.models import AttributeTerm, Category
+
+        if not (path.startswith("/product-category/") or path.count("/") == 2):
+            return None
+        m = self.REEDS.search(path)
+        if not m:
+            return None
+        n = m.group(1)
+        fa = n.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
+        cat = Category.objects.filter(redirect_url="", name__in=[f"فرش {n} شانه", f"فرش {fa} شانه"]).first()
+        if cat:
+            return cat.get_absolute_url()
+        term = AttributeTerm.objects.filter(attribute__slug="reeds-per-meter", name__in=[n, fa]).first()
+        return term.get_absolute_url() if term and term.attribute.is_public else None
+
+    @staticmethod
+    def near_brand(path):
+        """/brand/artamis-carpet/ ← برندی با نامک نزدیک (مثل artemis-carpet)."""
+        import difflib
+
+        from catalog.models import Brand
+
+        m = re.match(r"^/brand/([^/]+)/", path)
+        if not m:
+            return None
+        slugs = list(Brand.objects.values_list("slug", flat=True))
+        got = difflib.get_close_matches(m.group(1), slugs, n=1, cutoff=0.8)
+        return f"/brand/{got[0]}/" if got else None
 
     @staticmethod
     def truncated(path):
@@ -193,6 +259,12 @@ class RedirectFallbackMiddleware:
         if not hits:
             hits = list(Page.objects.filter(status="publish", slug__startswith=prefix).exclude(slug=prefix)[:2])
         return hits[0].get_absolute_url() if len(hits) == 1 else None
+
+    @staticmethod
+    def _is_page(path):
+        from blog.models import Page
+
+        return Page.objects.filter(parent=None, slug=path.strip("/"), status="publish").exists()
 
     @staticmethod
     def _is_post(path):

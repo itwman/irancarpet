@@ -161,3 +161,22 @@ document.addEventListener("submit", function (e) {
   bar.querySelector(".app-bar__x").addEventListener("click", off);
   bar.querySelector(".app-bar__go").addEventListener("click", off);
 })();
+
+/* پیوندهای فیلتر، مرتب‌سازی و «ورود»: نشانی واقعی در data-go است تا گوگل هزاران ترکیب «?رنگ=…&مرتب=…» را
+   پیدا نکند (href نشانی خود فهرست است). برای کاربر فرقی ندارد؛ Ctrl/میان‌کلیک هم در زبانهٔ تازه باز می‌شود. */
+(function () {
+  "use strict";
+  if (window.__dataGo) return;
+  window.__dataGo = true;
+  function go(e) {
+    var a = e.target.closest && e.target.closest("a[data-go]");
+    if (!a || e.defaultPrevented) return;
+    if (e.type === "auxclick" && e.button !== 1) return;
+    var url = new URL(a.getAttribute("data-go") || a.getAttribute("href"), location.href).href;
+    e.preventDefault();
+    if (e.type === "auxclick" || e.ctrlKey || e.metaKey || e.shiftKey) window.open(url, "_blank", "noopener");
+    else location.href = url;
+  }
+  document.addEventListener("click", go);
+  document.addEventListener("auxclick", go);
+})();

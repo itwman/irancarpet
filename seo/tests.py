@@ -188,3 +188,38 @@ class HomePageDuplicateTests(__import__("django.test", fromlist=["TestCase"]).Te
         from seo.sitemaps import sections
 
         self.assertFalse(any(p.slug == "home" for p in sections()["page"][0]))
+
+
+class GscLegacyTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
+    """۴۰۴های سرچ کنسول: فرش حذف‌شده ← همان نقشه، دستهٔ شانهٔ قدیمی، /page/N/، زیرصفحهٔ برگه، برند با املای نزدیک."""
+
+    def setUp(self):
+        from blog.models import Page
+        from catalog.models import Brand, Category, Product
+
+        self.p = Product.objects.create(title="فرش 1200 شانه گل برجسته نقشه بید مجنون زمینه کرم", slug="bid-1200",
+                                        status="publish", design_name="بید مجنون")
+        self.cat = Category.objects.create(name="فرش 1200 شانه", slug="carpet-1200")
+        Page.objects.create(title="لیست قیمت", slug="carpets-price-list", content="x", status="publish")
+        Brand.objects.create(name="آرتمیس", slug="artemis-carpet")
+
+    def loc(self, url):
+        from urllib.parse import unquote
+
+        r = self.client.get(url)
+        return r.status_code, unquote(r.get("Location", ""))
+
+    def test_redirects(self):
+        self.assertEqual(self.loc("/product/فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمین/"), (301, self.p.get_absolute_url()))
+        self.assertEqual(self.loc("/product-category/1200-reeds-simple/page/3/"), (301, self.cat.get_absolute_url()))
+        self.assertEqual(self.loc("/carpet-1200-reeds/"), (301, self.cat.get_absolute_url()))
+        self.assertEqual(self.loc("/carpets-price-list/فرش-33/"), (301, "/carpets-price-list/"))
+        self.assertEqual(self.loc("/brand/artamis-carpet/")[0], 301)
+        self.assertIn(self.loc("/page/27/"), [(301, "/blog/"), (301, "/blog/page/27/")])
+
+    def test_thin_blog_tag_noindex(self):
+        from blog.models import BlogTag
+
+        t = BlogTag.objects.create(name="کاشان", slug="kashan")
+        r = self.client.get(t.get_absolute_url())
+        self.assertIn("noindex", r.context["meta"]["robots"])

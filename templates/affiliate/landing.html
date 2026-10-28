@@ -40,7 +40,7 @@
             <input id="affMobile" name="mobile" class="auth2__big" inputmode="tel" autocomplete="tel" placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷" dir="ltr" required>
             <button class="btn-ic btn-ic--pink aff-access__go" type="submit">دریافت کد و ثبت‌نام</button>
           </form>
-          <p class="aff-access__alt">همکار هستید؟ <a href="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
+          <p class="aff-access__alt">همکار هستید؟ <a href="/my-account/login/" data-go="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
         {% endif %}
       </aside>
     </div>
@@ -119,7 +119,7 @@
           <input name="mobile" inputmode="tel" autocomplete="tel" placeholder="شمارهٔ موبایل" dir="ltr" required aria-label="شمارهٔ موبایل">
           <button class="btn-ic btn-ic--pink btn-ic--sm" type="submit">دریافت کد ورود</button>
         </form>
-        <p class="aff-access__alt mb-0">قبلاً ثبت‌نام کرده‌اید؟ <a href="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
+        <p class="aff-access__alt mb-0">قبلاً ثبت‌نام کرده‌اید؟ <a href="/my-account/login/" data-go="/my-account/login/?next=/my-account/affiliate/">ورود به پنل همکاری</a></p>
       {% else %}
       <h2 id="joinH">ثبت‌نام همکاری در فروش</h2>
       <form method="post" novalidate>{% csrf_token %}

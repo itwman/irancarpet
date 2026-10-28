@@ -6,7 +6,7 @@
     {% include "accounts/_aside.html" %}
     <section class="auth2__card">
       <h1>کد را وارد کنید</h1>
-      <p class="auth2__lead">کد ۵ رقمی به <strong dir="ltr">{{ mobile|fa_num }}</strong> پیامک شد. <a href="/my-account/login/?next={{ next|urlencode }}">ویرایش شماره</a></p>
+      <p class="auth2__lead">کد ۵ رقمی به <strong dir="ltr">{{ mobile|fa_num }}</strong> پیامک شد. <a href="/my-account/login/" data-go="/my-account/login/?next={{ next|urlencode }}">ویرایش شماره</a></p>
       {% if error %}<div class="alert-ic" role="alert">{{ error }}</div>{% endif %}
       {% if dev_otp %}<div class="dev-code">نسخهٔ آزمایشی؛ پیامک واقعی فرستاده نشد. کد: <strong>{{ dev_otp|fa_num }}</strong></div>{% endif %}
       <form method="post" id="otpForm" novalidate>{% csrf_token %}

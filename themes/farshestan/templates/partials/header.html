@@ -24,7 +24,7 @@
     </div>
     <div class="hdr-actions">
       {% if user.is_authenticated %}<a class="btn-login d-only" href="/my-account/" rel="nofollow"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-user"/></svg>حساب من</a>
-      {% else %}<a class="btn-login d-only" href="/my-account/login/?next={{ request.path|urlencode }}" rel="nofollow"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-user"/></svg>ورود | ثبت‌نام</a>{% endif %}
+      {% else %}<a class="btn-login d-only" href="/my-account/login/" data-go="/my-account/login/?next={{ request.path|urlencode }}" rel="nofollow"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-user"/></svg>ورود | ثبت‌نام</a>{% endif %}
       <a class="icon-btn d-only" href="/my-account/wishlist/" rel="nofollow" aria-label="علاقه‌مندی‌ها"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></a>
       <a class="icon-btn" href="/cart/" rel="nofollow" id="cartBtn" aria-label="سبد خرید{% if cart_count %}، {{ cart_count|fa_num }} کالا{% else %}، خالی{% endif %}"><svg class="ic" aria-hidden="true"><use href="#i-cart"/></svg>{% if cart_count %}<span class="count">{{ cart_count|fa_num }}</span>{% endif %}</a>
     </div>
