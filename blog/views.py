@@ -138,12 +138,26 @@ def _side(post, live):
         products = []
     kind = recommend.intent(post)
     reeds = recommend.reeds_of(post)
+    from django.core.cache import cache
+
+    tkey = f"rec2:t:{post.pk}:{int(post.modified_at.timestamp())}:{post.rec_category_id}:{post.rec_tag_id}"
+    topic = cache.get(tkey)
+    if topic is None:
+        try:
+            topic = recommend.topic_link(post) or {}
+            if not topic and reeds:
+                url = recommend.reeds_url(reeds)
+                topic = {"url": url, "more": f"همهٔ فرش‌های {reeds} شانه"} if url else {}
+        except Exception:  # noqa: BLE001
+            topic = {}
+        cache.set(tkey, topic, 3600)
     inline = ""
     # ردیف فرش وسط مقاله فقط در مقاله‌های بلند و بدون جدول قیمت زنده (که خودش پیشنهاد خرید دارد)
     if products[4:7] and not live and len(post.content or "") > 6000:
         inline = render_to_string("blog/_inline_products.html", {"products": products[4:7], "reeds": reeds})
     end = products[7:11] if len(products) >= 9 else products[:4]
-    return {"rec_side": products[:4], "rec_products": end, "rec_kind": kind, "rec_reeds": reeds, "aff_box": _affiliate_box(), "inline": inline}
+    return {"rec_side": products[:4], "rec_products": end, "rec_kind": kind, "rec_reeds": reeds, "rec_topic": topic,
+            "aff_box": _affiliate_box(), "inline": inline}
 
 
 def _insert_inline(content, block):

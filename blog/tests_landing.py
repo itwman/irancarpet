@@ -239,10 +239,13 @@ class BlogSearchAndRecsTests(TestCase):
         self.assertIn("در فرش‌ها", html)
 
     def test_post_has_sidebar_recs_and_affiliate_for_learning_posts(self):
+        from catalog.models import Category
+
+        c1200 = Category.objects.create(name="فرش 1200 شانه", slug="c-1200")  # پیوند «همهٔ فرش‌های ۱۲۰۰ شانه» به دستهٔ واقعی
         html = self.client.get("/history/").content.decode()
         self.assertIn('action="/blog/search/"', html)
         self.assertIn("فرش 1200 شانه نقشه", html)
-        self.assertIn("/product-category/carpet-1200-reeds/", html)
+        self.assertIn(f'href="{c1200.get_absolute_url()}"', html)
 
     def test_product_search_shows_article_hits(self):
         html = self.client.get("/search/", {"q": "تراکم"}).content.decode()

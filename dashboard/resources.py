@@ -744,6 +744,7 @@ register(Resource(
     fieldsets=[("نوشته", ["title", "slug", "content", "excerpt"], "main"),
                ("انتشار", ["status", "published_at", "author_name"], "side"),
                ("دسته و برچسب", ["primary_category", "categories", "tags"], "side"),
+               ("فرش‌های پیشنهادی کنار و پایین مقاله", ["rec_category", "rec_tag"], "side"),
                ("تصویر شاخص", ["image"], "side"), SEO],
     view_url=lambda o: o.get_absolute_url(),
 ))

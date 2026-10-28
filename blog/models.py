@@ -74,6 +74,11 @@ class Post(SeoFields):
     tags = models.ManyToManyField(BlogTag, related_name="posts", blank=True, verbose_name="برچسب‌ها")
     status = models.CharField("وضعیت", max_length=20, choices=PublishStatus.choices, default=PublishStatus.PUBLISH, db_index=True)
     author_name = models.CharField("نویسنده", max_length=200, blank=True)
+    rec_category = models.ForeignKey("catalog.Category", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                     verbose_name="فرش‌های پیشنهادی از دستهٔ",
+                                     help_text="خالی = خودکار از عنوان مقاله (مثل «موکا» ← دستهٔ فرش موکا)")
+    rec_tag = models.ForeignKey("catalog.ProductTag", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                verbose_name="یا از برچسب")
     views = models.PositiveIntegerField("بازدید", default=0)
     published_at = models.DateTimeField("تاریخ انتشار", default=timezone.now, db_index=True)
     modified_at = models.DateTimeField("آخرین ویرایش", default=timezone.now)
