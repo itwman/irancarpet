@@ -216,6 +216,12 @@ class GscLegacyTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
         self.assertEqual(self.loc("/carpets-price-list/فرش-33/"), (301, "/carpets-price-list/"))
         self.assertEqual(self.loc("/brand/artamis-carpet/")[0], 301)
         self.assertIn(self.loc("/page/27/"), [(301, "/blog/"), (301, "/blog/page/27/")])
+        from catalog.models import Brand
+
+        Brand.objects.create(name="پاتریس", slug="patris")
+        self.assertEqual(self.loc("/برند/patris/page/1/"), (301, "/brand/patris/"))          # یک ۳۰۱ مستقیم، نه زنجیره
+        self.assertEqual(self.loc("/brand/patris/page/1/"), (301, "/brand/patris/"))
+        self.assertEqual(self.loc("/product/فرش-1200-شانه-نقشه-ناموجود-زمینه-کرم/"), (301, self.cat.get_absolute_url()))
 
     def test_thin_blog_tag_noindex(self):
         from blog.models import BlogTag

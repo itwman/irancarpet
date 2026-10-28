@@ -63,6 +63,10 @@ def paged_url(base, page, query):
 def product_listing(request, base_qs, *, page, path, meta, heading, intro="", crumbs=(), archive=None, template="catalog/product_list.html",
                     extra=None, relevance=False):
     page = int(page or 1)
+    if page < 2 and "/page/" in request.path:  # /brand/x/page/1/ تکراری صفحهٔ اول است
+        from django.http import HttpResponsePermanentRedirect
+
+        return HttpResponsePermanentRedirect(path + (f"?{request.GET.urlencode()}" if request.GET else ""))
     base_qs = base_qs.published()
     qs = base_qs
     g = request.GET

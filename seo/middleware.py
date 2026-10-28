@@ -60,6 +60,14 @@ class RedirectFallbackMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
+        if response.status_code == 301 and request.method in ("GET", "HEAD") and response.get("Location"):
+            # ۳۰۱ خود سایت (مثل /x/page/1/ ← /x/) اگر به نشانیِ ریدایرکت‌شوندهٔ دیگری برسد، یک‌جا به مقصد نهایی
+            loc = response["Location"]
+            if not getattr(request, "_final_probe", False) and urlsplit(loc).netloc in ("", request.get_host()):
+                end = self.final(request, loc)
+                if end != loc:
+                    return HttpResponsePermanentRedirect(end)
+            return response
         if response.status_code != 404:
             return response
         source = Redirect.normalize(request.path)
@@ -75,14 +83,15 @@ class RedirectFallbackMiddleware:
                 target = re.sub(redirect.source, redirect.target, source)
             if request.META.get("QUERY_STRING") and "?" not in target:
                 target += "?" + request.META["QUERY_STRING"]
-            cls = HttpResponsePermanentRedirect if redirect.status_code == 301 else HttpResponseRedirect
-            return cls(target)
+            if redirect.status_code == 301:
+                return HttpResponsePermanentRedirect(self.final(request, target))
+            return HttpResponseRedirect(target)
         if self.GONE.match(unquote(request.path)):
             return HttpResponseGone()
         if request.method in ("GET", "HEAD"):
             target = self.legacy_target(request, source)
             if target:
-                return HttpResponsePermanentRedirect(target)
+                return HttpResponsePermanentRedirect(self.final(request, target))
         self.log(request, source)
         return response
 
@@ -103,6 +112,28 @@ class RedirectFallbackMiddleware:
     ]
     POST_PARENT = re.compile(r"^(/[^/]+)/[^/]+/?$")  # /نوشته/چیز-اضافه/ ← /نوشته/ (فقط اگر نوشته باشد)
     GONE = re.compile(r"^/(?:\d{5,}|.*\*.*)/?$")      # فقط‌عدد (لینک اسپم) یا ستاره‌دار: هیچ‌وقت صفحه نبوده‌اند
+
+    def final(self, request, target, hops=3):
+        """زنجیرهٔ ریدایرکت یک‌جا: /برند/x/page/1/ → /برند/x/ → /brand/x/ می‌شود یک ۳۰۱ مستقیم به /brand/x/."""
+        seen = {request.path}
+        for _ in range(hops):
+            parts = urlsplit(target)
+            if parts.netloc not in ("", request.get_host()) or parts.path in seen:
+                return target
+            seen.add(parts.path)
+            sub = copy.copy(request)
+            sub.path = sub.path_info = parts.path
+            sub.GET = request.GET.copy()
+            sub._final_probe = True
+            try:
+                resp = self(sub)
+            except Exception:  # noqa: BLE001
+                return target
+            if resp.status_code in (301, 302) and resp.get("Location"):
+                target = resp["Location"]
+                continue
+            return target
+        return target
 
     @staticmethod
     def normalize_path(path):
@@ -170,6 +201,8 @@ class RedirectFallbackMiddleware:
             target = self.truncated(b)
             if target:
                 return target
+        if self._product_exists(path if path.endswith("/") else path + "/"):
+            return None  # فرش پیش‌نویس یا در انتظار بررسی: حذف نشده، به جای دیگری فرستاده نمی‌شود
         for b in bases:  # فرش حذف‌شده ← همان نقشه؛ دستهٔ شانهٔ قدیمی ← دستهٔ همان شانه؛ برند با املای نزدیک
             for fn in (self.same_design, self.reeds_page, self.near_brand):
                 cand = fn(b)
@@ -180,11 +213,13 @@ class RedirectFallbackMiddleware:
                         return target
         return None
 
-    REEDS = re.compile(r"(?:^|[/-])(500|700|1000|1200|1500)-?(?:reeds?|shane|شانه)(?:[-/]|$)")
+    REEDS = re.compile(r"(?:^|[/-])(500|700|1000|1200|1500)-?(?:reeds?|shane|شانه)(?:[-/]|$)")  # فرش حذف‌شده‌ای که نقشه‌اش هم نیست ← دستهٔ شانه‌اش
 
     @staticmethod
     def same_design(path):
         """/product/فرش-1200-شانه-گل-برجسته-نقشه-بید-مجنون-زمین/ (حذف‌شده) ← فرش منتشرشدهٔ دیگری از نقشهٔ «بید مجنون»."""
+        from django.db.models import Q
+
         from catalog.models import Product
 
         m = re.match(r"^/product/[^/]*?نقشه-([^/]+?)/?$", path)
@@ -196,7 +231,8 @@ class RedirectFallbackMiddleware:
             name = " ".join(words[:n])
             if len(name) < 3:
                 continue
-            qs = Product.objects.published().filter(design_name__iexact=name).exclude(stock_status="outofstock")
+            qs = Product.objects.published().filter(Q(design_name__iexact=name) | Q(title__contains=f"نقشه {name} "))
+            qs = qs.exclude(stock_status="outofstock") if qs.exclude(stock_status="outofstock").exists() else qs
             if reeds:
                 hit = qs.filter(title__contains=reeds.group(1)).order_by("-views").first()
                 if hit:
@@ -210,7 +246,7 @@ class RedirectFallbackMiddleware:
         """/product-category/1200-reeds-simple/ یا /carpet-1200-reeds/ ← دستهٔ «فرش ۱۲۰۰ شانه» (یا صفحهٔ شانهٔ ۱۲۰۰)."""
         from catalog.models import AttributeTerm, Category
 
-        if not (path.startswith("/product-category/") or path.count("/") == 2):
+        if not (path.startswith(("/product-category/", "/product/")) or path.count("/") == 2):
             return None
         m = self.REEDS.search(path)
         if not m:
@@ -259,6 +295,13 @@ class RedirectFallbackMiddleware:
         if not hits:
             hits = list(Page.objects.filter(status="publish", slug__startswith=prefix).exclude(slug=prefix)[:2])
         return hits[0].get_absolute_url() if len(hits) == 1 else None
+
+    @staticmethod
+    def _product_exists(path):
+        from catalog.models import Product
+
+        m = re.match(r"^/product/([^/]+)/?$", path)
+        return bool(m) and Product.objects.filter(slug=m.group(1)).exists()
 
     @staticmethod
     def _is_page(path):
