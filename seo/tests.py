@@ -174,3 +174,17 @@ class HomeDirectTests(TestCase):
         self.assertIn("خرید مستقیم فرش از کارخانه کاشان", t)
         self.assertIn('"FAQPage"', t)
         self.assertIn("ایران کارپت خود کارخانه است یا واسطه؟", t)
+
+
+class HomePageDuplicateTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
+    """برگهٔ «خانه»ی وردپرس (/home/) به صفحهٔ اول ۳۰۱ می‌شود و در نقشهٔ سایت نیست."""
+
+    def test_home_slug_redirects(self):
+        from blog.models import Page
+
+        Page.objects.create(title="ایران کارپت", slug="home", content="درباره ایران کارپت", status="publish")
+        r = self.client.get("/home/")
+        self.assertEqual((r.status_code, r["Location"]), (301, "/"))
+        from seo.sitemaps import sections
+
+        self.assertFalse(any(p.slug == "home" for p in sections()["page"][0]))

@@ -23,7 +23,8 @@ def sections():
     """نام → (queryset، تابع ساخت آیتم، صفحه‌بندی؟)"""
     out = {
         "post": (Post.objects.published().exclude(robots__contains="noindex").select_related("image").order_by("-modified_at"), True),
-        "page": (Page.objects.filter(status="publish").exclude(robots__contains="noindex").exclude(template__in=["cart", "checkout", "account", "tracking"]).order_by("menu_order"), False),
+        "page": (Page.objects.filter(status="publish").exclude(robots__contains="noindex").exclude(template__in=["cart", "checkout", "account", "tracking", "home"])
+                 .exclude(parent=None, slug__in=["home", "homepage", "front-page", "خانه", "صفحه-اصلی"]).order_by("menu_order"), False),
         "product": (Product.objects.published().exclude(robots__contains="noindex").select_related("image").prefetch_related("images__media").order_by("-modified_at"), True),
         "category": (BlogCategory.objects.annotate(n=Count("posts")).filter(n__gt=0), False),
         "product_brand": (Brand.objects.filter(wp_id__isnull=False).annotate(n=Count("products")).filter(n__gt=0), False),

@@ -26,6 +26,8 @@ REVIEW_SKIP = ("؟", "?", "موجود", "لینک", "نقص", "ایراد", "م�
 
 POOL_TOP, POOL_NEW, HOME_PER_REEDS = 24, 8, 4
 
+HOME_SLUGS = ("home", "homepage", "front-page", "خانه", "صفحه-اصلی")
+
 
 def _design(p):
     """نام نقشه بدون رنگ («فرش شاه پسند زمینه سرمه‌ای» ← «فرش شاه پسند»)."""
@@ -288,7 +290,8 @@ def resolve(request, path):
     if page:
         if page.template == "shop":
             return catalog_views.shop(request, page_num, page)
-        if page.template == "home":
+        if page.template == "home" or (page.parent_id is None and page.slug in HOME_SLUGS):
+            # برگهٔ «خانه»ی وردپرس (/home/) صفحهٔ دوم و خالیِ صفحهٔ اول است؛ گوگل آن را با عنوان «دریافت هدیه» نشان می‌داد
             return HttpResponsePermanentRedirect("/")
         if page.template == "price_list" and page_num == 1:
             from pricing.views import price_list
