@@ -232,6 +232,23 @@ def suspect(request, d):
     ch = str(d.get("ch") or "")
     if m and ch.isdigit() and abs(int(ch) - int(m.group(1))) > 1:
         return True
+    if "ev" in d:  # نشانه‌های تازه (از آبان ۱۴۰۵)؛ صفحه‌های قدیمیِ در حافظهٔ مرورگر این‌ها را نمی‌فرستند
+        desktop = "Android" not in ua and "Mobile" not in ua
+        # کروم/اج/اپرا/بریو رومیزی از نسخهٔ ۹۰ همیشه navigator.userAgentData دارند؛ نبودنش یعنی نام مرورگر جعلی است
+        if desktop and m and int(m.group(1)) >= 90 and not ch:
+            return True
+        # کارت گرافیک نرم‌افزاری (SwiftShader/llvmpipe): مرورگر خودکار روی سرور مجازی
+        gl = str(d.get("gl") or "")
+        if "SwiftShader" in gl or "llvmpipe" in gl:
+            return True
+        # منطقهٔ زمانی بیرون از ایران + حرکت ماوس کمتر از ۰٫۳ ثانیه بعد از باز شدن صفحه + زبان بدون فارسی
+        try:
+            t = int(d.get("t") or 0)
+        except (TypeError, ValueError):
+            t = 0
+        tz, lg = str(d.get("tz") or ""), str(d.get("lg") or "")
+        if tz and tz != "Asia/Tehran" and d.get("ev") == "pointermove" and t < 300 and "fa" not in lg:
+            return True
     return "h" in d and str(d.get("h")) != "1"
 
 

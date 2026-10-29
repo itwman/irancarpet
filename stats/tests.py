@@ -183,9 +183,36 @@ class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
 
         from stats.models import Probe
 
-        self.post(h=1, ev="pointermove", t=1500, tz="Asia/Tehran", lg="fa-IR,fa", sc="1920x1080", hc=8, gl="ANGLE (Intel)")
+        self.post(h=1, ch="141", ev="pointermove", t=1500, tz="Asia/Tehran", lg="fa-IR,fa", sc="1920x1080", hc=8, gl="ANGLE (Intel)")
         self.assertEqual(Probe.objects.count(), 7)
         self.assertTrue(Probe.objects.filter(ua="W141", ev="pointermove", t=1500, hc=8, sus=False).exists())
         out = StringIO()
         call_command("bot_probe", stdout=out)
         self.assertIn("direct=7", out.getvalue())
+
+
+class BotSignalTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
+    """نشانه‌های ربات‌های بازدید آبان ۱۴۰۵: userAgentData نیست، SwiftShader، منطقهٔ زمانی شانگهای با ماوس آنی."""
+
+    WIN = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+    AND = "Mozilla/5.0 (Linux; Android 13; SM-A536E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+    IPH = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+
+    def check(self, ua, **d):
+        from django.test import RequestFactory
+
+        from stats.track import suspect
+
+        return suspect(RequestFactory().post("/t/", HTTP_USER_AGENT=ua), {"h": 1, **d})
+
+    def test_signals(self):
+        human = {"ev": "pointermove", "t": 1800, "tz": "Asia/Tehran", "lg": "fa-IR,fa,en-US"}
+        self.assertFalse(self.check(self.WIN, ch="116", **human))
+        self.assertFalse(self.check(self.AND, **{**human, "ev": "touchstart"}))          # موبایل بی‌userAgentData (وب‌ویو برنامه‌ها)
+        self.assertFalse(self.check(self.IPH, **{**human, "ev": "touchstart"}))
+        self.assertFalse(self.check(self.WIN, ch="116", **{**human, "tz": "Europe/Berlin", "lg": "de-DE,fa"}))  # ایرانی خارج از کشور
+        self.assertFalse(self.check(self.WIN, ch=""))                                    # صفحهٔ قدیمی بی‌ev
+        bot = {"ev": "pointermove", "t": 120, "tz": "Asia/Shanghai", "lg": "en-US", "sc": "1280x1200"}
+        self.assertTrue(self.check(self.WIN, ch="", **bot))                              # کروم ۱۱۶ بی‌userAgentData
+        self.assertTrue(self.check(self.WIN, ch="116", **bot))                           # شانگهای + ماوس آنی + بی‌فارسی
+        self.assertTrue(self.check(self.WIN, ch="116", **{**human, "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))"}))
