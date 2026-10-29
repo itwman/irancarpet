@@ -92,6 +92,18 @@ class DailyProduct(models.Model):
     carts = models.PositiveIntegerField(default=0)
 
 
+class BotDay(models.Model):
+    """بازدیدهای مشکوک (ربات) که در آمار شمرده نشدند: صفحه‌ای که بدون هیچ حرکت ماوس، اسکرول، لمس یا کلید
+    بسته یا رها شد، یا مرورگر خودکار (webdriver/Headless) بود. فقط شمارش روزانهٔ هر صفحه؛ هیچ اطلاعات دیگری."""
+
+    day = models.DateField(db_index=True)
+    path = models.CharField(max_length=255)
+    n = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = [("day", "path")]
+
+
 class RolledDay(models.Model):
     day = models.DateField(unique=True)
     done_at = models.DateTimeField(auto_now_add=True)

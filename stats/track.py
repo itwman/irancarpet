@@ -222,6 +222,29 @@ def _same_origin(request):
 
 @csrf_exempt
 @require_POST
+def suspect(request, d):
+    """بازدید بی‌نشانهٔ انسان: صفحه بدون هیچ حرکت ماوس/اسکرول/لمس/کلید رها شد (h=0)، یا مرورگر خودکار بود.
+    صفحه‌های قدیمیِ در حافظهٔ مرورگر که هنوز h نمی‌فرستند (چند دقیقهٔ اول بعد از به‌روزرسانی) مثل قبل شمرده می‌شوند."""
+    ua = request.META.get("HTTP_USER_AGENT", "")
+    if str(d.get("wd") or "") == "1" or "Headless" in ua:
+        return True
+    return "h" in d and str(d.get("h")) != "1"
+
+
+def count_bot(path):
+    from django.db.models import F
+
+    from .models import BotDay
+
+    day = timezone.localdate()
+    path = path[:255]
+    if not BotDay.objects.filter(day=day, path=path).update(n=F("n") + 1):
+        try:
+            BotDay.objects.create(day=day, path=path, n=1)
+        except Exception:  # noqa: BLE001  — هم‌زمان ساخته شد
+            BotDay.objects.filter(day=day, path=path).update(n=F("n") + 1)
+
+
 def beacon(request):
     """POST /t/ با {p: مسیر و پرسمان، r: ارجاع‌دهنده، pid: شناسهٔ فرش}؛ پاسخ ۲۰۴."""
     resp = HttpResponse(status=204)
@@ -237,6 +260,12 @@ def beacon(request):
     page = str(d.get("p") or "")[:600]
     path = unquote(urlsplit(page).path or "/")
     if not path.startswith("/") or path.startswith(SKIP):
+        return resp
+    if suspect(request, d):
+        try:
+            count_bot(path)
+        except Exception:  # noqa: BLE001
+            log.exception("stats bot")
         return resp
     try:
         pid = int(d.get("pid") or 0) or None

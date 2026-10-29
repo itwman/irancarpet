@@ -54,6 +54,11 @@
   </div>
 
   <div class="edit__side">
+    <section class="card-p"><h2>بازدید مشکوک (ربات)</h2>
+      <p class="small muted mb-2">صفحه‌هایی که بدون هیچ حرکت ماوس، اسکرول، لمس یا کلید باز و رها شدند، یا مرورگر خودکار بودند. در هیچ عدد دیگری از این گزارش شمرده نشده‌اند.</p>
+      <div class="kv"><span>در این بازه</span><strong>{{ r.bots.total|fa_num }} بازدید</strong></div>
+      {% for b in r.bots.top %}<div class="kv"><span class="small" dir="auto">{{ b.path|truncatechars:42 }}</span><strong>{{ b.n|fa_num }}</strong></div>{% endfor %}
+    </section>
     <section class="card-p"><h2>سایت‌هایی که شما را معرفی کرده‌اند</h2>
       {% for s in r.referrals %}<div class="kv"><span class="ltr-num">{{ s.name }}</span><strong>{{ s.visits|fa_num }} ورود{% if s.orders %} · {{ s.orders|fa_num }} خرید{% endif %}</strong></div>
       {% empty %}<p class="muted">هنوز ورودی از سایت دیگری نیامده.</p>{% endfor %}
@@ -61,6 +66,7 @@
     <section class="card-p"><h2>راهنما</h2>
       <p class="small muted mb-2"><strong>ورود</strong> یعنی یک نشست؛ اگر کسی ۳۰ دقیقه کاری نکند و برگردد، ورود تازه حساب می‌شود.</p>
       <p class="small muted mb-2"><strong>خرید و فروش</strong> سفارش‌های پرداخت‌شده یا در انتظار بررسی اقساط است که در این بازه ثبت شده‌اند؛ هر سفارش به منبع نشست خریدار، یا اگر مستقیم آمده بود، به آخرین منبع غیرمستقیم ۳۰ روز گذشته‌اش نسبت داده می‌شود.</p>
+      <p class="small muted mb-2"><strong>بازدید</strong> فقط وقتی شمرده می‌شود که بازدیدکننده کاری کند (اسکرول، حرکت ماوس، لمس یا کلید)؛ صفحه‌ای که بی‌هیچ حرکتی رها شود «مشکوک» حساب می‌شود.</p>
       <p class="small muted mb-0">ریز بازدیدها ۴۵ روز نگه داشته و بعد در خلاصهٔ روزانه جمع می‌شود. نشانی IP و اطلاعات شخصی ذخیره نمی‌شود.</p>
     </section>
   </div>

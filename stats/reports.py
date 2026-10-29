@@ -183,8 +183,19 @@ def _traffic(start, end):
               "conv": _rate(orders.exclude(src="phone").count(), t["visits"])},  # فروش تلفنی بازدیدی پشتش ندارد
         "series": series, "groups": group_rows, "sources": rows[:60], "utm": utm_rows[:40], "pages": page_rows,
         "products": product_rows, "referrals": [r for r in rows if r["src"] == "referral"][:30],
+        "bots": _bots(start, end),
         "approx_visitors": bool(old),
     }
+
+
+def _bots(start, end):
+    """بازدیدهای مشکوکِ کنارگذاشته (بی‌هیچ حرکت ماوس، اسکرول یا لمس) و صفحه‌هایی که بیشتر هدفشان بودند."""
+    from .models import BotDay
+
+    qs = BotDay.objects.filter(day__range=(start, end))
+    total = qs.aggregate(n=Sum("n"))["n"] or 0
+    top = list(qs.values("path").annotate(n=Sum("n")).order_by("-n")[:8])
+    return {"total": total, "top": top}
 
 
 # ------------------------------------------------------------------ کمپین پیامکی

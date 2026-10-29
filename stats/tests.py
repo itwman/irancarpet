@@ -131,3 +131,36 @@ class CampaignTrackingTests(TestCase):
         self.client.force_login(admin)
         self.assertContains(self.client.get(f"/panel/crm/campaigns/{c.pk}/report/"), "کلیک‌کننده‌ها")
         self.assertContains(self.client.get("/panel/crm-campaigns/"), f"/panel/crm/campaigns/{c.pk}/report/")
+
+
+class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
+    """بازدید بی‌نشانهٔ انسان (h=0) یا مرورگر خودکار در آمار نمی‌آید و در «بازدید مشکوک» شمرده می‌شود."""
+
+    UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
+    def post(self, **d):
+        import json
+
+        return self.client.post("/t/", json.dumps({"p": "/carpets/x/", "r": "", **d}), content_type="text/plain",
+                                HTTP_USER_AGENT=self.UA, HTTP_ORIGIN="http://testserver", HTTP_REFERER="http://testserver/carpets/x/")
+
+    def test_human_counted_bot_separated(self):
+        from django.core.cache import cache
+
+        from stats.models import BotDay, Hit
+
+        cache.clear()
+        self.post(h=0)
+        self.post(h=1, wd=1)
+        self.assertEqual(Hit.objects.count(), 0)
+        self.assertEqual(BotDay.objects.get().n, 2)
+        self.post(h=1)
+        self.assertEqual(Hit.objects.filter(kind="v").count(), 1)
+        self.client.cookies.clear()
+        self.post()                                     # صفحهٔ قدیمی بی‌فیلد h: مثل قبل
+        self.assertEqual(Hit.objects.filter(kind="v").count(), 2)
+        from stats.reports import _bots
+        from django.utils import timezone
+
+        d = timezone.localdate()
+        self.assertEqual(_bots(d, d)["total"], 2)

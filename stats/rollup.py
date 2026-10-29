@@ -49,6 +49,9 @@ def run(now=None):
     for d in list(days):
         roll_day(d)
         done += 1
+    from .models import BotDay
+
+    BotDay.objects.filter(day__lt=today - timezone.timedelta(days=180)).delete()
     cutoff = today - timezone.timedelta(days=RETENTION_DAYS)
     old = Hit.objects.filter(day__lt=cutoff, day__in=RolledDay.objects.values("day"))
     if old.exists():
