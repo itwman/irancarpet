@@ -152,8 +152,14 @@ class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
         cache.clear()
         self.post(h=0)
         self.post(h=1, wd=1)
+        self.post(h=1, ch="142")                        # سرآیند کروم ۱۴۱، خود مرورگر ۱۴۲: یک نسخه فرق مجاز است
+        self.assertEqual(Hit.objects.count(), 1)
+        Hit.objects.all().delete()
+        self.client.cookies.clear()
+        cache.clear()
+        self.post(h=1, ch="120")                        # نام مرورگر جعلی
         self.assertEqual(Hit.objects.count(), 0)
-        self.assertEqual(BotDay.objects.get().n, 2)
+        self.assertEqual(BotDay.objects.get().n, 3)
         self.post(h=1)
         self.assertEqual(Hit.objects.filter(kind="v").count(), 1)
         self.client.cookies.clear()
@@ -163,4 +169,4 @@ class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
         from django.utils import timezone
 
         d = timezone.localdate()
-        self.assertEqual(_bots(d, d)["total"], 2)
+        self.assertEqual(_bots(d, d)["total"], 3)

@@ -7,6 +7,7 @@
   icc  کلیک پیوند شخصی کمپین پیامکی، ۷ روز
 """
 import json
+import re
 import logging
 import secrets
 import threading
@@ -227,6 +228,11 @@ def suspect(request, d):
     صفحه‌های قدیمیِ در حافظهٔ مرورگر که هنوز h نمی‌فرستند (چند دقیقهٔ اول بعد از به‌روزرسانی) مثل قبل شمرده می‌شوند."""
     ua = request.META.get("HTTP_USER_AGENT", "")
     if str(d.get("wd") or "") == "1" or "Headless" in ua:
+        return True
+    # نام مرورگرِ جعلی: سرآیند می‌گوید «کروم ۱۰۵» ولی خود مرورگر (navigator.userAgentData) نسخهٔ دیگری است
+    m = re.search(r"Chrome/(\d+)", ua)
+    ch = str(d.get("ch") or "")
+    if m and ch.isdigit() and abs(int(ch) - int(m.group(1))) > 1:
         return True
     return "h" in d and str(d.get("h")) != "1"
 
