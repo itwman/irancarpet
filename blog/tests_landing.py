@@ -242,6 +242,9 @@ class BlogSearchAndRecsTests(TestCase):
         from catalog.models import Category
 
         c1200 = Category.objects.create(name="فرش 1200 شانه", slug="c-1200")  # پیوند «همهٔ فرش‌های ۱۲۰۰ شانه» به دستهٔ واقعی
+        from django.core.cache import cache
+
+        cache.clear()  # موضوع مقاله یک ساعت کش می‌شود
         html = self.client.get("/history/").content.decode()
         self.assertIn('action="/blog/search/"', html)
         self.assertIn("فرش 1200 شانه نقشه", html)
