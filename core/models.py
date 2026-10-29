@@ -140,6 +140,10 @@ class SiteSettings(models.Model):
         "core.Media", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="تصویر نماد (فوتر)",
         help_text="تصویر سبک از نماد اعتماد که در پایین همهٔ صفحه‌ها می‌آید و به برگهٔ مجوزها لینک می‌شود.",
     )
+    enamad_url = models.URLField(
+        "نشانی استعلام اینماد", blank=True, max_length=300,
+        help_text="صفحهٔ تأیید فروشگاه در trustseal.enamad.ir (مثل https://trustseal.enamad.ir/?id=…&code=…). "
+                  "به‌صورت پیوند متنی در برگهٔ مجوزها و llms.txt می‌آید تا گوگل و دستیارهای هوش مصنوعی بتوانند اعتبار نماد را بررسی کنند.")
     trust_html = models.TextField(
         "کد نماد اعتماد (اینماد و...)", blank=True,
         help_text="کدی که اینماد داده را کامل اینجا بچسبانید. فقط در برگهٔ مجوزها (/license/) بار می‌شود تا سرعت سایت کم نشود.",
@@ -245,6 +249,16 @@ class SiteSettings(models.Model):
                 errors[field] = f"این پیوند باید نشانی {hosts[0]} باشد."
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def enamad_verify_url(self):
+        """نشانی استعلام اینماد: از فیلد پنل، وگرنه از داخل کد نماد."""
+        import re
+
+        if self.enamad_url:
+            return self.enamad_url
+        m = re.search(r"https?://trustseal\.enamad\.ir/\?id=\d+&(?:amp;)?code=[\w-]+", self.trust_html or "")
+        return m.group(0).replace("&amp;", "&") if m else ""
 
     def same_as(self, extra=()):
         """پیوندهای sameAs بدون تکرار (نشانی با و بدون / آخر یکی حساب می‌شود)."""

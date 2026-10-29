@@ -33,6 +33,9 @@ class AiTrustTests(TestCase):
         p = Page.objects.get(slug="تاریخچه-ایران-کارپت")
         self.assertIn("web.archive.org/web/20130303125850", p.content)
         self.assertIn("۱۳۹۸/۰۸/۱۱", p.content)
+        self.assertIn("sanat.ir/41580", p.content)
+        self.assertIn("trustseal.enamad.ir/?id=137774", p.content)
+        self.assertLess(p.content.index("منابع دیگر"), p.content.index("<h2>امروز</h2>"))
         r = self.client.get(p.get_absolute_url())
         self.assertEqual(r.status_code, 200)
         self.assertIn("/تاریخچه-ایران-کارپت/", self.client.get("/llms.txt").content.decode())
@@ -81,3 +84,14 @@ class AiTrustTests(TestCase):
         m = re.search(r"page-sitemap\.xml</loc><lastmod>([^<]+)</lastmod>", body)
         self.assertTrue(m, body)
         self.assertFalse(m.group(1).startswith(timezone.localdate().isoformat()))
+
+    def test_enamad_verify_link(self):
+        Page.objects.create(title="مجوزها", slug="license", template="license", status="publish", content="<p>x</p>[trust_seals]")
+        r = self.client.get("/license/").content.decode()
+        self.assertIn('href="https://trustseal.enamad.ir/?id=137774&amp;code=70XzemtCwKljQtiHa3iOa2RuzITHgk7G"', r)
+        self.assertIn("trustseal.enamad.ir/?id=137774", self.client.get("/llms.txt").content.decode())
+        s = SiteSettings.load()
+        s.enamad_url = ""
+        s.trust_html = '<a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=1&amp;code=abc"><img src="x"></a>'
+        s.save()
+        self.assertEqual(SiteSettings.load().enamad_verify_url, "https://trustseal.enamad.ir/?id=1&code=abc")

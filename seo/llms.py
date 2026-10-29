@@ -82,6 +82,8 @@ def _build(pricelist):
         add(f"- ایمیل: {site.email}")
     if site.address:
         add(f"- نشانی: {one_line(site.address)}")
+    if site.enamad_verify_url:
+        add(f"- نماد اعتماد الکترونیکی (استعلام در سایت اینماد): {site.enamad_verify_url}")
     for k, name, link in site.follows:
         add(f"- {name}: {link}")
     add(f"- خرید آنلاین: {url}/ (افزودن به سبد، پرداخت از درگاه بانکی)")
