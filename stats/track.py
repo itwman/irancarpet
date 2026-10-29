@@ -221,8 +221,6 @@ def _same_origin(request):
     return bool(host) and host == req_host
 
 
-@csrf_exempt
-@require_POST
 def suspect(request, d):
     """بازدید بی‌نشانهٔ انسان: صفحه بدون هیچ حرکت ماوس/اسکرول/لمس/کلید رها شد (h=0)، یا مرورگر خودکار بود.
     صفحه‌های قدیمیِ در حافظهٔ مرورگر که هنوز h نمی‌فرستند (چند دقیقهٔ اول بعد از به‌روزرسانی) مثل قبل شمرده می‌شوند."""
@@ -251,6 +249,8 @@ def count_bot(path):
             BotDay.objects.filter(day=day, path=path).update(n=F("n") + 1)
 
 
+@csrf_exempt
+@require_POST
 def beacon(request):
     """POST /t/ با {p: مسیر و پرسمان، r: ارجاع‌دهنده، pid: شناسهٔ فرش}؛ پاسخ ۲۰۴."""
     resp = HttpResponse(status=204)

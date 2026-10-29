@@ -138,11 +138,18 @@ class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
 
     UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 
+    def setUp(self):
+        from django.test import Client
+
+        self.client = Client(enforce_csrf_checks=True)  # مثل مرورگر واقعی: /t/ باید بدون توکن CSRF کار کند
+
     def post(self, **d):
         import json
 
-        return self.client.post("/t/", json.dumps({"p": "/carpets/x/", "r": "", **d}), content_type="text/plain",
+        r = self.client.post("/t/", json.dumps({"p": "/carpets/x/", "r": "", **d}), content_type="text/plain",
                                 HTTP_USER_AGENT=self.UA, HTTP_ORIGIN="http://testserver", HTTP_REFERER="http://testserver/carpets/x/")
+        self.assertEqual(r.status_code, 204)
+        return r
 
     def test_human_counted_bot_separated(self):
         from django.core.cache import cache
