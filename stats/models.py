@@ -107,3 +107,21 @@ class BotDay(models.Model):
 class RolledDay(models.Model):
     day = models.DateField(unique=True)
     done_at = models.DateTimeField(auto_now_add=True)
+
+
+class Probe(models.Model):
+    """نمونهٔ تشخیصی نشانه‌های مرورگر برای جدا کردن ربات‌ها (فقط ۳ روز می‌ماند؛ بدون IP و بدون سرآیند کامل)."""
+    at = models.DateTimeField(db_index=True)
+    path = models.CharField(max_length=120, blank=True)
+    ref = models.CharField(max_length=10, blank=True)       # direct/search/internal/social/...
+    ua = models.CharField(max_length=12, blank=True)        # «W133»: سیستم‌عامل + نسخهٔ کروم سرآیند
+    ch = models.CharField(max_length=6, blank=True)         # نسخهٔ واقعی مرورگر (userAgentData)
+    h = models.CharField(max_length=1, blank=True)
+    ev = models.CharField(max_length=12, blank=True)        # نخستین رویداد (pointermove، touchstart، …)
+    t = models.PositiveIntegerField(default=0)              # میلی‌ثانیه تا نخستین رویداد
+    tz = models.CharField(max_length=40, blank=True)
+    lg = models.CharField(max_length=30, blank=True)
+    sc = models.CharField(max_length=12, blank=True)
+    hc = models.PositiveSmallIntegerField(default=0)
+    gl = models.CharField(max_length=80, blank=True)
+    sus = models.BooleanField(default=False)

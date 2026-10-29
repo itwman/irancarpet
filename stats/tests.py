@@ -177,3 +177,15 @@ class BotFilterTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
 
         d = timezone.localdate()
         self.assertEqual(_bots(d, d)["total"], 3)
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from stats.models import Probe
+
+        self.post(h=1, ev="pointermove", t=1500, tz="Asia/Tehran", lg="fa-IR,fa", sc="1920x1080", hc=8, gl="ANGLE (Intel)")
+        self.assertEqual(Probe.objects.count(), 7)
+        self.assertTrue(Probe.objects.filter(ua="W141", ev="pointermove", t=1500, hc=8, sus=False).exists())
+        out = StringIO()
+        call_command("bot_probe", stdout=out)
+        self.assertIn("direct=7", out.getvalue())

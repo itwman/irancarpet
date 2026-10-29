@@ -249,6 +249,29 @@ def count_bot(path):
             BotDay.objects.filter(day=day, path=path).update(n=F("n") + 1)
 
 
+def probe(request, d, path, sus):
+    """یک ردیف نمونهٔ تشخیصی (برای فرمان bot_probe)."""
+    from .models import Probe
+    from .sources import classify
+
+    ua = request.META.get("HTTP_USER_AGENT", "")
+    m = re.search(r"Chrome/(\d+)", ua)
+    os_ = "W" if "Windows" in ua else "A" if "Android" in ua else "I" if ("iPhone" in ua or "iPad" in ua) else "M" if "Mac" in ua else "L" if "Linux" in ua else "?"
+    src, _ = classify(str(d.get("r") or ""), (request.get_host().split(":")[0].lower(),))
+
+    def g(k, n):
+        return str(d.get(k) or "")[:n]
+
+    try:
+        t = min(int(d.get("t") or 0), 4_000_000)
+        hc = min(int(d.get("hc") or 0), 999)
+    except (TypeError, ValueError):
+        t = hc = 0
+    Probe.objects.create(at=timezone.now(), path=path[:120], ref=src[:10], ua=(os_ + (m.group(1) if m else ""))[:12],
+                         ch=g("ch", 6), h=g("h", 1), ev=g("ev", 12), t=max(t, 0), tz=g("tz", 40), lg=g("lg", 30),
+                         sc=g("sc", 12), hc=max(hc, 0), gl=g("gl", 80), sus=bool(sus))
+
+
 @csrf_exempt
 @require_POST
 def beacon(request):
@@ -267,7 +290,12 @@ def beacon(request):
     path = unquote(urlsplit(page).path or "/")
     if not path.startswith("/") or path.startswith(SKIP):
         return resp
-    if suspect(request, d):
+    sus = suspect(request, d)
+    try:
+        probe(request, d, path, sus)
+    except Exception:  # noqa: BLE001
+        log.exception("stats probe")
+    if sus:
         try:
             count_bot(path)
         except Exception:  # noqa: BLE001
