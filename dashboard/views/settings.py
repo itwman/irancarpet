@@ -58,7 +58,7 @@ FORMS = {
                             "email", "address", "alt_names", "founding_date", "store_name", "store_city", "store_province", "store_postal_code",
                             "store_days", "store_open", "store_close", "store_open2", "store_close2", "store_hours_note",
                             "latitude", "longitude", "map_google", "map_neshan", "map_balad",
-                            "trust_badge", "enamad_url", "trust_html", "home_about", "footer_html",
+                            "trust_badge", "enamad_url", "licenses", "trust_html", "home_about", "footer_html",
                             "feature_enabled", "feature_category", "feature_title", "feature_text", "feature_button"]),
     "shop": (ShopSettings, ["allow_full", "allow_deposit", "deposit_percent", "free_shipping_min", "checkout_note", "admin_mobiles",
                             "busy_enabled", "busy_from", "busy_to", "busy_message", "pause_enabled", "pause_from", "pause_to", "pause_message",

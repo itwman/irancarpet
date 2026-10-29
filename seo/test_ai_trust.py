@@ -89,7 +89,11 @@ class AiTrustTests(TestCase):
         Page.objects.create(title="مجوزها", slug="license", template="license", status="publish", content="<p>x</p>[trust_seals]")
         r = self.client.get("/license/").content.decode()
         self.assertIn('href="https://trustseal.enamad.ir/?id=137774&amp;code=70XzemtCwKljQtiHa3iOa2RuzITHgk7G"', r)
-        self.assertIn("trustseal.enamad.ir/?id=137774", self.client.get("/llms.txt").content.decode())
+        self.assertIn("qr.mojavez.ir/track/8260716", r)
+        self.assertIn("معتبر تا ۱۴۰۷/۰۵/۱۰", r)
+        llms = self.client.get("/llms.txt").content.decode()
+        self.assertIn("trustseal.enamad.ir/?id=137774", llms)
+        self.assertIn("qr.mojavez.ir/track/1470154", llms)
         s = SiteSettings.load()
         s.enamad_url = ""
         s.trust_html = '<a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=1&amp;code=abc"><img src="x"></a>'

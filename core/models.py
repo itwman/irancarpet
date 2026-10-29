@@ -144,6 +144,10 @@ class SiteSettings(models.Model):
         "نشانی استعلام اینماد", blank=True, max_length=300,
         help_text="صفحهٔ تأیید فروشگاه در trustseal.enamad.ir (مثل https://trustseal.enamad.ir/?id=…&code=…). "
                   "به‌صورت پیوند متنی در برگهٔ مجوزها و llms.txt می‌آید تا گوگل و دستیارهای هوش مصنوعی بتوانند اعتبار نماد را بررسی کنند.")
+    licenses = models.TextField(
+        "پروانه‌ها و مجوزها", blank=True,
+        help_text="هر خط یک مجوز: «عنوان | نشانی استعلام»؛ مثل «پروانهٔ کسب خرده‌فروشی فرش ماشینی، معتبر تا ۱۴۰۷/۰۱/۲۲ | https://qr.mojavez.ir/track/…». "
+                  "به‌صورت فهرست پیوند در برگهٔ مجوزها و llms.txt می‌آید (فقط پیوند؛ هیچ تصویر مدرکی نمایش داده نمی‌شود).")
     trust_html = models.TextField(
         "کد نماد اعتماد (اینماد و...)", blank=True,
         help_text="کدی که اینماد داده را کامل اینجا بچسبانید. فقط در برگهٔ مجوزها (/license/) بار می‌شود تا سرعت سایت کم نشود.",
@@ -249,6 +253,17 @@ class SiteSettings(models.Model):
                 errors[field] = f"این پیوند باید نشانی {hosts[0]} باشد."
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def license_links(self):
+        """[(عنوان، نشانی)] از فیلد «پروانه‌ها و مجوزها»."""
+        out = []
+        for line in (self.licenses or "").splitlines():
+            title, _, url = line.partition("|")
+            title, url = title.strip(), url.strip()
+            if title and url.startswith(("http://", "https://")):
+                out.append((title, url))
+        return out
 
     @property
     def enamad_verify_url(self):
