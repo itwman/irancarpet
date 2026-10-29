@@ -1,0 +1,10 @@
+{% load fa %}<div class="cl-row{% if r.auto %} is-auto{% endif %}">
+  <label class="cl-pick"><input type="checkbox" name="pick" value="{{ r.key }}"{% if r.auto %} checked{% endif %}>
+    <span><b>{{ r.label }}</b> {% if r.edit_url %}<a href="{{ r.edit_url }}" target="_blank" rel="noopener">{{ r.obj }}</a>{% else %}{{ r.obj }}{% endif %} <small class="muted">— {{ r.field }}</small></span></label>
+  <input type="hidden" name="old_{{ r.key }}" value="{{ r.old }}">
+  <div class="cl-cols">
+    <div class="cl-old"><small>الان</small><p>{{ r.old }}</p></div>
+    <div class="cl-new"><small>{% if r.auto %}پیشنهاد{% else %}بدون پیشنهاد؛ اگر لازم است بنویسید{% endif %}</small>
+      <textarea name="new_{{ r.key }}" class="form-control form-control-sm" rows="2" aria-label="متن تازه">{{ r.new }}</textarea></div>
+  </div>
+</div>

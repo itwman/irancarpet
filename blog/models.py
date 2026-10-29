@@ -97,6 +97,11 @@ class Post(SeoFields):
         return f"/{self.slug}/"
 
 
+# برگه‌های اضافی وردپرس که نسخهٔ دیگری از صفحهٔ اول یا فروشگاه‌اند: ۳۰۱ و بیرون از نقشهٔ سایت و llms.txt
+HOME_SLUGS = ("home", "homepage", "front-page", "خانه", "صفحه-اصلی", "__home__", "ایران-کارپت-جدید", "ایران-کارپت-1403")
+PAGE_REDIRECTS = {**{s: "/" for s in HOME_SLUGS}, "shop": "/store/"}
+
+
 class Page(SeoFields):
     wp_id = models.PositiveBigIntegerField(unique=True, null=True, blank=True, editable=False)
     title = models.CharField("عنوان", max_length=300)
@@ -131,6 +136,11 @@ class Page(SeoFields):
         if self.template == "home":
             return "/"
         return f"/{self.path}/"
+
+    @property
+    def redirect_to(self):
+        """نشانی مقصد اگر این برگه یکی از برگه‌های اضافی وردپرس باشد."""
+        return PAGE_REDIRECTS.get(self.slug) if self.parent_id is None else None
 
 
 class Comment(models.Model):

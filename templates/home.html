@@ -6,7 +6,7 @@
   <div class="container hero__grid">
     <div>
       <h1><small class="hero__kicker">خرید مستقیم فرش از کارخانه کاشان</small> <span class="w">فرش</span> <span class="w">خانه‌ات</span> <span class="w">را</span> <span class="w">گره‌به‌گره</span> <span class="w">انتخاب</span> <span class="w">کن</span></h1>
-      <p class="hero__lead">بیش از چهار هزار و هشتصد نقشهٔ فرش ماشینی، مستقیم از کارخانه‌های کاشان. قیمت هر سایز را همین‌جا می‌بینی و درِ خانه تحویل می‌گیری.</p>
+      <p class="hero__lead">{% if direct.count %}{{ direct.count|toman }} فرش ماشینی{% else %}فرش ماشینی{% endif %}، مستقیم از کارخانه‌های کاشان. قیمت هر سایز را همین‌جا می‌بینی و درِ خانه تحویل می‌گیری.</p>
       <div class="hero__cta">
         <a href="/store/" class="btn-ic btn-ic--pink">دیدن همهٔ فرش‌ها</a>
         {% if showcase %}<a href="#room" class="btn-ic btn-ic--teal">کدام سایز برای اتاقم؟</a>{% endif %}

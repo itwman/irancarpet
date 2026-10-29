@@ -64,6 +64,10 @@
     </section>
   </div>
   <div class="edit__side">
+    <section class="card-p"><h2>ادعاهای ثابت‌نشده</h2>
+      <p class="hint">«اولین فروشگاه…»، «از ۱۳۸۷»، «۱۸ سال سابقه» و نشانی ناهمسان را در کل سایت پیدا و اصلاح کنید.</p>
+      <a class="btn btn-light btn-sm" href="/panel/content-tools/claims/">بررسی ادعاها و نشانی</a>
+    </section>
     <section class="card-p"><h2>سابقهٔ تغییرها</h2>
       {% for e in edits %}<div class="kv-block"><p class="mb-1">{{ e.summary|fa_num }}</p><small class="muted">{{ e.created_at|jdate:"%Y/%m/%d %H:%M" }}{% if e.user %} · {{ e.user.get_full_name|default:e.user.username }}{% endif %}</small>
         {% if not e.undone %}<form method="post" class="d-inline" data-confirm="این تغییر برگردانده شود؟">{% csrf_token %}<input type="hidden" name="do" value="undo"><input type="hidden" name="edit" value="{{ e.pk }}"><button class="btn btn-link btn-sm p-0 ms-2" type="submit">برگرداندن</button></form>{% else %}<span class="badge-ic b-draft ms-2">برگردانده شد</span>{% endif %}</div>

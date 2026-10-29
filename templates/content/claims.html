@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}ادعاهای ثابت‌نشده{% endblock %}
+{% block content %}
+<div class="page-top"><div><a href="/panel/content-tools/" class="back">‹ ابزار محتوا</a>
+  <h1>ادعاهای ثابت‌نشده و نشانی</h1>
+  <p class="muted">سابقهٔ مستند: سایت از ۱۳۸۹، فروشگاه اینترنتی از ۱۳۹۱. ادعای بی‌سند (مثل «اولین فروشگاه» یا «از ۱۳۸۷») اعتماد گوگل و دستیارهای هوش مصنوعی را به کل متن سایت کم می‌کند.</p></div>
+</div>
+
+<form method="post" class="card-p cl" id="clForm">{% csrf_token %}
+  {% if not rows %}<p class="mb-0">چیزی پیدا نشد؛ همهٔ متن‌ها و نشانی یکدست است.</p>{% endif %}
+  {% if claims %}<h2 class="be-h">ادعاها ({{ claims|length|fa_num }} جمله)</h2>
+  <p class="hint">ردیف‌های تیک‌خورده پیشنهاد خودکار دارند. متن پیشنهادی را می‌توانید همین‌جا ویرایش کنید. ردیف بدون پیشنهاد (مثلاً «۱۳۸۷» که شاید کد نقشه باشد) تیک ندارد؛ اگر لازم است خودتان بنویسید و تیک بزنید.</p>
+  {% for r in claims %}{% include "content/_claim_row.html" %}{% endfor %}{% endif %}
+  {% if addrs %}<h2 class="be-h mt-4">نشانی ({{ addrs|length|fa_num }} جا)</h2>
+  <p class="hint">نشانی یکسان در همه‌جا: «{{ address }}»</p>
+  {% for r in addrs %}{% include "content/_claim_row.html" %}{% endfor %}{% endif %}
+  {% if rows %}<div class="tc-bar"><span id="clSum"></span><button class="btn btn-pink" type="submit">جایگزینی ردیف‌های تیک‌خورده</button></div>{% endif %}
+</form>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  var f = document.getElementById("clForm"), sum = document.getElementById("clSum"), FA = "۰۱۲۳۴۵۶۷۸۹";
+  if (!sum) return;
+  function upd() { var n = f.querySelectorAll('input[name="pick"]:checked').length; sum.textContent = String(n).replace(/\d/g, function (d) { return FA[d]; }) + " جمله جایگزین می‌شود"; }
+  f.addEventListener("change", upd);
+  f.addEventListener("input", function (e) { if (e.target.tagName === "TEXTAREA") { var c = e.target.closest(".cl-row").querySelector('input[name="pick"]'); c.checked = true; upd(); } });
+  f.addEventListener("submit", function (e) { if (!confirm("جمله‌های تیک‌خورده جایگزین شوند؟ از «ابزار محتوا ← سابقهٔ تغییرها» برگرداندنی است.")) e.preventDefault(); });
+  upd();
+})();
+</script>{% endblock %}

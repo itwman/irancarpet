@@ -42,7 +42,7 @@ def build():
 
 
 def _build(pricelist):
-    from blog.models import Page
+    from blog.models import PAGE_REDIRECTS, Page
     from catalog.models import Category
     from core.models import SiteSettings
 
@@ -62,6 +62,10 @@ def _build(pricelist):
     add("")
     if seo.llms_about.strip():
         add(seo.llms_about.strip())
+        add("")
+    hist = Page.objects.filter(status="publish", parent=None, template="history").first()
+    if hist:
+        add(f"سابقهٔ مستند برند با پیوند به نسخه‌های آرشیو اینترنت: [{lat(hist.title)}]({url}{hist.get_absolute_url()})")
         add("")
     add("همهٔ قیمت‌ها به **تومان** است. قیمت‌ها از قیمت‌گذاری روز فروشگاه خوانده می‌شوند و با هر تغییر قیمت کارخانه همین فایل هم عوض می‌شود.")
     add(f"آخرین تغییر قیمت: {jdate(data['updated'])} (شمسی) — {month} {lat(year)}.")
@@ -85,7 +89,11 @@ def _build(pricelist):
 
     add(f"## لیست قیمت فرش ماشینی ({month} {lat(year)})")
     add(f"صفحهٔ کامل: {url}{pricelist.PRICE_LIST_PATH}")
-    add(f"{n(data['albums'])} لیست قیمت (طرح/آلبوم) و {n(data['products'])} فرش. قیمت سایزهای دیگر هر لیست به نسبت متراژ از قیمت 12 متری به دست می‌آید.")
+    from catalog.models import Product
+
+    total = Product.objects.published().filter(seller__isnull=True).count()
+    add(f"{n(data['albums'])} لیست قیمت (طرح/آلبوم)؛ {n(data['products'])} فرش در لیست قیمت، از مجموع {n(total)} فرش منتشرشده در سایت. "
+        "قیمت سایزهای دیگر هر لیست به نسبت متراژ از قیمت 12 متری به دست می‌آید.")
     add("")
     for g in data["groups"]:
         title = lat(g["title"])
@@ -127,7 +135,7 @@ def _build(pricelist):
 
     add("## صفحه‌های مهم")
     for p in Page.objects.filter(status="publish").exclude(template__in=["cart", "checkout", "account", "tracking", "home"])\
-            .exclude(robots__contains="noindex").order_by("menu_order")[:25]:
+            .exclude(robots__contains="noindex").exclude(parent=None, slug__in=list(PAGE_REDIRECTS)).order_by("menu_order")[:25]:
         add(f"- [{lat(p.title)}]({url}{p.get_absolute_url()})")
     add(f"- [مجله و راهنمای خرید فرش]({url}/blog/)")
     add("")

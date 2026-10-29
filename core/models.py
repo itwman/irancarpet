@@ -96,6 +96,13 @@ class SiteSettings(models.Model):
     farshplus = models.URLField("صفحه در فرش پلاس", blank=True)
     email = models.EmailField("ایمیل", blank=True)
     address = models.TextField("آدرس", blank=True)
+    alt_names = models.CharField(
+        "نام‌های دیگر برند (Schema)", max_length=300, blank=True,
+        help_text="با ویرگول جدا کنید؛ مثل «Iran Carpet، IranCarpet، ایران‌کارپت، irancarpet.net». "
+                  "به گوگل و دستیارهای هوش مصنوعی کمک می‌کند برند را با عبارت‌های عمومی (مثل «فرش ایران») اشتباه نگیرند.")
+    founding_date = models.CharField(
+        "سال آغاز فعالیت (Schema)", max_length=10, blank=True,
+        help_text="سال میلادی قدیمی‌ترین سابقهٔ مستند؛ مثل 2010. فقط چیزی که سند دارد.")
     # فروشگاه حضوری (برای گوگل‌مپ، نشان، بلد و Schema کسب‌وکار محلی)
     store_name = models.CharField("نام فروشگاه حضوری", max_length=150, blank=True, help_text="مثل «فروشگاه فرش ایران کارپت کاشان»")
     store_city = models.CharField("شهر", max_length=80, blank=True, default="کاشان")
@@ -151,6 +158,11 @@ class SiteSettings(models.Model):
         return obj
 
     def save(self, *args, **kwargs):
+        # پیوندهای شبکه‌های اجتماعی همیشه https
+        for field in self.SOCIAL_HOSTS:
+            url = (getattr(self, field) or "").strip()
+            if url.startswith("http://"):
+                setattr(self, field, "https://" + url[7:])
         super().save(*args, **kwargs)
         from . import brand
 
@@ -194,7 +206,8 @@ class SiteSettings(models.Model):
             "address": {"@type": "PostalAddress", "streetAddress": self.address, "addressLocality": self.store_city,
                         "addressRegion": self.store_province, "postalCode": self.store_postal_code or None, "addressCountry": "IR"},
             "telephone": phones[0] if phones else None,
-            "sameAs": [u for u in (self.map_google, self.map_neshan, self.map_balad) if u] + [url for _, _, url in self.follows],
+            "sameAs": self.same_as([u for u in (self.map_google, self.map_neshan, self.map_balad) if u]),
+            **self.brand_schema(),
         }
         if self.latitude and self.longitude:
             data["geo"] = {"@type": "GeoCoordinates", "latitude": float(self.latitude), "longitude": float(self.longitude)}
@@ -207,6 +220,55 @@ class SiteSettings(models.Model):
                                                   "opens": a.strftime("%H:%M"), "closes": b.strftime("%H:%M")} for a, b in spans]
         data["address"] = {k: v for k, v in data["address"].items() if v}
         return {k: v for k, v in data.items() if v}
+
+    SOCIAL_HOSTS = {
+        "telegram": ("t.me", "telegram.me"), "telegram_channel": ("t.me", "telegram.me"), "eitaa": ("eitaa.com",),
+        "eitaa_channel": ("eitaa.com",), "bale_channel": ("ble.ir", "bale.ai"), "instagram": ("instagram.com",),
+        "aparat": ("aparat.com",), "youtube": ("youtube.com", "youtu.be"), "twitter": ("x.com", "twitter.com"),
+        "facebook": ("facebook.com", "fb.com"), "farshplus": ("farshplus.com", "farshplus.ir"),
+    }
+
+    def clean(self):
+        """هر پیوند شبکهٔ اجتماعی باید به همان شبکه برود (مثلاً در «یوتیوب» نشانی اینستاگرام پذیرفته نمی‌شود)."""
+        from urllib.parse import urlsplit
+
+        from django.core.exceptions import ValidationError
+
+        errors = {}
+        for field, hosts in self.SOCIAL_HOSTS.items():
+            url = (getattr(self, field) or "").strip()
+            if not url:
+                continue
+            host = (urlsplit(url).hostname or "").lower()
+            host = host[4:] if host.startswith("www.") else host
+            if not any(host == h or host.endswith("." + h) for h in hosts):
+                errors[field] = f"این پیوند باید نشانی {hosts[0]} باشد."
+        if errors:
+            raise ValidationError(errors)
+
+    def same_as(self, extra=()):
+        """پیوندهای sameAs بدون تکرار (نشانی با و بدون / آخر یکی حساب می‌شود)."""
+        out, seen = [], set()
+        for u in list(extra) + [url for _, _, url in self.follows]:
+            k = u.strip().rstrip("/").lower().replace("://www.", "://").replace("http://", "https://")
+            if u and k not in seen:
+                seen.add(k)
+                out.append(u.strip())
+        return out
+
+    def brand_schema(self):
+        """نام‌های دیگر، سال آغاز و ایمیل برای Schema فروشگاه."""
+        import re
+
+        d = {}
+        alts = [a.strip() for a in re.split(r"[،,\n]", self.alt_names or "") if a.strip()]
+        if alts:
+            d["alternateName"] = alts
+        if (self.founding_date or "").strip():
+            d["foundingDate"] = self.founding_date.strip()
+        if self.email:
+            d["email"] = self.email
+        return d
 
     @property
     def messengers(self):

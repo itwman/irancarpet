@@ -369,6 +369,27 @@ def fix_links(html, kinds, status):
 
 
 @staff_required
+def claims_tool(request):
+    """ادعاهای ثابت‌نشده و نشانی ناهمسان: اول فهرست با پیشنهاد، بعد جایگزینیِ ردیف‌های تیک‌خورده."""
+    from . import claims
+
+    if request.method == "POST":
+        keys = request.POST.getlist("pick")
+        choices = [(k, request.POST.get("old_" + k, ""), request.POST.get("new_" + k, "")) for k in keys]
+        n, edit = claims.apply(choices, user=request.user)
+        clear_site_cache()
+        if edit:
+            log(request, "update", "محتوا", None, edit.summary)
+        messages.success(request, f"{fa_num(n)} جمله اصلاح شد. برای برگرداندن: «سابقهٔ تغییرها» در ابزار محتوا." if n
+                         else "جمله‌ای تغییر نکرد.")
+        return redirect("/panel/content-tools/claims/")
+    rows = claims.scan()
+    return render(request, "content/claims.html", {"rows": rows, "address": claims.ADDRESS,
+                                                   "claims": [r for r in rows if r["kind"] == "claim"],
+                                                   "addrs": [r for r in rows if r["kind"] == "address"]})
+
+
+@staff_required
 def tools(request):
     P = request.POST if request.method == "POST" else request.GET
     albums = Album.objects.order_by("sort_order", "name")
@@ -441,6 +462,9 @@ def tools(request):
             from catalog.bulkedit import undo_rows as undo_bulk
             from catalog.tagclean import undo_rows
 
+            from .claims import undo_rows as undo_claims
+
+            undo_claims(edit.backup)
             undo_rows(edit.backup)
             undo_bulk(list(reversed(edit.backup)))
             edit.undone = True

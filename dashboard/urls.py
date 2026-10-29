@@ -30,6 +30,7 @@ urlpatterns = [
     path("products/quick/check/", content_views.quick_check),
     path("ac-term/<int:attr_id>/", content_views.term_ac),
     path("content-tools/", content_views.tools),
+    path("content-tools/claims/", content_views.claims_tool),
     path("content-templates/<int:pk>/preview/", content_views.preview),
     path("products/<int:pk>/edit/", products.product_edit),
     path("products/<int:pk>/duplicate/", products.product_duplicate),

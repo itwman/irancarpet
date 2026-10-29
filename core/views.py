@@ -5,7 +5,7 @@ from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
 
 from blog import views as blog_views
-from blog.models import Page, Post
+from blog.models import HOME_SLUGS, Page, Post
 from catalog import views as catalog_views
 from catalog.models import Attribute, AttributeTerm, Category, Product
 
@@ -26,7 +26,6 @@ REVIEW_SKIP = ("؟", "?", "موجود", "لینک", "نقص", "ایراد", "م�
 
 POOL_TOP, POOL_NEW, HOME_PER_REEDS = 24, 8, 4
 
-HOME_SLUGS = ("home", "homepage", "front-page", "خانه", "صفحه-اصلی")
 
 
 def _design(p):
@@ -180,7 +179,7 @@ def home(request):
     org = {
         "@context": "https://schema.org", "@type": "OnlineStore", "name": site_brand.name(),
         "url": settings.SITE_URL + "/", "logo": settings.SITE_URL + "/static/img/logo.png",
-        "sameAs": [url for _, _, url in site.follows],
+        "sameAs": site.same_as(), **site.brand_schema(),
     }
     phones = ["+98" + p[1:] if p.startswith("0") else p for p in (re.sub(r"\D", "", x or "") for x in (site.phone, site.mobile)) if p]
     if phones:
@@ -288,6 +287,8 @@ def resolve(request, path):
 
     page = _page_by_path(slugs)
     if page:
+        if page.redirect_to:
+            return HttpResponsePermanentRedirect(page.redirect_to)
         if page.template == "shop":
             return catalog_views.shop(request, page_num, page)
         if page.template == "home" or (page.parent_id is None and page.slug in HOME_SLUGS):

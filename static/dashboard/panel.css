@@ -591,3 +591,13 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 .be-sum{margin:0;padding-inline-start:1.1rem;font-size:.86rem;line-height:1.9}
 .be-sum li.muted{list-style:none;margin-inline-start:-1.1rem}
 @media(max-width:767px){.be-row{flex-direction:column;align-items:stretch}.be-seg{align-self:flex-start}.be-bar{flex-direction:column;align-items:stretch}}
+
+/* ادعاهای ثابت‌نشده */
+.cl-row{border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+.cl-row.is-auto{border-color:#f3c4cf;background:#fff8fa}
+.cl-pick{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+.cl-pick a{font-weight:600}
+.cl-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cl-cols small{display:block;color:#6b7280;margin-bottom:2px}
+.cl-old p{margin:0;padding:6px 8px;background:#f6f6f7;border-radius:6px;text-decoration:line-through;text-decoration-color:#e5395b80}
+@media (max-width:720px){.cl-cols{grid-template-columns:1fr}}

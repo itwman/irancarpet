@@ -450,6 +450,15 @@ def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
                                            "referenceQuantity": {"@type": "QuantitativeValue", "value": 1, "unitCode": "MTK"}}
     if product.rating_count:
         data["aggregateRating"] = {"@type": "AggregateRating", "ratingValue": float(product.rating_avg), "reviewCount": product.rating_count}
+    revs = list(Review.objects.filter(product=product, parent=None, kind="review", is_approved=True, rating__gt=0)
+                .order_by("-created_at")[:5])
+    if revs:
+        data["review"] = [{
+            "@type": "Review", "author": {"@type": "Person", "name": (r.author_name or "خریدار").strip()[:60]},
+            "datePublished": r.created_at.date().isoformat(),
+            "reviewRating": {"@type": "Rating", "ratingValue": r.rating, "bestRating": 5, "worstRating": 1},
+            "reviewBody": strip_tags(r.content or "").strip()[:500],
+        } for r in revs]
     breadcrumb = {
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": [{"@type": "ListItem", "position": i + 1, "name": n, "item": site + u} for i, (n, u) in enumerate(crumbs)],

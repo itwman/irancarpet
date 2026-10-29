@@ -55,7 +55,7 @@ TABS = [
 FORMS = {
     "site": (SiteSettings, ["site_name", "brand_name", "features_off", "tagline", "title_separator", "home_title", "home_description", "phone", "mobile", "whatsapp",
                             "telegram", "eitaa", "telegram_channel", "eitaa_channel", "bale_channel", "instagram", "aparat", "youtube", "twitter", "facebook", "farshplus",
-                            "email", "address", "store_name", "store_city", "store_province", "store_postal_code",
+                            "email", "address", "alt_names", "founding_date", "store_name", "store_city", "store_province", "store_postal_code",
                             "store_days", "store_open", "store_close", "store_open2", "store_close2", "store_hours_note",
                             "latitude", "longitude", "map_google", "map_neshan", "map_balad",
                             "trust_badge", "trust_html", "home_about", "footer_html",
