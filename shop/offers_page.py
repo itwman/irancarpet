@@ -97,7 +97,7 @@ def offers_page(request):
     meta = {
         "title": f"{title} | {brand.name()}" + (f" — صفحهٔ {page}" if page > 1 else ""),
         "description": (f"{len(offers)} فرش ماشینی نو و آمادهٔ ارسال از انبار کاشان با تا {best}٪ تخفیف: فرش جشنواره‌ای، زیر قیمت و استوک "
-                        "۷۰۰ تا ۱۵۰۰ شانه. تعداد محدود، ارسال فوری.") if offers else
+                        "۵۰۰ تا ۱۵۰۰ شانه. تعداد محدود، ارسال فوری.") if offers else
                        "فرش جشنواره‌ای، زیر قیمت و استوک ایران کارپت: تک‌تخته‌های نو و آمادهٔ ارسال انبار کاشان با تخفیف.",
         "canonical": site + (PATH if page == 1 else f"{PATH}?page={page}"),
         "robots": "noindex,follow" if filtered else "",
