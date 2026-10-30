@@ -146,7 +146,7 @@ class SiteSettings(models.Model):
                   "به‌صورت پیوند متنی در برگهٔ مجوزها و llms.txt می‌آید تا گوگل و دستیارهای هوش مصنوعی بتوانند اعتبار نماد را بررسی کنند.")
     licenses = models.TextField(
         "پروانه‌ها و مجوزها", blank=True,
-        help_text="هر خط یک مجوز: «عنوان | نشانی استعلام»؛ مثل «پروانهٔ کسب خرده‌فروشی فرش ماشینی، معتبر تا ۱۴۰۷/۰۱/۲۲ | https://qr.mojavez.ir/track/…». "
+        help_text="هر خط یک مجوز: «عنوان | نشانی استعلام»؛ مثل «پروانهٔ کسب خرده‌فروشی فرش ماشینی، معتبر تا ۱۴۰۷/۰۱/۲۲ | https://qr.mojavez.ir/track/…» یا «عضو اتحادیهٔ کشوری کسب‌وکارهای مجازی | https://ecunion.ir/…». "
                   "به‌صورت فهرست پیوند در برگهٔ مجوزها و llms.txt می‌آید (فقط پیوند؛ هیچ تصویر مدرکی نمایش داده نمی‌شود).")
     trust_html = models.TextField(
         "کد نماد اعتماد (اینماد و...)", blank=True,
@@ -254,15 +254,22 @@ class SiteSettings(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    LICENSE_HOSTS = {"mojavez.ir": "استعلام در درگاه ملی مجوزها", "ecunion.ir": "صفحهٔ عضویت در سایت اتحادیه",
+                     "enamad.ir": "استعلام در سایت اینماد"}
+
     @property
     def license_links(self):
-        """[(عنوان، نشانی)] از فیلد «پروانه‌ها و مجوزها»."""
+        """[(عنوان، نشانی، متن پیوند)] از فیلد «پروانه‌ها و مجوزها»."""
+        from urllib.parse import urlsplit
+
         out = []
         for line in (self.licenses or "").splitlines():
             title, _, url = line.partition("|")
             title, url = title.strip(), url.strip()
             if title and url.startswith(("http://", "https://")):
-                out.append((title, url))
+                host = (urlsplit(url).hostname or "").lower()
+                label = next((v for k, v in self.LICENSE_HOSTS.items() if host == k or host.endswith("." + k)), "استعلام")
+                out.append((title, url, label))
         return out
 
     @property

@@ -15,9 +15,9 @@
         <p class="seals-note">کد نماد اینماد را در «پنل ← تنظیمات ← سایت و تماس ← کد نماد اعتماد» بچسبانید تا اینجا نمایش داده شود.</p>
       {% endif %}
     </section>{% endif %}
-    {% if site.license_links %}<section class="prose" aria-labelledby="licTitle"><h2 id="licTitle">پروانه‌های کسب</h2>
-      <p>اعتبار هر پروانه را می‌توانید مستقیم در درگاه ملی مجوزهای کشور بررسی کنید:</p>
-      <ul>{% for t, u in site.license_links %}<li>{{ t }}: <a href="{{ u }}" target="_blank" rel="noopener">استعلام در درگاه ملی مجوزها</a></li>{% endfor %}</ul>
+    {% if site.license_links %}<section class="prose" aria-labelledby="licTitle"><h2 id="licTitle">پروانه‌ها و عضویت‌ها</h2>
+      <p>اعتبار هر مورد را می‌توانید مستقیم در سایت مرجع صادرکننده بررسی کنید:</p>
+      <ul>{% for t, u, label in site.license_links %}<li>{{ t }}: <a href="{{ u }}" target="_blank" rel="noopener">{{ label }}</a></li>{% endfor %}</ul>
     </section>{% endif %}
     {% if site.enamad_verify_url %}<p class="seals-verify">اعتبار نماد اعتماد الکترونیکی {{ site.site_name }} را مستقیم در سایت اینماد بررسی کنید:
       <a href="{{ site.enamad_verify_url }}" target="_blank" rel="noopener">استعلام نماد اعتماد در enamad.ir</a></p>{% endif %}

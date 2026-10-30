@@ -91,6 +91,8 @@ class AiTrustTests(TestCase):
         self.assertIn('href="https://trustseal.enamad.ir/?id=137774&amp;code=70XzemtCwKljQtiHa3iOa2RuzITHgk7G"', r)
         self.assertIn("qr.mojavez.ir/track/8260716", r)
         self.assertIn("معتبر تا ۱۴۰۷/۰۵/۱۰", r)
+        self.assertIn('href="https://ecunion.ir/landing/8389/business"', r)
+        self.assertIn("صفحهٔ عضویت در سایت اتحادیه", r)
         llms = self.client.get("/llms.txt").content.decode()
         self.assertIn("trustseal.enamad.ir/?id=137774", llms)
         self.assertIn("qr.mojavez.ir/track/1470154", llms)
