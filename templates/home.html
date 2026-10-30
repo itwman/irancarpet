@@ -127,7 +127,7 @@
         <li><strong>نقشه و سایز را انتخاب کنید</strong><span>قیمت هر سایز جداست؛ اگر مطمئن نیستید، <a href="#room">سایز مناسب اتاق</a> را ببینید.</span></li>
         <li><strong>نقدی یا قسطی بپردازید</strong><span>پرداخت آنلاین{% if direct.plans %}، یا {% if direct.inst_url %}<a href="{{ direct.inst_url }}">خرید قسطی</a>{% else %}خرید قسطی{% endif %} با {{ direct.plans|join:" یا " }}{% endif %}.</span></li>
         <li><strong>از کاشان ارسال می‌شود</strong><span>بسته‌بندی‌شده به همهٔ شهرها{% if direct.free_min %}؛ بالای {{ direct.free_min|toman }} تومان با پرداخت کامل، رایگان{% endif %}.</span></li>
-        <li><strong>تحویل با ضمانت</strong><span>فرش با <a href="/guarantee/">ضمانت‌نامه</a> به دستتان می‌رسد: پلی‌استر ۲ سال و آکریلیک ۷ سال.</span></li>
+        <li><strong>تحویل با ضمانت</strong><span>فرش با <a href="/guarantee/">ضمانت‌نامهٔ کتبی</a> به دستتان می‌رسد{% if direct.warranty %}: {{ direct.warranty }}{% endif %}.{% if direct.returns %} {{ direct.returns }}{% endif %}</span></li>
       </ol>
     </div>
     {% if direct.rows %}

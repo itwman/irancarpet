@@ -101,3 +101,20 @@ class AiTrustTests(TestCase):
         s.trust_html = '<a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=1&amp;code=abc"><img src="x"></a>'
         s.save()
         self.assertEqual(SiteSettings.load().enamad_verify_url, "https://trustseal.enamad.ir/?id=1&code=abc")
+
+    def test_warranty_and_returns(self):
+        from shop.models import ShopSettings
+
+        self.assertEqual(ShopSettings.load().return_days, 7)
+        html = self.client.get("/").content.decode()
+        self.assertIn("۷ روز مهلت انصراف از خرید و بازگشت وجه", html)
+        self.assertIn("هزینهٔ ارسال رفت و برگشت با خریدار است", html)
+        self.assertIn("پلی‌استر ۲ سال و آکریلیک ۷ سال", html)
+        g = {d["@type"]: d for d in jsonld(html)}
+        pol = g["OnlineStore"]["hasMerchantReturnPolicy"]
+        self.assertEqual((pol["merchantReturnDays"], pol["returnFees"]), (7, "https://schema.org/ReturnShippingFees"))
+        faq = json.dumps(g["FAQPage"], ensure_ascii=False)
+        self.assertIn("پس بدهم", faq)
+        llms = self.client.get("/llms.txt").content.decode()
+        self.assertIn("## ضمانت و بازگشت کالا", llms)
+        self.assertIn("آکریلیک ۷ سال", llms)

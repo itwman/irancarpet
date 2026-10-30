@@ -186,6 +186,13 @@ def home(request):
         org["contactPoint"] = [{"@type": "ContactPoint", "telephone": p, "contactType": "sales", "areaServed": "IR",
                                 "availableLanguage": "Persian"} for p in phones]
     store = site.local_business()
+    from shop.models import ShopSettings
+
+    returns = ShopSettings.load().return_policy_schema()
+    if returns:
+        org["hasMerchantReturnPolicy"] = returns
+        if store:
+            store["hasMerchantReturnPolicy"] = returns
     from .about import home_about
     from . import direct as _direct
 

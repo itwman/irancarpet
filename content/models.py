@@ -79,6 +79,14 @@ class ContentSettings(models.Model):
     warranty_polyester = models.CharField("ضمانت فرش پلی‌استر", max_length=200, default="۲ سال ضمانت")
     warranty_acrylic = models.CharField("ضمانت فرش آکریلیک", max_length=200, default="۷ سال ضمانت")
 
+    @staticmethod
+    def years(text):
+        """«۷ سال ضمانت» ← ۷ (برای Schema)."""
+        import re
+
+        m = re.search(r"([0-9۰-۹]+)\s*سال", text or "")
+        return int(m.group(1).translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789"))) if m else None
+
     def warranty_for(self, material):
         return {"polyester": self.warranty_polyester, "acrylic": self.warranty_acrylic}.get(material) or self.warranty
 

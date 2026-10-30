@@ -91,6 +91,18 @@ def _build(pricelist):
     add(f"- خرید آنلاین: {url}/ (افزودن به سبد، پرداخت از درگاه بانکی)")
     add("")
 
+    from core.direct import _warranty_text
+    from shop.models import ShopSettings
+
+    warranty, returns = _warranty_text(), ShopSettings.load().return_text()
+    if warranty or returns:
+        add("## ضمانت و بازگشت کالا")
+        if warranty:
+            add(f"- ضمانت‌نامهٔ کتبی: {warranty} (شامل جنس مواد اولیه، کیفیت بافت و ثبات رنگ). شرایط: {url}/guarantee/")
+        if returns:
+            add(f"- {returns}")
+        add("")
+
     add(f"## لیست قیمت فرش ماشینی ({month} {lat(year)})")
     add(f"صفحهٔ کامل: {url}{pricelist.PRICE_LIST_PATH}")
     from catalog.models import Product

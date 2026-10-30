@@ -444,6 +444,16 @@ def product_jsonld(product, variations, gallery, crumbs, specs=(), doc=None):
                 **({"sku": v.sku} if v.sku else {}),
             } for v in priced[:30]],
         }
+        from shop.models import ShopSettings
+
+        returns = ShopSettings.load().return_policy_schema()
+        if returns:
+            data["offers"]["hasMerchantReturnPolicy"] = returns
+        w = _warranty(product)
+        years = __import__("content.models", fromlist=["ContentSettings"]).ContentSettings.years(w) if w else None
+        if years:
+            data["offers"]["warranty"] = {"@type": "WarrantyPromise", "durationOfWarranty": {
+                "@type": "QuantitativeValue", "value": years, "unitCode": "ANN"}}
         if product.is_m2:  # فرش متری: قیمت هر متر مربع (UnitPriceSpecification با واحد MTK)
             for o in data["offers"]["offers"]:
                 o["priceSpecification"] = {"@type": "UnitPriceSpecification", "price": o["price"], "priceCurrency": "IRR",

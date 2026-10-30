@@ -107,12 +107,48 @@ class ShopSettings(models.Model):
     smsir_line_number = models.CharField("شمارهٔ خط ارسال پیامک گروهی", max_length=20, blank=True,
                                          help_text="خط اختصاصی یا خدماتی در پنل sms.ir (برای پیامک گروهی)")
 
+    return_days = models.PositiveSmallIntegerField(
+        "مهلت بازگشت وجه (روز)", default=0,
+        help_text="چند روز بعد از تحویل، مشتری می‌تواند از خرید انصراف دهد و وجه را پس بگیرد. ۰ = نمایش داده نشود. "
+                  "در صفحهٔ اول، llms.txt و Schema (سیاست بازگشت کالا برای گوگل و هوش مصنوعی) می‌آید.")
+    return_conditions = models.CharField(
+        "شرط بازگشت", max_length=300, blank=True,
+        default="به شرط اینکه فرش هیچ تغییری نکرده باشد و همانند زمان ارسال مرجوع شود",
+    )
+    return_shipping = models.CharField("هزینهٔ رفت‌وبرگشت در انصراف", max_length=10, default="customer",
+                                       choices=[("customer", "با مشتری"), ("shop", "با فروشگاه")])
+
     class Meta:
         verbose_name = "تنظیمات فروش"
         verbose_name_plural = "تنظیمات فروش"
 
     def __str__(self):
         return "تنظیمات فروش"
+
+    def return_text(self):
+        """«۷ روز مهلت بازگشت وجه، به شرط …؛ هزینهٔ رفت‌وبرگشت با خریدار.» یا خالی."""
+        if not self.return_days:
+            return ""
+        from core.templatetags.fa import fa_num
+
+        txt = f"{fa_num(self.return_days)} روز مهلت انصراف از خرید و بازگشت وجه"
+        if self.return_conditions.strip():
+            txt += "، " + self.return_conditions.strip().rstrip(".")
+        txt += "؛ هزینهٔ ارسال رفت و برگشت " + ("با خریدار است." if self.return_shipping == "customer" else "با فروشگاه است.")
+        return txt
+
+    def return_policy_schema(self):
+        """MerchantReturnPolicy برای Schema فروشگاه و فرش‌ها."""
+        if not self.return_days:
+            return None
+        return {
+            "@type": "MerchantReturnPolicy", "applicableCountry": "IR", "returnPolicyCountry": "IR",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+            "merchantReturnDays": self.return_days, "returnMethod": "https://schema.org/ReturnByMail",
+            "returnFees": ("https://schema.org/ReturnShippingFees" if self.return_shipping == "customer"
+                           else "https://schema.org/FreeReturn"),
+            "itemCondition": "https://schema.org/NewCondition",
+        }
 
     @classmethod
     def load(cls):

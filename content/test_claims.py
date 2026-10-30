@@ -18,7 +18,7 @@ class ClaimsTests(TestCase):
         s.home_about = ABOUT
         s.trust_points = [["اولین فروشگاه آنلاین فرش ماشینی در ایران", "با بیش از ۱۸ سال سابقه"], ["ارسال رایگان", "به همهٔ ایران"]]
         s.address = "کاشان، م. زجاجی"
-        s.home_description = "فرش ۷۰۰ تا ۱۵۰۰ شانه از کاشان."
+        s.home_description = "فرش ۷۰۰ تا ۱۵۰۰ شانه از کاشان، ضمانت ۵ ساله، ۱۵ سال ضمانت."
         s.save()
         seo = SeoSettings.load()
         seo.llms_about = "فروشگاه از سال ۱۳۸۷ فعال است."
@@ -46,7 +46,7 @@ class ClaimsTests(TestCase):
         self.assertEqual(s.trust_points[0], ["از قدیمی‌ترین فروشگاه‌های آنلاین فرش ماشینی", "فروش آنلاین از ۱۳۹۱"])
         self.assertEqual(s.trust_points[1], ["ارسال رایگان", "به همهٔ ایران"])
         self.assertEqual(s.address, claims.ADDRESS)
-        self.assertEqual(s.home_description, "فرش ۵۰۰ تا ۱۵۰۰ شانه از کاشان.")
+        self.assertEqual(s.home_description, "فرش ۵۰۰ تا ۱۵۰۰ شانه از کاشان، ضمانت ۲ تا ۷ ساله، ۱۵ سال ضمانت.")
         self.assertEqual(SeoSettings.load().llms_about, "فروشگاه از ۱۳۸۹ فعال است.")
         self.assertEqual([r for r in claims.scan() if r["auto"]], [])
 

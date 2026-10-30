@@ -59,6 +59,7 @@ def _build(stamp):
         "city": city, "has_store": site.has_store,
         "inst_url": inst_post.get_absolute_url() if inst_post else inst_url,
         "plans": [p.title for p in plans],
+        "warranty": _warranty_text(), "returns": ShopSettings.load().return_text(),
     }
     d["faq"] = faq(d, plans)
     return d
@@ -87,8 +88,22 @@ def faq(d, plans):
         out.append(("می‌توانم فرش را مستقیم از کارخانه قسطی بخرم؟",
                     "بله، با " + "، ".join(p.title for p in plans) + ". قیمت پایه همان قیمت روز سایت است و جدول قسط‌ها را پیش از ثبت سفارش می‌بینید."))
     out.append(("فرش‌ها ضمانت دارند؟",
-                "بله؛ همهٔ فرش‌ها ضمانت‌نامه دارند: فرش‌های پلی‌استر ۲ سال و آکریلیک ۷ سال. شرایط کامل در صفحهٔ ضمانت سایت آمده است."))
+                f"بله؛ همهٔ فرش‌ها ضمانت‌نامهٔ کتبی دارند: {d.get('warranty') or 'فرش‌های پلی‌استر ۲ سال و آکریلیک ۷ سال'}. "
+                "شرایط کامل در صفحهٔ ضمانت سایت آمده است."))
+    if d.get("returns"):
+        out.append(("اگر از خرید پشیمان شوم، می‌توانم فرش را پس بدهم؟", "بله؛ " + d["returns"]))
     return out
+
+
+def _warranty_text():
+    """«فرش‌های پلی‌استر ۲ سال و آکریلیک ۷ سال» از «تنظیمات ← متن محصولات»."""
+    from content.models import ContentSettings
+
+    cs = ContentSettings.load()
+    p, a = cs.years(cs.warranty_polyester), cs.years(cs.warranty_acrylic)
+    if p and a:
+        return f"فرش‌های پلی‌استر {fa_num(p)} سال و آکریلیک {fa_num(a)} سال"
+    return ""
 
 
 def faq_jsonld(d):
