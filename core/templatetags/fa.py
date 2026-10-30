@@ -176,3 +176,11 @@ def add_days(dt, n):
         return dt + datetime.timedelta(days=int(n))
     except (TypeError, ValueError):
         return dt
+
+
+@register.simple_tag
+def meta_description(meta):
+    """توضیح متا با حداقل طول (core.autodesc.padded)."""
+    from core.autodesc import padded
+
+    return padded(meta)

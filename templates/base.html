@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ meta.title|default:site_settings.site_name }}</title>
-{% if meta.description %}<meta name="description" content="{{ meta.description }}">{% endif %}
+{% meta_description meta as mdesc %}{% if mdesc %}<meta name="description" content="{{ mdesc }}">{% endif %}
 <meta name="robots" content="{% if meta.robots %}{{ meta.robots }}{% else %}index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large{% endif %}">
 {% if meta.canonical %}<link rel="canonical" href="{{ meta.canonical }}">{% endif %}
 {% if prev_url %}<link rel="prev" href="{{ SITE_URL }}{{ prev_url }}">{% endif %}
@@ -12,7 +12,7 @@
 <meta property="og:locale" content="fa_IR">
 <meta property="og:site_name" content="{{ site_settings.site_name }}">
 <meta property="og:title" content="{{ meta.title }}">
-{% if meta.description %}<meta property="og:description" content="{{ meta.description }}">{% endif %}
+{% if mdesc %}<meta property="og:description" content="{{ mdesc }}">{% endif %}
 {% if meta.canonical %}<meta property="og:url" content="{{ meta.canonical }}">{% endif %}
 {% block og %}<meta property="og:type" content="website">{% endblock %}
 <meta name="twitter:card" content="summary_large_image">

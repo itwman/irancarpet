@@ -147,3 +147,32 @@ def manual_ok(obj):
     if "%" not in d and len(d) < 70:
         return False
     return d not in duplicated(type(obj))
+
+
+def padded(meta):
+    """توضیح متای صفحه، دست‌کم MIN_LEN حرف (Bing توضیح کوتاه را خطا می‌گیرد).
+
+    توضیح دستی یا خودکار دست نمی‌خورد؛ فقط اگر کوتاه بود، یک جملهٔ معرفی فروشگاه به آخرش افزوده می‌شود.
+    صفحه‌ای که اصلاً توضیح ندارد، از عنوانش شروع می‌کند. صفحه‌های noindex دست نمی‌خورند."""
+    meta = meta or {}
+    desc = " ".join(str(meta.get("description") or "").split())
+    if "noindex" in str(meta.get("robots") or "") or len(desc) >= MIN_LEN:
+        return desc
+    if not desc:
+        title = str(meta.get("title") or "").split(" - ")[0].split(" | ")[0].strip()
+        if not title:
+            return ""
+        desc = title + "."
+    elif desc[-1] not in ".؟!":
+        desc += "."
+    b = brand.name()
+    tails = (f"خرید آنلاین فرش ماشینی کاشان از {b} با قیمت روز هر سایز، خرید نقدی و اقساطی، ارسال به سراسر ایران و ضمانت‌نامهٔ کتبی.",
+             f"خرید آنلاین فرش ماشینی کاشان از {b} با قیمت روز هر سایز، ارسال به سراسر ایران و ضمانت‌نامهٔ کتبی.",
+             f"فرش ماشینی کاشان با قیمت روز هر سایز و ارسال به سراسر ایران در {b}.",
+             f"فرش ماشینی کاشان با قیمت روز و ارسال به سراسر ایران در {b}.",
+             f"فرش ماشینی کاشان با ارسال به سراسر ایران در {b}.",
+             f"فرش ماشینی کاشان در {b}.")
+    for t in tails:
+        if len(desc) + 1 + len(t) <= MAX_LEN:
+            return f"{desc} {t}"
+    return desc

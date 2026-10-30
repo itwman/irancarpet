@@ -118,3 +118,18 @@ class AiTrustTests(TestCase):
         llms = self.client.get("/llms.txt").content.decode()
         self.assertIn("## ضمانت و بازگشت کالا", llms)
         self.assertIn("آکریلیک ۷ سال", llms)
+
+    def test_meta_description_min_length(self):
+        from core.autodesc import MAX_LEN, MIN_LEN, padded
+
+        short = padded({"title": "کانال تلگرام ایران کارپت", "description": "کانال تلگرام ما"})
+        self.assertGreaterEqual(len(short), 100)
+        self.assertLessEqual(len(short), MAX_LEN)
+        self.assertTrue(short.startswith("کانال تلگرام ما."))
+        self.assertTrue(padded({"title": "تلگرام - ایران کارپت"}).startswith("تلگرام."))
+        self.assertEqual(padded({"description": "کوتاه", "robots": "noindex, follow"}), "کوتاه")
+        long = "ا" * MIN_LEN
+        self.assertEqual(padded({"description": long}), long)
+        html = self.client.get("/affiliate/").content.decode()
+        d = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
+        self.assertGreaterEqual(len(d), 100)
