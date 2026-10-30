@@ -1,0 +1,4 @@
+{% trust_facts as tf %}{% if tf %}<aside class="trust-about" aria-labelledby="trustAbout">
+  <h2 id="trustAbout">دربارهٔ {{ tf.brand }}</h2>
+  <ul>{% for x in tf.items %}<li>{{ x|safe }}</li>{% endfor %}</ul>
+</aside>{% endif %}

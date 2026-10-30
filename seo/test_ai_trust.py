@@ -133,3 +133,24 @@ class AiTrustTests(TestCase):
         html = self.client.get("/affiliate/").content.decode()
         d = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
         self.assertGreaterEqual(len(d), 100)
+
+    def test_trust_box(self):
+        cache.clear()
+        html = self.client.get("/carpets-price-list/").content.decode()
+        if "trust-about" not in html:  # لیست قیمت بدون برگه در پایگاه دادهٔ آزمون
+            from blog.models import Page as P
+
+            P.objects.get_or_create(slug="carpets-price-list", parent=None,
+                                    defaults={"title": "لیست قیمت", "template": "price_list", "status": "publish"})
+            cache.clear()
+            html = self.client.get("/carpets-price-list/").content.decode()
+        self.assertIn("دربارهٔ ایران کارپت", html)
+        self.assertIn("فروش اینترنتی از ۱۳۹۱", html)
+        self.assertIn("پلی‌استر ۲ سال و آکریلیک ۷ سال", html)
+        self.assertIn("۷ روز مهلت انصراف", html)
+        self.assertIn('href="/license/"', html)
+        s = SiteSettings.load()
+        s.trust_since = ""
+        s.save()
+        cache.clear()
+        self.assertNotIn("trust-about", self.client.get("/carpets-price-list/").content.decode())

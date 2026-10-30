@@ -1873,3 +1873,10 @@ body.has-app-bar{padding-bottom:64px}
 .coll-chip i{width:1.6rem;height:.55rem;border-radius:99px;background:linear-gradient(90deg,#EFE4D6 0 25%,#DCC6A8 0 50%,#A47864 0 75%,#7B5B4B 0)}
 .coll-chip:hover{background:#EADCCD;color:#3E2C23}
 .coll-sec__note{max-width:52em;color:#5C4639;line-height:2.1;margin:-.3rem 0 1.2rem;font-size:.92rem}
+
+/* کادر «دربارهٔ فروشگاه» زیر لیست قیمت، مقاله‌ها و صفحه‌های دسته */
+.trust-about{margin:2rem 0 1rem;padding:1rem 1.25rem;border:1px solid var(--line);border-radius:14px;background:var(--paper-2,#fafafa);max-width:80ch}
+.trust-about h2{font-size:1.05rem;font-weight:900;margin:0 0 .5rem}
+.trust-about ul{margin:0;padding-inline-start:1.1rem;color:var(--ink-2)}
+.trust-about li{margin:.2rem 0}
+.trust-about a{text-decoration:underline;text-underline-offset:3px}

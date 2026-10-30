@@ -36,4 +36,5 @@
   <div class="chips">{% for x in related %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
 </nav>
 {% endif %}
+{% include "partials/_trust_about.html" %}
 {% endblock %}

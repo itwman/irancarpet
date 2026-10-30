@@ -117,6 +117,7 @@
     {% for f in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
   </section>
   {% endif %}
+  <div class="container--narrow">{% include "partials/_trust_about.html" %}</div>
 </div>
 {% endblock %}
 {% block scripts %}<script>

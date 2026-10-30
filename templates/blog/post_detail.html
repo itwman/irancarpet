@@ -15,6 +15,7 @@
         {% if post.tags.all %}<p class="tags">{% for t in post.tags.all %}<a href="{{ t.get_absolute_url }}">#{{ t.name }}</a>{% endfor %}</p>{% endif %}
       </article>
       {% include "blog/_post_end.html" %}
+      {% include "partials/_trust_about.html" %}
       {% if comments %}<section class="reviews"><h2>دیدگاه‌ها</h2>{% for c in comments %}<article class="review"><header><strong>{{ c.author_name }}</strong><time>{{ c.created_at|jdate }}</time></header><p>{{ c.content|linebreaksbr }}</p>{% for r in c.replies.all %}{% if r.is_approved %}<div class="review review--reply"><header><strong>{{ r.author_name }}</strong></header><p>{{ r.content|linebreaksbr }}</p></div>{% endif %}{% endfor %}</article>{% endfor %}</section>{% endif %}
     </div>
     <aside class="post-side" aria-label="جستجو و پیشنهادها">{% include "blog/_side.html" %}</aside>
