@@ -23,6 +23,7 @@ from mirror import feed as mirror_feed
 from installments import views as installments_views
 from landing import views as landing_views
 from pricing import views as pricing_views
+from torob import api_v3 as torob_api_v3
 from torob import emalls as torob_emalls
 from torob import views as torob_views
 
@@ -38,6 +39,7 @@ urlpatterns = [
     re_path(r"^wp-json/wc/v3/manix/catalog/?$", shop_wc_api.catalog),
     re_path(r"^wp-json/wc/v3/manix/orders/?$", shop_wc_api.manix_order),
     re_path(r"^wp-json/emalls_ext/v1/products/?$", torob_emalls.products),
+    re_path(r"^torob_api/v3/products/?$", torob_api_v3.products),
     # اپلیکیشن موبایل
     path("api/app/v1/", include("api.urls")),
     path("app-img/<int:w>/<path:path>", api_views.thumb),

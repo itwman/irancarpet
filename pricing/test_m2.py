@@ -87,7 +87,9 @@ class M2Tests(TestCase):
         from torob.models import TorobSettings
 
         row = format_row(self.k, TorobSettings.load())
-        self.assertIn("(قیمت هر متر مربع)", row["title"])
+        self.assertNotIn("متر مربع", row["title"])                 # ترب: قیمت واقعی کوچک‌ترین تخته (۰٫۵ × ۲ متر)
+        self.assertEqual(row["current_price"], 2_300_000)
+        self.assertIn("کوچک‌ترین سایز", row["subtitle"])
         d = self.client.post("/api/app/v1/cart/quote/", json.dumps({"items": [
             {"variation": self.v.pk, "qty": 1, "width": 0.5, "length": 2.3}, {"variation": self.v.pk, "qty": 1}]}),
             content_type="application/json").json()

@@ -10,6 +10,11 @@
   </form>{% endif %}
 </div>
 
+<section class="card-p tb-api">
+  <h2 class="be-h">اتصال مستقیم ترب به سایت (Torob API v3)</h2>
+  <p class="mb-1">نشانی برای پشتیبانی ترب: <code dir="ltr">{{ api_url }}</code></p>
+  <p class="hint mb-0">{% if api_last %}آخرین درخواست ترب: {{ api_last.at|jdate:"%d %B ساعت %H:%M"|fa_num }}؛ {{ api_last.count|fa_num }} درخواست در ۳۰ روز اخیر.{% else %}ترب هنوز از این راه درخواستی نداده؛ نشانی بالا را به پشتیبانی ترب بدهید تا اتصال فروشگاه را از خزنده به API نسخهٔ ۳ عوض کنند.{% endif %}</p>
+</section>
 {% if not has_token %}
 <section class="card-p">
   <h2>اتصال به ترب</h2>

@@ -1,4 +1,5 @@
 """پنل ← وضعیت در ترب: فروشگاه و محصولات همان‌طور که ترب می‌بیند (Shop API) و ناهمسانی با سایت."""
+from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
@@ -12,6 +13,15 @@ from ..models import log
 
 TABS = [("price", "قیمت ناهمسان"), ("stock", "موجودی ناهمسان"), ("removed", "حذف‌شده در ترب"), ("404", "صفحه در دسترس نیست"),
         ("temp", "خطای موقت دسترسی ترب"), ("missing", "در سایت پیدا نشد"), ("all", "همهٔ محصولات")]
+
+
+def _api_last():
+    from torob.api_v3 import last_request
+
+    r = last_request()
+    if r:
+        r = {**r, "at": _aware(r.get("at"))}
+    return r
 
 
 def _aware(v):
@@ -59,7 +69,8 @@ def torob_status(request):
     summary = st.get("summary") or {}
     counts = st.get("counts") or {}
     return render(request, "dashboard/torob_status.html", {
-        "running": shopapi.running(), "s": s, "has_token": bool((s.shop_api_token or "").strip()), "st": st, "summary": summary,
+        "running": shopapi.running(), "api_url": settings.SITE_URL + "/torob_api/v3/products",
+        "api_last": _api_last(), "s": s, "has_token": bool((s.shop_api_token or "").strip()), "st": st, "summary": summary,
         "shop_status": shopapi.SHOP_STATUS.get(st.get("status", ""), st.get("status", "")),
         "errors": summary.get("not_accessible_errors") or [], "counts": counts,
         "calc_at": _aware(summary.get("calculated_at")),

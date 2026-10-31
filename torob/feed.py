@@ -63,14 +63,30 @@ def adjust(raw, s):
 
 
 def _price(p):
-    """(قیمت فعلی، قیمت قبل از تخفیف) — محصول آلبومی: سایز پایه؛ بقیه: ارزان‌ترین سایز موجود."""
+    """(قیمت فعلی، قیمت قبل از تخفیف) — محصول آلبومی: سایز پایه؛ فرش متری: ارزان‌ترین سایز (کوچک‌ترین تختهٔ مجاز
+    یا ارزان‌ترین سایز آماده)؛ بقیه: ارزان‌ترین سایز موجود."""
     vs = [v for v in p.variations.all() if v.is_available and v.price]
+    if p.is_m2:
+        return _m2_price(p, vs)
     if p.album_id:
         vs = [v for v in vs if v.size_id == p.album.base_size_id] or vs
     if not vs:
         return None, None
     v = min(vs, key=lambda x: x.price)
     return v.price, (v.final_price if v.on_sale else None)
+
+
+def _m2_price(p, vs):
+    """فرش متری: قیمت واقعی ارزان‌ترین تخته، نه قیمت هر متر مربع (ترب «هر متر» را نمی‌فهمد و ارزان‌تر از واقعیت نشان می‌دهد)."""
+    from pricing import m2
+
+    out = []
+    r = m2.rules(p)
+    if r and r["price"] and r["variation"].is_available:
+        out += [m2.price(r["price"], w, m2.min_length(r, w), r["round"] or 100_000) for w in r["widths"]]
+    out += [v.price for v in vs if not (v.size_id and v.size.slug == m2.M2_SLUG)]
+    out = [x for x in out if x]
+    return (min(out), None) if out else (None, None)
 
 
 def _category(p):
@@ -96,10 +112,12 @@ def _spec(p, s):
     return spec
 
 
-def format_row(p, s):
+def format_row(p, s, keep_unavailable=False):
+    """یک ردیف فید. keep_unavailable: فرش بی‌قیمتِ موجود (همهٔ سایزها ناموجود) هم با قیمت ۰ و «ناموجود» بیاید."""
     current, old = _price(p)
-    if not current:
+    if not current and not keep_unavailable:
         return None
+    current = current or 0
     site = settings.SITE_URL
     imgs = [pi.media for pi in ProductImage.objects.filter(product=p).select_related("media").order_by("order")]
     main = p.image or (imgs[0] if imgs else None)
@@ -112,16 +130,15 @@ def format_row(p, s):
     if s.guarantee_attr:
         guarantee = "، ".join(p.specs.filter(attribute__slug=s.guarantee_attr).values_list("name", flat=True))
     title = p.title + (f" - {s.title_suffix}" if s.title_suffix else "")
-    if p.is_m2:  # فرش متری: قیمت فید قیمت هر متر مربع است
-        title += " (قیمت هر متر مربع)"
+
     return {
         "title": title,
-        "subtitle": "قیمت هر متر مربع؛ عرض و طول دلخواه" if p.is_m2 else "",
+        "subtitle": "قیمت کوچک‌ترین سایز؛ عرض و طول دلخواه" if p.is_m2 else "",
         "page_unique": unique_of(p),
         "product_group_id": "",
-        "current_price": adjust(current, s),
+        "current_price": adjust(current, s) if current else 0,
         "old_price": adjust(old, s) if old and old > current else 0,
-        "availability": "instock" if p.is_purchasable else "outofstock",
+        "availability": "instock" if p.is_purchasable and current else "outofstock",
         "category_name": _category(p),
         "image_link": (site + wp_url(main.url)) if main and main.url else "",
         "image_links": links,
