@@ -70,3 +70,15 @@ class TorobApiV3Tests(TestCase):
         self.assertEqual(api_v3.last_request()["kind"], "cursor")
         self.assertEqual(api_v3.recent_requests()[0]["uniques"], ["4242"])
         self.assertEqual(api_v3.preview("4242")["page_unique"], "4242")
+        # فرش تازه (بدون شناسهٔ ووکامرس): همان شناسهٔ سایت، مثل آنچه ترب از قبل دارد
+        n = Product.objects.create(title="فرش تازه", slug="فرش-تازه", status="publish")
+        self.assertEqual(api_v3.preview(str(n.pk))["page_unique"], str(n.pk))
+        d = self.post({"page_uniques": [str(n.pk)]}).json()
+        self.assertEqual([x["page_unique"] for x in d["products"]], [str(n.pk)])
+        # اگر شناسهٔ سایت با شناسهٔ ووکامرسِ فرش دیگری یکی باشد، شناسهٔ جدا
+        from django.core.cache import cache as c
+        from torob import feed
+
+        Product.objects.filter(pk=self.p.pk).update(wp_id=n.pk)
+        c.delete("torob_wp_ids")
+        self.assertEqual(feed.unique_of(n), feed.NEW_ID_OFFSET + n.pk)

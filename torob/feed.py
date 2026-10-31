@@ -25,14 +25,27 @@ def wp_url(path):
     return re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), quote(path, safe="/-_.~"))
 
 
+def _wp_ids():
+    """شناسه‌های ووکامرس قدیم (برای جلوگیری از هم‌شناسه شدن فرش تازه با فرش قدیمی)."""
+    ids = cache.get("torob_wp_ids")
+    if ids is None:
+        ids = set(Product.objects.exclude(wp_id=None).values_list("wp_id", flat=True))
+        cache.set("torob_wp_ids", ids, 600)
+    return ids
+
+
 def unique_of(p):
-    return p.wp_id or NEW_ID_OFFSET + p.pk
+    """شناسهٔ ثابت فرش برای ترب و ایمالز: فرش‌های قدیمی شناسهٔ ووکامرس؛ فرش‌های تازه همان شناسهٔ سایت (ترب هم با همین
+    می‌شناسدشان). فقط اگر شناسهٔ سایت با شناسهٔ ووکامرسِ فرش دیگری یکی باشد، ۱۰۰۰۰۰۰۰۰۰+شناسه."""
+    if p.wp_id:
+        return p.wp_id
+    return NEW_ID_OFFSET + p.pk if p.pk in _wp_ids() else p.pk
 
 
 def product_by_unique(u):
     if u >= NEW_ID_OFFSET:
         return Product.objects.filter(pk=u - NEW_ID_OFFSET).first()
-    return Product.objects.filter(wp_id=u).first()
+    return Product.objects.filter(wp_id=u).first() or Product.objects.filter(pk=u, wp_id=None).first()
 
 
 def base_queryset(s):

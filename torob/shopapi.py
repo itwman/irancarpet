@@ -123,6 +123,8 @@ class _Matcher:
                 return u - feed.NEW_ID_OFFSET
             if u in self.by_wp:
                 return self.by_wp[u]
+            if u in self.pks:
+                return u
         return None
 
 
