@@ -47,6 +47,12 @@ class ShopApiTests(TestCase):
              "statuses": [], "price": 1000, "availability": True, "error_title": "", "updated_at": "2026-10-30T08:00:00+00:00"},
             {"product_id": "777", "page_url": "https://irancarpet.net/old-wordpress-page/", "statuses": ["page_not_accessible"],
              "price": 0, "availability": False, "error_title": "404:download_http_status_error", "updated_at": "2026-10-30T08:00:00+00:00"},
+            {"product_id": "555_2", "page_url": "https://irancarpet.net/product/%d9%81%d8%b1%d8%b4-%d8%aa%d8%b3%d8%aa/",
+             "statuses": ["page_deleted_temporary_technical", "page_not_accessible"], "price": 900, "availability": True,
+             "error_title": "200:page_unique changed", "updated_at": "2026-10-30T08:00:00+00:00"},
+            {"product_id": "555_3", "page_url": "https://irancarpet.net/product/%d9%81%d8%b1%d8%b4-%d8%aa%d8%b3%d8%aa/",
+             "statuses": ["page_not_accessible"], "price": 2000, "availability": True,
+             "error_title": "-1:download_timeout", "updated_at": "2026-10-30T08:00:00+00:00"},
         ])
         with mock.patch.object(shopapi, "_call", fake), mock.patch.object(shopapi, "_expected", return_value=(2000, True)):
             st = shopapi.sync(full=True)
@@ -57,6 +63,8 @@ class ShopApiTests(TestCase):
         self.assertEqual(b.problem, "404")
         self.assertIn(b.site_status, (301, 404))
         self.assertEqual(st["counts"]["price"], 1)
+        self.assertEqual(TorobProduct.objects.get(torob_id="555_2").problem, "removed")
+        self.assertEqual(TorobProduct.objects.get(torob_id="555_3").problem, "temp")
 
         user = User.objects.create_superuser("a", "a@a.ir", "x")
         self.client.force_login(user)
@@ -75,3 +83,10 @@ class ShopApiTests(TestCase):
         user = User.objects.create_superuser("b", "b@a.ir", "x")
         self.client.force_login(user)
         self.assertContains(self.client.get("/panel/torob/"), "ساخت توکن")
+
+    def test_background_start(self):
+        with mock.patch("subprocess.Popen") as po:
+            self.assertTrue(shopapi.start_background(full=True))
+            self.assertFalse(shopapi.start_background())
+        self.assertIn("torob_sync", po.call_args[0][0])
+        self.assertTrue(shopapi.running())

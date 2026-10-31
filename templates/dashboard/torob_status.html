@@ -21,6 +21,9 @@
 </section>
 {% else %}
 {% if st.error %}<div class="alert alert-danger">{{ st.error }}</div>{% endif %}
+{% if running %}<div class="alert alert-info">در حال خواندن از ترب… چند دقیقه بعد صفحه را تازه کنید.</div>{% endif %}
+{% if tab == "removed" %}<p class="hint">ترب این‌ها را حذف کرده و قیمت و موجودی‌شان در ترب کهنه است. «page_unique changed» یعنی شناسهٔ فرش عوض شده (معمولاً بعد از انتقال سایت)؛ «torob_api_invalid_response» یعنی ترب پاسخ درستی از سایت نگرفته.</p>{% endif %}
+{% if tab == "temp" %}<p class="hint">ترب موقع خواندن این صفحه‌ها به تأخیر یا خطای شبکه خورده؛ صفحه سالم است و معمولاً در دور بعدی خودش درست می‌شود.</p>{% endif %}
 
 {% if st.status %}
 <div class="tc-stats tb-stats">
@@ -47,7 +50,7 @@
   {% if page.object_list %}
   <div class="table-wrap"><table class="tbl">
     <thead><tr><th><input type="checkbox" aria-label="انتخاب همه" onclick="this.closest('table').querySelectorAll('input[name=ids]').forEach(c=>c.checked=this.checked)"></th>
-      <th>فرش</th><th>وضعیت در ترب</th><th>قیمت ترب</th><th>قیمت سایت</th><th>موجودی ترب / سایت</th>{% if tab == "404" or tab == "all" %}<th>پاسخ امروز سایت</th>{% endif %}</tr></thead>
+      <th>فرش</th><th>وضعیت در ترب</th><th>قیمت ترب</th><th>قیمت سایت</th><th>موجودی ترب / سایت</th>{% if tab == "404" or tab == "removed" or tab == "all" %}<th>پاسخ امروز سایت</th>{% endif %}</tr></thead>
     <tbody>{% for r in page.object_list %}
       <tr>
         <td><input type="checkbox" name="ids" value="{{ r.torob_id }}" aria-label="انتخاب"></td>
@@ -58,7 +61,7 @@
         <td>{% if r.price %}{{ r.price|toman }}{% else %}—{% endif %}</td>
         <td{% if r.problem == "price" %} class="text-danger fw-bold"{% endif %}>{% if r.site_price %}{{ r.site_price|toman }}{% else %}—{% endif %}</td>
         <td{% if r.problem == "stock" %} class="text-danger fw-bold"{% endif %}>{{ r.availability|yesno:"موجود,ناموجود" }} / {% if r.product %}{{ r.site_available|yesno:"موجود,ناموجود" }}{% else %}—{% endif %}</td>
-        {% if tab == "404" or tab == "all" %}<td>{% if r.site_status %}<code>{{ r.site_status }}</code>{% if r.site_location %} ← <a class="small" dir="ltr" href="{{ r.site_location }}" target="_blank" rel="noopener">{{ r.site_location|truncatechars:50 }}</a>{% endif %}{% else %}—{% endif %}</td>{% endif %}
+        {% if tab == "404" or tab == "removed" or tab == "all" %}<td>{% if r.site_status %}<code>{{ r.site_status }}</code>{% if r.site_location %} ← <a class="small" dir="ltr" href="{{ r.site_location }}" target="_blank" rel="noopener">{{ r.site_location|truncatechars:50 }}</a>{% endif %}{% else %}—{% endif %}</td>{% endif %}
       </tr>{% endfor %}</tbody>
   </table></div>
   {% include "dashboard/_pager.html" %}

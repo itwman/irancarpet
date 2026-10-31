@@ -10,8 +10,8 @@ from torob.models import TorobProduct, TorobSettings
 from ..auth import staff_required
 from ..models import log
 
-TABS = [("price", "قیمت ناهمسان"), ("stock", "موجودی ناهمسان"), ("404", "صفحه در دسترس نیست"), ("missing", "در سایت پیدا نشد"),
-        ("all", "همهٔ محصولات")]
+TABS = [("price", "قیمت ناهمسان"), ("stock", "موجودی ناهمسان"), ("removed", "حذف‌شده در ترب"), ("404", "صفحه در دسترس نیست"),
+        ("temp", "خطای موقت دسترسی ترب"), ("missing", "در سایت پیدا نشد"), ("all", "همهٔ محصولات")]
 
 
 def _aware(v):
@@ -30,12 +30,11 @@ def torob_status(request):
         do = request.POST.get("do")
         try:
             if do in ("sync", "full"):
-                st = shopapi.sync(full=do == "full")
-                c = st.get("counts") or {}
-                messages.success(request, f"از ترب خوانده شد: {st.get('synced_rows', 0)} محصول تغییرکرده. "
-                                          f"قیمت ناهمسان {c.get('price', 0)}، موجودی ناهمسان {c.get('stock', 0)}، "
-                                          f"خارج از دسترس {c.get('404', 0)}.")
-                log(request, "update", "ترب", None, "همگام‌سازی وضعیت ترب")
+                if shopapi.start_background(full=do == "full"):
+                    messages.success(request, "خواندن از ترب شروع شد؛ چند دقیقه بعد همین صفحه را تازه کنید.")
+                    log(request, "update", "ترب", None, "همگام‌سازی وضعیت ترب")
+                else:
+                    messages.info(request, "خواندن از ترب در حال انجام است؛ کمی بعد صفحه را تازه کنید.")
             elif do in ("activate", "deactivate"):
                 ids = request.POST.getlist("ids")
                 n = shopapi.set_active(ids, do == "activate")
@@ -60,7 +59,7 @@ def torob_status(request):
     summary = st.get("summary") or {}
     counts = st.get("counts") or {}
     return render(request, "dashboard/torob_status.html", {
-        "s": s, "has_token": bool((s.shop_api_token or "").strip()), "st": st, "summary": summary,
+        "running": shopapi.running(), "s": s, "has_token": bool((s.shop_api_token or "").strip()), "st": st, "summary": summary,
         "shop_status": shopapi.SHOP_STATUS.get(st.get("status", ""), st.get("status", "")),
         "errors": summary.get("not_accessible_errors") or [], "counts": counts,
         "calc_at": _aware(summary.get("calculated_at")),

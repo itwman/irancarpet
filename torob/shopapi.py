@@ -28,7 +28,7 @@ BASE = "https://api.torob.com/shop-api/v1"
 PAGE_SIZE = 500
 MAX_PAGES = 60            # حداکثر ۳۰ هزار محصول در یک همگام‌سازی
 PRICE_TOLERANCE = 0.01    # اختلاف کمتر از ۱٪ (گرد شدن) ناهمسانی نیست
-PROBE_LIMIT = 300         # حداکثر نشانی خارج از دسترس که در هر بار پاسخ سایت برایشان بررسی می‌شود
+PROBE_LIMIT = 150         # حداکثر نشانی خارج از دسترس که در هر بار پاسخ سایت برایشان بررسی می‌شود
 
 STATUS_LABELS = {
     "page_deleted_permanent_content": "برای همیشه حذف شده (محتوا)",
@@ -46,7 +46,9 @@ STATUS_LABELS = {
 }
 SHOP_STATUS = {"active": "فعال", "blocked": "غیرفعال (دلیل در پنل ترب)", "crawler_check": "در انتظار بررسی فنی سایت",
                "crawler_active": "در حال به‌روز شدن قیمت‌ها"}
-PROBLEMS = {"price": "قیمت ناهمسان", "stock": "موجودی ناهمسان", "404": "صفحه در دسترس نیست", "missing": "در سایت پیدا نشد"}
+PROBLEMS = {"price": "قیمت ناهمسان", "stock": "موجودی ناهمسان", "removed": "حذف‌شده در ترب", "404": "صفحه در دسترس نیست",
+            "temp": "خطای موقت دسترسی ترب", "missing": "در سایت پیدا نشد"}
+DELETED = ("page_deleted_permanent_content", "page_deleted_temporary_content", "page_deleted_temporary_technical")
 
 
 class TorobError(Exception):
@@ -89,15 +91,39 @@ def _call(method, path, token, params=None, body=None, url=None):
 
 
 # ------------------------------------------------------------------ جفت کردن با فرش سایت
-def _match(item):
-    from . import feed
+class _Matcher:
+    """جفت کردن محصول ترب با فرش سایت بدون یک پرس‌وجو برای هر ردیف."""
 
-    p = feed.product_by_url(item.get("page_url") or "") if item.get("page_url") else None
-    if p is None:
+    def __init__(self):
+        from catalog.models import Product
+
+        rows = list(Product.objects.exclude(status="trash").values_list("pk", "slug", "wp_id"))
+        self.by_slug = {slug: pk for pk, slug, _ in rows if slug}
+        self.by_wp = {wp: pk for pk, _, wp in rows if wp}
+        self.pks = {pk for pk, _, _ in rows}
+
+    def __call__(self, item):
+        import re
+
+        from . import feed
+
+        url = item.get("page_url") or ""
+        parts = urllib.parse.urlsplit(url)
+        path = urllib.parse.unquote(parts.path or "")
+        m = re.match(r"^/product/([^/]+)/?$", path)
+        if m and m.group(1) in self.by_slug:
+            return self.by_slug[m.group(1)]
+        q = dict(urllib.parse.parse_qsl(parts.query))
+        if q.get("p", "").isdigit() and int(q["p"]) in self.by_wp:
+            return self.by_wp[int(q["p"])]
         head = str(item.get("product_id") or "").split("_")[0]
         if head.isdigit():
-            p = feed.product_by_unique(int(head))
-    return p
+            u = int(head)
+            if u >= feed.NEW_ID_OFFSET and u - feed.NEW_ID_OFFSET in self.pks:
+                return u - feed.NEW_ID_OFFSET
+            if u in self.by_wp:
+                return self.by_wp[u]
+        return None
 
 
 def _expected(p, s, live_ids):
@@ -113,12 +139,16 @@ def _expected(p, s, live_ids):
 
 
 def _problem(row):
-    if row.status == "page_not_accessible":
-        return "404"
+    """دستهٔ مشکل: حذف‌شده و خارج از دسترس اول (قیمت و موجودی‌شان در ترب کهنه است)، بعد بی‌جفت، بعد ناهمسانی."""
+    st = row.statuses or []
+    if any(x in DELETED for x in st):
+        return "removed"
+    if "page_not_active" in st:
+        return ""
+    if "page_not_accessible" in st:
+        return "temp" if (row.error_title or "").startswith("-1:") else "404"
     if row.product_id is None:
         return "missing"
-    if row.status in ("page_deleted_permanent_content", "page_deleted_temporary_content", "page_not_active"):
-        return ""
     if row.availability != row.site_available:
         return "stock"
     if row.availability and row.site_price and row.price and abs(row.price - row.site_price) > row.site_price * PRICE_TOLERANCE:
@@ -182,39 +212,46 @@ def sync(full=False, out=None):
             if not url:
                 break
         seen = len(rows)
-        with transaction.atomic():
-            for item in rows:
-                tid = str(item.get("product_id") or "")[:60]
-                if not tid:
-                    continue
-                statuses = item.get("statuses") or []
-                p = _match(item)
-                price, avail = _expected(p, s, live_ids) if p else (0, False)
-                obj, _ = TorobProduct.objects.get_or_create(torob_id=tid)
-                obj.page_url = (item.get("page_url") or "")[:1000]
-                obj.statuses = statuses
-                obj.status = statuses[0] if statuses else "ok"
-                obj.price = max(0, int(item.get("price") or 0))
-                obj.availability = bool(item.get("availability"))
-                obj.error_title = (item.get("error_title") or "")[:200]
-                obj.torob_updated_at = _aware(item.get("updated_at"))
-                obj.product = p
-                obj.site_price, obj.site_available = price, avail
-                obj.problem = _problem(obj)
-                obj.save()
-        # قیمت و موجودی سایت ممکن است از دفعهٔ قبل عوض شده باشد: ناهمسانی همهٔ ردیف‌های جفت‌شده دوباره حساب شود
-        by = {p.pk: p for p in Product.objects.filter(pk__in=TorobProduct.objects.exclude(product=None).values("product"))
-              .select_related("album").prefetch_related("variations")}
-        for obj in TorobProduct.objects.exclude(product=None):
-            p = by.get(obj.product_id)
-            if p is None:
+        match = _Matcher()
+        existing = {o.torob_id: o for o in TorobProduct.objects.filter(torob_id__in=[str(i.get("product_id") or "")[:60] for i in rows])}
+        new, upd = [], []
+        for item in rows:
+            tid = str(item.get("product_id") or "")[:60]
+            if not tid:
                 continue
-            price, avail = _expected(p, s, live_ids)
-            if (price, avail) != (obj.site_price, obj.site_available):
-                obj.site_price, obj.site_available = price, avail
-                TorobProduct.objects.filter(pk=obj.pk).update(site_price=price, site_available=avail, problem=_problem(obj))
+            statuses = item.get("statuses") or []
+            obj = existing.get(tid) or TorobProduct(torob_id=tid)
+            obj.page_url = (item.get("page_url") or "")[:1000]
+            obj.statuses = statuses
+            obj.status = statuses[0] if statuses else "ok"
+            obj.price = max(0, int(item.get("price") or 0))
+            obj.availability = bool(item.get("availability"))
+            obj.error_title = (item.get("error_title") or "")[:200]
+            obj.torob_updated_at = _aware(item.get("updated_at"))
+            obj.product_id = match(item)
+            (upd if obj.pk else new).append(obj)
+            existing[tid] = obj
+        fields = ["page_url", "statuses", "status", "price", "availability", "error_title", "torob_updated_at", "product"]
+        with transaction.atomic():
+            TorobProduct.objects.bulk_create(new, batch_size=500)
+            TorobProduct.objects.bulk_update(upd, fields, batch_size=500)
+        # قیمت و موجودی‌ای که باید باشد، و دستهٔ مشکل: برای همهٔ ردیف‌ها (سایت ممکن است از دفعهٔ قبل عوض شده باشد)
+        all_rows = list(TorobProduct.objects.all())
+        need = {o.product_id for o in all_rows if o.product_id}
+        by = {p.pk: p for p in Product.objects.filter(pk__in=need).select_related("album").prefetch_related("variations")}
+        changed = []
+        for o in all_rows:
+            p = by.get(o.product_id)
+            price, avail = _expected(p, s, live_ids) if p else (0, False)
+            o.site_price, o.site_available = price, avail
+            prob = _problem(o)
+            o.problem = prob
+            changed.append(o)
+        with transaction.atomic():
+            TorobProduct.objects.bulk_update(changed, ["site_price", "site_available", "problem"], batch_size=500)
         # نشانی‌های خارج از دسترس: سایت امروز چه جوابی می‌دهد؟
-        bad = list(TorobProduct.objects.filter(problem="404").order_by("-torob_updated_at")[:PROBE_LIMIT])
+        bad = (list(TorobProduct.objects.filter(problem="404").order_by("-torob_updated_at")[:PROBE_LIMIT])
+               + list(TorobProduct.objects.filter(problem="removed").exclude(page_url="").order_by("-torob_updated_at")[:PROBE_LIMIT]))
         paths = {o.pk: urllib.parse.urlsplit(o.page_url).path or "/" for o in bad if o.page_url}
         res = _probe(set(paths.values()))
         for o in bad:
@@ -264,3 +301,28 @@ def set_active(torob_ids, active):
         st = item.get("statuses") or []
         TorobProduct.objects.filter(torob_id=str(item.get("product_id"))).update(statuses=st, status=st[0] if st else "ok")
     return len(found)
+
+
+RUN_KEY = "torob_sync_running"
+
+
+def start_background(full=False):
+    """همگام‌سازی در پس‌زمینه (خواندن کامل چند دقیقه طول می‌کشد و از سقف زمان یک درخواست وب بیشتر است)."""
+    import subprocess
+    import sys
+
+    from django.core.cache import cache
+
+    if cache.get(RUN_KEY):
+        return False
+    cache.set(RUN_KEY, timezone.now().isoformat(), 20 * 60)
+    cmd = [sys.executable, str(settings.BASE_DIR / "manage.py"), "torob_sync"] + (["--full"] if full else [])
+    subprocess.Popen(cmd, cwd=str(settings.BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+    return True
+
+
+def running():
+    from django.core.cache import cache
+
+    return bool(cache.get(RUN_KEY))
