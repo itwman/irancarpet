@@ -1,0 +1,75 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}وضعیت در ترب{% endblock %}
+{% block content %}
+<div class="page-top"><div>
+  <h1>وضعیت در ترب</h1>
+  <p class="muted mb-0">محصولات همان‌طور که ترب می‌بیند، کنار قیمت و موجودی امروز سایت. {% if s.products_synced_at %}آخرین خواندن از ترب: {{ s.products_synced_at|jdate:"%d %B ساعت %H:%M"|fa_num }}{% endif %}</p></div>
+  {% if has_token %}<form method="post" class="page-top__actions">{% csrf_token %}
+    <button class="btn btn-ink btn-sm" name="do" value="sync">خواندن تغییرهای تازه از ترب</button>
+    <button class="btn btn-light btn-sm" name="do" value="full" title="همهٔ محصولات از نو؛ چند دقیقه طول می‌کشد">خواندن کامل</button>
+  </form>{% endif %}
+</div>
+
+{% if not has_token %}
+<section class="card-p">
+  <h2>اتصال به ترب</h2>
+  <ol class="mb-0">
+    <li>در پنل ترب ← «اطلاعات فروشگاه» ← «دسترسی API» دکمهٔ «ساخت توکن» را بزنید. توکن فقط یک بار نشان داده می‌شود.</li>
+    <li>توکن را در <a href="/panel/settings/?tab=torob">تنظیمات ← فید ترب و ایمالز ← توکن Shop API ترب</a> بچسبانید و ذخیره کنید. (در هیچ پیام یا چتی نفرستید.)</li>
+    <li>به همین صفحه برگردید و «خواندن کامل» را بزنید. بعد از آن هر روز خودکار به‌روز می‌شود.</li>
+  </ol>
+</section>
+{% else %}
+{% if st.error %}<div class="alert alert-danger">{{ st.error }}</div>{% endif %}
+
+{% if st.status %}
+<div class="tc-stats tb-stats">
+  <div class="{% if st.status == 'active' %}ok{% else %}ask{% endif %}"><b>{{ shop_status }}</b><span>وضعیت فروشگاه در ترب</span></div>
+  <div><b>{{ summary.total|default:0|fa_num }}</b><span>محصول در ترب</span></div>
+  <div class="ok"><b>{{ summary.available|default:0|fa_num }}</b><span>موجود و در دسترس</span></div>
+  <div><b>{{ summary.not_available|default:0|fa_num }}</b><span>ناموجود</span></div>
+  <div class="ask"><b>{{ summary.not_accessible|default:0|fa_num }}</b><span>خارج از دسترس (ترب صفحه را باز نمی‌کند)</span></div>
+  <div><b>{{ summary.not_active|default:0|fa_num }}</b><span>غیرفعال</span></div>
+  <div><b>{{ summary.deleted|default:0|fa_num }}</b><span>حذف‌شده</span></div>
+  <div><b>{% if calc_at %}{{ calc_at|jdate:"%d %B"|fa_num }}{% else %}—{% endif %}</b><span>زمان شمارش ترب (هر دو روز یک بار)</span></div>
+</div>
+{% if errors %}<section class="card-p"><h2 class="be-h">چرا ترب به بعضی صفحه‌ها دسترسی ندارد</h2>
+  <ul class="mb-0">{% for e in errors %}<li><code dir="ltr">{{ e.error_title }}</code>: {{ e.count|fa_num }} محصول</li>{% endfor %}</ul>
+  <p class="hint mb-0">۴۰۴ یعنی نشانی‌ای که ترب دارد در سایت نیست؛ معمولاً نشانی قدیمی وردپرس. در زبانهٔ «صفحه در دسترس نیست» پاسخ امروز سایت برای هر نشانی آمده است.</p>
+</section>{% endif %}
+{% endif %}
+
+<nav class="chips-p" aria-label="دسته‌ها">{% for k, label, n in tabs %}<a href="?t={{ k }}"{% if k == tab %} class="chip-on"{% endif %}>{{ label }}{% if n is not None %} <span>{{ n|fa_num }}</span>{% endif %}</a>{% endfor %}</nav>
+
+<form method="get" class="d-flex gap-2 my-2"><input type="hidden" name="t" value="{{ tab }}"><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="جستجو در نام یا نشانی…" aria-label="جستجو"><button class="btn btn-light btn-sm">جستجو</button></form>
+
+<form method="post" class="card-p">{% csrf_token %}
+  {% if page.object_list %}
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><input type="checkbox" aria-label="انتخاب همه" onclick="this.closest('table').querySelectorAll('input[name=ids]').forEach(c=>c.checked=this.checked)"></th>
+      <th>فرش</th><th>وضعیت در ترب</th><th>قیمت ترب</th><th>قیمت سایت</th><th>موجودی ترب / سایت</th>{% if tab == "404" or tab == "all" %}<th>پاسخ امروز سایت</th>{% endif %}</tr></thead>
+    <tbody>{% for r in page.object_list %}
+      <tr>
+        <td><input type="checkbox" name="ids" value="{{ r.torob_id }}" aria-label="انتخاب"></td>
+        <td>{% if r.product %}<a href="/panel/products/{{ r.product.pk }}/edit/">{{ r.product.title|fa_num|truncatechars:60 }}</a>{% else %}<span class="muted">بدون جفت در سایت</span>{% endif %}
+          <br><a class="small" dir="ltr" href="{{ r.page_url }}" target="_blank" rel="noopener">{{ r.page_url|truncatechars:70 }}</a></td>
+        <td>{% for x in r.status_labels %}<span class="badge-ic">{{ x }}</span> {% empty %}<span class="badge-ic">بدون مشکل</span>{% endfor %}
+          {% if r.error_title %}<br><code class="small" dir="ltr">{{ r.error_title }}</code>{% endif %}</td>
+        <td>{% if r.price %}{{ r.price|toman }}{% else %}—{% endif %}</td>
+        <td{% if r.problem == "price" %} class="text-danger fw-bold"{% endif %}>{% if r.site_price %}{{ r.site_price|toman }}{% else %}—{% endif %}</td>
+        <td{% if r.problem == "stock" %} class="text-danger fw-bold"{% endif %}>{{ r.availability|yesno:"موجود,ناموجود" }} / {% if r.product %}{{ r.site_available|yesno:"موجود,ناموجود" }}{% else %}—{% endif %}</td>
+        {% if tab == "404" or tab == "all" %}<td>{% if r.site_status %}<code>{{ r.site_status }}</code>{% if r.site_location %} ← <a class="small" dir="ltr" href="{{ r.site_location }}" target="_blank" rel="noopener">{{ r.site_location|truncatechars:50 }}</a>{% endif %}{% else %}—{% endif %}</td>{% endif %}
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "dashboard/_pager.html" %}
+  <div class="tc-bar">
+    <span class="hint">ترب قیمت و موجودی را خودش از صفحهٔ فرش می‌خواند؛ اگر قیمتی اشتباه مانده، می‌توانید فرش را تا درست شدن در ترب غیرفعال کنید.</span>
+    <button class="btn btn-light btn-sm" name="do" value="activate">فعال در ترب</button>
+    <button class="btn btn-pink btn-sm" name="do" value="deactivate" onclick="return confirm('فرش‌های انتخاب‌شده در ترب غیرفعال شوند؟')">غیرفعال در ترب</button>
+  </div>
+  {% else %}
+  <p class="mb-0">{% if s.products_synced_at %}در این دسته موردی نیست.{% else %}هنوز از ترب خوانده نشده؛ «خواندن کامل» را بزنید.{% endif %}</p>
+  {% endif %}
+</form>
+{% endif %}
+{% endblock %}

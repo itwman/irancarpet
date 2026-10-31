@@ -31,7 +31,7 @@ from ..forms import formfield_for, style_form
 from ..models import log
 
 SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key", "torobpay_client_secret", "torobpay_password",
-                 "digipay_client_secret", "digipay_password"}  # api_key: فرش پلاس و رج‌یار
+                 "digipay_client_secret", "digipay_password", "shop_api_token"}  # api_key: فرش پلاس و رج‌یار
 
 TABS = [
     ("site", "سایت و تماس"),
@@ -80,7 +80,7 @@ FORMS = {
                                       "max_images", "categories", "gift_enabled", "gift_amount", "gift_min_order",
                                       "gift_valid_days", "gift_require_app", "gift_app_url", "gift_page_url", "gift_text"]),
     "torob": (TorobSettings, ["enabled", "emalls_enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
-                              "title_suffix", "registry_text", "guarantee_attr", "excluded"]),
+                              "title_suffix", "registry_text", "guarantee_attr", "excluded", "shop_api_token"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice",
                           "finder_url", "promote_home", "promote_bar"]),
     "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes",

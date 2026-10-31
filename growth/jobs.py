@@ -130,6 +130,14 @@ def run_all(out=print):
             done["پیامک پایان فرش جشنواره‌ای به مدیر"] = 1
     except Exception:  # noqa: BLE001
         log.exception("offer flow")
+    try:  # ترب: وضعیت فروشگاه و محصولات (Shop API)، روزی یک بار
+        from torob import shopapi
+
+        if shopapi.due():
+            shopapi.sync()
+            done["وضعیت ترب"] = 1
+    except Exception:  # noqa: BLE001
+        log.exception("torob shop api")
     try:  # ترب‌پی: پرداخت‌های تأییدشده‌ای که هنوز قطعی (settle) نشده‌اند
         from shop.bnpl import retry_settles
 
