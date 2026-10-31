@@ -68,3 +68,5 @@ class TorobApiV3Tests(TestCase):
         self.assertIsNone(d["next_cursor"])
         self.assertEqual(len(d["products"]), 1)
         self.assertEqual(api_v3.last_request()["kind"], "cursor")
+        self.assertEqual(api_v3.recent_requests()[0]["uniques"], ["4242"])
+        self.assertEqual(api_v3.preview("4242")["page_unique"], "4242")

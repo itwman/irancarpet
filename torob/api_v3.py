@@ -82,9 +82,22 @@ def _response(items, total, page=None, max_pages=None, next_cursor=None):
     return JsonResponse(data, json_dumps_params={"ensure_ascii": False})
 
 
-def _note(kind, n):
+LOG_KEY = "torob_api_v3_log"
+
+
+def _note(kind, n, body=None, uniques=()):
     cache.set(LAST_KEY, {"at": timezone.now().isoformat(), "kind": kind, "n": n,
                          "count": (cache.get(LAST_KEY) or {}).get("count", 0) + 1}, 30 * 24 * 3600)
+    # ۳۰ درخواست آخر ترب (برای عیب‌یابی با پشتیبانی ترب): چه خواست و چه شناسه‌هایی برگشت
+    log_rows = (cache.get(LOG_KEY) or [])[-29:]
+    log_rows.append({"at": timezone.now().isoformat(), "kind": kind, "n": n,
+                     "body": json.dumps(body, ensure_ascii=False)[:400] if body is not None else "",
+                     "uniques": list(uniques)[:10]})
+    cache.set(LOG_KEY, log_rows, 30 * 24 * 3600)
+
+
+def recent_requests():
+    return list(reversed(cache.get(LOG_KEY) or []))
 
 
 @csrf_exempt
@@ -120,7 +133,7 @@ def products(request):
         pks = [p.pk for p in found if p]
         by = {p.pk: p for p in base.filter(pk__in=pks)}
         items = [x for x in (_item(by[pk], s) for pk in dict.fromkeys(pks) if pk in by) if x]
-        _note("single", len(items))
+        _note("single", len(items), body, [x["page_unique"] for x in items])
         return _response(items, len(items), page=1, max_pages=1)
 
     sort = body.get("sort")
@@ -138,7 +151,7 @@ def products(request):
         chunk = list(qs[:PAGE + 1])
         nxt = str(chunk[PAGE - 1].pk) if len(chunk) > PAGE else None
         items = [x for x in (_item(p, s) for p in chunk[:PAGE]) if x]
-        _note("cursor", len(items))
+        _note("cursor", len(items), body, [x["page_unique"] for x in items])
         return _response(items, None, next_cursor=nxt)
 
     page = body.get("page")
@@ -147,9 +160,23 @@ def products(request):
     total = qs.count()
     chunk = list(qs[(page - 1) * PAGE: page * PAGE])
     items = [x for x in (_item(p, s) for p in chunk) if x]
-    _note("page", len(items))
+    _note("page", len(items), body, [x["page_unique"] for x in items])
     return _response(items, total, page=page, max_pages=max(1, -(-total // PAGE)))
 
 
 def last_request():
     return cache.get(LAST_KEY)
+
+
+def preview(ref):
+    """همان JSONی که ترب برای یک فرش می‌گیرد؛ ref: شناسهٔ ترب (page_unique) یا نشانی صفحه."""
+    s = TorobSettings.load()
+    ref = str(ref).strip()
+    head = ref.split("_")[0]
+    p = feed.product_by_unique(int(head)) if head.isdigit() else feed.product_by_url(ref)
+    if p is None:
+        return {"error": "فرشی با این شناسه یا نشانی پیدا نشد"}
+    if not feed.base_queryset(s).filter(pk=p.pk).exists():
+        return {"error": "این فرش در فهرست ترب نیست (پیش‌نویس، مستثنی یا بی‌آلبوم وقتی «فقط آلبومی» روشن است)",
+                "product": p.pk}
+    return _item(p, s)
