@@ -25,7 +25,7 @@ class TorobFeedTests(TestCase):
         d = r.json()
         self.assertEqual(d["count"], 1)
         row = d["products"][0]
-        self.assertEqual((row["page_unique"], row["current_price"], row["old_price"], row["availability"]), (66171, 40_750_000, 0, "instock"))
+        self.assertEqual((row["page_unique"], row["current_price"], row["old_price"], row["availability"]), (self.p.pk, 40_750_000, 0, "instock"))
         self.assertTrue(row["page_url"].endswith("/product/%d9%81%d8%b1%d8%b4-%d9%be%d9%84%db%8c/"), row["page_url"])
         self.assertEqual(row["short_desc"], "توضیح")
 

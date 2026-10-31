@@ -56,29 +56,21 @@ class TorobApiV3Tests(TestCase):
         d = self.post({"page": 1, "sort": "date_added_desc"}).json()
         self.assertEqual((d["api_version"], d["total"], d["current_page"]), ("torob_api_v3", 1, 1))
         item = d["products"][0]
-        self.assertEqual(item["page_unique"], "4242")
+        self.assertEqual(item["page_unique"], str(self.p.pk))   # شناسهٔ سایت، همان که ترب دارد
         self.assertTrue(item["page_url"].startswith("http"))
         self.assertEqual((item["current_price"], item["availability"]), (0, False))  # بی‌قیمت ← ناموجود با قیمت ۰
         self.assertIsInstance(item["spec"], dict)
-        d = self.post({"page_uniques": ["4242", "999999"]}).json()
-        self.assertEqual([x["page_unique"] for x in d["products"]], ["4242"])
+        d = self.post({"page_uniques": ["4242", "999999"]}).json()       # شناسهٔ قدیمی ووکامرس هم پیدا می‌شود
+        self.assertEqual([x["page_unique"] for x in d["products"]], [str(self.p.pk)])
         d = self.post({"page_urls": [item["page_url"]]}).json()
         self.assertEqual(len(d["products"]), 1)
         d = self.post({"sort": "product_id_desc"}).json()
         self.assertIsNone(d["next_cursor"])
         self.assertEqual(len(d["products"]), 1)
         self.assertEqual(api_v3.last_request()["kind"], "cursor")
-        self.assertEqual(api_v3.recent_requests()[0]["uniques"], ["4242"])
-        self.assertEqual(api_v3.preview("4242")["page_unique"], "4242")
-        # فرش تازه (بدون شناسهٔ ووکامرس): همان شناسهٔ سایت، مثل آنچه ترب از قبل دارد
+        self.assertEqual(api_v3.recent_requests()[0]["uniques"], [str(self.p.pk)])
+        self.assertEqual(api_v3.preview("4242")["page_unique"], str(self.p.pk))
+        self.assertNotIn("%25", json.dumps(api_v3.preview(str(self.p.pk))))
         n = Product.objects.create(title="فرش تازه", slug="فرش-تازه", status="publish")
-        self.assertEqual(api_v3.preview(str(n.pk))["page_unique"], str(n.pk))
         d = self.post({"page_uniques": [str(n.pk)]}).json()
         self.assertEqual([x["page_unique"] for x in d["products"]], [str(n.pk)])
-        # اگر شناسهٔ سایت با شناسهٔ ووکامرسِ فرش دیگری یکی باشد، شناسهٔ جدا
-        from django.core.cache import cache as c
-        from torob import feed
-
-        Product.objects.filter(pk=self.p.pk).update(wp_id=n.pk)
-        c.delete("torob_wp_ids")
-        self.assertEqual(feed.unique_of(n), feed.NEW_ID_OFFSET + n.pk)

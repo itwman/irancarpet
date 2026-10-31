@@ -121,10 +121,10 @@ class _Matcher:
             u = int(head)
             if u >= feed.NEW_ID_OFFSET and u - feed.NEW_ID_OFFSET in self.pks:
                 return u - feed.NEW_ID_OFFSET
+            if u in self.pks:  # ترب فرش‌ها را با شناسهٔ سایت می‌شناسد
+                return u
             if u in self.by_wp:
                 return self.by_wp[u]
-            if u in self.pks:
-                return u
         return None
 
 

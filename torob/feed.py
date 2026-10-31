@@ -22,30 +22,20 @@ CACHE_KEY, CACHE_TTL = "torob_rows", 300
 
 def wp_url(path):
     """مثل وردپرس: حروف فارسی به‌صورت درصدی با حروف کوچک (‎%d9%81…)."""
-    return re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), quote(path, safe="/-_.~"))
-
-
-def _wp_ids():
-    """شناسه‌های ووکامرس قدیم (برای جلوگیری از هم‌شناسه شدن فرش تازه با فرش قدیمی)."""
-    ids = cache.get("torob_wp_ids")
-    if ids is None:
-        ids = set(Product.objects.exclude(wp_id=None).values_list("wp_id", flat=True))
-        cache.set("torob_wp_ids", ids, 600)
-    return ids
+    # نشانی‌ای که از قبل درصدی است (مثل نشانی تصویرها) دوباره درصدی نشود (%D9 ← %25D9)
+    return re.sub(r"%[0-9A-F]{2}", lambda m: m.group(0).lower(), quote(unquote(path), safe="/-_.~"))
 
 
 def unique_of(p):
-    """شناسهٔ ثابت فرش برای ترب و ایمالز: فرش‌های قدیمی شناسهٔ ووکامرس؛ فرش‌های تازه همان شناسهٔ سایت (ترب هم با همین
-    می‌شناسدشان). فقط اگر شناسهٔ سایت با شناسهٔ ووکامرسِ فرش دیگری یکی باشد، ۱۰۰۰۰۰۰۰۰۰+شناسه."""
-    if p.wp_id:
-        return p.wp_id
-    return NEW_ID_OFFSET + p.pk if p.pk in _wp_ids() else p.pk
+    """شناسهٔ ثابت فرش برای ترب و ایمالز: همان شناسهٔ فرش در سایت. ترب بعد از انتقال سایت همهٔ فرش‌ها را با همین
+    شناسه می‌شناسد (خزنده‌اش از صفحه‌ها برداشته)؛ شناسهٔ ووکامرس قدیم فقط برای پیدا کردن فرش از درخواست‌های قدیمی می‌ماند."""
+    return p.pk
 
 
 def product_by_unique(u):
     if u >= NEW_ID_OFFSET:
         return Product.objects.filter(pk=u - NEW_ID_OFFSET).first()
-    return Product.objects.filter(wp_id=u).first() or Product.objects.filter(pk=u, wp_id=None).first()
+    return Product.objects.filter(pk=u).first() or Product.objects.filter(wp_id=u).first()
 
 
 def base_queryset(s):
@@ -111,6 +101,7 @@ def _category(p):
 
 def _text(html, limit=500):
     t = re.sub(r"\s+", " ", unescape(strip_tags(html or ""))).strip()
+    t = re.sub(r"(?:\s*؛\s*)+", "؛ ", t).strip("؛ ")
     return t[:limit] + "…" if len(t) > limit else t
 
 
@@ -142,6 +133,10 @@ def format_row(p, s, keep_unavailable=False):
     guarantee = ""
     if s.guarantee_attr:
         guarantee = "، ".join(p.specs.filter(attribute__slug=s.guarantee_attr).values_list("name", flat=True))
+    if not guarantee and p.material:  # ضمانت از «تنظیمات ← متن محصولات» (پلی‌استر ۲ سال، آکریلیک ۷ سال)
+        from content.models import ContentSettings
+
+        guarantee = ContentSettings.load().warranty_for(p.material)
     title = p.title + (f" - {s.title_suffix}" if s.title_suffix else "")
 
     return {
@@ -156,8 +151,8 @@ def format_row(p, s, keep_unavailable=False):
         "image_link": (site + wp_url(main.url)) if main and main.url else "",
         "image_links": links,
         "page_url": site + wp_url(p.get_absolute_url()),
-        "short_desc": _text(__import__("content.render", fromlist=["build"]).build(p)["bullets"] if p.use_template
-                            else (p.short_description or p.content)),
+        "short_desc": _text(re.sub(r"</(li|p|div)>|<br\s*/?>", "؛ ", __import__("content.render", fromlist=["build"]).build(p)["bullets"]
+                                   if p.use_template else (p.short_description or p.content))).strip("؛ "),
         "spec": _spec(p, s),
         "guarantee": guarantee,
         "registry": s.registry_text,
