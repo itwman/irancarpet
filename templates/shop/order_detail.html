@@ -6,7 +6,7 @@
     <span class="knot-ico" aria-hidden="true" style="--c1:#E5395B;--c2:#7CC46B"><i></i><i></i><i></i><i></i></span>
     {% if order.is_installment %}
     <h1>درخواست خرید اقساطی ثبت شد!</h1>
-    <p class="muted">شمارهٔ سفارش <strong>{{ order.number|fa_num }}</strong>. نتیجهٔ بررسی را با پیامک خبر می‌دهیم.</p>
+    <p class="muted">شمارهٔ سفارش <strong>{{ order.number|fa_num }}</strong>. {% if beta %}حالا خرید را در <a href="#beta">همین صفحه</a> با رمز بانک رفاه تأیید کنید.{% else %}نتیجهٔ بررسی را با پیامک خبر می‌دهیم.{% endif %}</p>
     {% else %}
     <h1>سفارشتان ثبت شد!</h1>
     <p class="muted">شمارهٔ سفارش <strong>{{ order.number|fa_num }}</strong>. همکاران ما برای هماهنگی ارسال با شما تماس می‌گیرند.</p>
@@ -27,7 +27,8 @@
       <div class="inst-order inst-order--{{ order.installment_state|default:'review' }}">
         <h2 class="mt-4">خرید اقساطی <span class="st">{{ order.get_installment_state_display }}</span></h2>
         <p class="muted small mb-2">{{ plan.title|default:q.plan_title }}</p>
-        {% if order.installment_state == "review" and plan.review_note %}<div class="alert-ic alert-ic--warn">{{ plan.review_note|linebreaksbr }}</div>{% endif %}
+        {% if beta %}{% include "installments/_beta_box.html" %}
+        {% elif order.installment_state == "review" and plan.review_note %}<div class="alert-ic alert-ic--warn">{{ plan.review_note|linebreaksbr }}</div>{% endif %}
         {% if order.installment_state == "approved" or order.installment_state == "done" %}{% if plan.approved_note %}<div class="alert-ic alert-ic--ok">{{ plan.approved_note|linebreaksbr }}</div>{% endif %}
           {% if q.kind == "cheque" and site_settings.address %}<p class="small">نشانی ارسال چک‌ها: <strong>{{ site_settings.address|fa_num }}</strong></p>{% endif %}{% endif %}
         {% if order.installment_state == "rejected" %}<div class="alert-ic">درخواست اقساط تأیید نشد. برای راهنمایی با ما تماس بگیرید{% if site_settings.phone %}: {{ site_settings.phone|fa_num }}{% endif %}.</div>{% endif %}
@@ -36,7 +37,7 @@
         <div class="sum-row"><span>{{ q.count|fa_num }} قسط {% if q.step == 2 %}دوماهه{% else %}ماهانه{% endif %}</span><strong>{{ q.installment|toman }} تومان</strong></div>
         <div class="sum-row big"><span>جمع کل پرداختی</span><strong>{{ q.payable_total|toman }} تومان</strong></div>
         <table class="inst-table"><thead><tr><th>{% if q.kind == "cheque" %}چک{% else %}قسط{% endif %}</th><th>تاریخ</th><th>مبلغ (تومان)</th></tr></thead>
-          <tbody>{% for r in q.schedule %}<tr><td>{{ r.n|fa_num }}</td><td><bdi>{{ r.jdate|fa_num }}</bdi></td><td>{{ r.amount|toman }}</td></tr>{% endfor %}</tbody></table>
+          <tbody>{% for r in q.schedule %}<tr><td>{{ r.n|fa_num }}</td><td><bdi>{{ r.label|default:r.jdate|fa_num }}</bdi></td><td>{{ r.amount|toman }}</td></tr>{% endfor %}</tbody></table>
       </div>
       {% endwith %}{% endif %}
       <h2 class="mt-4">ارسال به</h2>

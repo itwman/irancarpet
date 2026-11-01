@@ -117,7 +117,7 @@ def apply_to_order(order, plan, q, info, saved):
     order.installment_state = "review"
     order.deposit_percent = q["down_percent"]
     order.online_amount = q["down"]
-    if q["down"] and plan.down_timing == plan.DownTiming.CHECKOUT:
+    if q["down"] and plan.down_at_checkout:
         order.status = order.Status.PENDING
     else:
         order.status = order.Status.ON_HOLD

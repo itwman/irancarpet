@@ -1,0 +1,59 @@
+{% load fa %}{% with sale=beta.sale q=beta.q %}
+<section class="beta-box" id="beta" aria-labelledby="beta-h">
+  <h2 id="beta-h">تأیید خرید در سامانهٔ بتا</h2>
+  <p class="small muted">سه گام آنلاین؛ اقساط بعد از تأیید شما از حقوق بازنشستگی کسر می‌شود.</p>
+
+  <ol class="beta-steps">
+    <li class="{% if sale.credit is not None %}is-done{% else %}is-now{% endif %}">
+      <b>بررسی اعتبار</b>
+      <form method="post" action="{{ order.get_absolute_url }}beta/" class="beta-row">{% csrf_token %}
+        <input type="hidden" name="do" value="check">
+        <label class="visually-hidden" for="beta-nc">کد ملی</label>
+        <input id="beta-nc" name="national_code" value="{{ sale.national_code }}" inputmode="numeric" maxlength="10" class="ltr" placeholder="کد ملی" autocomplete="off">
+        <button class="pill" type="submit">{% if sale.credit is not None %}بررسی دوباره{% else %}بررسی اعتبار{% endif %}</button>
+      </form>
+      {% if sale.credit is not None %}
+        {% if beta.fits %}<p class="beta-ok">اعتبار شما برای قسط {{ q.installment|toman }} تومانی کافی است.</p>
+        {% else %}<p class="beta-no">اعتبار ماهانهٔ شما برای قسط {{ q.installment|toman }} تومانی کافی نیست.{% if beta.suggest %} با {{ beta.suggest|fa_num }} قسط یا بیشتر جا می‌شود.{% endif %}</p>{% endif %}
+      {% endif %}
+      {% if beta.can_change %}
+      <details class="beta-change"{% if sale.credit is not None and not beta.fits %} open{% endif %}><summary>تغییر تعداد قسط یا پیش‌پرداخت</summary>
+        <form method="post" action="{{ order.get_absolute_url }}beta/" class="beta-row">{% csrf_token %}
+          <input type="hidden" name="do" value="change">
+          <label>تعداد قسط <select name="months">{% for m in beta.month_choices %}<option value="{{ m }}"{% if m == q.months %} selected{% endif %}>{{ m|fa_num }}</option>{% endfor %}</select></label>
+          <label>پیش‌پرداخت <select name="down">{% for d in beta.down_choices %}<option value="{{ d }}"{% if d == q.down_percent %} selected{% endif %}>{{ d|fa_num }}٪</option>{% endfor %}</select></label>
+          <button class="pill" type="submit">محاسبهٔ دوباره</button>
+        </form>
+      </details>
+      {% endif %}
+    </li>
+
+    <li class="{% if beta.otp_live %}is-done{% elif sale.credit is not None and beta.fits %}is-now{% endif %}">
+      <b>ماه شروع و ارسال رمز</b>
+      {% if sale.credit is not None and beta.fits %}
+        {% if beta.months %}
+        <form method="post" action="{{ order.get_absolute_url }}beta/" class="beta-row">{% csrf_token %}
+          <input type="hidden" name="do" value="otp">
+          <label>کسر اولین قسط از حقوق <select name="ym">{% for k, v in beta.months %}<option value="{{ k }}"{% if k == sale.start_ym %} selected{% endif %}>{{ v|fa_num }}</option>{% endfor %}</select></label>
+          <button class="pill" type="submit">{% if beta.otp_live %}ارسال دوبارهٔ رمز{% else %}ارسال رمز{% endif %}</button>
+        </form>
+        <p class="small muted mb-0">{{ q.count|fa_num }} قسط {{ q.installment|toman }} تومانی. بانک رفاه رمز یک‌بارمصرف را به {% if sale.cellphone %}<bdi dir="ltr">{{ sale.cellphone|fa_num }}</bdi>{% else %}موبایل ثبت‌شده در بتا{% endif %} پیامک می‌کند.</p>
+        {% else %}<p class="small beta-no">فهرست ماه‌های شروع از بتا نرسید؛ چند دقیقهٔ دیگر صفحه را تازه کنید.</p>{% endif %}
+      {% endif %}
+    </li>
+
+    <li class="{% if beta.otp_live %}is-now{% endif %}">
+      <b>وارد کردن رمز بانک</b>
+      {% if beta.otp_live %}
+      <form method="post" action="{{ order.get_absolute_url }}beta/" class="beta-row">{% csrf_token %}
+        <input type="hidden" name="do" value="confirm">
+        <label class="visually-hidden" for="beta-otp">رمز یک‌بارمصرف</label>
+        <input id="beta-otp" name="otp" inputmode="numeric" maxlength="10" class="ltr" placeholder="رمز پیامک‌شده" autocomplete="one-time-code" required>
+        <button class="btn-ic btn-ic--pink" type="submit">تأیید خرید اقساطی</button>
+      </form>
+      <p class="small muted mb-0">رمز ۲ دقیقه اعتبار دارد. با زدن «تأیید»، {{ q.count|fa_num }} قسط از {{ beta.start_label|fa_num }} از حقوق شما کسر می‌شود.</p>
+      {% endif %}
+    </li>
+  </ol>
+</section>
+{% endwith %}

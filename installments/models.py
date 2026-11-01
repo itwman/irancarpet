@@ -85,7 +85,23 @@ class InstallmentPlan(models.Model):
         return self.title
 
     @property
+    def beta_auto(self):
+        """بتا با اتصال خودکار: فقط کد ملی لازم است و پیش‌پرداخت بعد از تأیید بتا گرفته می‌شود."""
+        if self.kind != self.Kind.BETA:
+            return False
+        if not hasattr(self, "_beta_auto"):
+            self._beta_auto = BetaSettings.load().ready
+        return self._beta_auto
+
+    @property
+    def down_at_checkout(self):
+        return self.down_timing == self.DownTiming.CHECKOUT and not self.beta_auto
+
+    @property
     def info_fields(self):
+        if self.beta_auto:
+            return [(k, label, typ) for k, attr, label, typ in self.INFO_FIELDS
+                    if k == "national_code" or (k == "holder_name" and self.ask_holder_name)]
         return [(k, label, typ) for k, attr, label, typ in self.INFO_FIELDS if getattr(self, attr)]
 
     def steps(self):
@@ -113,5 +129,94 @@ class InstallmentPlan(models.Model):
             "id": self.pk, "title": self.title, "kind": self.kind, "summary": self.summary,
             "rate": float(self.monthly_rate), "down": self.down_options(), "min_down": self.min_down_percent,
             "steps": self.steps(), "months": {str(s): self.months_for(s) for s in self.steps()},
-            "min_order": self.min_order_amount, "pay_at": self.down_timing,
+            "min_order": self.min_order_amount, "pay_at": "checkout" if self.down_at_checkout else "approval",
         }
+
+
+class BetaSettings(models.Model):
+    """اتصال خودکار به سامانهٔ بتا (بستر تأمین اعتبار بانک رفاه — بانکداری باز api.rb24.ir)."""
+
+    class Unit(models.TextChoices):
+        RIAL = "rial", "ریال"
+        TOMAN = "toman", "تومان"
+
+    enabled = models.BooleanField(
+        "اتصال خودکار به بتا فعال", default=False,
+        help_text="روشن: مشتری بازنشسته بعد از ثبت سفارش، در صفحهٔ سفارش اعتبارش را می‌بیند و با رمز پیامکی بانک خرید را تأیید می‌کند؛ "
+                  "فروش خودکار در بتا ثبت می‌شود. خاموش: همان روش دستی (ثبت در پنل بتا توسط شما).")
+    client_id = models.CharField("شناسهٔ کاربری (client_id)", max_length=200, blank=True,
+                                 help_text="از سامانهٔ بانکداری باز بانک رفاه")
+    client_secret = models.CharField("رمز (client_secret)", max_length=300, blank=True)
+    api_key = models.CharField("کلید API بتا (API-KEY)", max_length=300, blank=True,
+                               help_text="کلیدی که سامانهٔ بتا به فروشگاه داده است")
+    grant_type = models.CharField("نوع احراز (grant_type)", max_length=50, default="client_credentials",
+                                  help_text="معمولاً client_credentials؛ فقط اگر بانک مقدار دیگری گفت عوض کنید")
+    base_url = models.URLField("نشانی سرویس", default="https://api.rb24.ir")
+    amount_unit = models.CharField("واحد مبلغ در بتا", max_length=5, choices=Unit.choices, default=Unit.RIAL,
+                                   help_text="مبلغ‌ها در سایت تومان است؛ اگر بانک گفت مبلغ‌ها تومانی است، «تومان» را بزنید")
+    sale_title = models.CharField("عنوان فروش در بتا", max_length=100, default="فرش - سفارش {order}",
+                                  help_text="متغیر: {order} شمارهٔ سفارش. همین عنوان در پیامک بانک به مشتری دیده می‌شود.")
+    daily_limit = models.PositiveSmallIntegerField(
+        "سقف استعلام اعتبار برای هر مشتری در روز", default=5,
+        help_text="برای جلوگیری از استعلام اعتبار دیگران با کد ملی آن‌ها")
+    last_test = models.JSONField(default=dict, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "اتصال سامانهٔ بتا"
+
+    def __str__(self):
+        return "سامانهٔ بتا"
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @property
+    def ready(self):
+        return bool(self.enabled and self.client_id and self.client_secret and self.api_key)
+
+    def to_bank(self, toman):
+        return int(toman) * (10 if self.amount_unit == self.Unit.RIAL else 1)
+
+    def to_toman(self, amount):
+        return int(amount or 0) // (10 if self.amount_unit == self.Unit.RIAL else 1)
+
+
+class BetaSale(models.Model):
+    """یک خرید اقساطی در سامانهٔ بتا برای یک سفارش: استعلام، رمز یک‌بارمصرف، شمارهٔ فروش و وضعیت وصول اقساط."""
+
+    order = models.OneToOneField("shop.Order", on_delete=models.CASCADE, related_name="beta", verbose_name="سفارش")
+    national_code = models.CharField("کد ملی", max_length=10)
+    cellphone = models.CharField("موبایل ثبت‌شده در بتا (نیمه)", max_length=20, blank=True)
+    credit = models.BigIntegerField("توان بازپرداخت ماهانه (تومان)", null=True, blank=True)
+    checked_at = models.DateTimeField("زمان استعلام", null=True, blank=True)
+    inquiries = models.JSONField(default=list, blank=True)  # زمان استعلام‌ها برای سقف روزانه
+    start_ym = models.CharField("ماه شروع کسر", max_length=7, blank=True)
+    request_id = models.UUIDField(null=True, blank=True)
+    payload = models.JSONField(default=dict, blank=True)  # همان بدنه‌ای که رمز برایش فرستاده شد (رمز به آن حساس است)
+    otp_sent_at = models.DateTimeField(null=True, blank=True)
+    sale_id = models.BigIntegerField("شمارهٔ فروش در بتا", null=True, blank=True, db_index=True)
+    registered_at = models.DateTimeField("زمان ثبت فروش", null=True, blank=True)
+    installments = models.JSONField(default=list, blank=True)
+    paid_count = models.PositiveSmallIntegerField("قسط وصول‌شده", default=0)
+    failed_count = models.PositiveSmallIntegerField("قسط وصول‌نشده", default=0)
+    synced_at = models.DateTimeField("آخرین به‌روزرسانی اقساط", null=True, blank=True)
+    last_error = models.CharField("آخرین خطا", max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "خرید بتا"
+        verbose_name_plural = "خریدهای بتا"
+        ordering = ["-pk"]
+
+    def __str__(self):
+        return f"بتا {self.sale_id or '—'} / سفارش {self.order_id}"
+
+    @property
+    def count(self):
+        return len([i for i in self.installments if not i.get("deleted")])

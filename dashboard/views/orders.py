@@ -70,10 +70,13 @@ def order_view(request, pk):
     from crm.customer import url as customer_url
     from installments.orders import info_rows
 
+    from .beta import order_context as beta_order_context
+
     return render(request, "dashboard/order_view.html", {
         "order": order, "form": form, "pay_form": pay_form, "items": order.items.select_related("product"),
         "payments": order.payments.all(), "provinces": PROVINCES,
         "inst_info": info_rows(order) if order.is_installment else [],
+        "beta": beta_order_context(order) if order.is_installment else None,
         "sms_logs": order.sms_logs.order_by("created_at"), "customer_url": customer_url(order.mobile),
     })
 

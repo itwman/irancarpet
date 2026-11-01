@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}اقساط بتا{% endblock %}
+{% block content %}
+<div class="page-top"><div>
+  <h1>اقساط بتا (بازنشستگان)</h1>
+  <p class="muted mb-0">خریدهای ثبت‌شده در سامانهٔ بتا بانک رفاه و وضعیت کسر هر قسط از حقوق. هر روز خودکار به‌روز می‌شود.</p></div>
+  {% if s.ready %}<form method="post" class="page-top__actions">{% csrf_token %}<button class="btn btn-ink btn-sm" name="do" value="sync">به‌روزرسانی از بتا</button></form>{% endif %}
+</div>
+{% if not s.ready %}<div class="alert alert-warning">اتصال خودکار بتا خاموش است یا کلیدها کامل نیست؛ <a href="/panel/settings/?tab=beta">تنظیمات ← سامانهٔ بتا</a>.</div>{% endif %}
+
+<nav class="chips-p" aria-label="دسته‌ها">{% for k, label, n in tabs %}<a href="?t={{ k }}"{% if k == tab %} class="chip-on"{% endif %}>{{ label }}{% if n is not None %} <span>{{ n|fa_num }}</span>{% endif %}</a>{% endfor %}</nav>
+<form method="get" class="d-flex gap-2 my-2"><input type="hidden" name="t" value="{{ tab }}"><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="شمارهٔ سفارش، نام خانوادگی، موبایل یا شمارهٔ فروش بتا…" aria-label="جستجو"><button class="btn btn-light btn-sm">جستجو</button></form>
+
+<section class="card-p">
+  {% if rows %}
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th>سفارش</th><th>مشتری</th><th>شمارهٔ فروش بتا</th><th>اقساط</th><th>وصول‌شده</th><th>وصول‌نشده</th><th>قسط بعدی</th><th>به‌روزرسانی</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a href="/panel/orders/{{ r.order.pk }}/view/">{{ r.order.number|fa_num }}</a></td>
+      <td>{{ r.order.full_name }}<br><small class="muted ltr-num">{{ r.nc|fa_num }}</small></td>
+      <td>{% if r.sale.sale_id %}<code>{{ r.sale.sale_id }}</code>{% else %}<span class="badge-ic">منتظر تأیید مشتری</span>{% endif %}
+        {% if r.sale.last_error %}<br><small class="text-danger">{{ r.sale.last_error|truncatechars:80 }}</small>{% endif %}</td>
+      <td>{{ r.count|fa_num }} × {{ r.order.installment.installment|toman }}</td>
+      <td>{{ r.sale.paid_count|fa_num }}</td>
+      <td{% if r.sale.failed_count %} class="text-danger fw-bold"{% endif %}>{{ r.sale.failed_count|fa_num }}</td>
+      <td>{% if r.next %}{{ r.next.due|jdate:"%d %B %Y" }} · {{ r.next.amount|toman }}{% else %}—{% endif %}</td>
+      <td>{% if r.sale.synced_at %}{{ r.sale.synced_at|jdate:"%d %B %H:%M" }}{% else %}—{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "dashboard/_pager.html" %}
+  {% else %}<p class="mb-0">در این دسته موردی نیست.</p>{% endif %}
+</section>
+{% endblock %}

@@ -24,6 +24,7 @@ from crm.models import CrmSettings
 from rajyar.models import RajyarSettings
 from seo import indexnow
 from seo.models import SeoSettings
+from installments.models import BetaSettings
 from torob.models import TorobSettings
 
 from ..auth import clear_site_cache, staff_required
@@ -31,7 +32,7 @@ from ..forms import formfield_for, style_form
 from ..models import log
 
 SECRET_FIELDS = {"smsir_api_key", "zarinpal_merchant_id", "api_key", "torobpay_client_secret", "torobpay_password",
-                 "digipay_client_secret", "digipay_password", "shop_api_token"}  # api_key: فرش پلاس و رج‌یار
+                 "digipay_client_secret", "digipay_password", "shop_api_token", "client_secret"}  # api_key: فرش پلاس و رج‌یار
 
 TABS = [
     ("site", "سایت و تماس"),
@@ -41,6 +42,7 @@ TABS = [
     ("pricing", "فرمول قیمت"),
     ("farshplus", "فرش پلاس"),
     ("torob", "فید ترب و ایمالز"),
+    ("beta", "سامانهٔ بتا (اقساط بازنشستگان)"),
     ("app", "اپلیکیشن"),
     ("seo", "سئو و هوش مصنوعی"),
     ("rajyar", "رج‌یار (کانال‌ها)"),
@@ -81,6 +83,8 @@ FORMS = {
                                       "gift_valid_days", "gift_require_app", "gift_app_url", "gift_page_url", "gift_text"]),
     "torob": (TorobSettings, ["enabled", "emalls_enabled", "only_album", "per_page", "price_divisor", "decrease_rate", "tax_percent", "round_to",
                               "title_suffix", "registry_text", "guarantee_attr", "excluded", "shop_api_token"]),
+    "beta": (BetaSettings, ["enabled", "client_id", "client_secret", "api_key", "grant_type", "base_url", "amount_unit",
+                            "sale_title", "daily_limit"]),
     "app": (AppSettings, ["latest_version", "min_version", "update_url", "update_note", "home_notice",
                           "finder_url", "promote_home", "promote_bar"]),
     "rajyar": (RajyarSettings, ["enabled", "url", "api_key", "channels", "auto_new", "interval_minutes",
@@ -177,6 +181,14 @@ def keep_secrets(form, inst_before):
     for name in SECRET_FIELDS & set(form.fields):
         if not form.cleaned_data.get(name):
             setattr(form.instance, name, getattr(inst_before, name))
+
+
+def beta_info():
+    from django.conf import settings as dj
+
+    from installments import beta
+
+    return {"s": BetaSettings.load(), "calls": beta.recent_calls()[:20], "ip": getattr(dj, "SERVER_IP", "")}
 
 
 def status_info():
@@ -287,6 +299,12 @@ def settings_view(request):
             else:
                 messages.error(request, f"sms.ir پیامک را نفرستاد: {sms.LAST_ERROR['msg'] or 'خطای نامشخص'}")
             return redirect("/panel/settings/?tab=sms")
+        if request.POST.get("do") == "beta_test":
+            from installments import beta
+
+            ok, m = beta.test()
+            (messages.success if ok else messages.error)(request, m)
+            return redirect("/panel/settings/?tab=beta")
         if request.POST.get("do") == "bnpl_check":
             from shop.bnpl import diagnose
 
@@ -437,6 +455,7 @@ def settings_view(request):
         "seo": SeoSettings.load() if tab == "seo" else None,
         "rw": rewrite_summary() if tab == "seo" else None,
         "rj": RajyarSettings.load() if tab == "rajyar" else None,
+        "beta": beta_info() if tab == "beta" else None,
         "crm_groups": crm_groups(form) if tab == "crm" else None,
         "line": ShopSettings.load().smsir_line_number if tab == "crm" else "",
         "short_test": __import__("crm.links", fromlist=["shorten"]).shorten("/my-account/club/", "k") if tab == "crm" else "",

@@ -9,7 +9,7 @@ from crm import views as crm_views
 from growth import panel as growth_panel
 from stats import views as stats_views
 
-from .views import crud, home, media, orders, people, products, settings, tags, torob_status
+from .views import beta, crud, home, media, orders, people, products, settings, tags, torob_status
 
 urlpatterns = [
     path("", home.home, name="panel"),
@@ -39,6 +39,8 @@ urlpatterns = [
     path("orders/ship/", orders.orders_ship),
     path("tags/cleanup/", tags.tag_cleanup),
     path("torob/", torob_status.torob_status),
+    path("beta/", beta.beta_list),
+    path("orders/<int:pk>/beta/", beta.order_beta),
     path("orders/print/", orders.orders_print),
     path("orders/notify/", orders.notify),
     path("orders/<int:pk>/view/", orders.order_view),

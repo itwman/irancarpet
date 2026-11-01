@@ -138,6 +138,14 @@ def run_all(out=print):
             done["وضعیت ترب"] = 1
     except Exception:  # noqa: BLE001
         log.exception("torob shop api")
+    try:  # بتا (بانک رفاه): وضعیت وصول اقساط خریدهای ثبت‌شده، روزی یک بار برای هر خرید
+        from installments.betaflow import sync_due as beta_sync
+
+        n = beta_sync()
+        if n:
+            done["وضعیت اقساط بتا"] = n
+    except Exception:  # noqa: BLE001
+        log.exception("beta sync")
     try:  # ترب‌پی: پرداخت‌های تأییدشده‌ای که هنوز قطعی (settle) نشده‌اند
         from shop.bnpl import retry_settles
 

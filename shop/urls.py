@@ -2,6 +2,8 @@ from django.urls import path, re_path
 
 from accounts import panel as accp
 from accounts import views as acc
+from installments import views as inst_views
+
 from . import views
 
 urlpatterns = [
@@ -26,6 +28,7 @@ urlpatterns = [
     path("my-account/logout/", acc.logout_view),
     path("my-account/orders/<int:number>/", views.order_detail),
     path("my-account/orders/<int:number>/pay/", views.order_pay),
+    path("my-account/orders/<int:number>/beta/", inst_views.beta_action),
     # زیرصفحه‌های قدیمی ووکامرس (orders، edit-account، lost-password و...)
     re_path(r"^my-account/[^/]+/(?:[^/]+/)?$", views.account_legacy),
 ]

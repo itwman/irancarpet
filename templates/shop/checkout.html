@@ -33,7 +33,8 @@
       {% for p, desc in plans %}
       <fieldset class="inst-docs" data-plan-fields="{{ p.pk }}"{% if not forloop.first %} hidden{% endif %}>
         <legend>مشخصات و مدارک</legend>
-        {% if p.submit_note %}<p class="inst-docs__note">{{ p.submit_note }}</p>{% endif %}
+        {% if p.beta_auto %}<p class="inst-docs__note">بعد از ثبت سفارش، در صفحهٔ سفارش اعتبارتان در سامانهٔ بتا بررسی می‌شود و خرید را با رمزی که بانک رفاه پیامک می‌کند تأیید می‌کنید؛ همه‌چیز آنلاین و در چند دقیقه.</p>
+        {% elif p.submit_note %}<p class="inst-docs__note">{{ p.submit_note }}</p>{% endif %}
         <div class="grid-2">
         {% for key, label, typ in p.info_fields %}{% with name="inst_"|add:key %}
           <div class="field{% if errors|get_item:name %} has-err{% endif %}{% if typ == 'image' %} inst-file{% endif %}">
@@ -50,7 +51,7 @@
           </div>
         {% endwith %}{% endfor %}
         </div>
-        {% if p.down_timing == "approval" %}<p class="inst-docs__note">پیش‌پرداخت بعد از تأیید مدارک، از صفحهٔ سفارش پرداخت می‌شود.</p>{% endif %}
+        {% if not p.down_at_checkout %}<p class="inst-docs__note">پیش‌پرداخت بعد از تأیید {% if p.beta_auto %}بتا{% else %}مدارک{% endif %}، از صفحهٔ سفارش پرداخت می‌شود.</p>{% endif %}
       </fieldset>
       {% endfor %}
     </section>

@@ -592,7 +592,7 @@ def order_create(request):
         plan, q, info, uploads, inst_errors = read_request(d, request.FILES, summary["total"])
         errors.update(inst_errors)
         inst = (plan, q, info, uploads)
-        pay_now = bool(q and q["down"] and plan.down_timing == plan.DownTiming.CHECKOUT)
+        pay_now = bool(q and q["down"] and plan.down_at_checkout)
     if pay_now and not any(g.key == form["gateway"] for g in gateways.enabled(shop)):
         errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
     if summary["has_problem"]:

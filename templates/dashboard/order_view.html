@@ -32,6 +32,25 @@
           <tbody>{% for r in q.schedule %}<tr><td>{{ r.n|fa_num }}</td><td><bdi>{{ r.jdate|fa_num }}</bdi></td><td class="num">{{ r.amount|toman }}</td></tr>{% endfor %}</tbody></table>
         </div>
       </div>
+      {% if beta %}<div class="beta-panel mt-3">
+        <h3 class="h6">سامانهٔ بتا {% if beta.sale.sale_id %}<span class="badge-ic b-inst-done">فروش {{ beta.sale.sale_id }}</span>{% elif beta.ready %}<span class="badge-ic">منتظر تأیید مشتری در صفحهٔ سفارش</span>{% else %}<span class="badge-ic">اتصال خودکار خاموش — ثبت دستی در پنل بتا</span>{% endif %}</h3>
+        {% if beta.sale %}<div class="kv-row">
+          {% if beta.sale.credit is not None %}<div class="kv"><span>توان بازپرداخت ماهانه</span><strong>{{ beta.sale.credit|toman }}</strong></div>{% endif %}
+          {% if beta.sale.cellphone %}<div class="kv"><span>موبایل در بتا</span><strong class="ltr-num">{{ beta.sale.cellphone|fa_num }}</strong></div>{% endif %}
+          {% if beta.start_label %}<div class="kv"><span>شروع کسر</span><strong>{{ beta.start_label|fa_num }}</strong></div>{% endif %}
+          {% if beta.sale.registered_at %}<div class="kv"><span>ثبت در بتا</span><strong>{{ beta.sale.registered_at|jdate:"%d %B %H:%M" }}</strong></div>{% endif %}
+          {% if beta.sale.sale_id %}<div class="kv"><span>وصول‌شده / وصول‌نشده</span><strong>{{ beta.sale.paid_count|fa_num }} / {{ beta.sale.failed_count|fa_num }}</strong></div>{% endif %}
+        </div>
+        {% if beta.sale.last_error %}<p class="text-danger small mb-2">آخرین خطا: {{ beta.sale.last_error }}</p>{% endif %}{% endif %}
+        {% if beta.rows %}<table class="tbl tbl-sm"><thead><tr><th>سررسید</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ وصول</th></tr></thead>
+          <tbody>{% for r in beta.rows %}<tr><td>{{ r.due|jdate:"%d %B %Y" }}</td><td class="num">{{ r.amount|toman }}</td><td>{% if r.ok %}<span class="text-success">وصول شد</span>{% elif r.status == 3 %}<span class="text-danger">{{ r.title|default:"وصول نشد" }}</span>{% else %}{{ r.title }}{% endif %}</td><td>{{ r.settled|jdate:"%d %B %Y" }}</td></tr>{% endfor %}</tbody></table>
+          {% if beta.sale.synced_at %}<p class="hint mb-1">به‌روزرسانی: {{ beta.sale.synced_at|jdate:"%d %B %H:%M" }}</p>{% endif %}{% endif %}
+        {% if beta.ready %}<form method="post" action="/panel/orders/{{ order.pk }}/beta/" class="d-flex flex-wrap gap-2 align-items-center">{% csrf_token %}
+          {% if beta.sale.sale_id %}<button class="btn btn-light btn-sm" name="do" value="sync">به‌روزرسانی اقساط از بتا</button>
+          {% else %}<input class="form-control form-control-sm w-auto" name="sale_id" inputmode="numeric" placeholder="شمارهٔ فروش در پنل بتا" aria-label="شمارهٔ فروش بتا">
+            <button class="btn btn-light btn-sm" name="do" value="link" title="اگر خرید را خودتان در پنل بتا ثبت کرده‌اید">اتصال به فروش ثبت‌شده</button>{% endif %}
+        </form>{% endif %}
+      </div>{% endif %}
       <form method="post" action="/panel/orders/{{ order.pk }}/installment/" class="inst-actions" data-confirm="وضعیت اقساط تغییر کند؟ (برای تأیید و رد، به مشتری پیامک می‌رود)">{% csrf_token %}
         {% if order.installment_state != "approved" %}<button class="btn btn-ink btn-sm" name="state" value="approved">تأیید درخواست</button>{% endif %}
         {% if order.installment_state != "rejected" %}<button class="btn btn-light btn-sm" name="state" value="rejected">رد درخواست</button>{% endif %}

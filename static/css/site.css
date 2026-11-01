@@ -1880,3 +1880,23 @@ body.has-app-bar{padding-bottom:64px}
 .trust-about ul{margin:0;padding-inline-start:1.1rem;color:var(--ink-2)}
 .trust-about li{margin:.2rem 0}
 .trust-about a{text-decoration:underline;text-underline-offset:3px}
+
+/* خرید اقساطی بتا: سه گام در صفحهٔ سفارش */
+.beta-box{margin:1rem 0 1.4rem;padding:1.1rem 1.2rem;border-radius:var(--r-lg);background:var(--saffron-t);border-inline-start:6px solid var(--saffron)}
+.beta-box h2{font-size:1.1rem;margin:0 0 .25rem}
+.beta-steps{list-style:none;counter-reset:bs;padding:0;margin:.8rem 0 0;display:flex;flex-direction:column;gap:.9rem}
+.beta-steps>li{counter-increment:bs;position:relative;padding-inline-start:2.4rem;opacity:.55}
+.beta-steps>li.is-now,.beta-steps>li.is-done{opacity:1}
+.beta-steps>li::before{content:counter(bs,persian);position:absolute;inset-inline-start:0;top:-.1rem;width:1.8rem;height:1.8rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.beta-steps>li.is-now::before{background:var(--ink);color:#fff}
+.beta-steps>li.is-done::before{content:"✓";background:var(--teal);border-color:var(--teal);color:#fff}
+.beta-steps>li>b{display:block;margin-bottom:.4rem}
+.beta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.4rem}
+.beta-row input,.beta-row select{border:2px solid var(--line,#ddd);border-radius:12px;padding:.5rem .8rem;font:inherit;background:#fff;min-width:0}
+.beta-row input{width:11rem}
+.beta-row label{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.4rem;font-size:.9rem;font-weight:600}
+.beta-row select{min-width:8.5rem}
+.beta-row .btn-ic{padding:.7rem 1.3rem;font-size:1rem}
+.beta-ok{color:var(--teal-d);font-weight:700;margin:.2rem 0}
+.beta-no{color:var(--pink-d);font-weight:700;margin:.2rem 0}
+.beta-change summary{cursor:pointer;font-size:.9rem;font-weight:600;margin:.3rem 0}

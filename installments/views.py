@@ -1,10 +1,13 @@
 import json
+import logging
 from pathlib import Path
 
 from django.conf import settings
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
 from accounts.utils import latin_digits
 from core import seo
@@ -15,6 +18,7 @@ from .models import InstallmentPlan
 from .services import active_plans, describe, faq_answer
 
 SHORTCODE = "[installment_plans]"
+log = logging.getLogger(__name__)
 
 
 def quote_api(request):
@@ -63,7 +67,9 @@ def info_page(request, page):
             if p.kind == "beta":
                 faq.append({"q": "بازنشستگان چطور قسطی خرید کنند؟",
                             "a": f"از راه سامانهٔ بتا بانک رفاه: پیش‌پرداخت دلخواه (حتی صفر)، {fa_num(p.min_months)} تا {fa_num(p.max_months)} ماه. "
-                                 "مشخصات بازنشسته یا مستمری‌بگیر، کد ملی و شمارهٔ دریافت پیامک بانک را وارد می‌کنید و پیامک تأیید بانک را تأیید می‌کنید."})
+                                 + ("کد ملی را وارد می‌کنید، اعتبارتان همان لحظه در بتا بررسی می‌شود و خرید را با رمزی که بانک رفاه پیامک می‌کند در صفحهٔ سفارش تأیید می‌کنید."
+                                    if p.beta_auto else
+                                    "مشخصات بازنشسته یا مستمری‌بگیر، کد ملی و شمارهٔ دریافت پیامک بانک را وارد می‌کنید و پیامک تأیید بانک را تأیید می‌کنید.")})
         faq.append({"q": "تاریخ اولین قسط کی است؟",
                     "a": f"اقساط از حدود {fa_num(plans[0].first_due_days)} روز بعد از ثبت سفارش (زمان آماده‌شدن فرش) شروع می‌شود و اولین قسط یک دوره بعد از آن است."})
     graph = [{"@type": "BreadcrumbList", "itemListElement": [
@@ -96,3 +102,67 @@ def private_file(request, pk, key):
     if root not in path.parents or not path.is_file():
         raise Http404
     return FileResponse(open(path, "rb"), content_type="image/jpeg")
+
+
+def beta_context(order):
+    """داده‌های جعبهٔ «تأیید در سامانهٔ بتا» در صفحهٔ سفارش مشتری؛ None اگر لازم نیست."""
+    from . import betaflow
+    from .beta import BetaError
+
+    if not betaflow.open_for(order):
+        return None
+    sale = betaflow.sale_for(order)
+    try:
+        months = betaflow.months()
+    except BetaError:
+        months = []
+    plan, q = order.installment_plan, order.installment
+    otp_live = bool(sale.otp_sent_at and sale.payload
+                    and (timezone.now() - sale.otp_sent_at).total_seconds() < 10 * 60)
+    return {
+        "sale": sale, "months": months, "fits": betaflow.fits(order, sale),
+        "suggest": betaflow.suggest(order, sale) if sale.credit is not None else None,
+        "month_choices": plan.months_for(1), "down_choices": plan.down_options(),
+        "can_change": not order.paid_amount, "otp_live": otp_live,
+        "start_label": betaflow.month_label(sale.start_ym) if sale.start_ym else "",
+        "q": q,
+    }
+
+
+@require_POST
+def beta_action(request, number):
+    """گام‌های بتا از صفحهٔ سفارش: check / change / otp / confirm."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    from shop.models import Order
+
+    from . import betaflow
+
+    if not request.user.is_authenticated:
+        raise Http404
+    order = get_object_or_404(Order, number=number, user=request.user, payment_mode="installment")
+    back = order.get_absolute_url() + "#beta"
+    if not betaflow.open_for(order):
+        return redirect(back)
+    do = request.POST.get("do")
+    try:
+        if do == "check":
+            msg = betaflow.check(order, latin_digits(request.POST.get("national_code", "")))
+        elif do == "change":
+            msg = betaflow.requote(order, latin_digits(request.POST.get("months", "0")),
+                                   latin_digits(request.POST.get("down", str(order.installment.get("down_percent", 0)))))
+        elif do == "otp":
+            msg = betaflow.send_otp(order, request.POST.get("ym", ""))
+        elif do == "confirm":
+            msg = betaflow.confirm(order, latin_digits(request.POST.get("otp", "")), settings.SITE_URL)
+        else:
+            return redirect(back)
+    except betaflow.FlowError as e:
+        messages.error(request, str(e))
+    except Exception:  # noqa: BLE001
+        log.exception("beta flow")
+        messages.error(request, "خطای پیش‌بینی‌نشده؛ سفارش شما ثبت است و همکاران ما پیگیری می‌کنند.")
+    else:
+        messages.success(request, msg)
+    return redirect(back)

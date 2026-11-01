@@ -13,7 +13,7 @@ from django.views.decorators.http import require_POST
 from accounts.utils import latin_digits, normalize_mobile
 from catalog.models import Variation
 from installments.services import active_plans, describe
-from installments.views import plans_payload
+from installments.views import beta_context, plans_payload
 
 from . import gateways, notify, paymode
 from .cart import Cart
@@ -213,7 +213,7 @@ def checkout(request):
             errors.update(inst_errors)
             inst = (plan, q, info, uploads)
             form.update({k: request.POST.get(k, "") for k in request.POST if k.startswith("inst_")})
-            pay_now = bool(q and q["down"] and plan.down_timing == plan.DownTiming.CHECKOUT)
+            pay_now = bool(q and q["down"] and plan.down_at_checkout)
         gw = next((g for g in gws if g.key == form["gateway"]), None)
         if pay_now and not gw:
             errors["gateway"] = "درگاه پرداخت را انتخاب کنید."
@@ -470,6 +470,7 @@ def order_detail(request, number):
         "shop": ShopSettings.load(),
         "modes": paymode.options(order),
         "seller_orders": order.seller_orders.select_related("seller").prefetch_related("items"),
+        "beta": beta_context(order) if order.is_installment else None,
     })
 
 

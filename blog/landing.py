@@ -165,7 +165,7 @@ def block_plans(request):
     for p in plans:
         docs = [label for _, label, _ in p.info_fields]
         cards.append({"p": p, "desc": describe(p), "docs": docs,
-                      "pay_at": "آنلاین، همان موقع ثبت سفارش" if p.down_timing == "checkout" else "آنلاین، بعد از تأیید مدارک"})
+                      "pay_at": "آنلاین، همان موقع ثبت سفارش" if p.down_at_checkout else "آنلاین، بعد از تأیید مدارک"})
     return render_to_string("blog/blocks/installment_plans.html", {"cards": cards}, request=request)
 
 

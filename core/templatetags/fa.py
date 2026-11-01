@@ -25,6 +25,14 @@ def fa_dec(value):
 def jdate(value, fmt="%d %B %Y"):
     if not value:
         return ""
+    if isinstance(value, str):  # ISO از JSON/کش
+        from django.utils.dateparse import parse_date, parse_datetime
+
+        value = parse_datetime(value) or parse_date(value[:10])
+        if value is None:
+            return ""
+        if isinstance(value, datetime) and timezone.is_naive(value):
+            value = timezone.make_aware(value)
     if isinstance(value, datetime):
         value = timezone.localtime(value)
         j = jdatetime.datetime.fromgregorian(datetime=value, locale=jdatetime.FA_LOCALE)
