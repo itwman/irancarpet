@@ -39,7 +39,8 @@ def product_by_unique(u):
 
 
 def base_queryset(s):
-    qs = Product.objects.published().exclude(pk__in=s.excluded.values("pk"))
+    # کالای فروشندگان بازارچه به ترب نمی‌رود (قیمتشان به نام فروشگاه در ترب دیده می‌شد)
+    qs = Product.objects.published().filter(seller__isnull=True).exclude(pk__in=s.excluded.values("pk"))
     if s.only_album:
         qs = qs.filter(album__isnull=False)
     return qs

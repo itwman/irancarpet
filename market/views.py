@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from accounts.utils import latin_digits, normalize_mobile
 from affiliate.models import clean_sheba, valid_sheba
 from catalog.models import Product
+from pricing.models import Album
 from shop.models import Order
 
 from . import orders as O
@@ -53,7 +54,10 @@ def seller_required(fn):
 def _ctx(request, title, tab, **kw):
     s = request.seller
     pending_orders = s.orders.filter(status=SellerOrder.Status.NEW).count()
-    return {"meta": {**META, "title": title}, "seller": s, "tab": tab, "pending_orders": pending_orders, "ms": MarketSettings.load(), **kw}
+    from .seller import _open_questions
+
+    return {"meta": {**META, "title": title}, "seller": s, "tab": tab, "pending_orders": pending_orders, "ms": MarketSettings.load(),
+            "q_open": _open_questions(s).count(), **kw}
 
 
 # ------------------------------------------------------------------ معرفی و ثبت‌نام
@@ -220,8 +224,15 @@ def product_list(request):
     q = (request.GET.get("q") or "").strip()
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(sku=q))
-    page = Paginator(qs, 20).get_page(request.GET.get("page"))
-    return render(request, "market/products.html", _ctx(request, "کالاهای من", "products", page=page, f=f, q=q))
+    shelf = s.shelves.filter(pk=P._int(request.GET.get("shelf")) or 0).first()
+    if shelf:
+        qs = qs.filter(shelves=shelf)
+    page = Paginator(qs.select_related("album"), 20).get_page(request.GET.get("page"))
+    allp = Product.objects.filter(seller=s)
+    counts = {"all": allp.count(), "pending": allp.filter(review_status="pending").count(),
+              "rejected": allp.filter(review_status="rejected").count(), "out": allp.filter(stock_status="outofstock").count()}
+    return render(request, "market/products.html", _ctx(request, "کالاهای من", "products", page=page, f=f, q=q, shelf=shelf,
+                                                         shelves=list(s.shelves.all()), counts=counts))
 
 
 @seller_required
@@ -241,7 +252,15 @@ def product_edit(request, pk=None):
     return render(request, "market/product_edit.html", _ctx(
         request, "ویرایش کالا" if product else "افزودن کالا", "products", product=product, errors=errors, form=form,
         attrs=P.spec_attributes(), cats=P.categories(), sizes=P.sizes(), max_images=P.MAX_IMAGES,
+        albums=list(Album.all_objects.filter(seller=s).order_by("sort_order", "pk")), shelves=list(s.shelves.all()),
+        chosen_album=_chosen_album(request, product), chosen_shelves=set(product.shelves.values_list("pk", flat=True)) if product else set(),
+        album_vars=list(product.variations.select_related("size").order_by("menu_order")) if product and product.album_id else [],
     ))
+
+
+def _chosen_album(request, product):
+    v = request.POST.get("album") if request.method == "POST" else (str(product.album_id) if product and product.album_id else request.GET.get("album", ""))
+    return str(v or "")
 
 
 def _product_form(post, p):
@@ -376,18 +395,58 @@ def shop_settings(request):
 
 # ------------------------------------------------------------------ صفحهٔ عمومی فروشگاه
 def store(request, slug):
-    s = get_object_or_404(Seller, slug=slug)
+    import json
+
+    from . import storefront as SF
+
+    s = get_object_or_404(Seller.objects.select_related("logo", "cover", "featured_product__image"), slug=slug)
     if s.status not in (Seller.Status.ACTIVE, Seller.Status.PAUSED):
         raise Http404
-    from catalog.views import card_queryset
-
-    qs = card_queryset(Product.objects.published().filter(seller=s).order_by("-published_at"))
-    page = Paginator(qs, settings.PRODUCTS_PER_PAGE).get_page(request.GET.get("page"))
-    stats = s.orders.filter(status=SellerOrder.Status.DELIVERED).count()
+    shelves = SF.shelves(s)
+    shelf = next((x for x in shelves if x.slug == request.GET.get("shelf")), None)
+    sort = request.GET.get("sort") if request.GET.get("sort") in {k for k, _, _ in SF.SORTS} else "new"
+    qs = SF.product_queryset(s, shelf, sort)
+    page = Paginator(qs, 24).get_page(request.GET.get("page"))
+    offers = SF.offers(s)
+    by_product = {}
+    for o in offers:
+        by_product.setdefault(o.product_id, o)
+    for p in page.object_list:
+        p.offer = by_product.get(p.pk)
+    total = SF.published(s).count()
+    feat = s.featured_product if (s.featured_product_id and s.featured_product.status == "publish"
+                                  and s.featured_product.seller_id == s.pk) else None
+    rows = SF.metrics(s)
+    following = bool(request.user.is_authenticated and s.followers.filter(user=request.user).exists())
+    first = not shelf and sort == "new" and page.number == 1
+    meta = {"title": f"فروشگاه {s.name} در ایران کارپت", "description": (s.tagline or s.about or f"فرش‌های {s.name} از {s.city}")[:160]}
+    if total < SF.INDEX_MIN_PRODUCTS or s.status == Seller.Status.PAUSED or not first:
+        meta["robots"] = "noindex, follow"
     return render(request, "market/store.html", {
-        "meta": {"title": f"فروشگاه {s.name} در ایران کارپت", "description": (s.about or f"کالاهای {s.name} از {s.city}")[:160]},
-        "store": s, "page": page, "delivered": stats,
+        "meta": meta, "store": s, "page": page, "total": total, "shelves": shelves, "shelf": shelf, "sort": sort,
+        "sorts": [(k, label) for k, label, _ in SF.SORTS], "offers": offers[:12], "featured": feat if first else None,
+        "slides": list(s.slides.select_related("image", "product")[:5]) if first else [],
+        "metrics": rows, "reviews": SF.reviews(s) if first else [], "photos": list(s.photos.all()[:6]) if first else [],
+        "following": following, "followers": s.followers.count(), "accent": s.accent_color,
+        "jsonld": json.dumps(SF.store_jsonld(s, request, rows), ensure_ascii=False) if first else "",
     })
+
+
+@require_POST
+def follow(request, slug):
+    s = get_object_or_404(Seller, slug=slug)
+    if not request.user.is_authenticated:
+        return redirect(f"{LOGIN}?next={s.get_absolute_url()}")
+    from .models import SellerFollow
+
+    f = SellerFollow.objects.filter(seller=s, user=request.user).first()
+    if f:
+        f.delete()
+        messages.success(request, f"دیگر «{s.name}» را دنبال نمی‌کنید.")
+    else:
+        SellerFollow.objects.create(seller=s, user=request.user)
+        messages.success(request, f"«{s.name}» را دنبال می‌کنید؛ فرش‌های تازه‌اش را در «فروشگاه‌های دنبال‌شده» می‌بینید.")
+    return redirect(s.get_absolute_url())
 
 
 # ------------------------------------------------------------------ مشتری: تأیید تحویل

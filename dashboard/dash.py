@@ -189,7 +189,7 @@ def todo(manager):
     carts = list(abandoned_carts())
     reminded = sum(1 for c in carts if c.reminded_at)
     offers_soon, offers_done = [], []
-    for o in SpecialOffer.objects.filter(is_active=True, starts_at__lte=now).select_related("product", "size"):
+    for o in SpecialOffer.objects.filter(is_active=True, starts_at__lte=now, product__seller__isnull=True).select_related("product", "size"):
         if o.ends_at and o.ends_at <= now:
             continue
         if o.remaining <= 0:

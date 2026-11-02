@@ -85,6 +85,15 @@ class Seller(models.Model):
     name = models.CharField("نام فروشگاه", max_length=80, unique=True)
     slug = models.SlugField("نشانی فروشگاه", max_length=60, unique=True, allow_unicode=True)
     logo = models.ForeignKey("core.Media", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="لوگو")
+    # ویترین
+    cover = models.ForeignKey("core.Media", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="کاور")
+    tagline = models.CharField("شعار فروشگاه", max_length=120, blank=True)
+    accent = models.CharField("رنگ فروشگاه", max_length=7, default="#8E1F2F")
+    layout = models.CharField("چیدمان ویترین", max_length=10, default="showcase",
+                              choices=[("showcase", "ویترین"), ("gallery", "گالری"), ("catalog", "کاتالوگ")])
+    featured_product = models.ForeignKey("catalog.Product", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                         verbose_name="پیشنهاد فروشنده")
+    photos = models.ManyToManyField("core.Media", blank=True, related_name="+", verbose_name="عکس‌های کارگاه و فروشگاه")
     about = models.TextField("دربارهٔ فروشگاه", blank=True)
     kind = models.CharField("نوع", max_length=10, choices=Kind.choices, default=Kind.PERSON)
     owner_name = models.CharField("نام صاحب فروشگاه / مدیرعامل", max_length=120)
@@ -131,6 +140,22 @@ class Seller(models.Model):
     @property
     def shipping_label(self):
         return "ارسال رایگان" if self.shipping == self.Shipping.FREE else "پس‌کرایه"
+
+    ACCENTS = [("#8E1F2F", "لاکی"), ("#1F4E79", "سرمه‌ای"), ("#2F6B3B", "یشمی"), ("#6B3FA0", "بنفش"), ("#9A5B13", "عسلی"),
+               ("#0B7C88", "فیروزه‌ای"), ("#22265A", "نیلی"), ("#B3264E", "انار")]
+
+    @property
+    def accent_color(self):
+        """رنگ فروشگاه، فقط اگر به‌اندازهٔ کافی تیره باشد که متن سفید رویش خوانا بماند (کنتراست ۴٫۵)."""
+        import re
+
+        c = (self.accent or "").strip()
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", c):
+            return "#8E1F2F"
+        r, g, b = (int(c[i:i + 2], 16) / 255 for i in (1, 3, 5))
+        lin = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in (r, g, b)]
+        lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+        return c if 1.05 / (lum + 0.05) >= 4.5 else "#8E1F2F"
 
 
 class SellerPayout(models.Model):
@@ -197,3 +222,57 @@ class SellerOrder(models.Model):
     @property
     def open_for_seller(self):
         return self.status in (self.Status.NEW, self.Status.ACCEPTED)
+
+
+class SellerSlide(models.Model):
+    """اسلاید سربرگ ویترین (تا ۵ تا)."""
+
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name="slides")
+    image = models.ForeignKey("core.Media", on_delete=models.CASCADE, related_name="+", verbose_name="عکس")
+    title = models.CharField("عنوان", max_length=80, blank=True)
+    subtitle = models.CharField("زیرعنوان", max_length=140, blank=True)
+    product = models.ForeignKey("catalog.Product", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                verbose_name="پیوند به فرش")
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "pk"]
+
+    MAX = 5
+
+
+class SellerShelf(models.Model):
+    """قفسهٔ فروشگاه: دسته‌بندی خود فروشنده (مثل «حراج» یا «اتاق کودک»)؛ هر کالا می‌تواند در چند قفسه باشد."""
+
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name="shelves")
+    name = models.CharField("نام قفسه", max_length=60)
+    slug = models.SlugField(max_length=70, allow_unicode=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    products = models.ManyToManyField("catalog.Product", blank=True, related_name="shelves", verbose_name="کالاها")
+
+    class Meta:
+        ordering = ["order", "pk"]
+        unique_together = [("seller", "slug")]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *a, **kw):
+        if not self.slug:
+            from django.utils.text import slugify
+
+            base = slugify(self.name, allow_unicode=True)[:60] or "shelf"
+            slug, n = base, 2
+            while SellerShelf.objects.filter(seller_id=self.seller_id, slug=slug).exclude(pk=self.pk).exists():
+                slug, n = f"{base}-{n}", n + 1
+            self.slug = slug
+        super().save(*a, **kw)
+
+
+class SellerFollow(models.Model):
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name="followers")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followed_sellers")
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        unique_together = [("seller", "user")]

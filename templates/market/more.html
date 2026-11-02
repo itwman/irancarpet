@@ -1,0 +1,15 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<nav class="sp-more" aria-label="همهٔ بخش‌های پنل">
+  <a href="/seller/stats/"><svg aria-hidden="true"><use href="#mi-chart"/></svg>آمار و نمودار<small>بازدید، فروش، پرفروش‌ها</small></a>
+  <a href="/seller/quick/"><svg aria-hidden="true"><use href="#mi-camera"/></svg>افزودن با عکس<small>چند فرش با یک بار آپلود</small></a>
+  <a href="/seller/albums/"><svg aria-hidden="true"><use href="#mi-album"/></svg>آلبوم‌های قیمت<small>قیمت همهٔ سایزها یک‌جا</small></a>
+  <a href="/seller/shelves/"><svg aria-hidden="true"><use href="#mi-shelf"/></svg>قفسه‌ها<small>دسته‌بندی ویترین</small></a>
+  <a href="/seller/offers/"><svg aria-hidden="true"><use href="#mi-flame"/></svg>فرصت ویژه<small>تخفیف تعداد محدود</small></a>
+  <a href="/seller/coupons/"><svg aria-hidden="true"><use href="#mi-tag"/></svg>کد تخفیف<small>برای مشتری‌های خودتان</small></a>
+  <a href="/seller/questions/"><svg aria-hidden="true"><use href="#mi-chat"/></svg>پرسش‌ها و نظرها{% if q_open %} <b class="sp-badge">{{ q_open|fa_num }}</b>{% endif %}<small>پاسخ به خریداران</small></a>
+  <a href="/seller/look/"><svg aria-hidden="true"><use href="#mi-store"/></svg>ظاهر ویترین<small>لوگو، کاور، رنگ، اسلاید</small></a>
+  <a href="/seller/finance/"><svg aria-hidden="true"><use href="#mi-wallet"/></svg>مالی و تسویه<small>سهم شما و واریزها</small></a>
+  <a href="/seller/settings/"><svg aria-hidden="true"><use href="#mi-gear"/></svg>تنظیمات و ارسال<small>شهر، زمان آماده‌سازی، شبا</small></a>
+</nav>
+{% endblock %}

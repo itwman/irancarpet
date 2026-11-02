@@ -1,0 +1,18 @@
+{% load fa %}<nav class="sp-nav">
+  <p>فروش</p>
+  <a href="/seller/"{% if tab == "home" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-home"/></svg>خانه</a>
+  <a href="/seller/orders/"{% if tab == "orders" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-bag"/></svg>سفارش‌ها{% if pending_orders %}<b class="sp-badge">{{ pending_orders|fa_num }}</b>{% endif %}</a>
+  <a href="/seller/stats/"{% if tab == "stats" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-chart"/></svg>آمار و نمودار</a>
+  <a href="/seller/finance/"{% if tab == "finance" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-wallet"/></svg>مالی و تسویه</a>
+  <p>کالا و قیمت</p>
+  <a href="/seller/products/"{% if tab == "products" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-box"/></svg>کالاها</a>
+  <a href="/seller/quick/"{% if tab == "quick" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-camera"/></svg>افزودن با عکس</a>
+  <a href="/seller/albums/"{% if tab == "albums" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-album"/></svg>آلبوم‌های قیمت</a>
+  <a href="/seller/shelves/"{% if tab == "shelves" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-shelf"/></svg>قفسه‌ها</a>
+  <a href="/seller/offers/"{% if tab == "offers" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-flame"/></svg>فرصت ویژه</a>
+  <a href="/seller/coupons/"{% if tab == "coupons" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-tag"/></svg>کد تخفیف</a>
+  <p>مشتری و ویترین</p>
+  <a href="/seller/questions/"{% if tab == "questions" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-chat"/></svg>پرسش‌ها و نظرها{% if q_open %}<b class="sp-badge">{{ q_open|fa_num }}</b>{% endif %}</a>
+  <a href="/seller/look/"{% if tab == "look" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-store"/></svg>ظاهر ویترین</a>
+  <a href="/seller/settings/"{% if tab == "settings" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-gear"/></svg>تنظیمات و ارسال</a>
+</nav>

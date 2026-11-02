@@ -1,0 +1,27 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<p class="sp-hint">قفسه‌ها دسته‌بندی خود ویترین شما هستند (مثل «حراج»، «اتاق کودک»، «۱۲۰۰ شانه»). هر کالا می‌تواند در چند قفسه باشد. کالاها را از <a href="/seller/products/">فهرست کالاها</a> (انتخاب چند کالا ← «گذاشتن در قفسه») یا صفحهٔ هر کالا در قفسه بگذارید.</p>
+<section class="sp-card">
+  <h2>قفسهٔ تازه</h2>
+  <form method="post" class="d-flex gap-2">{% csrf_token %}<input type="hidden" name="do" value="add">
+    <label class="visually-hidden" for="nn">نام قفسه</label>
+    <input id="nn" name="name" maxlength="60" placeholder="مثل «کلکسیون لاکی»" class="form-control" style="min-height: 48px; border-radius: 14px" required>
+    <button class="sp-btn" type="submit">ساختن</button>
+  </form>
+</section>
+{% if shelves %}
+<section class="sp-card">
+  <h2>قفسه‌ها <small class="muted">{{ shelves|length|fa_num }} از {{ max_shelves|fa_num }}</small></h2>
+  <ul class="sp-rows">{% for sh in shelves %}<li>
+    <form method="post" class="d-flex gap-2 flex-grow-1" style="min-width: 0">{% csrf_token %}<input type="hidden" name="do" value="rename"><input type="hidden" name="id" value="{{ sh.pk }}">
+      <label class="visually-hidden" for="sh{{ sh.pk }}">نام قفسه</label>
+      <input id="sh{{ sh.pk }}" name="name" value="{{ sh.name }}" maxlength="60" class="form-control" style="min-height: 44px; border-radius: 12px">
+      <button class="sp-mini" type="submit">ذخیره</button>
+    </form>
+    <a class="sp-mini" href="/seller/products/?shelf={{ sh.pk }}">{{ sh.n|fa_num }} کالا</a>
+    {% if not forloop.first %}<form method="post">{% csrf_token %}<input type="hidden" name="do" value="up"><input type="hidden" name="id" value="{{ sh.pk }}"><button class="sp-mini" type="submit">بالاتر</button></form>{% endif %}
+    <form method="post" onsubmit="return confirm('قفسه حذف شود؟ کالاهایش حذف نمی‌شوند.')">{% csrf_token %}<input type="hidden" name="do" value="delete"><input type="hidden" name="id" value="{{ sh.pk }}"><button class="sp-mini sp-mini--danger" type="submit">حذف</button></form>
+  </li>{% endfor %}</ul>
+</section>
+{% else %}<div class="sp-card sp-empty"><h2>هنوز قفسه‌ای ندارید</h2><p class="mb-0">بدون قفسه هم همهٔ کالاها در ویترین هستند؛ قفسه برای فروشگاهی است که کالای زیادی دارد.</p></div>{% endif %}
+{% endblock %}

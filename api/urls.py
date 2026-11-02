@@ -2,6 +2,7 @@ from django.urls import path
 
 from finder import api as finder
 
+from . import seller as sl
 from . import views as v
 
 urlpatterns = [
@@ -29,6 +30,18 @@ urlpatterns = [
     path("pay/<str:token>/", v.pay),
     path("installments/quote/", v.installment_quote),
     path("pricelist/", v.price_list),
+    path("seller/summary/", sl.summary),
+    path("seller/stats/", sl.stats),
+    path("seller/products/", sl.products),
+    path("seller/products/<int:pk>/stock/", sl.product_stock),
+    path("seller/products/<int:pk>/prices/", sl.product_prices),
+    path("seller/albums/", sl.albums),
+    path("seller/albums/<int:pk>/", sl.album),
+    path("seller/quick/", sl.quick),
+    path("seller/options/", sl.form_options),
+    path("seller/orders/", sl.orders),
+    path("seller/orders/<int:pk>/", sl.order),
+    path("seller/questions/", sl.questions),
     path("finder/config/", finder.config),
     path("finder/search/", finder.search),
     path("finder/requests/", finder.requests),

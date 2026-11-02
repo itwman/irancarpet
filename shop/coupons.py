@@ -76,6 +76,13 @@ def apply(summary, code, user, source="web"):
     if not code:
         return out
     base = summary["total"] - summary.get("offer_total", 0)  # کد تخفیف روی فرصت ویژه (که خودش تخفیف دارد) اعمال نمی‌شود
+    c0 = find(code)
+    if c0 is not None and c0.seller_id:  # کد یک فروشگاه بازارچه: فقط روی کالاهای همان فروشگاه
+        base = sum(ln.total for ln in summary.get("lines", []) if not getattr(ln, "problem", "")
+                   and getattr(ln.product, "seller_id", None) == c0.seller_id and not getattr(ln, "offer", None))
+        if not base:
+            out["coupon_error"] = f"این کد فقط برای کالاهای فروشگاه «{c0.seller.name}» است."
+            return out
     c, d, err = check(code, user, base, source)
     if err:
         out["coupon_error"] = err

@@ -413,6 +413,9 @@ class Coupon(models.Model):
                                  verbose_name="فقط برای این مشتری")
     for_mobile = models.CharField("فقط برای این موبایل", max_length=11, blank=True, db_index=True,
                                   help_text="کد شخصی کمپین‌ها؛ فقط مشتری با همین شماره می‌تواند استفاده کند")
+    seller = models.ForeignKey("market.Seller", null=True, blank=True, on_delete=models.CASCADE, related_name="coupons",
+                               verbose_name="فروشگاه", editable=False,
+                               help_text="کد تخفیف یک فروشنده: فقط روی کالاهای همان فروشگاه و از سهم خود او")
     is_active = models.BooleanField("فعال", default=True)
     created_at = models.DateTimeField("ساخته شده", default=timezone.now)
 

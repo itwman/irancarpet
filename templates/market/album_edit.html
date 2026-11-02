@@ -1,0 +1,38 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<a class="sp-link" href="/seller/albums/">‹ آلبوم‌ها</a>
+{% if errors %}<div class="alert-ic mt-2" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
+<form method="post" class="sp-form mt-2" novalidate>{% csrf_token %}
+  <section class="sp-card">
+    <h2>آلبوم</h2>
+    <div class="field{% if errors.name %} has-err{% endif %}"><label for="an">نام آلبوم</label><input id="an" name="name" value="{% if post %}{{ post.name }}{% else %}{{ album.name }}{% endif %}" maxlength="160" placeholder="مثل «۷۰۰ شانه پلی‌استر»" required></div>
+    <div class="grid-2">
+      <div class="field{% if errors.base_size %} has-err{% endif %}"><label for="bs">سایز پایه</label>
+        <select id="bs" name="base_size">{% for z in sizes %}<option value="{{ z.pk }}"{% if album.base_size_id == z.pk %} selected{% elif not album.pk and z.slug == "12-meter" %} selected{% endif %}>{{ z.label|fa_num }}</option>{% endfor %}</select></div>
+      <div class="field{% if errors.base_price %} has-err{% endif %}"><label for="bp">قیمت سایز پایه (تومان)</label><input id="bp" name="base_price" value="{% if post %}{{ post.base_price }}{% elif album.base_price %}{{ album.base_price|floatformat:0|toman }}{% endif %}" inputmode="numeric" dir="ltr" required></div>
+    </div>
+    <div class="field"><label for="rt">گرد کردن قیمت خودکار سایزها</label>
+      <select id="rt" name="round_to">{% for v, l in rounds %}<option value="{{ v }}"{% if album.round_to == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </section>
+  <section class="sp-card">
+    <h2>سایزها و قیمت هر سایز</h2>
+    <p class="sp-hint">سایزهایی که می‌فروشید را تیک بزنید. قیمت هر سایز خودکار به نسبت متراژ از سایز پایه حساب می‌شود (عدد کم‌رنگ)؛ اگر قیمت دیگری می‌خواهید، خودتان بنویسید.</p>
+    <div class="sp-sizes">{% for r in rows %}
+      <div class="sp-size{% if r.base %} is-base{% endif %}">
+        <input type="checkbox" name="sizes" value="{{ r.size.pk }}" id="z{{ r.size.pk }}"{% if r.on or r.base %} checked{% endif %}>
+        <label class="sp-size__n" for="z{{ r.size.pk }}">{{ r.size.label|fa_num }}{% if r.base %} <span class="sp-tag sp-tag--base">پایه</span>{% elif r.manual %} <span class="sp-tag sp-tag--hand">دستی</span>{% endif %}<small>{% if r.size.area %}{{ r.size.area|floatformat:"-2"|fa_num }} متر مربع{% endif %}</small></label>
+        {% if r.base %}<span class="small muted">همان قیمت پایه</span>{% else %}<input type="text" name="price_{{ r.size.pk }}" value="{% if r.manual %}{{ r.manual|toman }}{% endif %}" placeholder="{% if r.auto %}{{ r.auto|toman }}{% else %}خودکار{% endif %}" inputmode="numeric" aria-label="قیمت {{ r.size.label }}">{% endif %}
+      </div>{% endfor %}
+    </div>
+  </section>
+  <div class="mk-save"><button class="sp-btn" type="submit">{% if album.pk %}ذخیره و به‌روزرسانی قیمت {{ album.products.count|fa_num }} کالا{% else %}ساختن آلبوم{% endif %}</button></div>
+</form>
+{% if album.pk %}
+<section class="sp-card">
+  <h2>کالاهای این آلبوم <a href="/seller/quick/?album={{ album.pk }}">افزودن با عکس</a></h2>
+  {% if products %}<div class="sp-thumbs">{% for p in products %}<a href="/seller/products/{{ p.pk }}/" title="{{ p.title }}">{% if p.image %}<img src="{{ p.image|thumb:240 }}" alt="{{ p.title }}" style="width: 72px; height: 96px">{% else %}{{ p.title|truncatechars:20 }}{% endif %}</a>{% endfor %}</div>
+  {% else %}<p class="sp-hint mb-0">هنوز کالایی ندارد. با «افزودن با عکس» چند فرش را یک‌جا بسازید، یا در صفحهٔ هر کالا این آلبوم را انتخاب کنید.</p>{% endif %}
+</section>
+<form method="post" onsubmit="return confirm('آلبوم حذف شود؟')">{% csrf_token %}<input type="hidden" name="do" value="delete"><button class="sp-mini sp-mini--danger" type="submit">حذف آلبوم</button></form>
+{% endif %}
+{% endblock %}

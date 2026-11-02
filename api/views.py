@@ -329,7 +329,7 @@ def product(request, pk):
     from shop.offers import live_offers
 
     qs = Product.objects.select_related("image", "brand", "album", "primary_category").prefetch_related("categories", "tags")
-    p = qs.published().filter(pk=pk).first() or (qs.filter(pk=pk).first() if any(o.product_id == pk for o in live_offers()) else None)
+    p = qs.published().filter(pk=pk).first() or (qs.filter(pk=pk).first() if any(o.product_id == pk for o in live_offers(sellers=True)) else None)
     if not p:
         return fail("این محصول پیدا نشد.", 404)
     gallery = [pi.media for pi in ProductImage.objects.filter(product=p).select_related("media").order_by("order")]

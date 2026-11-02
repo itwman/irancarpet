@@ -6,7 +6,10 @@ def forward(apps, schema_editor):
     from catalog.models import Product
     from pricing.albums import sync_album_variations
 
-    ps = list(Product.objects.filter(album__isnull=False, only_sizes__isnull=False).distinct().select_related("album"))
+    qs = Product.objects.filter(album__isnull=False, only_sizes__isnull=False).distinct()
+    if not qs.exists():  # پایگاه تازه (آزمون‌ها): مدل امروز ستون‌هایی دارد که هنوز ساخته نشده‌اند
+        return
+    ps = list(qs.select_related("album"))
     if ps:
         sync_album_variations(ps)
 

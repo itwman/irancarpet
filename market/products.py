@@ -129,9 +129,14 @@ def save_product(seller, data, files, product=None):
     cat = Category.objects.filter(pk=_int(data.get("category"))).first()
     if not cat:
         errors["category"] = "دستهٔ کالا را انتخاب کنید."
-    rows, verrs = read_variations(data)
-    if verrs:
-        errors["variations"] = verrs
+    from pricing.models import Album
+
+    album = Album.all_objects.filter(pk=_int(data.get("album")) or 0, seller=seller).first()
+    rows = []
+    if album is None:
+        rows, verrs = read_variations(data)
+        if verrs:
+            errors["variations"] = verrs
     uploads = files.getlist("images")
     remove = {_int(x) for x in data.getlist("remove_image")} - {None}
     existing = list(product.images.values_list("media_id", flat=True)) if product else []
@@ -176,7 +181,27 @@ def save_product(seller, data, files, product=None):
         if first and p.image_id != first.media_id:
             Product.objects.filter(pk=p.pk).update(image_id=first.media_id)
             p.image_id = first.media_id
-        apply_variations(p, rows)
+        if album is not None:
+            from pricing.albums import sync_album_variations
+
+            if p.album_id != album.pk:
+                Product.objects.filter(pk=p.pk).update(album=album)
+                p.album = album
+            sync_album_variations([p])
+            off = {int(x) for x in data.getlist("size_off") if str(x).isdigit()}
+            for v in p.variations.all():
+                want = v.size_id not in off
+                if v.is_available != want:
+                    v.is_available = want
+                    v.save(update_fields=["is_available"])
+            p.refresh_price_cache()
+        else:
+            if p.album_id:
+                Product.objects.filter(pk=p.pk).update(album=None)
+                p.album = None
+            apply_variations(p, rows)
+        if "shelves_sent" in data:
+            p.shelves.set(seller.shelves.filter(pk__in=[x for x in data.getlist("shelves") if str(x).isdigit()]))
         changed = new or _content_sig(p) != before
         if changed:
             submit(p)

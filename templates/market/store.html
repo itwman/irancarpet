@@ -1,19 +1,163 @@
-{% extends "base.html" %}{% load fa %}
+{% extends "base.html" %}{% load fa static %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/market.css' %}?v={{ ASSET_V }}">{% endblock %}
+{% block body_class %}store-page{% endblock %}
 {% block content %}
-<div class="container">
-  <header class="mk-store">
-    {% if store.logo %}<img src="{{ store.logo.url }}" alt="" width="84" height="84">{% else %}<span class="mk-head__mono mk-head__mono--lg" aria-hidden="true">{{ store.name|slice:":1" }}</span>{% endif %}
-    <div>
-      <h1>{{ store.name }}</h1>
-      <p>ارسال از {{ store.city }} · {{ store.shipping_label }} · آماده‌سازی {{ store.prep_days|fa_num }} روز کاری{% if delivered %} · {{ delivered|fa_num }} سفارش تحویل‌شده{% endif %}</p>
-      {% if store.status == "paused" %}<p class="alert-ic alert-ic--warn mt-2 mb-0">این فروشگاه موقتاً سفارش نمی‌گیرد.</p>{% endif %}
+<div class="container st" style="--acc: {{ accent }}">
+  <nav aria-label="مسیر" class="crumbs"><ol><li><a href="/">خانه</a></li><li><a href="/sell/">بازارچهٔ فروشندگان</a></li><li><span aria-current="page">{{ store.name }}</span></li></ol></nav>
+
+  <section class="st-hero" aria-label="سربرگ فروشگاه">
+    <div class="st-frame"><div class="st-frame__in">
+      {% if slides %}
+      <div class="st-slides" data-slider>
+        <div class="st-slides__track" tabindex="0" aria-label="اسلایدهای فروشگاه">
+          {% for sl in slides %}
+          <figure class="st-slide" aria-label="اسلاید {{ forloop.counter|fa_num }} از {{ slides|length|fa_num }}">
+            <img src="{{ sl.image|thumb:960 }}" srcset="{{ sl.image|thumb:960 }} 960w, {{ sl.image.url }} 1600w" sizes="(max-width: 900px) 100vw, 1240px" alt="{{ sl.title|default:store.name }}"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+            {% if sl.title or sl.subtitle %}<figcaption class="st-slide__cap">
+              {% if sl.title %}<b>{{ sl.title|fa_num }}</b>{% endif %}{% if sl.subtitle %}<span>{{ sl.subtitle|fa_num }}</span>{% endif %}
+              {% if sl.product and sl.product.status == "publish" %}<a href="{{ sl.product.get_absolute_url }}">دیدن فرش</a>{% endif %}
+            </figcaption>{% endif %}
+          </figure>
+          {% endfor %}
+        </div>
+        {% if slides|length > 1 %}<div class="st-dots">{% for sl in slides %}<button type="button" data-slide="{{ forloop.counter0 }}" aria-label="اسلاید {{ forloop.counter|fa_num }}"{% if forloop.first %} aria-current="true"{% endif %}></button>{% endfor %}</div>{% endif %}
+      </div>
+      {% elif store.cover %}
+      <img class="st-cover" src="{{ store.cover|thumb:960 }}" srcset="{{ store.cover|thumb:960 }} 960w, {{ store.cover.url }} 1600w" sizes="(max-width: 900px) 100vw, 1240px" alt="کاور فروشگاه {{ store.name }}" fetchpriority="high">
+      {% else %}<div class="st-cover st-cover--plain" aria-hidden="true"></div>{% endif %}
+
+      <div class="st-id">
+        {% if store.logo %}<img class="st-logo" src="{{ store.logo|thumb:240 }}" alt="لوگوی {{ store.name }}" width="120" height="120">{% else %}<span class="st-logo st-logo--mono" aria-hidden="true">{{ store.name|slice:":1" }}</span>{% endif %}
+        <div class="st-id__text">
+          <h1>{{ store.name }}</h1>
+          {% if store.tagline %}<p class="st-tagline">{{ store.tagline|fa_num }}</p>{% endif %}
+          <ul class="st-badges">
+            <li>ارسال از {{ store.city }}</li>
+            <li>{{ store.shipping_label }}</li>
+            <li>آماده‌سازی {{ store.prep_days|fa_num }} روز کاری</li>
+            <li>عضو از {{ store.approved_at|default:store.created_at|jdate:"%Y" }}</li>
+          </ul>
+        </div>
+        <div class="st-actions">
+          <form method="post" action="{{ store.get_absolute_url }}follow/">{% csrf_token %}
+            <button class="st-btn{% if following %} st-btn--ghost{% endif %}" type="submit" aria-pressed="{% if following %}true{% else %}false{% endif %}">
+              {% if following %}دنبال می‌کنید{% else %}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>دنبال کردن{% endif %}
+            </button>
+          </form>
+          <button class="st-icon" type="button" data-share="{{ store.get_absolute_url }}" aria-label="هم‌رسانی فروشگاه"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  {% if store.status == "paused" %}<p class="alert-ic alert-ic--warn mt-3">این فروشگاه موقتاً سفارش نمی‌گیرد.</p>{% endif %}
+
+  {% if metrics %}
+  <section class="st-metrics" aria-label="کارنامهٔ فروشگاه">
+    {% for m in metrics %}<div><b>{{ m.value|fa_num }}{% if m.unit == "٪" %}٪{% elif m.unit %} <small>{{ m.unit }}</small>{% endif %}</b><span>{{ m.label|fa_num }}</span></div>{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if offers and not shelf %}
+  <section class="st-offers" aria-labelledby="st-off-h">
+    <h2 id="st-off-h">فرصت ویژهٔ این فروشگاه</h2>
+    <div class="st-rail">
+      {% for o in offers %}
+      <a class="st-offer" href="{{ o.product.get_absolute_url }}">
+        {% if o.product.image %}<img src="{{ o.product.image|thumb:480 }}" alt="{{ o.product.title }}" loading="lazy">{% endif %}
+        <span class="st-offer__off">٪{{ o.off_percent|fa_num }} تخفیف</span>
+        <span class="st-offer__t">{{ o.product.title|fa_num|truncatechars:48 }}</span>
+        <span class="st-offer__s">{{ o.size.label|fa_num }}{% if o.remaining <= 3 %} · فقط {{ o.remaining|fa_num }} تخته{% endif %}</span>
+        <span class="st-offer__p"><del>{{ o.regular_price|toman }}</del> <b>{{ o.price|toman }}</b> <small>تومان</small></span>
+      </a>
+      {% endfor %}
     </div>
-  </header>
-  {% if store.about %}<div class="prose mk-store__about">{{ store.about|linebreaks }}</div>{% endif %}
-  {% if page.object_list %}
-  <div class="p-grid">{% for p in page.object_list %}{% include "partials/product_card.html" %}{% endfor %}</div>
-  {% include "market/_pager.html" %}
-  {% else %}<p class="muted">این فروشگاه هنوز کالایی در سایت ندارد.</p>{% endif %}
-  <p class="muted small mt-4">پرداخت همهٔ سفارش‌ها از درگاه امن {% brand %} انجام می‌شود. <a href="/sell/">شما هم در {% brand %} بفروشید</a></p>
+  </section>
+  {% endif %}
+
+  {% if shelves %}
+  <nav class="st-shelves" aria-label="قفسه‌های فروشگاه">
+    <a href="{{ store.get_absolute_url }}"{% if not shelf %} aria-current="page"{% endif %}>همه <span>{{ total|fa_num }}</span></a>
+    {% for sh in shelves %}<a href="?shelf={{ sh.slug|urlencode }}"{% if shelf and shelf.pk == sh.pk %} aria-current="page"{% endif %}>{{ sh.name|fa_num }} <span>{{ sh.n|fa_num }}</span></a>{% endfor %}
+  </nav>
+  {% endif %}
+
+  {% if featured %}
+  <section class="st-pick" aria-labelledby="st-pick-h">
+    <a class="st-pick__img" href="{{ featured.get_absolute_url }}">{% if featured.image %}<img src="{{ featured.image|thumb:960 }}" alt="{{ featured.title }}" loading="lazy">{% endif %}</a>
+    <div class="st-pick__body">
+      <h2 id="st-pick-h">پیشنهاد فروشنده</h2>
+      <p class="st-pick__t">{{ featured.title|fa_num }}</p>
+      {% if featured.min_price %}<p class="st-pick__p">{% if not featured.album_id %}<small>از</small> {% endif %}{{ featured.min_price|toman }} <small>تومان</small></p>{% endif %}
+      <a class="st-btn" href="{{ featured.get_absolute_url }}">دیدن و انتخاب سایز</a>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="st-all" aria-labelledby="st-all-h">
+    <div class="st-all__head">
+      <h2 id="st-all-h">{% if shelf %}{{ shelf.name|fa_num }}{% else %}همهٔ کالاهای فروشگاه{% endif %} <span>{{ page.paginator.count|fa_num }}</span></h2>
+      <form method="get" class="st-sort">{% if shelf %}<input type="hidden" name="shelf" value="{{ shelf.slug }}">{% endif %}
+        <label for="st-sort">مرتب‌سازی</label>
+        <select id="st-sort" name="sort" onchange="this.form.submit()">{% for k, label in sorts %}<option value="{{ k }}"{% if k == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <noscript><button type="submit">برو</button></noscript>
+      </form>
+    </div>
+    {% if page.object_list %}
+      {% if store.layout == "catalog" %}
+      <ul class="st-list">
+        {% for p in page.object_list %}
+        <li><a href="{{ p.get_absolute_url }}">
+          {% if p.image %}<img src="{{ p.image|thumb:240 }}" alt="" loading="lazy">{% else %}<span class="noimg"></span>{% endif %}
+          <span class="st-list__t">{{ p.title|fa_num }}{% if p.offer %} <em>فرصت ویژه</em>{% endif %}</span>
+          <span class="st-list__p">{% if p.stock_status == "outofstock" %}ناموجود{% elif p.min_price %}{% if not p.album_id %}<small>از</small> {% endif %}{{ p.min_price|toman }} <small>تومان</small>{% endif %}</span>
+        </a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="p-grid{% if store.layout == 'gallery' %} st-grid--gallery{% endif %}">{% for p in page.object_list %}{% include "partials/product_card.html" with in_store=True eager=True %}{% endfor %}</div>
+      {% endif %}
+      {% include "market/_pager.html" %}
+    {% else %}<p class="muted">{% if shelf %}این قفسه هنوز کالای منتشرشده ندارد.{% else %}این فروشگاه هنوز کالایی در سایت ندارد.{% endif %}</p>{% endif %}
+  </section>
+
+  {% if not shelf %}
+  <section class="st-info" aria-label="دربارهٔ فروشگاه و شرایط خرید">
+    {% if store.about or photos %}
+    <div class="st-about">
+      <h2>دربارهٔ {{ store.name }}</h2>
+      {% if store.about %}<div class="prose">{{ store.about|fa_num|linebreaks }}</div>{% endif %}
+      {% if photos %}<div class="st-photos">{% for m in photos %}<img src="{{ m|thumb:480 }}" alt="{{ m.alt|default:'عکس فروشگاه' }}" loading="lazy">{% endfor %}</div>{% endif %}
+    </div>
+    {% endif %}
+    <div class="st-terms">
+      <h2>خرید از این فروشگاه</h2>
+      <dl>
+        <dt>پرداخت</dt><dd>با درگاه امن ایران کارپت؛ مبلغ تا تحویل کالا نزد ایران کارپت می‌ماند.</dd>
+        <dt>ارسال</dt><dd>از {{ store.city }}، {{ store.shipping_label }}، پس از {{ store.prep_days|fa_num }} روز کاری آماده‌سازی؛ کد رهگیری پیامک می‌شود.</dd>
+        {% if store.return_policy %}<dt>مرجوعی</dt><dd>{{ store.return_policy|fa_num }}</dd>{% endif %}
+        <dt>پرسش</dt><dd>در صفحهٔ هر کالا بپرسید؛ پاسخ فروشنده همان‌جا می‌آید.</dd>
+      </dl>
+    </div>
+  </section>
+
+  {% if reviews %}
+  <section class="st-reviews" aria-labelledby="st-rev-h">
+    <h2 id="st-rev-h">نظر خریداران</h2>
+    <div class="st-rev-grid">
+      {% for r in reviews %}
+      <figure>
+        {% if r.rating %}{% stars r.rating %}{% endif %}
+        <blockquote>{{ r.content|fa_num|truncatechars:220 }}</blockquote>
+        <figcaption>{{ r.author_name }}{% if r.verified %} <span class="st-verified">خریدار</span>{% endif %} · <a href="{{ r.product.get_absolute_url }}">{{ r.product.title|fa_num|truncatechars:40 }}</a></figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% endif %}
+
+  <p class="st-foot">این فروشگاه یکی از فروشندگان بازارچهٔ {% brand %} است.{% if followers %} {{ followers|fa_num }} نفر دنبالش می‌کنند.{% endif %} <a href="/sell/">شما هم در {% brand %} بفروشید</a></p>
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/market.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}

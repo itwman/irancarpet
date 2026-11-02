@@ -57,12 +57,26 @@ def split(order):
             line = it.unit_price * it.quantity
             total += line
             comm += _money(Decimal(line) * pct / 100)
+        d = _seller_discount(order, seller, total)
+        if d:  # کد تخفیف خود فروشنده: از سهم خودش کم می‌شود و کمیسیون روی مبلغ پس از تخفیف است
+            comm = _money(Decimal(comm) * Decimal(total - d) / Decimal(total)) if total else 0
+            total -= d
         so.items_total, so.commission, so.seller_amount = total, comm, total - comm
         so.save(update_fields=["items_total", "commission", "seller_amount"])
         out.append(so)
     if out:
         sync(order)
     return out
+
+
+def _seller_discount(order, seller, total):
+    if not (order.coupon_code and order.discount):
+        return 0
+    from shop.models import Coupon
+
+    if not Coupon.objects.filter(code=order.coupon_code, seller=seller).exists():
+        return 0
+    return min(int(order.discount), int(total))
 
 
 def has_own_items(order):

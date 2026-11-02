@@ -1,0 +1,35 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<p class="sp-hint">فرصت ویژه یعنی چند تختهٔ محدود از یک سایز با قیمت کمتر. در ویترین، صفحهٔ کالا و سبد خرید با برچسب «فرصت ویژه» نشان داده می‌شود و وقتی تعدادش تمام شود، خودکار پایان می‌یابد. تخفیف باید واقعی باشد: قیمت پیش از تخفیف همان قیمت روز کالاست.</p>
+{% if errors %}<div class="alert-ic" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
+<details class="sp-card"{% if errors or not rows %} open{% endif %}>
+  <summary class="fw-bold" style="cursor: pointer; min-height: 32px">+ فرصت ویژهٔ تازه</summary>
+  <form method="post" class="sp-form mt-3" novalidate>{% csrf_token %}
+    <div class="field"><label for="op">کالا</label><select id="op" name="product" required><option value="">انتخاب کنید</option>{% for p in live %}<option value="{{ p.pk }}"{% if post.product == p.pk|stringformat:"s" %} selected{% endif %}>{{ p.title|fa_num|truncatechars:70 }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="os">سایز</label><select id="os" name="size" required><option value="">انتخاب کنید</option>{% for p in live %}{% for v in p.variations.all %}{% if v.size %}<option value="{{ v.size.pk }}" data-p="{{ p.pk }}">{{ v.size.label|fa_num }}</option>{% endif %}{% endfor %}{% endfor %}</select></div>
+    <div class="grid-2">
+      <div class="field"><label for="opc">درصد تخفیف</label><input id="opc" name="percent" value="{{ post.percent|default:'10' }}" inputmode="numeric" dir="ltr"></div>
+      <div class="field"><label for="ofx">یا قیمت ویژه (تومان)</label><input id="ofx" name="fixed_price" value="{{ post.fixed_price|default:'' }}" inputmode="numeric" dir="ltr" placeholder="اختیاری"></div>
+      <div class="field"><label for="oq">تعداد تخته</label><input id="oq" name="quantity" value="{{ post.quantity|default:'1' }}" inputmode="numeric" dir="ltr"></div>
+      <div class="field"><label for="od">مدت (روز)</label><input id="od" name="days" value="{{ post.days|default:'' }}" inputmode="numeric" dir="ltr" placeholder="خالی = تا تمام شدن"></div>
+    </div>
+    <button class="sp-btn" type="submit">ثبت فرصت ویژه</button>
+  </form>
+</details>
+<script>
+(function () {
+  var p = document.getElementById("op"), s = document.getElementById("os"), all = Array.prototype.slice.call(s.options, 1);
+  function f() { var v = p.value, seen = {}; s.length = 1; all.forEach(function (o) { if (o.getAttribute("data-p") === v && !seen[o.value]) { seen[o.value] = 1; s.add(o.cloneNode(true)); } }); }
+  p.addEventListener("change", f); f();
+})();
+</script>
+{% if rows %}
+<ul class="sp-prods">{% for o in rows %}<li class="sp-prod">
+  {% if o.product.image %}<img src="{{ o.product.image|thumb:240 }}" alt="">{% else %}<span class="noimg"></span>{% endif %}
+  <span class="sp-prod__b"><a href="{{ o.product.get_absolute_url }}" target="_blank" rel="noopener">{{ o.product.title|fa_num|truncatechars:60 }}</a>
+    <span class="sp-prod__meta">{{ o.size.label|fa_num }} · ٪{{ o.off_percent|fa_num }} تخفیف · {{ o.price|toman }} تومان · {{ o.remaining|fa_num }} از {{ o.quantity|fa_num }} مانده{% if o.ends_at %} · تا {{ o.ends_at|jdate:"%d %B" }}{% endif %}</span>
+    <span>{% if o.live %}<span class="mk-st mk-st--delivered">فعال</span>{% else %}<span class="mk-st">تمام‌شده</span>{% endif %}</span></span>
+  {% if o.live %}<form method="post">{% csrf_token %}<input type="hidden" name="do" value="stop"><input type="hidden" name="id" value="{{ o.pk }}"><button class="sp-mini sp-mini--danger" type="submit">پایان</button></form>{% endif %}
+</li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

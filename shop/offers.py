@@ -21,8 +21,9 @@ def taken_q(prefix=""):
             | Q(**{f"{prefix}order__status": "pending", f"{prefix}order__created_at__gte": recent}))
 
 
-def live_offers():
-    """فرصت‌های فعال (با تعداد باقی‌مانده)؛ ۶۰ ثانیه کش."""
+def live_offers(sellers=False):
+    """فرصت‌های فعال (با تعداد باقی‌مانده)؛ ۶۰ ثانیه کش.
+    sellers=False: فقط فرصت‌های خود فروشگاه (صفحهٔ فرش جشنواره‌ای، صفحهٔ اول، پیامک‌ها)؛ True: فرصت فروشندگان بازارچه هم."""
     from .models import SpecialOffer
 
     ids = cache.get(CACHE_KEY)
@@ -34,7 +35,10 @@ def live_offers():
         ids = list(qs.values_list("pk", flat=True))
         cache.set(CACHE_KEY, ids, 60)
     out = []
-    for o in SpecialOffer.objects.filter(pk__in=ids).select_related("product__image", "product__album", "size").order_by("-created_at"):
+    qs = SpecialOffer.objects.filter(pk__in=ids)
+    if not sellers:
+        qs = qs.filter(product__seller__isnull=True)
+    for o in qs.select_related("product__image", "product__album", "size").order_by("-created_at"):
         if o.is_live:
             out.append(o)
     return out
@@ -47,14 +51,14 @@ def clear():
 def for_variation(v):
     if not v or not v.size_id:
         return None
-    for o in live_offers():
+    for o in live_offers(sellers=True):
         if o.product_id == v.product_id and o.size_id == v.size_id:
             return o
     return None
 
 
 def for_product(p):
-    return [o for o in live_offers() if o.product_id == p.pk]
+    return [o for o in live_offers(sellers=True) if o.product_id == p.pk]
 
 
 def apply_to_line(line):

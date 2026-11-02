@@ -1,0 +1,76 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<div class="sp-preview" data-accent-preview aria-label="پیش‌نمایش سربرگ ویترین">
+  <div class="sp-preview__in">
+    {% if slides %}<img class="cov" src="{{ slides.0.image|thumb:960 }}" alt="">{% elif seller.cover %}<img class="cov" src="{{ seller.cover|thumb:960 }}" alt="">{% else %}<div class="cov" style="height: 60px; background: var(--soft)"></div>{% endif %}
+    <div class="sp-preview__id">
+      {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="">{% else %}<span class="sp-mono">{{ seller.name|slice:":1" }}</span>{% endif %}
+      <b>{{ seller.name }}</b><em>دنبال کردن</em>
+    </div>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="sp-form" novalidate>{% csrf_token %}<input type="hidden" name="do" value="identity">
+  <section class="sp-card">
+    <h2>لوگو و کاور</h2>
+    <div class="field"><label for="lg">لوگو</label><input id="lg" type="file" name="logo" accept="image/jpeg,image/png,image/webp"><small>مربع، دست‌کم ۴۰۰ پیکسل؛ روی زمینهٔ سفید خوانا باشد.</small></div>
+    <div class="field"><label for="cv">کاور (وقتی اسلاید ندارید)</label><input id="cv" type="file" name="cover" accept="image/jpeg,image/png,image/webp"><small>عکس افقی از فرش یا کارگاه، دست‌کم ۱۶۰۰ پیکسل پهنا.</small>
+      {% if seller.cover %}<label class="mk-chk mt-1"><input type="checkbox" name="remove_cover" value="1"> برداشتن کاور فعلی</label>{% endif %}</div>
+  </section>
+  <section class="sp-card">
+    <h2>رنگ فروشگاه</h2>
+    <p class="sp-hint">رنگ قاب «حاشیهٔ فرش»، دکمه‌ها و قفسه‌ها. رنگ‌های خیلی روشن پذیرفته نمی‌شوند تا نوشتهٔ سفید رویشان خوانا بماند.</p>
+    <div class="sp-swatches" role="radiogroup" aria-label="رنگ فروشگاه">
+      {% for c, name in accents %}<label title="{{ name }}"><input type="radio" name="accent" value="{{ c }}" data-accent-pick{% if seller.accent|upper == c|upper %} checked{% endif %} aria-label="{{ name }}"><span style="background: {{ c }}"></span></label>{% endfor %}
+      <label title="رنگ دلخواه" class="d-flex align-items-center gap-2"><input type="color" name="accent_custom" value="{{ seller.accent_color }}" aria-label="رنگ دلخواه" style="width: 48px; height: 48px; border: 0; padding: 0; background: none" onchange="var r=this.form.querySelector('[name=accent][value=\'' + this.value.toUpperCase() + '\']');this.form.querySelectorAll('[name=accent]').forEach(function(x){x.checked=false});var h=this.form.querySelector('#accentHidden');h.value=this.value;h.disabled=false;document.querySelector('[data-accent-preview]').style.setProperty('--acc',this.value)"></label>
+      <input type="hidden" id="accentHidden" name="accent" value="" disabled>
+    </div>
+  </section>
+  <section class="sp-card">
+    <h2>چیدمان و پیشنهاد</h2>
+    <div class="sp-layouts" role="radiogroup" aria-label="چیدمان ویترین">
+      {% for k, label in layouts %}<label><input type="radio" name="layout" value="{{ k }}"{% if seller.layout == k %} checked{% endif %}><span>{{ label }}<small>{% if k == "showcase" %}پیشنهاد بزرگ + شبکهٔ کالاها{% elif k == "gallery" %}عکس‌های بزرگ، دو ستون{% else %}فهرست فشرده با قیمت{% endif %}</small></span></label>{% endfor %}
+    </div>
+    <div class="field mt-3"><label for="ft">پیشنهاد فروشنده (کالای برجستهٔ بالای ویترین)</label>
+      <select id="ft" name="featured"><option value="">— هیچ —</option>{% for p in live %}<option value="{{ p.pk }}"{% if seller.featured_product_id == p.pk %} selected{% endif %}>{{ p.title|fa_num|truncatechars:70 }}</option>{% endfor %}</select></div>
+  </section>
+  <section class="sp-card">
+    <h2>معرفی</h2>
+    <div class="field"><label for="tg">شعار (یک خط)</label><input id="tg" name="tagline" value="{{ seller.tagline }}" maxlength="120" placeholder="مثل «فرش ماشینی کاشان، از کارگاه ما به خانهٔ شما»"></div>
+    <div class="field"><label for="ab">دربارهٔ فروشگاه</label><textarea id="ab" name="about" rows="5" maxlength="3000" placeholder="داستان کارگاه، سابقه، آنچه شما را متفاوت می‌کند…">{{ seller.about }}</textarea><small>شمارهٔ تماس و پیوند بیرونی مجاز نیست.</small></div>
+  </section>
+  <div class="mk-save"><button class="sp-btn" type="submit">ذخیرهٔ ظاهر فروشگاه</button><a class="sp-link" href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener">دیدن ویترین</a></div>
+</form>
+
+<section class="sp-card" id="slides" aria-labelledby="sl-h">
+  <h2 id="sl-h">اسلایدهای سربرگ <small class="muted">{{ slides|length|fa_num }} از {{ max_slides|fa_num }}</small></h2>
+  <p class="sp-hint">اسلایدها جای کاور را می‌گیرند و هر ۶ ثانیه آرام عوض می‌شوند (با اولین لمس می‌ایستند). عکس افقی و پرنور بگذارید.</p>
+  {% if slides %}<ul class="sp-rows">{% for sl in slides %}<li>
+    <img src="{{ sl.image|thumb:240 }}" alt="">
+    <span class="sp-rows__t"><b>{{ sl.title|default:"بی‌عنوان"|fa_num }}</b>{% if sl.product %}<small>پیوند به: {{ sl.product.title|fa_num|truncatechars:40 }}</small>{% endif %}</span>
+    {% if not forloop.first %}<form method="post">{% csrf_token %}<input type="hidden" name="do" value="slide_up"><input type="hidden" name="id" value="{{ sl.pk }}"><button class="sp-mini" type="submit" aria-label="بالاتر">بالاتر</button></form>{% endif %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="do" value="slide_del"><input type="hidden" name="id" value="{{ sl.pk }}"><button class="sp-mini sp-mini--danger" type="submit">حذف</button></form>
+  </li>{% endfor %}</ul>{% endif %}
+  {% if slides|length < max_slides %}
+  <form method="post" enctype="multipart/form-data" class="sp-form mt-2">{% csrf_token %}<input type="hidden" name="do" value="slide_add">
+    <div class="grid-2">
+      <div class="field"><label for="si">عکس</label><input id="si" type="file" name="image" accept="image/jpeg,image/png,image/webp" required></div>
+      <div class="field"><label for="sp">پیوند به کالا (اختیاری)</label><select id="sp" name="product"><option value="">—</option>{% for p in live %}<option value="{{ p.pk }}">{{ p.title|fa_num|truncatechars:60 }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="st">عنوان (اختیاری)</label><input id="st" name="title" maxlength="80"></div>
+      <div class="field"><label for="ss">زیرعنوان (اختیاری)</label><input id="ss" name="subtitle" maxlength="140"></div>
+    </div>
+    <button class="sp-btn sp-btn--ink" type="submit">افزودن اسلاید</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="sp-card" id="photos" aria-labelledby="ph-h">
+  <h2 id="ph-h">عکس‌های کارگاه و فروشگاه <small class="muted">{{ photos|length|fa_num }} از {{ max_photos|fa_num }}</small></h2>
+  <p class="sp-hint">در بخش «دربارهٔ فروشگاه» ویترین می‌آید و به خریدار اعتماد می‌دهد. عکسی که کد ملی یا مدرک شخصی دارد نگذارید.</p>
+  {% if photos %}<div class="sp-thumbs">{% for m in photos %}<figure><img src="{{ m|thumb:240 }}" alt=""><form method="post">{% csrf_token %}<input type="hidden" name="do" value="photo_del"><input type="hidden" name="id" value="{{ m.pk }}"><button class="sp-x" type="submit" aria-label="حذف عکس">×</button></form></figure>{% endfor %}</div>{% endif %}
+  {% if photos|length < max_photos %}<form method="post" enctype="multipart/form-data" class="sp-form mt-2 d-flex gap-2 flex-wrap align-items-end">{% csrf_token %}<input type="hidden" name="do" value="photos">
+    <div class="field mb-0" style="flex: 1 1 220px"><label for="pf">افزودن عکس</label><input id="pf" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple></div>
+    <button class="sp-btn sp-btn--ink" type="submit">بارگذاری</button>
+  </form>{% endif %}
+</section>
+{% endblock %}

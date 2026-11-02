@@ -46,10 +46,19 @@ def save_photos(review, files):
 
 def ask(product, *, user=None, name="", mobile="", text=""):
     """پرسش مشتری دربارهٔ فرش؛ بعد از تأیید و پاسخ در پنل، زیر «پرسش و پاسخ» صفحهٔ فرش می‌آید."""
-    return Review.objects.create(
+    r = Review.objects.create(
         product=product, user=user, author_name=(name or f"مشتری {brand.name()}")[:200], mobile=mobile[:11],
         rating=None, content=text.strip()[:1500], is_approved=False, kind="question",
     )
+    if product.seller_id:  # کالای بازارچه: پاسخ با خود فروشنده است
+        try:
+            from accounts.sms import send_bulk
+
+            send_bulk([product.seller.mobile], f"{brand.name()}: پرسش تازه دربارهٔ «{product.title[:40]}». پاسخ: پنل فروشنده ← پرسش‌ها",
+                      kind="other")
+        except Exception:  # noqa: BLE001
+            pass
+    return r
 
 
 def create(product, *, user=None, name="", mobile="", rating=0, text="", photos=(), order=None):

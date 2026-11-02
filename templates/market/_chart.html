@@ -1,0 +1,4 @@
+{% load fa %}<div class="sp-chart" style="--h: {{ h|default:'120px' }}" role="img" aria-label="{{ label }}">
+  {% for b in c.bars %}<div class="sp-chart__bar{% if b.last %} is-last{% endif %}" title="{{ b.label|fa_num }}: {% if money %}{{ b.val|toman }} تومان{% else %}{{ b.val|fa_num }}{% endif %}"><i style="height: {{ b.pct }}%"></i>{% if b.tick %}<span>{{ b.tick|fa_num }}</span>{% endif %}</div>{% endfor %}
+</div>
+<table class="visually-hidden"><caption>{{ label }}</caption><tbody>{% for b in c.bars %}<tr><th>{{ b.label|fa_num }}</th><td>{% if money %}{{ b.val|toman }} تومان{% else %}{{ b.val|fa_num }}{% endif %}</td></tr>{% endfor %}</tbody></table>

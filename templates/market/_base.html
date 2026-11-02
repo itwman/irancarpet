@@ -1,24 +1,57 @@
 {% extends "base.html" %}{% load fa static %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/market.css' %}?v={{ ASSET_V }}">{% endblock %}
 {% block body_class %}seller-page{% endblock %}
 {% block content %}
-<div class="container mk">
-  <header class="mk-head">
-    <div class="mk-head__id">
-      {% if seller.logo %}<img src="{{ seller.logo.url }}" alt="" width="52" height="52">{% else %}<span class="mk-head__mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
-      <div><h1>{{ seller.name }}</h1>
-        <p>{% if seller.status == "paused" %}<span class="mk-dot mk-dot--off"></span>تعطیل موقت{% elif seller.status == "active" %}<span class="mk-dot"></span>فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}
-          · <a href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener">صفحهٔ فروشگاه در سایت</a></p></div>
-    </div>
-    <a class="btn-ic btn-ic--pink btn-ic--sm" href="/seller/products/add/">+ افزودن کالا</a>
-  </header>
-  <nav class="mk-tabs" aria-label="پنل فروشنده">
-    <a href="/seller/"{% if tab == "home" %} aria-current="page"{% endif %}>خلاصه</a>
-    <a href="/seller/orders/"{% if tab == "orders" %} aria-current="page"{% endif %}>سفارش‌ها{% if pending_orders %} <b>{{ pending_orders|fa_num }}</b>{% endif %}</a>
-    <a href="/seller/products/"{% if tab == "products" %} aria-current="page"{% endif %}>کالاها</a>
-    <a href="/seller/finance/"{% if tab == "finance" %} aria-current="page"{% endif %}>مالی و تسویه</a>
-    <a href="/seller/settings/"{% if tab == "settings" %} aria-current="page"{% endif %}>تنظیمات فروشگاه</a>
+<svg width="0" height="0" class="visually-hidden" aria-hidden="true" focusable="false">
+  <symbol id="mi-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="mi-bag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 8h14l-1.5 12h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></g></symbol>
+  <symbol id="mi-box" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></g></symbol>
+  <symbol id="mi-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="mi-more" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></g></symbol>
+  <symbol id="mi-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="mi-wallet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 13h2M3 10h18"/></g></symbol>
+  <symbol id="mi-album" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></g></symbol>
+  <symbol id="mi-camera" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3.5"/></g></symbol>
+  <symbol id="mi-shelf" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="mi-flame" viewBox="0 0 24 24"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 2 2 2 3 1-2 1-4 1-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="mi-tag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 12V4h8l8 8-8 8z"/><circle cx="8.5" cy="8.5" r="1.5"/></g></symbol>
+  <symbol id="mi-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="mi-store" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 9h16l-1-5H5z"/><path d="M5 9v11h14V9M10 20v-6h4v6"/></g></symbol>
+  <symbol id="mi-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></g></symbol>
+  <symbol id="mi-truck" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></g></symbol>
+  <symbol id="mi-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></g></symbol>
+  <symbol id="mi-chev" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+<div class="sp" style="--acc: {{ seller.accent_color }}">
+  <aside class="sp-side" aria-label="بخش‌های پنل">
+    <a class="sp-id" href="/seller/">
+      {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="" width="48" height="48">{% else %}<span class="sp-mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
+      <span><b>{{ seller.name }}</b><small>{% if seller.status == "paused" %}تعطیل موقت{% elif seller.status == "active" %}فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}</small></span>
+    </a>
+    {% include "market/_nav.html" %}
+  </aside>
+  <div class="sp-main mk">
+    <header class="sp-top">
+      <a class="sp-id sp-id--m" href="/seller/">
+        {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="" width="40" height="40">{% else %}<span class="sp-mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
+        <span><b>{{ seller.name }}</b><small class="{% if seller.status == 'active' %}is-on{% endif %}">{% if seller.status == "paused" %}تعطیل موقت{% elif seller.status == "active" %}فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}</small></span>
+      </a>
+      <h1 class="sp-title">{{ meta.title }}</h1>
+      <div class="sp-top__act">
+        <a class="sp-link" href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener">دیدن ویترین</a>
+        <a class="sp-btn sp-btn--sm hide-m" href="/seller/products/add/"><svg width="16" height="16" aria-hidden="true"><use href="#mi-plus"/></svg>افزودن کالا</a>
+      </div>
+    </header>
+    {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' or m.tags == 'info' %} alert-ic--ok{% endif %}" role="status">{{ m }}</div>{% endfor %}
+    {% block panel %}{% endblock %}
+  </div>
+  <nav class="sp-bnav" aria-label="منوی پنل">
+    <a href="/seller/"{% if tab == "home" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-home"/></svg>خانه</a>
+    <a href="/seller/orders/"{% if tab == "orders" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-bag"/></svg>سفارش‌ها{% if pending_orders %}<b class="sp-badge">{{ pending_orders|fa_num }}</b>{% endif %}</a>
+    <a class="sp-bnav__add" href="/seller/products/add/" aria-label="افزودن کالا"><svg aria-hidden="true"><use href="#mi-plus"/></svg></a>
+    <a href="/seller/products/"{% if tab == "products" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-box"/></svg>کالاها</a>
+    <a href="/seller/more/"{% if tab != "home" and tab != "orders" and tab != "products" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-more"/></svg>بیشتر</a>
   </nav>
-  {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' %} alert-ic--ok{% endif %}" role="status">{{ m }}</div>{% endfor %}
-  {% block panel %}{% endblock %}
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/market.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}

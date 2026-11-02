@@ -1,0 +1,54 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+{% if seller.status == "paused" %}<div class="alert-ic alert-ic--warn">فروشگاه تعطیل موقت است و کالاهایتان در سایت دیده نمی‌شوند.</div>{% endif %}
+<section class="sp-hero" aria-label="فروش ۷ روز اخیر">
+  <div class="sp-hero__top"><span>فروش ۷ روز اخیر</span><a href="/seller/stats/">آمار کامل</a></div>
+  <div class="sp-hero__big">{{ sm.sales.value|toman }} <small>تومان</small>{% include "market/_change.html" with ch=sm.sales.change %}</div>
+  {% include "market/_chart.html" with c=chart money=1 label="فروش روزانهٔ ۷ روز اخیر" h="64px" %}
+  <div class="sp-kpis">
+    <div><b>{{ today.orders|fa_num }}</b><span>سفارش امروز</span></div>
+    <div><b>{{ today.views|fa_num }}</b><span>بازدید امروز</span></div>
+    <div><b>{{ followers|fa_num }}</b><span>دنبال‌کننده{% if followers_new %} (+{{ followers_new|fa_num }}){% endif %}</span></div>
+  </div>
+</section>
+
+{% if todo %}
+<h2 class="h6 fw-bold mb-2">کارهای امروز</h2>
+<ul class="sp-todo">
+  {% for t in todo %}<li><a href="{{ t.url }}">
+    <span class="sp-todo__ic {{ t.tone }}"><svg aria-hidden="true"><use href="#mi-{{ t.icon }}"/></svg></span>
+    <span class="sp-todo__t"><b>{% if t.n %}{{ t.n|fa_num }} {% endif %}{{ t.text }}</b>{% if t.hint %}<small>{{ t.hint|fa_num }}</small>{% endif %}</span>
+    <svg aria-hidden="true"><use href="#mi-chev"/></svg></a></li>{% endfor %}
+</ul>
+{% endif %}
+
+<nav class="sp-tiles" aria-label="میان‌بُرها">
+  <a href="/seller/quick/"><svg aria-hidden="true"><use href="#mi-camera"/></svg>افزودن با عکس</a>
+  <a href="/seller/albums/"><svg aria-hidden="true"><use href="#mi-album"/></svg>آلبوم قیمت</a>
+  <a href="/seller/offers/"><svg aria-hidden="true"><use href="#mi-flame"/></svg>فرصت ویژه</a>
+  <a href="/seller/coupons/"><svg aria-hidden="true"><use href="#mi-tag"/></svg>کد تخفیف</a>
+  <a href="/seller/shelves/"><svg aria-hidden="true"><use href="#mi-shelf"/></svg>قفسه‌ها</a>
+  <a href="/seller/look/"><svg aria-hidden="true"><use href="#mi-store"/></svg>ظاهر ویترین</a>
+  <a href="/seller/stats/"><svg aria-hidden="true"><use href="#mi-chart"/></svg>آمار</a>
+  <a href="/seller/finance/"><svg aria-hidden="true"><use href="#mi-wallet"/></svg>تسویه</a>
+</nav>
+
+<div class="sp-grid2">
+  <section class="sp-card" aria-labelledby="v-h">
+    <h2 id="v-h">بازدید ۷ روز اخیر <a href="/seller/stats/">جزئیات</a></h2>
+    <p class="sp-hint">{{ sm.views.value|fa_num }} بازدید{% include "market/_change.html" with ch=sm.views.change %} · ویترین {{ sm.store.value|fa_num }}، صفحهٔ کالاها {{ sm.products.value|fa_num }}</p>
+    {% include "market/_chart.html" with c=vchart label="بازدید روزانهٔ ۷ روز اخیر" h="90px" %}
+  </section>
+  <section class="sp-card" aria-labelledby="m-h">
+    <h2 id="m-h">مالی <a href="/seller/finance/">تسویه‌ها</a></h2>
+    <div class="sp-kpi-cards" style="margin: 0">
+      <div><b>{{ bal.payable.amount|toman }}</b><span>قابل تسویه (تومان)</span></div>
+      <div><b>{{ bal.hold.amount|toman }}</b><span>در مهلت مرجوعی</span></div>
+      <div><b>{{ bal.waiting.amount|toman }}</b><span>در جریان ارسال</span></div>
+    </div>
+    <form method="post" action="/seller/pause/" class="mt-3">{% csrf_token %}
+      <button class="sp-btn sp-btn--ghost sp-btn--block" type="submit">{% if seller.status == "paused" %}باز کردن دوبارهٔ فروشگاه{% else %}تعطیل موقت فروشگاه (مثلاً سفر){% endif %}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

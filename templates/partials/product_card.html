@@ -6,7 +6,7 @@
     {% if p.offer %}<span class="badge-offer">فرصت ویژه · ٪{{ p.offer.off_percent|fa_num }}</span>{% elif p.stock_status == 'outofstock' %}<span class="badge-out">ناموجود</span>{% endif %}
   </div>
   <div class="p-card__body">
-    {% if p.brand %}<span class="p-card__brand">{{ p.brand.name }}</span>{% endif %}
+    {% if p.seller_id and not in_store %}<span class="p-card__brand p-card__seller">فروشگاه {{ p.seller.name }}</span>{% elif p.brand %}<span class="p-card__brand">{{ p.brand.name }}</span>{% endif %}
     <h3 class="p-card__title"><a href="{{ p.get_absolute_url }}">{{ p.title|fa_num }}</a></h3>
     <div class="p-card__foot">
       {% if p.stock_status == 'outofstock' and not p.offer %}<span class="price muted">ناموجود</span>{% elif p.min_price %}<span class="price">{% if p.price_unit == "m2" %}<small>متری</small> {% elif not p.album_id %}<small>از</small> {% endif %}{{ p.min_price|toman }} <small>تومان</small></span>{% else %}<span class="price muted">استعلام قیمت</span>{% endif %}

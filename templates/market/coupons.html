@@ -1,0 +1,28 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<p class="sp-hint">کد تخفیف را به مشتری‌های خودتان بدهید (مثلاً در اینستاگرام). فقط روی کالاهای فروشگاه شما اعمال می‌شود و از سهم شما کم می‌شود؛ کمیسیون {% brand %} هم روی مبلغ پس از تخفیف حساب می‌شود.</p>
+{% if errors %}<div class="alert-ic" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
+<details class="sp-card"{% if errors or not rows %} open{% endif %}>
+  <summary class="fw-bold" style="cursor: pointer; min-height: 32px">+ کد تخفیف تازه</summary>
+  <form method="post" class="sp-form mt-3" novalidate>{% csrf_token %}
+    <div class="grid-2">
+      <div class="field{% if errors.code %} has-err{% endif %}"><label for="cc">کد (حروف و عدد انگلیسی)</label><input id="cc" name="code" value="{{ post.code|default:'' }}" dir="ltr" maxlength="20" placeholder="SHAH10" required></div>
+      <div class="field"><label for="ck">نوع</label><select id="ck" name="kind"><option value="percent">درصدی</option><option value="fixed"{% if post.kind == "fixed" %} selected{% endif %}>مبلغ ثابت (تومان)</option></select></div>
+      <div class="field{% if errors.value %} has-err{% endif %}"><label for="cv">مقدار</label><input id="cv" name="value" value="{{ post.value|default:'' }}" inputmode="numeric" dir="ltr" required></div>
+      <div class="field"><label for="cm">سقف تخفیف (تومان)</label><input id="cm" name="max_discount" value="{{ post.max_discount|default:'' }}" inputmode="numeric" dir="ltr" placeholder="بی‌سقف"></div>
+      <div class="field"><label for="co">حداقل خرید از فروشگاه شما</label><input id="co" name="min_order" value="{{ post.min_order|default:'' }}" inputmode="numeric" dir="ltr" placeholder="—"></div>
+      <div class="field"><label for="cl">سقف تعداد استفاده</label><input id="cl" name="usage_limit" value="{{ post.usage_limit|default:'' }}" inputmode="numeric" dir="ltr" placeholder="بی‌سقف"></div>
+      <div class="field"><label for="cd">مدت (روز)</label><input id="cd" name="days" value="{{ post.days|default:'' }}" inputmode="numeric" dir="ltr" placeholder="بدون پایان"></div>
+    </div>
+    <button class="sp-btn" type="submit">ساختن کد</button>
+  </form>
+</details>
+{% if rows %}
+<ul class="sp-prods">{% for c in rows %}<li class="sp-prod">
+  <span class="sp-todo__ic {% if c.is_active %}teal{% else %}ink{% endif %}"><svg aria-hidden="true"><use href="#mi-tag"/></svg></span>
+  <span class="sp-prod__b"><b dir="ltr" style="text-align: right">{{ c.code }}</b>
+    <span class="sp-prod__meta">{{ c.label|fa_num }}{% if c.max_discount %} · سقف {{ c.max_discount|toman }}{% endif %}{% if c.min_order %} · خرید از {{ c.min_order|toman }}{% endif %} · {{ c.used|fa_num }} بار استفاده{% if c.ends_at %} · تا {{ c.ends_at|jdate:"%d %B" }}{% endif %}</span></span>
+  {% if c.is_active %}<form method="post">{% csrf_token %}<input type="hidden" name="do" value="stop"><input type="hidden" name="id" value="{{ c.pk }}"><button class="sp-mini sp-mini--danger" type="submit">غیرفعال</button></form>{% else %}<span class="mk-st">غیرفعال</span>{% endif %}
+</li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

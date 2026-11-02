@@ -154,6 +154,11 @@ def fix_m2_sizes(album):
     album.even_sizes.clear()
 
 
+class ShopAlbumManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(seller__isnull=True)
+
+
 class Album(models.Model):
     class Unit(models.TextChoices):
         SIZE = "size", "سایزهای ثابت"
@@ -219,15 +224,25 @@ class Album(models.Model):
     title_word = models.CharField("کلمهٔ ویژهٔ عنوان", max_length=40, blank=True,
                                   help_text="مثل «موکا»؛ در افزودن سریع بعد از «… شانه» در عنوان فرش‌های تازه می‌آید.")
     # فرشستان: آلبوم همگام با ایران کارپت (فقط برای لیست قیمت؛ قیمت فرش‌ها مستقیم از منبع می‌آید)
+    seller = models.ForeignKey("market.Seller", null=True, blank=True, on_delete=models.CASCADE, related_name="albums",
+                               verbose_name="فروشنده", editable=False,
+                               help_text="آلبوم فروشندهٔ بازارچه: فقط در فروشگاه خود او؛ نه در لیست قیمت، نه ترب، نه فرشستان")
+    size_prices = models.JSONField("قیمت دستی سایزها", default=dict, blank=True, editable=False,
+                                   help_text="{شناسهٔ سایز: قیمت نهایی تومان} — فقط آلبوم فروشنده")
     mirror_pk = models.PositiveIntegerField("شناسه در سایت منبع", null=True, blank=True, unique=True, editable=False)
     mirror_rows = models.JSONField("قیمت سایزها از سایت منبع", null=True, blank=True, editable=False)
 
-    PRICE_FIELDS = ("base_price", "base_size_id", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to", "is_active")
+    PRICE_FIELDS = ("base_price", "base_size_id", "profit_percent", "shipping_fixed", "waste_type", "waste_value", "round_to", "is_active",
+                    "size_prices")
+
+    objects = ShopAlbumManager()   # فقط آلبوم‌های خود فروشگاه (لیست قیمت، ترب، فرشستان، پنل مدیریت…)
+    all_objects = models.Manager()  # همه، از جمله آلبوم فروشندگان
 
     class Meta:
         verbose_name = "آلبوم قیمت"
         verbose_name_plural = "آلبوم‌های قیمت"
         ordering = ["sort_order", "name"]
+        default_manager_name = "all_objects"  # فرم‌ها و بررسی یکتایی همه را ببینند؛ Album.objects فقط آلبوم‌های فروشگاه
 
     def __str__(self):
         return self.name
@@ -246,7 +261,7 @@ class Album(models.Model):
 
         base = slugify(self.title, allow_unicode=True)[:150] or (self.code or "album").lower()
         slug, n = base, 2
-        while Album.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+        while Album.all_objects.filter(slug=slug).exclude(pk=self.pk).exists():
             slug, n = f"{base}-{n}", n + 1
         return slug
 
@@ -283,6 +298,10 @@ class Album(models.Model):
 
     def size_price(self, size, buy=None):
         """قیمت فروش نهایی یک سایز (همان عددی که مشتری می‌بیند)."""
+        if buy is None and size is not None and self.size_prices:  # آلبوم فروشنده: قیمت دستی همین سایز
+            fixed = self.size_prices.get(str(size.pk))
+            if fixed:
+                return int(fixed)
         buy = Decimal(buy if buy is not None else self.base_price)
         if buy <= 0 or not size or not size.area:
             return None
@@ -323,7 +342,7 @@ class Album(models.Model):
 
     @staticmethod
     def next_code():
-        nums = [int(c[4:]) for c in Album.objects.filter(code__startswith="ALB-").values_list("code", flat=True) if c[4:].isdigit()]
+        nums = [int(c[4:]) for c in Album.all_objects.filter(code__startswith="ALB-").values_list("code", flat=True) if c[4:].isdigit()]
         return f"ALB-{max(nums, default=0) + 1:03d}"
 
     def save(self, *args, **kwargs):
@@ -336,7 +355,7 @@ class Album(models.Model):
         changed, ratio = False, None
         self._scaled = False
         if self.pk:
-            old = Album.objects.filter(pk=self.pk).values(*self.PRICE_FIELDS).first()
+            old = Album.all_objects.filter(pk=self.pk).values(*self.PRICE_FIELDS).first()
             changed = old != {f: getattr(self, f) for f in self.PRICE_FIELDS}
             if old and old["base_price"] != self.base_price:
                 self.last_updated = timezone.now()

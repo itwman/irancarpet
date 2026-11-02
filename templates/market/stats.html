@@ -1,0 +1,41 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<nav class="sp-range" aria-label="بازهٔ زمانی">{% for r in ranges %}<a href="?d={{ r }}"{% if r == n %} aria-current="true"{% endif %}>{{ r|fa_num }} روز</a>{% endfor %}</nav>
+<section class="sp-kpi-cards" aria-label="خلاصهٔ {{ n|fa_num }} روز">
+  <div><b>{{ sm.sales.value|toman }}</b><span>فروش (تومان){% include "market/_change.html" with ch=sm.sales.change %}</span></div>
+  <div><b>{{ sm.net.value|toman }}</b><span>سهم شما پس از کمیسیون</span></div>
+  <div><b>{{ sm.orders.value|fa_num }}</b><span>سفارش{% include "market/_change.html" with ch=sm.orders.change %}</span></div>
+  <div><b>{{ sm.views.value|fa_num }}</b><span>بازدید{% include "market/_change.html" with ch=sm.views.change %}</span></div>
+  <div><b>{% if sm.conversion is not None %}{{ sm.conversion|fa_num }}٪{% else %}—{% endif %}</b><span>نرخ تبدیل (سفارش به بازدید)</span></div>
+  <div><b>{{ followers|fa_num }}</b><span>دنبال‌کنندهٔ فروشگاه</span></div>
+</section>
+<p class="sp-hint">درصد کنار هر عدد، تغییر نسبت به {{ n|fa_num }} روز پیش از آن است. بازدیدها فقط بازدید آدم‌هاست؛ ربات‌ها شمرده نمی‌شوند.</p>
+
+<section class="sp-card" aria-labelledby="s-h">
+  <h2 id="s-h">فروش روزانه</h2>
+  {% include "market/_chart.html" with c=sales_chart money=1 label="فروش روزانه به تومان" h="150px" %}
+</section>
+<div class="sp-grid2">
+  <section class="sp-card" aria-labelledby="o-h">
+    <h2 id="o-h">سفارش روزانه</h2>
+    {% include "market/_chart.html" with c=orders_chart label="تعداد سفارش روزانه" h="110px" %}
+  </section>
+  <section class="sp-card" aria-labelledby="vv-h">
+    <h2 id="vv-h">بازدید روزانه</h2>
+    <p class="sp-hint">ویترین {{ sm.store.value|fa_num }} · صفحهٔ کالاها {{ sm.products.value|fa_num }}</p>
+    {% include "market/_chart.html" with c=views_chart label="بازدید روزانه" h="110px" %}
+  </section>
+</div>
+<div class="sp-grid2">
+  <section class="sp-card" aria-labelledby="tv-h">
+    <h2 id="tv-h">پربازدیدترین کالاها</h2>
+    {% if top_viewed %}<ol class="sp-top-list">{% for r in top_viewed %}<li>{% if r.product.image %}<img src="{{ r.product.image|thumb:240 }}" alt="" loading="lazy">{% endif %}<a href="/seller/products/{{ r.product.pk }}/">{{ r.product.title|fa_num|truncatechars:60 }}</a><b>{{ r.views|fa_num }}</b></li>{% endfor %}</ol>
+    {% else %}<p class="sp-hint mb-0">هنوز بازدیدی ثبت نشده.</p>{% endif %}
+  </section>
+  <section class="sp-card" aria-labelledby="ts-h">
+    <h2 id="ts-h">پرفروش‌ترین کالاها</h2>
+    {% if top_sold %}<ol class="sp-top-list">{% for r in top_sold %}<li>{% if r.product.image %}<img src="{{ r.product.image|thumb:240 }}" alt="" loading="lazy">{% endif %}<a href="/seller/products/{{ r.product.pk }}/">{{ r.product.title|fa_num|truncatechars:60 }}</a><b>{{ r.qty|fa_num }} عدد</b></li>{% endfor %}</ol>
+    {% else %}<p class="sp-hint mb-0">در این بازه فروشی نبوده.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

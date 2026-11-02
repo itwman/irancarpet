@@ -1,0 +1,36 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+{% if not albums %}
+<div class="sp-card sp-empty"><h2>اول یک آلبوم قیمت بسازید</h2><p>«افزودن با عکس» فرش‌ها را در یک آلبوم قیمت می‌سازد تا قیمت همهٔ سایزها خودکار باشد.</p><a class="sp-btn" href="/seller/albums/add/">ساختن آلبوم</a></div>
+{% else %}
+<p class="sp-hint">عکس چند فرش را یک‌جا انتخاب کنید؛ برای هر فرش یک کالا با همهٔ سایزهای آلبوم ساخته می‌شود. نقشه و رنگ از نام فایل حدس زده می‌شود: «افشان-لاکی.jpg» یا «Afshan-Laki.jpg». چند عکس از یک فرش: «Afshan-Laki-2.jpg». بعد از ساخت، عنوان هر کالا را می‌توانید اصلاح کنید.</p>
+{% if errors %}<div class="alert-ic" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="sp-form" novalidate>{% csrf_token %}
+  <section class="sp-card">
+    <div class="field{% if errors.album %} has-err{% endif %}"><label for="qa">آلبوم قیمت</label>
+      <select id="qa" name="album" required>{% for a in albums %}<option value="{{ a.pk }}"{% if request.GET.album == a.pk|stringformat:"s" or request.POST.album == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name|fa_num }} ({{ a.n|fa_num }} کالا)</option>{% endfor %}</select></div>
+    <div class="field{% if errors.category %} has-err{% endif %}"><label for="qc">دسته</label>
+      <select id="qc" name="category" required><option value="">انتخاب کنید</option>{% for c in cats %}<option value="{{ c.pk }}"{% if request.POST.category == c.pk|stringformat:"s" %} selected{% endif %}>{% if c.parent_id %}— {% endif %}{{ c.name|fa_num }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="qp">آغاز عنوان همهٔ فرش‌ها</label><input id="qp" name="prefix" value="{{ request.POST.prefix }}" maxlength="120" placeholder="مثل «فرش ۷۰۰ شانه»؛ خالی = نام آلبوم"><small>عنوان: «آغاز عنوان» + نقشه + زمینه؛ مثل «فرش ۷۰۰ شانه نقشه افشان زمینه لاکی».</small></div>
+  </section>
+  {% if attrs %}<section class="sp-card">
+    <h2>مشخصات مشترک همهٔ این فرش‌ها</h2>
+    <div class="mk-specs">{% for a in attrs %}<div class="field"><label for="qs{{ a.pk }}">{{ a.label }}</label><select id="qs{{ a.pk }}" name="spec_{{ a.pk }}"><option value="">—</option>{% for t in a.terms.all %}<option value="{{ t.pk }}">{{ t.name|fa_num }}</option>{% endfor %}</select></div>{% endfor %}</div>
+    <small class="muted">رنگ زمینهٔ هر فرش از نام فایلش خوانده می‌شود.</small>
+  </section>{% endif %}
+  <section class="sp-card">
+    <div class="field{% if errors.photos %} has-err{% endif %}"><label for="qf">عکس فرش‌ها (تا ۶۰ عکس)</label>
+      <input id="qf" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required>
+      <small>از گالری گوشی چند عکس را با هم انتخاب کنید. عکس‌ها خودکار کم‌حجم می‌شوند.</small></div>
+    <ul id="qnames" class="sp-hint" style="list-style: none; padding: 0; margin: 0"></ul>
+  </section>
+  <div class="mk-save"><button class="sp-btn" type="submit">ساختن کالاها و ارسال برای بررسی</button></div>
+</form>
+<script>
+document.getElementById("qf").addEventListener("change", function () {
+  var ul = document.getElementById("qnames"); ul.textContent = "";
+  Array.prototype.slice.call(this.files, 0, 60).forEach(function (f) { var li = document.createElement("li"); li.textContent = "• " + f.name.replace(/\.[^.]+$/, ""); ul.appendChild(li); });
+});
+</script>
+{% endif %}
+{% endblock %}

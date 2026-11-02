@@ -1,0 +1,1 @@
+{% load fa %}{% if ch is not None %}<span class="sp-change {% if ch >= 0 %}up{% else %}down{% endif %}">{% if ch >= 0 %}↑{% else %}↓{% endif %}{{ ch|stringformat:"d"|cut:"-"|fa_num }}٪</span>{% endif %}

@@ -50,7 +50,30 @@
     </div>
   </section>
 
+  {% if albums %}
   <section class="card-ic">
+    <h3>قیمت‌گذاری</h3>
+    <div class="field"><label for="alb">آلبوم قیمت</label>
+      <select id="alb" name="album" onchange="document.getElementById('manualBox').hidden=!!this.value;document.getElementById('albumBox').hidden=!this.value">
+        <option value="">بدون آلبوم؛ قیمت هر سایز را خودم می‌نویسم</option>
+        {% for a in albums %}<option value="{{ a.pk }}"{% if chosen_album == a.pk|stringformat:"s" %} selected{% endif %}>{{ a.name|fa_num }}</option>{% endfor %}
+      </select><small>با آلبوم، همهٔ سایزها و قیمت‌ها از آلبوم می‌آید و با تغییر قیمت آلبوم خودکار به‌روز می‌شود.</small></div>
+    <div id="albumBox"{% if not chosen_album %} hidden{% endif %}>
+      {% if album_vars %}<p class="muted small mb-1">سایزی که ندارید را خاموش کنید:</p>
+      <div class="sp-sizes">{% for v in album_vars %}<label class="sp-size" style="grid-template-columns: auto 1fr auto"><input type="checkbox" class="sz-on"{% if v.is_available %} checked{% endif %} data-size="{{ v.size_id }}"><span class="sp-size__n">{{ v.size.label|fa_num }}</span><b>{{ v.price|toman }}</b></label>{% endfor %}</div>
+      <div id="szOff"></div>
+      {% else %}<p class="muted small mb-0">سایزها و قیمت‌ها بعد از ذخیره از آلبوم ساخته می‌شوند.</p>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+  {% if shelves %}
+  <section class="card-ic">
+    <h3>قفسه‌های ویترین</h3><input type="hidden" name="shelves_sent" value="1">
+    <div class="d-flex flex-wrap gap-2">{% for sh in shelves %}<label class="mk-chk" style="background: var(--soft); border-radius: 999px; padding: .35rem .8rem"><input type="checkbox" name="shelves" value="{{ sh.pk }}"{% if sh.pk in chosen_shelves %} checked{% endif %}> {{ sh.name|fa_num }}</label>{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  <section class="card-ic" id="manualBox"{% if chosen_album %} hidden{% endif %}>
     <h3>سایزها، قیمت و موجودی</h3>
     <p class="muted small">قیمت را به تومان بنویسید. «موجودی» را خالی بگذارید اگر همیشه موجود است؛ با هر فروش خودکار کم می‌شود.</p>
     {% if errors.variations %}<div class="alert-ic">{% for e in errors.variations %}{{ e }}<br>{% endfor %}</div>{% endif %}
@@ -78,6 +101,15 @@
 </form>
 <script>
 (function () {
+  var form = document.querySelector(".mk-form");
+  form.addEventListener("submit", function () {
+    var off = document.getElementById("szOff");
+    if (!off) return;
+    off.textContent = "";
+    form.querySelectorAll(".sz-on").forEach(function (c) {
+      if (!c.checked) { var i = document.createElement("input"); i.type = "hidden"; i.name = "size_off"; i.value = c.getAttribute("data-size"); off.appendChild(i); }
+    });
+  });
   var box = document.getElementById("vrows");
   function sync(row) { var c = row.querySelector(".v-pair"); row.querySelector("input[name=v_pair]").value = c.checked ? "1" : "0"; }
   box.addEventListener("change", function (e) { if (e.target.classList.contains("v-pair")) sync(e.target.closest(".mk-vrow")); });

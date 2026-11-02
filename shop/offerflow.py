@@ -40,7 +40,7 @@ def state_filter(qs, value, now=None):
 def counts(now=None):
     from .models import SpecialOffer
 
-    qs = SpecialOffer.objects.all()
+    qs = SpecialOffer.objects.filter(product__seller__isnull=True)  # فرصت فروشندگان با خودشان است
     return {"waiting": state_filter(qs, "waiting", now).count(), "ending": state_filter(qs, "ending", now).count()}
 
 

@@ -1,0 +1,13 @@
+{% extends "market/_base.html" %}{% load fa %}
+{% block panel %}
+<nav class="sp-filter" aria-label="پرسش یا نظر"><a href="?"{% if t == "questions" %} aria-current="true"{% endif %}>پرسش‌ها{% if open %} <b class="sp-badge">{{ open|fa_num }}</b>{% endif %}</a><a href="?t=reviews"{% if t == "reviews" %} aria-current="true"{% endif %}>نظر خریداران</a></nav>
+<p class="sp-hint">پاسخ شما با نام فروشگاه زیر صفحهٔ همان کالا می‌آید. شمارهٔ تماس، پیوند یا شناسهٔ شبکه‌های اجتماعی در پاسخ مجاز نیست.</p>
+{% for r in rows %}
+<article class="sp-q">
+  <div class="sp-q__head">{% if r.product.image %}<img src="{{ r.product.image|thumb:240 }}" alt="">{% endif %}<div><a href="{{ r.product.get_absolute_url }}" target="_blank" rel="noopener">{{ r.product.title|fa_num|truncatechars:60 }}</a><small>{{ r.author_name }} · {{ r.created_at|jdate:"%d %B" }}{% if r.rating %} · {{ r.rating|fa_num }} از ۵{% endif %}</small></div></div>
+  <blockquote>{{ r.content|fa_num|linebreaksbr }}</blockquote>
+  {% for a in r.replies.all %}<div class="sp-q__ans"><b>{{ a.author_name }}:</b> {{ a.content|fa_num|linebreaksbr }}</div>{% endfor %}
+  {% if not r.replies.all %}<form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ r.pk }}"><label class="visually-hidden" for="a{{ r.pk }}">پاسخ</label><textarea id="a{{ r.pk }}" name="answer" rows="2" maxlength="2000" placeholder="پاسخ شما…"></textarea><button class="sp-btn sp-btn--sm" type="submit">پاسخ</button></form>{% endif %}
+</article>
+{% empty %}<div class="sp-card sp-empty"><p class="mb-0">{% if t == "questions" %}هنوز پرسشی دربارهٔ کالاهایتان نیامده.{% else %}هنوز نظر تأییدشده‌ای نیامده.{% endif %}</p></div>{% endfor %}
+{% endblock %}
