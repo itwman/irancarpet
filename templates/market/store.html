@@ -2,7 +2,7 @@
 {% block head %}<link rel="stylesheet" href="{% static 'css/market.css' %}?v={{ ASSET_V }}">{% endblock %}
 {% block body_class %}store-page{% endblock %}
 {% block content %}
-<div class="container st" style="--acc: {{ accent }}">
+<div class="container vstore" style="--acc: {{ accent }}">
   <nav aria-label="مسیر" class="crumbs"><ol><li><a href="/">خانه</a></li><li><a href="/sell/">بازارچهٔ فروشندگان</a></li><li><span aria-current="page">{{ store.name }}</span></li></ol></nav>
 
   <section class="st-hero" aria-label="سربرگ فروشگاه">
@@ -96,12 +96,12 @@
 
   <section class="st-all" aria-labelledby="st-all-h">
     <div class="st-all__head">
-      <h2 id="st-all-h">{% if shelf %}{{ shelf.name|fa_num }}{% else %}همهٔ کالاهای فروشگاه{% endif %} <span>{{ page.paginator.count|fa_num }}</span></h2>
-      <form method="get" class="st-sort">{% if shelf %}<input type="hidden" name="shelf" value="{{ shelf.slug }}">{% endif %}
+      <h2 id="st-all-h">{% if shelf %}{{ shelf.name|fa_num }}{% else %}همهٔ کالاهای فروشگاه{% endif %} {% if page.paginator.count %}<span>{{ page.paginator.count|fa_num }} کالا</span>{% endif %}</h2>
+      {% if page.paginator.count > 1 %}<form method="get" class="st-sort">{% if shelf %}<input type="hidden" name="shelf" value="{{ shelf.slug }}">{% endif %}
         <label for="st-sort">مرتب‌سازی</label>
         <select id="st-sort" name="sort" onchange="this.form.submit()">{% for k, label in sorts %}<option value="{{ k }}"{% if k == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
         <noscript><button type="submit">برو</button></noscript>
-      </form>
+      </form>{% endif %}
     </div>
     {% if page.object_list %}
       {% if store.layout == "catalog" %}

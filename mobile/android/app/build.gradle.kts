@@ -83,6 +83,14 @@ android {
             manifestPlaceholders["appScheme"] = "farshyab"
             signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
+        // ایران کارپت فروشندگان: پنل فروشندگان بازارچه (با --dart-define=APP=seller بسازید)
+        create("seller") {
+            dimension = "app"
+            applicationId = "net.irancarpet.seller"
+            resValue("string", "app_name", "ایران کارپت فروشندگان")
+            manifestPlaceholders["appScheme"] = "icseller"
+            signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+        }
         // فرشستان: همان کد، ظاهر «خانهٔ ایرانی» (با --dart-define=APP=farshestan بسازید)
         create("farshestan") {
             dimension = "app"

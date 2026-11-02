@@ -28,6 +28,7 @@ import 'screens/product.dart';
 import 'screens/room.dart';
 import 'screens/shell.dart';
 import 'screens/splash.dart';
+import 'seller/app.dart';
 import 'state/app_state.dart';
 
 final navKey = GlobalKey<NavigatorState>();
@@ -47,6 +48,7 @@ Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: Colors.white));
   await Api.i.init();
+  if (kSeller) return runSellerApp();
   final auth = Auth(), cart = Cart(), wish = Wishlist(), config = AppConfig(), finder = FinderData();
   await Future.wait([auth.load(), cart.load(), wish.load()]);
   runApp(MultiProvider(

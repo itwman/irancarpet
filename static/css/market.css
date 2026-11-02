@@ -1,12 +1,12 @@
 /* بازارچهٔ فروشندگان: ویترین فروشگاه و پنل فروشنده. --acc رنگ هر فروشگاه است (تیرهٔ خوانا با متن سفید). */
 
 /* ------------------------------------------------------------------ ویترین */
-.st{--acc:#8E1F2F;padding-bottom:2rem}
+.vstore{--acc:#8E1F2F;padding-bottom:2rem}
 .st-hero{margin-top:.6rem}
 .st-frame{border-radius:26px;padding:12px;background:conic-gradient(from 45deg,var(--acc) 25%,var(--saffron-t) 0 50%,var(--acc) 0 75%,var(--saffron-t) 0) 0 0/18px 18px}
 .st-frame__in{border-radius:18px;border:3px solid var(--saffron);overflow:hidden;background:#fff}
 .st-cover{display:block;width:100%;height:clamp(150px,26vw,320px);object-fit:cover;background:var(--ink)}
-.st-cover--plain{background:linear-gradient(var(--acc),var(--acc));opacity:.12;height:clamp(90px,12vw,140px)}
+.st-cover--plain{height:clamp(90px,12vw,140px);background-color:color-mix(in srgb,var(--acc) 7%,#fff);background-image:radial-gradient(circle,color-mix(in srgb,var(--acc) 22%,transparent) 0 5px,transparent 6px),conic-gradient(from 45deg,color-mix(in srgb,var(--acc) 10%,transparent) 0 25%,transparent 0 50%,color-mix(in srgb,var(--acc) 10%,transparent) 0 75%,transparent 0);background-size:44px 44px,22px 22px;background-position:center}
 .st-slides{position:relative}
 .st-slides__track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth}
 .st-slides__track::-webkit-scrollbar{display:none}

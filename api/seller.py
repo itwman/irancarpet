@@ -172,9 +172,36 @@ def _album_json(a, rows=False):
     return d
 
 
-@seller_endpoint()
+def _sizes():
+    return Size.objects.filter(is_active=True).exclude(type="m2").order_by("sort_order", "pk")
+
+
+@seller_endpoint(("GET", "POST"))
 def albums(request):
-    return ok({"items": [_album_json(a) for a in Album.all_objects.filter(seller=request.seller).select_related("base_size")]})
+    """GET فهرست آلبوم‌ها و سایزها؛ POST {"name", "base_size", "base_price"} ← آلبوم تازه (سایزهای دیگر را در خود آلبوم روشن کنید)."""
+    s = request.seller
+    if request.method == "POST":
+        from market.seller import MAX_ALBUMS, seller_albums
+
+        d = payload(request)
+        name = str(d.get("name") or "").strip()[:160]
+        base = _sizes().filter(pk=_int(d.get("base_size"))).first()
+        bp = _int(d.get("base_price"), 0)
+        if len(name) < 3:
+            return fail("نام آلبوم را بنویسید (مثل «۷۰۰ شانه پلی‌استر»).")
+        if not base:
+            return fail("سایز پایه را انتخاب کنید.")
+        if bp < 10_000:
+            return fail("قیمت سایز پایه را به تومان بنویسید.")
+        if seller_albums(s).count() >= MAX_ALBUMS:
+            return fail(f"حداکثر {MAX_ALBUMS} آلبوم.")
+        a = Album.all_objects.create(seller=s, name=name, base_size=base, base_price=Decimal(bp), profit_percent=0, shipping_fixed=0,
+                                     waste_value=0, round_to=10_000, in_price_list=False, size_prices={},
+                                     code=f"S{s.pk}-{timezone.now().strftime('%y%m%d%H%M%S')}")
+        a.sizes.set([base])
+        return ok(_album_json(a, rows=True), 201)
+    return ok({"items": [_album_json(a) for a in Album.all_objects.filter(seller=s).select_related("base_size")],
+               "sizes": [{"id": z.pk, "label": z.label} for z in _sizes()]})
 
 
 @seller_endpoint(("GET", "POST"))
@@ -188,6 +215,9 @@ def album(request, pk):
             return fail("قیمت سایز پایه را به تومان بنویسید.")
         if bp:
             a.base_price = Decimal(bp)
+        name = str(d.get("name") or "").strip()[:160]
+        if len(name) >= 3:
+            a.name = name
         if isinstance(d.get("sizes"), list):
             ids = {_int(x) for x in d["sizes"]} | {a.base_size_id}
             sizes = list(Size.objects.filter(pk__in=ids, is_active=True))
@@ -221,8 +251,15 @@ def quick(request):
         return fail("آلبوم، دسته و عکس‌ها لازم است.")
     from market.quick import build
 
+    import json
+
     try:
-        created = build(s, a, cat, (request.POST.get("prefix") or a.name).strip()[:120], files[:60], request.POST)
+        meta = json.loads(request.POST.get("meta") or "null")
+    except ValueError:
+        meta = None
+    try:
+        created = build(s, a, cat, (request.POST.get("prefix") or a.name).strip()[:120], files[:60], request.POST,
+                        meta if isinstance(meta, list) else None)
     except ValueError as e:
         return fail(str(e))
     return ok({"created": [_product_json(p) for p in created]}, 201)
@@ -231,8 +268,17 @@ def quick(request):
 @seller_endpoint()
 def form_options(request):
     """دسته‌ها و آلبوم‌ها برای فرم افزودن با عکس."""
+    from catalog.models import AttributeTerm
+    from content.views import color_attribute
+
+    s = request.seller
+    ca = color_attribute()
     return ok({"categories": [{"id": c.pk, "name": c.name, "child": bool(c.parent_id)} for c in P.categories()],
-               "albums": [{"id": a.pk, "name": a.name} for a in Album.all_objects.filter(seller=request.seller)]})
+               "albums": [{"id": a.pk, "name": a.name} for a in Album.all_objects.filter(seller=s)],
+               "colors": list(AttributeTerm.objects.filter(attribute=ca).values_list("name", flat=True)) if ca else [],
+               "designs": sorted(set(Product.objects.filter(seller=s).exclude(design_name="").values_list("design_name", flat=True)))[:300],
+               "attributes": [{"id": x.pk, "name": x.name, "terms": [{"id": t.pk, "name": t.name} for t in x.terms.all()]}
+                              for x in P.spec_attributes() if not ca or x.pk != ca.pk]})
 
 
 # ------------------------------------------------------------------ سفارش‌ها
@@ -241,7 +287,7 @@ def _order_json(so, full=False):
     d = {"id": so.pk, "number": so.order.number, "status": so.status, "status_label": so.get_status_display(),
          "total": so.items_total, "share": so.seller_amount, "paid_at": so.paid_at.isoformat() if so.paid_at else None,
          "accept_until": (so.paid_at + timezone.timedelta(hours=ms.accept_hours)).isoformat() if so.paid_at else None,
-         "tracking_code": so.tracking_code}
+         "tracking_code": so.tracking_code, "carrier": so.carrier, "cancel_reason": so.cancel_reason}
     if full:
         o = so.order
         d["customer"] = {"name": o.full_name, "mobile": o.mobile if so.status in (SellerOrder.Status.ACCEPTED, SellerOrder.Status.SHIPPED) else "",

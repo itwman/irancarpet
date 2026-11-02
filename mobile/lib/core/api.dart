@@ -51,6 +51,7 @@ class Api {
         'X-App-Version': kAppVersion,
         if (kIsFinder) 'X-App': 'finder',
         if (kHouse) 'X-App': 'farshestan',
+        if (kSeller) 'X-App': 'seller',
         'X-Device-Model': kIsWeb ? 'web' : defaultTargetPlatform.name,
         if (token != null) 'Authorization': 'Token $token',
       };
@@ -83,10 +84,25 @@ class Api {
     });
   }
 
-  Future<dynamic> _send(Future<http.Response> Function() fn) async {
+  /// چند فایل با یک نام فیلد (مثل عکس‌های «افزودن با عکس»)؛ مهلت بیشتر برای اینترنت کند همراه.
+  Future<dynamic> postFiles(String path, Map<String, String> fields, List<(String, List<int>, String)> files) async {
+    final uri = Uri.parse('$kApi$path');
+    final wait = Duration(seconds: 60 + 20 * files.length);
+    return _send(() async {
+      final req = http.MultipartRequest('POST', uri)
+        ..headers.addAll({..._headers}..remove('Content-Type'))
+        ..fields.addAll(fields);
+      for (final (field, bytes, name) in files) {
+        req.files.add(http.MultipartFile.fromBytes(field, bytes, filename: name));
+      }
+      return http.Response.fromStream(await _client.send(req).timeout(wait));
+    }, wait);
+  }
+
+  Future<dynamic> _send(Future<http.Response> Function() fn, [Duration wait = const Duration(seconds: 25)]) async {
     http.Response r;
     try {
-      r = await fn().timeout(const Duration(seconds: 25));
+      r = await fn().timeout(wait);
     } on TimeoutException {
       throw ApiError('اتصال کند است؛ دوباره امتحان کنید.');
     } catch (_) {
