@@ -57,3 +57,50 @@ def _trust_facts():
     if site.license_links or site.enamad_verify_url:
         items.append(format_html("پروانهٔ کسب و نماد اعتماد الکترونیکی، با پیوند استعلام در <a href=\"/license/\">برگهٔ مجوزها</a>"))
     return {"brand": name, "items": [str(x) for x in items]}
+
+
+@register.filter(name="live")
+def live_filter(path):
+    """«/مسیر/»|live ← True اگر این صفحه در همین سایت هست (بخش خاموش نیست و مقاله/برگه‌اش وجود دارد).
+    برای پیوندهای ثابت قالب که روی سایت‌های دیگر (فرشستان) شاید نباشند."""
+    from django.core.cache import cache
+
+    key = "live:" + str(abs(hash(path)))
+    hit = cache.get(key)
+    if hit is None:
+        hit = _live(path)
+        cache.set(key, hit, 600)
+    return hit
+
+
+def _live(path):
+    from urllib.parse import unquote
+
+    from django.urls import Resolver404, resolve
+
+    from core.features import FEATURES, disabled
+
+    p = unquote(path or "").split("?")[0].split("#")[0]
+    bare = p.lstrip("/")
+    if any(bare.startswith(x) for name in disabled() for x in FEATURES.get(name, ())):
+        return False
+    try:
+        m = resolve(p)
+    except Resolver404:
+        return False
+    if m.url_name or m.func.__module__ != "core.views" or m.func.__name__ != "resolve":
+        return True   # نشانی‌های ثابت کد (فروشگاه، سبد، لیست قیمت…)
+    from blog.models import Page, Post
+    from seo.models import Redirect
+
+    slugs = [s for s in bare.split("/") if s]
+    if len(slugs) == 1 and Post.objects.filter(slug=slugs[0], status="publish").exists():
+        return True
+    if Page.objects.filter(slug=slugs[-1], status="publish").exists():
+        return True
+    if len(slugs) == 2:
+        from catalog.models import AttributeTerm
+
+        if AttributeTerm.objects.filter(attribute__slug=slugs[0], attribute__is_public=True, slug=slugs[1]).exists():
+            return True
+    return Redirect.objects.filter(source=Redirect.normalize(p), is_active=True).exists()

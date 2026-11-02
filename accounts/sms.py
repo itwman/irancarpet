@@ -101,6 +101,7 @@ BULK_API = "https://api.sms.ir/v1/send/bulk"
 def send_bulk(mobiles, text, kind="other", order=None, log_it=True):
     """پیامک یکسان به چند شماره (حداکثر ۱۰۰ در هر درخواست). خروجی: (موفق؟, پیام). هر پیامک در دفتر پیامک‌ها ثبت می‌شود."""
     mobiles = list(mobiles)
+    text = brand.fix(text)   # فرشستان: متن‌های پیش‌فرض با نام همین فروشگاه، نه ایران کارپت
     ok, msg = _send_bulk(mobiles, text)
     if log_it:
         record(mobiles, text, ok, msg, kind, order)

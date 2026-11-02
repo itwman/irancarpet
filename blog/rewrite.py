@@ -188,6 +188,8 @@ def git_sha(raw):
 
 def import_dir(path):
     """پوشهٔ content/rewrites روی همین سرور (بعد از update.sh)."""
+    if not brand.is_main():
+        return {}
     done = {}
     plan = os.path.join(path, "plan.json")
     if os.path.exists(plan):
@@ -218,7 +220,7 @@ def _gh(url):
 def sync_github(force=False):
     """هر ساعت: فایل‌های تازهٔ content/rewrites از گیت‌هاب. خروجی: {فایل: نتیجه}."""
     s = _settings()
-    if not s.rewrite_repo or (not force and not cache.add("rw:sync", 1, 3600)):
+    if not brand.is_main() or not s.rewrite_repo or (not force and not cache.add("rw:sync", 1, 3600)):
         return {}
     base = f"https://api.github.com/repos/{s.rewrite_repo}/contents/content/rewrites"
     ref = f"?ref={quote(s.rewrite_branch or 'main')}"
@@ -368,7 +370,7 @@ def schedule(now=None, horizon_days=400):
 
 def publish_due(now=None):
     s = _settings()
-    if not s.rewrite_enabled:
+    if not s.rewrite_enabled or not brand.is_main():
         return 0
     now = now or timezone.now()
     local = timezone.localtime(now)
@@ -395,6 +397,8 @@ def publish_due(now=None):
 
 
 def run():
+    if not brand.is_main():   # متن‌ها مال ایران کارپت‌اند؛ روی فرشستان منتشر نمی‌شوند (تکراری و نام برند دیگر)
+        return {}
     done = {}
     try:
         got = sync_github()

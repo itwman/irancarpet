@@ -18,6 +18,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from core.brand import fix as brand_fix   # نام ایران کارپت در نام آلبوم و دسته به این سایت نمی‌آید
+
 from .client import MirrorError, get_bytes, get_json
 from .models import MirrorLink, MirrorMedia, MirrorSettings
 
@@ -137,7 +139,7 @@ def _category(d):
     c = Category.objects.filter(slug=d["slug"]).first() or Category.objects.filter(name=d["name"]).first()
     if c is None:
         parent = Category.objects.filter(slug=d["parent"]).first() if d.get("parent") else None
-        c = Category.objects.create(slug=d["slug"], name=d["name"], parent=parent)
+        c = Category.objects.create(slug=d["slug"], name=brand_fix(d["name"]), parent=parent)
     return c
 
 
@@ -175,7 +177,8 @@ def sync_albums(s):
         for z in d.get("sizes", []):
             _size(z)
         a.base_size = _size(d["base_size"])
-        a.name, a.company, a.public_name = d["name"][:160], d["company"][:120], d["public_name"][:160]
+        fx = brand_fix
+        a.name, a.company, a.public_name = fx(d["name"])[:160], fx(d["company"])[:120], fx(d["public_name"])[:160]
         code = d["code"] or f"ic{d['id']}"
         if Album.objects.filter(code=code).exclude(pk=a.pk).exists():
             code = f"ic-{code}"[:40]

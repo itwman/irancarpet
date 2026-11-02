@@ -43,8 +43,8 @@
   <section class="acc2-card acc2-quick" aria-label="دسترسی سریع">
     <a href="/cart/"><svg><use href="#ai-shop"/></svg><b>سبد خرید</b><span>{% if cart_count %}{{ cart_count|fa_num }} کالا منتظر شماست{% else %}خالی است{% endif %}</span></a>
     <a href="/carpets-price-list/"><svg><use href="#ai-box"/></svg><b>لیست قیمت</b><span>قیمت روز همهٔ سایزها</span></a>
-    <a href="/خرید-اقساطی-فرش/"><svg><use href="#ai-gift"/></svg><b>خرید اقساطی</b><span>محاسبهٔ قسط پیش از خرید</span></a>
-    <a href="/farsh-yab/"><svg><use href="#ai-heart"/></svg><b>فرش‌یاب</b><span>بگو چه فرشی می‌خواهی</span></a>
+    {% if "/خرید-اقساطی-فرش/"|live %}<a href="/خرید-اقساطی-فرش/"><svg><use href="#ai-gift"/></svg><b>خرید اقساطی</b><span>محاسبهٔ قسط پیش از خرید</span></a>{% endif %}
+    {% if "/farsh-yab/"|live %}<a href="/farsh-yab/"><svg><use href="#ai-heart"/></svg><b>فرش‌یاب</b><span>بگو چه فرشی می‌خواهی</span></a>{% endif %}
   </section>
 </div>
 

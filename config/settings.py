@@ -75,6 +75,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.ir)
     "django.middleware.security.SecurityMiddleware",
+    "core.brand.BrandGuardMiddleware",  # سایت‌های دیگر (فرشستان): نام و دامنهٔ ایران کارپت به بازدیدکننده نمی‌رسد
     "django.contrib.sessions.middleware.SessionMiddleware",
     "seo.middleware.LegacyQueryMiddleware",
     "django.middleware.common.CommonMiddleware",

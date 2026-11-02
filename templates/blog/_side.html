@@ -7,9 +7,9 @@
   <div class="side-sticky">
   <nav class="side-box side-links" aria-label="دسترسی سریع">
     <a href="/carpets-price-list/">لیست قیمت امروز فرش</a>
-    <a href="/خرید-فرش-قسطی-از-کارخانه-فرش-کاشان/">خرید قسطی و محاسبهٔ اقساط</a>
-    <a href="/farsh-yab/">فرش‌یاب: پیشنهاد فرش با چند سؤال</a>
-    <a href="/محاسبه-سایز-فرش/">سایز فرش مناسب اتاق</a>
+    {% if "/خرید-فرش-قسطی-از-کارخانه-فرش-کاشان/"|live %}<a href="/خرید-فرش-قسطی-از-کارخانه-فرش-کاشان/">خرید قسطی و محاسبهٔ اقساط</a>{% endif %}
+    {% if "/farsh-yab/"|live %}<a href="/farsh-yab/">فرش‌یاب: پیشنهاد فرش با چند سؤال</a>{% endif %}
+    {% if "/محاسبه-سایز-فرش/"|live %}<a href="/محاسبه-سایز-فرش/">سایز فرش مناسب اتاق</a>{% endif %}
   </nav>
   {% if aff_box and rec_kind != "buy" %}<a class="side-box side-aff" href="/affiliate/"><b>همکار فروش {% brand %} شوید</b><span>با معرفی فرش به دوستان و مخاطبانتان{% if aff_box.top %} تا {{ aff_box.top }}٪{% endif %} پورسانت بگیرید.</span></a>{% endif %}
   </div>
