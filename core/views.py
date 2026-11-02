@@ -361,6 +361,10 @@ def robots_txt(request):
         "Disallow: /checkout/",
         "Disallow: /my-account/",
         "Disallow: /*?*",
+        # فایل‌های CSS و JS با ?v=نسخه بارگذاری می‌شوند؛ بدون این دو خط گوگل صفحه را بی‌ظاهر می‌بیند
+        # (در گوگل قانون بلندتر برنده است: Allow: /static/ بر Disallow: /*?* مقدم است)
+        "Allow: /static/",
+        "Allow: /media/",
         "",
         f"Sitemap: {settings.SITE_URL}/sitemap_index.xml",
     ]

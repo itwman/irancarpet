@@ -229,3 +229,12 @@ class GscLegacyTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
         t = BlogTag.objects.create(name="کاشان", slug="kashan")
         r = self.client.get(t.get_absolute_url())
         self.assertIn("noindex", r.context["meta"]["robots"])
+
+
+class RobotsTxtTests(TestCase):
+    def test_static_assets_with_version_are_crawlable(self):
+        r = self.client.get("/robots.txt")
+        body = r.content.decode()
+        self.assertIn("Disallow: /*?*", body)
+        self.assertIn("Allow: /static/", body)
+        self.assertIn("Allow: /media/", body)
