@@ -75,12 +75,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "affiliate.track.ShortHostMiddleware",  # دامنهٔ پیوند کوتاه همکاران (crpt.ir)
     "django.middleware.security.SecurityMiddleware",
-    "core.features.FeatureGateMiddleware",  # بخش‌های خاموش در تنظیمات سایت (برای سایت‌های دیگر مثل فرشستان)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "seo.middleware.LegacyQueryMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # بخش‌های خاموش (برای سایت‌های دیگر مثل فرشستان) ← ۴۰۴. بعد از نشست و کاربر، تا صفحهٔ ۴۰۴ قالب کامل سایت بگیرد
+    "core.features.FeatureGateMiddleware",
     "affiliate.track.RefMiddleware",
     "stats.track.CampaignClickMiddleware",  # ?sl= پیوند شخصی کمپین پیامکی
     "django.contrib.messages.middleware.MessageMiddleware",

@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import Client, TestCase, override_settings
 
 from core.hashers import phpass_check
 from core.utils.php import php_unserialize
@@ -184,3 +184,22 @@ class HomeShuffleTests(TestCase):
 
     def test_home_renders_with_apps(self):
         self.assertContains(self.client.get("/"), "ایران کارپت در گوشی شما")
+
+
+class FeatureOffPageTests(TestCase):
+    """بخش خاموش (مثل فرش‌یاب در فرشستان) باید ۴۰۴ با قالب سایت بدهد، نه ۵۰۰."""
+
+    @override_settings(DEBUG=False)
+    def test_disabled_feature_gives_404_page(self):
+        from django.core.cache import cache
+
+        from core.models import SiteSettings
+
+        s = SiteSettings.load()
+        s.features_off = "finder"
+        s.save()
+        cache.clear()
+        r = Client(raise_request_exception=False).get("/farsh-yab/")
+        self.assertEqual(r.status_code, 404)
+        self.assertContains(r, "<html", status_code=404)
+        cache.clear()
