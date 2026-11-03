@@ -601,3 +601,29 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 .cl-cols small{display:block;color:#6b7280;margin-bottom:2px}
 .cl-old p{margin:0;padding:6px 8px;background:#f6f6f7;border-radius:6px;text-decoration:line-through;text-decoration-color:#e5395b80}
 @media (max-width:720px){.cl-cols{grid-template-columns:1fr}}
+
+/* منوی کناری: پیدا کردن، پرکاربردها، زیرعنوان‌ها */
+.side__find{position:relative;margin:.7rem .75rem 0}
+.side__find svg{position:absolute;inset-inline-start:.65rem;top:50%;width:16px;height:16px;transform:translateY(-50%);stroke:#9EA2CC;fill:none;stroke-width:2}
+.side__find input{width:100%;border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:.88rem;padding:.5rem 2.1rem .5rem 3.4rem;min-height:38px}
+.side__find input::placeholder{color:#9EA2CC}
+.side__find input:focus{outline:2px solid var(--pink);background:rgba(255,255,255,.12)}
+.side__find kbd{position:absolute;inset-inline-end:.5rem;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);color:#C9CBE6;border-radius:6px;padding:.05rem .35rem;font-size:.68rem;font-family:inherit}
+.side__head2{margin:.55rem 0 .15rem;padding-inline-start:2.3rem;color:#8A8EBF;font-size:.72rem;font-weight:700}
+.side__pins .side__head2{padding-inline-start:.75rem;margin-top:.7rem}
+.side__pins .side__link--sub{padding-inline-start:.75rem}
+.side__row{display:flex;align-items:center;position:relative}
+.side__row .side__link{flex:1;min-width:0;margin-bottom:2px}
+.side__pin{position:absolute;inset-inline-end:.25rem;width:28px;height:28px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;opacity:0;cursor:pointer;color:#9EA2CC}
+.side__pin svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+.side__row:hover .side__pin,.side__pin:focus-visible,.side__pin[aria-pressed=true]{opacity:1}
+.side__pin[aria-pressed=true]{color:#FFB21E}
+.side__pin[aria-pressed=true] svg{fill:currentColor}
+.side__pin:hover{background:rgba(255,255,255,.08);color:#fff}
+@media (hover:none){.side__pin{opacity:.55}}
+.side__none{color:#C9CBE6;font-size:.85rem;padding:.6rem .75rem}
+.side__none a{color:#FFB21E}
+.side__nav.is-finding .side__head2{display:none}
+.side__link mark{background:rgba(255,178,30,.35);color:#fff;padding:0;border-radius:3px}
+.side__find input:not(:placeholder-shown)~kbd{display:none}
+.side__find input::-webkit-search-cancel-button{filter:invert(1);opacity:.6}

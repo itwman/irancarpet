@@ -1,24 +1,8 @@
 from django import forms, template
 
-from ..registry import GROUPS, REGISTRY
+from ..registry import REGISTRY
 
 register = template.Library()
-
-EXTRA_NAV = {
-    "فروش": [("اقساط بتا (بازنشستگان)", "/panel/beta/", "receipt"), ("کارمندان", "/panel/customers/?is_staff=1", "shield")],
-    "فروشگاه": [("افزودن سریع فرش‌های آلبوم", "/panel/products/quick/", "plus"), ("ساخت گروهی یک نقشه", "/panel/products/bulk/", "layers"), ("جایگزینی متن و لینک‌ها", "/panel/content-tools/", "search"), ("وضعیت در ترب", "/panel/torob/", "search")],
-    "تنظیمات": [("تنظیمات سایت، درگاه و پیامک", "/panel/settings/", "settings")],
-    "رسانه": [("رسانه‌های بی‌استفاده", "/panel/media/unused/", "trash")],
-    "اپلیکیشن": [("تنظیمات اپلیکیشن", "/panel/settings/?tab=app", "settings")],
-    "همکاری در فروش": [("تنظیمات همکاری در فروش", "/panel/settings/?tab=affiliate", "settings")],
-    "باشگاه مشتریان": [("تنظیمات پیامک سفارش و باشگاه", "/panel/settings/?tab=crm", "settings")],
-    "مارکت‌پلیس": [("صف بررسی کالاها", "/panel/seller-products/?queue=1", "search"), ("تنظیمات مارکت‌پلیس", "/panel/settings/?tab=market", "settings")],
-}
-NAV_FIRST = {"باشگاه مشتریان": [("گزارش فروش و مشتریان", "/panel/crm/report/", "layers"),
-                                 ("گزارش بازدید و ورودی‌ها", "/panel/stats/", "layers"),
-                                 ("پروفایل و گروه‌های مشتریان", "/panel/crm/segments/", "users")]}
-GROUP_ICONS = {"باشگاه مشتریان": "users", "فروش": "receipt", "فروشگاه": "carpet", "قیمت‌گذاری": "layers", "مجله و برگه‌ها": "pen", "رسانه": "image",
-               "سئو": "arrow", "اپلیکیشن": "phone", "تنظیمات": "settings", "فرش‌یاب": "search", "همکاری در فروش": "users", "مارکت‌پلیس": "box"}
 
 
 def _badge(r):
@@ -32,25 +16,57 @@ def _badge(r):
 
 @register.simple_tag(takes_context=True)
 def panel_nav(context):
+    """منوی کناری پنل از روی dashboard/nav.py؛ بخش‌هایی که آن‌جا نیامده‌اند در «سایر»."""
+    from ..nav import LAYOUT, OTHER
+
     path = context["request"].path
     full = context["request"].get_full_path()
-    out = []
-    for g in GROUPS:
-        items = [{"title": t, "url": u, "icon": i, "active": path.startswith(u) or (u.endswith("/segments/") and path.startswith("/panel/crm/customer/"))}
-                 for t, u, i in NAV_FIRST.get(g, [])]
-        for r in REGISTRY.values():
-            if r.group == g and r.nav:
-                items.append({"title": r.title, "url": r.url(), "icon": r.icon, "active": path.startswith(r.url()),
-                              "badge": _badge(r)})
-        for title, url, icon in EXTRA_NAV.get(g, []):
-            items.append({"title": title, "url": url, "icon": icon, "active": full == url or (url == "/panel/settings/" and path == url)})
-        if g == "تنظیمات":
-            items = [items[-1]] + items[:-1]
-        if any(i["active"] for i in items if i["url"] == "/panel/customers/?is_staff=1"):
-            for i in items:
-                if i["url"] == "/panel/customers/":
-                    i["active"] = False
-        out.append({"title": g, "items": items, "icon": GROUP_ICONS.get(g, "box"), "badge": sum(i.get("badge") or 0 for i in items)})
+    used, out = set(), []
+
+    def item(row):
+        if isinstance(row, str):
+            r = REGISTRY.get(row)
+            if r is None or not r.nav:
+                return None
+            used.add(row)
+            return {"title": r.title, "url": r.url(), "badge": _badge(r)}
+        title, url = row
+        if title == "#":
+            return {"head": url}
+        if not url.startswith("/"):  # («عنوان دلخواه», "کلید بخش»)
+            r = REGISTRY.get(url)
+            if r is None or not r.nav:
+                return None
+            used.add(url)
+            return {"title": title, "url": r.url(), "badge": _badge(r)}
+        return {"title": title, "url": url, "badge": 0}
+
+    for title, icon, rows in LAYOUT:
+        items = [i for i in (item(r) for r in rows) if i]
+        out.append({"title": title, "icon": icon, "items": items})
+    rest = [{"title": r.title, "url": r.url(), "badge": _badge(r)} for k, r in REGISTRY.items() if r.nav and k not in used]
+    if rest:
+        out.append({"title": OTHER[0], "icon": OTHER[1], "items": rest})
+
+    # فعال: نشانی‌های دارای ?… فقط با تطابق کامل؛ نشانی ساده وقتی هم‌خانواده‌ٔ دقیق‌ترش فعال نباشد.
+    links = [i for g in out for i in g["items"] if "url" in i]
+    exact = {i["url"] for i in links if "?" in i["url"] and full.startswith(i["url"])}
+    for i in links:
+        u = i["url"]
+        if "?" in u:
+            i["active"] = u in exact
+        else:
+            i["active"] = (path.startswith(u) and not any(e.split("?")[0] == u for e in exact)) or (
+                u == "/panel/crm/segments/" and path.startswith("/panel/crm/customer/"))
+    # اگر دو نشانی ساده هر دو فعال‌اند (مثل /panel/products/ و /panel/products/quick/) فقط بلندتر بماند
+    act = [i for i in links if i["active"] and "?" not in i["url"]]
+    if len(act) > 1:
+        best = max(act, key=lambda i: len(i["url"]))
+        for i in act:
+            i["active"] = i is best
+    for g in out:
+        g["badge"] = sum(i.get("badge") or 0 for i in g["items"])
+        g["active"] = any(i.get("active") for i in g["items"])
     return out
 
 

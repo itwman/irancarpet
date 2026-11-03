@@ -21,15 +21,22 @@
     <a href="/panel/" class="side__brand"><img src="{% static 'img/logo-tile.svg' %}" alt="" width="38" height="38"><span><strong>{{ site_settings.site_name }}</strong><small>پنل مدیریت</small></span></a>
     <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#side" aria-label="بستن"></button>
   </div>
-  <nav class="side__nav">
+  <div class="side__find">
+    <svg aria-hidden="true"><use href="#i-search"/></svg>
+    <input type="search" placeholder="پیدا کردن در منو…" aria-label="پیدا کردن بخش در منو" data-nav-find autocomplete="off">
+    <kbd class="d-none d-lg-inline">Ctrl K</kbd>
+  </div>
+  <nav class="side__nav" data-nav>
     <a href="/panel/" class="side__link{% if request.path == '/panel/' %} on{% endif %}"><svg><use href="#i-home"/></svg>پیشخوان</a>
+    <section class="side__pins" data-nav-pins hidden aria-label="پرکاربردهای من"><p class="side__head2">پرکاربردهای من</p><div data-nav-pins-list></div></section>
     {% panel_nav as navgroups %}
     {% for g in navgroups %}
-      <details class="side__group"{% for i in g.items %}{% if i.active %} open{% endif %}{% endfor %}{% if forloop.first %} open{% endif %}>
+      <details class="side__group" data-nav-group="{{ g.title }}"{% if g.active %} open data-nav-active{% endif %}>
         <summary><svg><use href="#i-{{ g.icon }}"/></svg>{{ g.title }}{% if g.badge %} <span class="side__badge" title="تازه">{{ g.badge|fa_num }}</span>{% endif %}</summary>
-        {% for i in g.items %}<a href="{{ i.url }}" class="side__link side__link--sub{% if i.active %} on{% endif %}">{{ i.title }}{% if i.badge %} <span class="side__badge">{{ i.badge|fa_num }}</span>{% endif %}</a>{% endfor %}
+        {% for i in g.items %}{% if i.head %}<p class="side__head2">{{ i.head }}</p>{% else %}<div class="side__row"><a href="{{ i.url }}" class="side__link side__link--sub{% if i.active %} on{% endif %}"{% if i.active %} aria-current="page"{% endif %}>{{ i.title }}{% if i.badge %} <span class="side__badge">{{ i.badge|fa_num }}</span>{% endif %}</a><button type="button" class="side__pin" data-nav-pin="{{ i.url }}" aria-label="سنجاق «{{ i.title }}» به پرکاربردها" aria-pressed="false"><svg><use href="#i-pin"/></svg></button></div>{% endif %}{% endfor %}
       </details>
     {% endfor %}
+    <p class="side__none" data-nav-none hidden>بخشی با این نام پیدا نشد. <a href="/panel/search/" data-nav-none-link>جست‌وجو در کل پنل</a></p>
   </nav>
   <div class="side__foot">
     <a href="/" target="_blank" rel="noopener"><svg><use href="#i-ext"/></svg>دیدن سایت</a>

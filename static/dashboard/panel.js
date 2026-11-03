@@ -522,3 +522,99 @@
   document.addEventListener("click", function (e) { if (!box.contains(e.target)) { if (!menu.hidden && fresh.length) { fresh = []; } menu.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
   poll(); setInterval(poll, 60000);
 })();
+
+/* منوی کناری: گروه‌های باز یادشان می‌ماند، پیدا کردن بخش با تایپ، و «پرکاربردهای من» با ستاره */
+(function () {
+  var nav = document.querySelector("[data-nav]");
+  if (!nav) return;
+  var OPEN = "panel-nav-open", PINS = "panel-nav-pins";
+  function load(k) { try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (e) { return []; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var groups = Array.prototype.slice.call(nav.querySelectorAll("[data-nav-group]"));
+
+  // گروه‌هایی که خودتان باز گذاشته‌اید، به‌اضافهٔ گروه صفحهٔ فعلی
+  var open = load(OPEN);
+  groups.forEach(function (g) {
+    if (open.indexOf(g.getAttribute("data-nav-group")) > -1) g.open = true;
+    g.addEventListener("toggle", function () {
+      if (nav.classList.contains("is-finding")) return;
+      var list = load(OPEN).filter(function (t) { return t !== g.getAttribute("data-nav-group"); });
+      if (g.open) list.push(g.getAttribute("data-nav-group"));
+      save(OPEN, list);
+    });
+  });
+  var cur = nav.querySelector(".side__link.on");
+  if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: "center" });
+
+  // پرکاربردهای من
+  var pinsBox = nav.querySelector("[data-nav-pins]"), pinsList = nav.querySelector("[data-nav-pins-list]");
+  function drawPins() {
+    var pins = load(PINS);
+    pinsList.innerHTML = "";
+    pins.forEach(function (url) {
+      var src = nav.querySelector('[data-nav-group] a[href="' + url.replace(/"/g, '\\"') + '"]');
+      if (!src) return;
+      var a = src.cloneNode(true);
+      pinsList.appendChild(a);
+    });
+    pinsBox.hidden = !pinsList.children.length;
+    nav.querySelectorAll("[data-nav-pin]").forEach(function (b) {
+      b.setAttribute("aria-pressed", pins.indexOf(b.getAttribute("data-nav-pin")) > -1 ? "true" : "false");
+    });
+  }
+  nav.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-nav-pin]");
+    if (!b) return;
+    e.preventDefault();
+    var url = b.getAttribute("data-nav-pin"), pins = load(PINS), i = pins.indexOf(url);
+    if (i > -1) pins.splice(i, 1); else pins.push(url);
+    save(PINS, pins);
+    drawPins();
+  });
+  drawPins();
+
+  // پیدا کردن در منو
+  var find = document.querySelector("[data-nav-find]"), none = nav.querySelector("[data-nav-none]");
+  var noneLink = nav.querySelector("[data-nav-none-link]");
+  var norm = function (s) { return (s || "").replace(/[‌\s]+/g, " ").replace(/ي/g, "ی").replace(/ك/g, "ک").trim().toLowerCase(); };
+  var rows = Array.prototype.slice.call(nav.querySelectorAll("[data-nav-group] .side__row"));
+  rows.forEach(function (r) { var a = r.querySelector("a"); a.setAttribute("data-label", a.childNodes[0].textContent); });
+  function filter() {
+    var q = norm(find.value), hits = 0;
+    nav.classList.toggle("is-finding", !!q);
+    pinsBox.hidden = !!q || !pinsList.children.length;
+    groups.forEach(function (g) {
+      var any = false, title = norm(g.getAttribute("data-nav-group"));
+      g.querySelectorAll(".side__row").forEach(function (r) {
+        var a = r.querySelector("a"), label = a.getAttribute("data-label"), ok = !q || norm(label).indexOf(q) > -1 || title.indexOf(q) > -1;
+        r.hidden = !ok;
+        a.firstChild.textContent = label;
+        if (ok) { any = true; hits++; }
+      });
+      g.hidden = !!q && !any;
+      if (q) g.open = any;
+    });
+    if (!q) {
+      var keep = load(OPEN);
+      groups.forEach(function (g) { g.open = g.hasAttribute("data-nav-active") || keep.indexOf(g.getAttribute("data-nav-group")) > -1; });
+    }
+    none.hidden = !q || hits > 0;
+    if (noneLink) noneLink.href = "/panel/search/?q=" + encodeURIComponent(find.value.trim());
+  }
+  find.addEventListener("input", filter);
+  find.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      var first = nav.querySelector("[data-nav-group]:not([hidden]) .side__row:not([hidden]) a");
+      if (first) { e.preventDefault(); location.href = first.href; }
+      else if (find.value.trim()) { e.preventDefault(); location.href = noneLink.href; }
+    } else if (e.key === "Escape") { find.value = ""; filter(); find.blur(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K" || e.key === "ک")) {
+      e.preventDefault();
+      var side = document.getElementById("side");
+      if (window.innerWidth < 992 && side && window.bootstrap) bootstrap.Offcanvas.getOrCreateInstance(side).show();
+      find.focus(); find.select();
+    }
+  });
+})();
