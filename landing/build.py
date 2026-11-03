@@ -59,6 +59,8 @@ def products_of(lp):
         qs = qs.filter(need_q(lp.color))
     if lp.style_id:
         qs = qs.filter(need_q(lp.style))
+    if lp.name_contains.strip():
+        qs = qs.filter(title__icontains=lp.name_contains.strip())
     if lp.size_id:
         qs = qs.filter(pk__in=Variation.objects.filter(size_id=lp.size_id, is_available=True, final_price__gt=0).values("product_id"))
     return qs

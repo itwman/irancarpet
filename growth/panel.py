@@ -29,7 +29,7 @@ register(Resource(
     search=["title", "slug"], filters=["is_active", "auto", "reeds", "size", "color"], ordering=("-count",),
     fieldsets=[("صفحه", ["title", "slug", "intro", "content"], "main"),
                ("سئو", ["seo_title", "seo_description"], "main"),
-               ("فرش‌های صفحه", ["reeds", "size", "color", "style"], "side"), ("وضعیت", ["is_active"], "side")],
+               ("فرش‌های صفحه", ["reeds", "size", "color", "style", "name_contains"], "side"), ("وضعیت", ["is_active"], "side")],
     readonly=[("تعداد فرش", lambda o: fa_num(o.count)), ("آخرین به‌روزرسانی", lambda o: jdate(o.synced_at, "%Y/%m/%d %H:%M"))],
     view_url=lambda o: o.get_absolute_url(),
     actions={"sync": ("ساخت صفحه‌های تازه و به‌روزرسانی همه", _sync)},

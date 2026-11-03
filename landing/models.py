@@ -16,6 +16,8 @@ class LandingPage(models.Model):
                               verbose_name="رنگ", limit_choices_to={"group": "color"})
     style = models.ForeignKey("finder.Need", null=True, blank=True, on_delete=models.CASCADE, related_name="+",
                               verbose_name="سبک یا جنس (اختیاری)", help_text="مثل «برجسته» یا «سنتی»؛ برای صفحه‌های دستی")
+    name_contains = models.CharField("عبارت در نام فرش (اختیاری)", max_length=100, blank=True,
+                                     help_text="فقط فرش‌هایی که این عبارت در نامشان هست؛ مثل «گردویی» برای «فرش سجاده‌ای گردویی».")
     auto = models.BooleanField("ساخت خودکار", default=True, editable=False)
 
     intro = models.TextField("متن بالای صفحه", blank=True, help_text="خالی بماند تا متن از روی فرش‌ها و قیمت‌ها خودکار ساخته شود.")
