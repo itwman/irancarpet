@@ -118,9 +118,32 @@ class ShopSettings(models.Model):
     return_shipping = models.CharField("هزینهٔ رفت‌وبرگشت در انصراف", max_length=10, default="customer",
                                        choices=[("customer", "با مشتری"), ("shop", "با فروشگاه")])
 
+    abroad_closed = models.BooleanField(
+        "ارسال به خارج از کشور فعلاً انجام نمی‌شود", default=True,
+        help_text="روشن باشد، بالای صفحه‌های قدیمی دربارهٔ ارسال به خارج (فهرست پایین) کادر هشدار می‌آید.")
+    abroad_notice = models.TextField(
+        "متن کادر هشدار ارسال خارج", blank=True,
+        default="ارسال فرش به خارج از کشور فعلاً انجام نمی‌شود و ارسال ایران کارپت فقط به شهرهای ایران است. اگر خارج از ایران هستید، "
+                "فرش را به نشانی بستگان یا آشنایانتان در ایران سفارش دهید و همراه مسافر یا با باربری بین‌المللی ببرید.")
+    abroad_pages = models.TextField(
+        "صفحه‌هایی که کادر هشدار می‌گیرند", blank=True,
+        default="send-carpets-to-abroad\nارسال-فرش-مالزی\nارسال-فرش-به-آلمان\nارسال-فرش-به-بیروت-و-خرید-فرش-ماشینی-از\n"
+                "buying-carpet-from-canada\nbuying-carpet-from-turkey\nкупить-ковер-из-ирана-и-отправить-его-в\n"
+                "خرید-فرش-ماشینی-کاشان-از-تمام-دنیا-ممکن\nخرید-فرش-از-امارات-ارسال-فرش-به-دبی\nخرید-قالین-کاشان-در-افغانستان",
+        help_text="نامک هر صفحه یا نوشته در یک خط (همان بخش نشانی بین دو /).")
+
     class Meta:
         verbose_name = "تنظیمات فروش"
         verbose_name_plural = "تنظیمات فروش"
+
+    def abroad_notice_for(self, slug):
+        """متن کادر هشدار ارسال خارج برای این نامک، یا خالی."""
+        from urllib.parse import unquote
+
+        if not self.abroad_closed or not self.abroad_notice.strip():
+            return ""
+        slugs = {unquote(x).strip().strip("/") for x in (self.abroad_pages or "").splitlines() if x.strip()}
+        return self.abroad_notice.strip() if unquote(slug or "").strip("/") in slugs else ""
 
     def __str__(self):
         return "تنظیمات فروش"

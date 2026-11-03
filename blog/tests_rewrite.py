@@ -228,3 +228,17 @@ class MergeAndNewTests(TestCase):
         self.assertEqual(rewrite.import_data(data, "n2"), "آماده")
         p = Post.objects.get(slug="فرش-برجسته")
         self.assertEqual((p.primary_category, list(p.categories.all())), (cat, [cat]))
+
+
+class AbroadNoticeTests(TestCase):
+    def test_notice_on_listed_pages_only(self):
+        from shop.models import ShopSettings
+
+        Post.objects.create(title="ارسال فرش به آلمان", slug="ارسال-فرش-به-آلمان", status="publish", content="<p>متن</p>")
+        Post.objects.create(title="فرش کاشان", slug="فرش-کاشان-تست", status="publish", content="<p>متن</p>")
+        self.assertContains(self.client.get("/ارسال-فرش-به-آلمان/"), "فعلاً انجام نمی‌شود")
+        self.assertNotContains(self.client.get("/فرش-کاشان-تست/"), "فعلاً انجام نمی‌شود")
+        s = ShopSettings.load()
+        s.abroad_closed = False
+        s.save()
+        self.assertNotContains(self.client.get("/ارسال-فرش-به-آلمان/"), "فعلاً انجام نمی‌شود")

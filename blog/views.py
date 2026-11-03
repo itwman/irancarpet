@@ -104,7 +104,10 @@ def post_detail(request, post, preview=False):
     side = _side(post, live)
     if side["inline"]:
         content = _insert_inline(content, side["inline"])
+    from shop.models import ShopSettings
+
     return render(request, "blog/post_detail.html", {
+        "abroad_notice": ShopSettings.load().abroad_notice_for(post.slug),
         "meta": meta, "post": post, "crumbs": crumbs, "related": related, **side,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
         "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
@@ -205,7 +208,10 @@ def page_detail(request, page):
     live = landing.has_blocks(content)
     meta = seo.build(page, "page")
     meta["description"] = _swap_phones(meta.get("description") or "", _site_mobile())
+    from shop.models import ShopSettings
+
     return render(request, "blog/page_detail.html", {
+        "abroad_notice": ShopSettings.load().abroad_notice_for(page.slug),
         "meta": meta, "page": page, "live": live,
         "content": landing.render(content, request, title=page.title) if live else content,
         "crumbs": [(p.title, p.get_absolute_url()) for p in _ancestors(page)] + [(page.title, page.get_absolute_url())],
