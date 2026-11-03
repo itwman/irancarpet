@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import rewrite_rules
-from .models import Post, PostRewrite
+from .models import BlogCategory, Post, PostRewrite
 from core import brand
 
 log = logging.getLogger(__name__)
@@ -135,6 +135,11 @@ def import_data(data, sha=""):
     if not post and data.get("new") and (data.get("title") or "").strip():
         post = Post.objects.create(title=data["title"][:300], slug=unquote(data["slug"]).strip("/")[:255], status="draft",
                                    author_name=brand.name())
+        cache.delete("rw:plan_sha")  # دریافت بعدی برنامه را دوباره می‌خواند تا اولویت و نوع این مقالهٔ تازه هم ثبت شود
+        cat = BlogCategory.objects.filter(slug=(data.get("category") or "").strip()).first()
+        if cat:
+            Post.objects.filter(pk=post.pk).update(primary_category=cat)
+            post.categories.add(cat)
     if not post:
         return f"مقاله‌ای با نامک «{data.get('slug')}» نیست"
     rw, _ = PostRewrite.objects.get_or_create(post=post)

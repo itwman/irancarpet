@@ -219,3 +219,12 @@ class MergeAndNewTests(TestCase):
         p.refresh_from_db()
         self.assertEqual(p.status, "publish")
         self.assertEqual(self.client.get("/فرش-موکا/").status_code, 200)
+
+    def test_new_article_gets_category(self):
+        from blog.models import BlogCategory
+
+        cat = BlogCategory.objects.create(name="دانستنی‌های فرش", slug="carpet-information")
+        data = sample(slug="فرش-برجسته", title="فرش برجسته چیست؟ فرق فرش برجسته و ساده", new=True, category="carpet-information")
+        self.assertEqual(rewrite.import_data(data, "n2"), "آماده")
+        p = Post.objects.get(slug="فرش-برجسته")
+        self.assertEqual((p.primary_category, list(p.categories.all())), (cat, [cat]))
