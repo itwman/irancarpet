@@ -1,6 +1,5 @@
 {% extends "market/_base.html" %}{% load fa %}
 {% block panel %}
-<p class="sp-hint">کد تخفیف را به مشتری‌های خودتان بدهید (مثلاً در اینستاگرام). فقط روی کالاهای فروشگاه شما اعمال می‌شود و از سهم شما کم می‌شود؛ کمیسیون {% brand %} هم روی مبلغ پس از تخفیف حساب می‌شود.</p>
 {% if errors %}<div class="alert-ic" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
 <details class="sp-card"{% if errors or not rows %} open{% endif %}>
   <summary class="fw-bold" style="cursor: pointer; min-height: 32px">+ کد تخفیف تازه</summary>

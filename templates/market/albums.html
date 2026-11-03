@@ -1,6 +1,5 @@
 {% extends "market/_base.html" %}{% load fa %}
 {% block panel %}
-<p class="sp-hint">آلبوم قیمت یعنی چند فرش با قیمت یکسان برای هر سایز (مثل همهٔ نقشه‌های «۷۰۰ شانه پلی‌استر»). قیمت را یک بار در آلبوم عوض کنید، قیمت همهٔ فرش‌هایش عوض می‌شود. آلبوم شما فقط در فروشگاه خودتان است و در لیست قیمت {% brand %} نمی‌آید.</p>
 <a class="sp-btn mb-3" href="/seller/albums/add/"><svg aria-hidden="true"><use href="#mi-plus"/></svg>آلبوم تازه</a>
 {% if albums %}
 <ul class="sp-prods">{% for a in albums %}<li class="sp-prod">

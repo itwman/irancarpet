@@ -1,7 +1,20 @@
-{% extends "base.html" %}{% load fa static %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/market.css' %}?v={{ ASSET_V }}">{% endblock %}
-{% block body_class %}seller-page{% endblock %}
-{% block content %}
+{% load fa static %}<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ meta.title }} · پنل فروشندگان ایران کارپت</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="{% static 'img/logo-tile.svg' %}" type="image/svg+xml">
+<link rel="preload" href="{% static 'vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.rtl.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ ASSET_V }}">
+<link rel="stylesheet" href="{% static 'css/market.css' %}?v={{ ASSET_V }}">
+{% block head %}{% endblock %}
+</head>
+<body class="seller-page">
+<a class="visually-hidden-focusable skip" href="#main">رفتن به محتوا</a>
 <svg width="0" height="0" class="visually-hidden" aria-hidden="true" focusable="false">
   <symbol id="mi-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="mi-bag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 8h14l-1.5 12h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></g></symbol>
@@ -21,30 +34,47 @@
   <symbol id="mi-truck" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></g></symbol>
   <symbol id="mi-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></g></symbol>
   <symbol id="mi-chev" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="mi-help" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5"/></g></symbol>
+  <symbol id="mi-out" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5M15 8l-4 4 4 4M11 12h10"/></g></symbol>
+  <symbol id="mi-ext" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></g></symbol>
+  <symbol id="mi-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="mi-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
 </svg>
+<header class="sp-bar"><div class="sp-bar__in">
+  <a class="sp-bar__brand" href="/seller/" aria-label="خانهٔ پنل فروشندگان">
+    <img src="{% static 'img/logo-tile.svg' %}" alt="" width="36" height="36">
+    <span><b>ایران کارپت</b><small>پنل فروشندگان</small></span>
+  </a>
+  <span class="sp-bar__store">
+    {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="" width="32" height="32">{% else %}<span class="sp-mono sp-mono--sm" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
+    <span><b>{{ seller.name }}</b><small class="{% if seller.status == 'active' %}is-on{% else %}is-off{% endif %}">{% if seller.status == "paused" %}تعطیل موقت{% elif seller.status == "active" %}باز{% else %}{{ seller.get_status_display }}{% endif %}</small></span>
+  </span>
+  <nav class="sp-bar__act" aria-label="پیوندهای حساب">
+    <a class="sp-bar__btn" href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#mi-store"/></svg><span>دیدن ویترین</span></a>
+    <details class="sp-menu">
+      <summary class="sp-bar__btn" aria-label="حساب"><svg aria-hidden="true"><use href="#mi-more"/></svg></summary>
+      <div class="sp-menu__pop">
+        <a href="/seller/settings/"><svg aria-hidden="true"><use href="#mi-gear"/></svg>تنظیمات فروشگاه</a>
+        <a href="/" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#mi-ext"/></svg>رفتن به سایت ایران کارپت</a>
+        <a href="/my-account/logout/"><svg aria-hidden="true"><use href="#mi-out"/></svg>خروج از حساب</a>
+      </div>
+    </details>
+  </nav>
+</div></header>
 <div class="sp" style="--acc: {{ seller.accent_color }}">
   <aside class="sp-side" aria-label="بخش‌های پنل">
-    <a class="sp-id" href="/seller/">
-      {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="" width="48" height="48">{% else %}<span class="sp-mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
-      <span><b>{{ seller.name }}</b><small>{% if seller.status == "paused" %}تعطیل موقت{% elif seller.status == "active" %}فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}</small></span>
-    </a>
     {% include "market/_nav.html" %}
   </aside>
-  <div class="sp-main mk">
+  <main class="sp-main mk" id="main">
     <header class="sp-top">
-      <a class="sp-id sp-id--m" href="/seller/">
-        {% if seller.logo %}<img src="{{ seller.logo|thumb:240 }}" alt="" width="40" height="40">{% else %}<span class="sp-mono" aria-hidden="true">{{ seller.name|slice:":1" }}</span>{% endif %}
-        <span><b>{{ seller.name }}</b><small class="{% if seller.status == 'active' %}is-on{% endif %}">{% if seller.status == "paused" %}تعطیل موقت{% elif seller.status == "active" %}فروشگاه باز است{% else %}{{ seller.get_status_display }}{% endif %}</small></span>
-      </a>
       <h1 class="sp-title">{{ meta.title }}</h1>
-      <div class="sp-top__act">
-        <a class="sp-link" href="{{ seller.get_absolute_url }}" target="_blank" rel="noopener">دیدن ویترین</a>
-        <a class="sp-btn sp-btn--sm hide-m" href="/seller/products/add/"><svg width="16" height="16" aria-hidden="true"><use href="#mi-plus"/></svg>افزودن کالا</a>
-      </div>
+      {% if guide %}<button type="button" class="sp-help" data-guide-open="{{ guide.key }}" aria-controls="guide-{{ guide.key }}" aria-label="راهنمای این بخش"><svg aria-hidden="true"><use href="#mi-help"/></svg><span>راهنما</span></button>{% endif %}
+      {% block top_actions %}{% if tab == "products" or tab == "home" %}<a class="sp-btn sp-btn--sm hide-m" href="/seller/products/add/"><svg width="16" height="16" aria-hidden="true"><use href="#mi-plus"/></svg>افزودن کالا</a>{% endif %}{% endblock %}
     </header>
     {% for m in messages %}<div class="alert-ic{% if m.tags == 'success' or m.tags == 'info' %} alert-ic--ok{% endif %}" role="status">{{ m }}</div>{% endfor %}
+    {% if guide %}{% include "market/_guide.html" with g=guide %}{% endif %}
     {% block panel %}{% endblock %}
-  </div>
+  </main>
   <nav class="sp-bnav" aria-label="منوی پنل">
     <a href="/seller/"{% if tab == "home" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-home"/></svg>خانه</a>
     <a href="/seller/orders/"{% if tab == "orders" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-bag"/></svg>سفارش‌ها{% if pending_orders %}<b class="sp-badge">{{ pending_orders|fa_num }}</b>{% endif %}</a>
@@ -53,5 +83,7 @@
     <a href="/seller/more/"{% if tab != "home" and tab != "orders" and tab != "products" %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#mi-more"/></svg>بیشتر</a>
   </nav>
 </div>
-{% endblock %}
-{% block scripts %}<script src="{% static 'js/market.js' %}?v={{ ASSET_V }}" defer></script>{% endblock %}
+<script src="{% static 'js/market.js' %}?v={{ ASSET_V }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

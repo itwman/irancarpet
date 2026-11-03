@@ -226,3 +226,21 @@ class StorefrontTests(TestCase):
         self.assertEqual(r.status_code, 302, r.content.decode()[:2000])
         self.assertFalse(p.variations.get(size=self.s6).is_available)
         self.assertTrue(p.variations.get(size=self.s12).is_available)
+
+    def test_panel_is_standalone_with_guides_and_setup(self):
+        r = self.client.get("/seller/orders/")
+        html = r.content.decode()
+        self.assertIn('class="sp-bar"', html)
+        self.assertIn('data-guide="orders"', html)
+        self.assertNotIn("partials/header", html)
+        self.assertNotIn("offcanvas-header", html)
+        r = self.client.get("/seller/")
+        self.assertIn("راه‌اندازی فروشگاه", r.content.decode())
+        from market.guides import guide, setup_steps
+        from market.models import MarketSettings
+
+        ms = MarketSettings.load()
+        for tab in ("home", "orders", "products", "quick", "albums", "shelves", "offers", "coupons", "questions", "look", "settings",
+                    "finance", "stats"):
+            self.assertTrue(guide(tab, ms)["steps"], tab)
+        self.assertFalse(setup_steps(self.s)["all"])

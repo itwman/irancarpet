@@ -1,6 +1,29 @@
 {% extends "market/_base.html" %}{% load fa %}
 {% block panel %}
 {% if seller.status == "paused" %}<div class="alert-ic alert-ic--warn">فروشگاه تعطیل موقت است و کالاهایتان در سایت دیده نمی‌شوند.</div>{% endif %}
+{% if todo %}
+<h2 class="h6 fw-bold mb-2">کارهای امروز</h2>
+<ul class="sp-todo">
+  {% for t in todo %}<li><a href="{{ t.url }}">
+    <span class="sp-todo__ic {{ t.tone }}"><svg aria-hidden="true"><use href="#mi-{{ t.icon }}"/></svg></span>
+    <span class="sp-todo__t"><b>{% if t.n %}{{ t.n|fa_num }} {% endif %}{{ t.text }}</b>{% if t.hint %}<small>{{ t.hint|fa_num }}</small>{% endif %}</span>
+    <svg aria-hidden="true"><use href="#mi-chev"/></svg></a></li>{% endfor %}
+</ul>
+{% endif %}
+
+{% if not setup.all %}
+<section class="sp-setup" aria-labelledby="setup-h">
+  <div class="sp-setup__head">
+    <h2 id="setup-h">راه‌اندازی فروشگاه</h2>
+    <span>{{ setup.done|fa_num }} از {{ setup.total|fa_num }}</span>
+  </div>
+  <div class="sp-setup__bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{ setup.total }}" aria-valuenow="{{ setup.done }}" aria-label="پیشرفت راه‌اندازی"><i style="width: {{ setup.pct }}%"></i></div>
+  <ol class="sp-setup__list">
+    {% for st in setup.steps %}<li class="{% if st.done %}is-done{% endif %}">{% if st.done %}<span class="sp-setup__ic"><svg aria-hidden="true"><use href="#mi-check"/></svg></span><s>{{ st.text|fa_num }}</s><span class="visually-hidden">(انجام شد)</span>{% else %}<a href="{{ st.url }}"><span class="sp-setup__ic">{{ forloop.counter|fa_num }}</span>{{ st.text|fa_num }}<svg aria-hidden="true"><use href="#mi-chev"/></svg></a>{% endif %}</li>{% endfor %}
+  </ol>
+</section>
+{% endif %}
+
 <section class="sp-hero" aria-label="فروش ۷ روز اخیر">
   <div class="sp-hero__top"><span>فروش ۷ روز اخیر</span><a href="/seller/stats/">آمار کامل</a></div>
   <div class="sp-hero__big">{{ sm.sales.value|toman }} <small>تومان</small>{% include "market/_change.html" with ch=sm.sales.change %}</div>
@@ -12,15 +35,6 @@
   </div>
 </section>
 
-{% if todo %}
-<h2 class="h6 fw-bold mb-2">کارهای امروز</h2>
-<ul class="sp-todo">
-  {% for t in todo %}<li><a href="{{ t.url }}">
-    <span class="sp-todo__ic {{ t.tone }}"><svg aria-hidden="true"><use href="#mi-{{ t.icon }}"/></svg></span>
-    <span class="sp-todo__t"><b>{% if t.n %}{{ t.n|fa_num }} {% endif %}{{ t.text }}</b>{% if t.hint %}<small>{{ t.hint|fa_num }}</small>{% endif %}</span>
-    <svg aria-hidden="true"><use href="#mi-chev"/></svg></a></li>{% endfor %}
-</ul>
-{% endif %}
 
 <nav class="sp-tiles" aria-label="میان‌بُرها">
   <a href="/seller/quick/"><svg aria-hidden="true"><use href="#mi-camera"/></svg>افزودن با عکس</a>
@@ -41,11 +55,11 @@
   </section>
   <section class="sp-card" aria-labelledby="m-h">
     <h2 id="m-h">مالی <a href="/seller/finance/">تسویه‌ها</a></h2>
-    <div class="sp-kpi-cards" style="margin: 0">
-      <div><b>{{ bal.payable.amount|toman }}</b><span>قابل تسویه (تومان)</span></div>
-      <div><b>{{ bal.hold.amount|toman }}</b><span>در مهلت مرجوعی</span></div>
-      <div><b>{{ bal.waiting.amount|toman }}</b><span>در جریان ارسال</span></div>
-    </div>
+    <dl class="sp-money">
+      <div class="is-main"><dt>قابل تسویه</dt><dd>{{ bal.payable.amount|toman }} <small>تومان</small></dd></div>
+      <div><dt>در مهلت مرجوعی</dt><dd>{{ bal.hold.amount|toman }} <small>تومان</small></dd></div>
+      <div><dt>در جریان ارسال</dt><dd>{{ bal.waiting.amount|toman }} <small>تومان</small></dd></div>
+    </dl>
     <form method="post" action="/seller/pause/" class="mt-3">{% csrf_token %}
       <button class="sp-btn sp-btn--ghost sp-btn--block" type="submit">{% if seller.status == "paused" %}باز کردن دوبارهٔ فروشگاه{% else %}تعطیل موقت فروشگاه (مثلاً سفر){% endif %}</button>
     </form>

@@ -27,6 +27,7 @@ class _SellerHomeState extends State<SellerHome> {
   Future<void> _refresh() async {
     final d = await run(context, () async => await Api.i.get('/seller/summary/') as Json);
     if (d != null && mounted) {
+      Guides.data = (d['guides'] as Map?)?.cast<String, dynamic>() ?? Guides.data;
       setState(() => _d = d);
       widget.onSummary(d);
     }
@@ -42,6 +43,7 @@ class _SellerHomeState extends State<SellerHome> {
     Map v(String k) => (w[k] as Map?) ?? {};
     final conv = w['conversion'];
     final paused = s['status'] == 'paused';
+    final setup = (_d['setup'] as Map?)?.cast<String, dynamic>();
 
     final tasks = <(IconData, String, int, VoidCallback)>[
       (Icons.notifications_active_outlined, 'سفارش تازه؛ منتظر پذیرش شما', asInt(todo['new_orders']), () => widget.go(1)),
@@ -63,6 +65,7 @@ class _SellerHomeState extends State<SellerHome> {
           Expanded(child: Text('${s['name']}', overflow: TextOverflow.ellipsis)),
         ]),
         actions: [
+          GuideButton('home', onChanged: () => setState(() {})),
           IconButton(
               tooltip: 'دیدن ویترین',
               icon: const Icon(Icons.storefront_outlined),
@@ -72,6 +75,7 @@ class _SellerHomeState extends State<SellerHome> {
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
+          const GuideCard('home'),
           if (paused)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -105,6 +109,10 @@ class _SellerHomeState extends State<SellerHome> {
                   ),
               ]),
             ),
+          if (setup != null && setup['all'] != true) ...[
+            const SizedBox(height: 12),
+            _Setup(setup),
+          ],
           const SizedBox(height: 18),
           const Text('هفت روز گذشته', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
           const Text('در مقایسه با هفت روز پیش از آن', style: TextStyle(color: C.muted, fontSize: 12.5)),
@@ -188,6 +196,40 @@ class _SellerHomeState extends State<SellerHome> {
               textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
         ]),
       ),
+    );
+  }
+}
+
+/// راه‌اندازی فروشگاه: کارهای مانده (در پنل سایت باز می‌شوند)
+class _Setup extends StatelessWidget {
+  const _Setup(this.d);
+  final Map<String, dynamic> d;
+  @override
+  Widget build(BuildContext context) {
+    final steps = ((d['steps'] as List?) ?? []).cast<Map>();
+    final done = asInt(d['done']), total = asInt(d['total']);
+    return Panel(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Expanded(child: Text('راه‌اندازی فروشگاه', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
+          Text('${faDigits(done)} از ${faDigits(total)}', style: const TextStyle(color: C.ink2, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(value: total == 0 ? 0 : done / total, minHeight: 8, backgroundColor: C.soft, color: C.pinkDark),
+        ),
+        const SizedBox(height: 6),
+        for (final st in steps.where((x) => x['done'] != true))
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.radio_button_unchecked_rounded, color: C.muted),
+            title: Text(faDigits(st['text'] ?? ''), style: const TextStyle(fontWeight: FontWeight.w700)),
+            trailing: const Icon(Icons.chevron_left_rounded, color: C.muted),
+            onTap: () => launchUrl(Uri.parse('$kSite${st['url']}'), mode: LaunchMode.externalApplication),
+          ),
+      ]),
     );
   }
 }

@@ -94,6 +94,7 @@ class _SellerProductsState extends State<SellerProducts> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: Text(_count > 0 ? 'کالاها (${faDigits(_count)})' : 'کالاها'),
+          actions: [GuideButton('products', onChanged: () => setState(() {}))],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(108),
             child: Column(children: [
@@ -148,9 +149,11 @@ class _SellerProductsState extends State<SellerProducts> {
               : ListView.separated(
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                  itemCount: _items.length + (_loading ? 1 : 0),
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
+                  itemCount: _items.length + 1 + (_loading ? 1 : 0),
+                  separatorBuilder: (_, i) => SizedBox(height: i == 0 ? 0 : 10),
+                  itemBuilder: (_, j) {
+                    if (j == 0) return const GuideCard('products');
+                    final i = j - 1;
                     if (i >= _items.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
                     return _ProductTile(p: _items[i], onToggle: (on) => _toggle(_items[i], on), onTap: () => _edit(_items[i]));
                   },

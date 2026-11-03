@@ -99,4 +99,39 @@
       if (box) box.style.setProperty("--acc", inp.value);
     });
   });
+  // پنل: راهنمای هر بخش؛ بسته‌ها در همین گوشی یادشان می‌ماند و دکمهٔ «راهنما» دوباره بازشان می‌کند.
+  function guideOff(key, off) {
+    try {
+      var list = (localStorage.getItem("sp-guide-off") || "").split(",").filter(Boolean);
+      list = list.filter(function (k) { return k !== key; });
+      if (off) list.push(key);
+      localStorage.setItem("sp-guide-off", list.join(","));
+    } catch (e) {}
+  }
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest && e.target.closest("[data-guide-close]");
+    if (c) {
+      var box = c.closest("[data-guide]");
+      box.hidden = true;
+      guideOff(box.getAttribute("data-guide"), true);
+      var o = document.querySelector("[data-guide-open]");
+      if (o) o.focus();
+      return;
+    }
+    var op = e.target.closest && e.target.closest("[data-guide-open]");
+    if (op) {
+      var g = document.getElementById("guide-" + op.getAttribute("data-guide-open"));
+      if (!g) return;
+      g.hidden = !g.hidden;
+      guideOff(op.getAttribute("data-guide-open"), g.hidden);
+      if (!g.hidden) g.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  });
+
+  // نوار بالا: منوی حساب با کلیک بیرون بسته می‌شود
+  document.addEventListener("click", function (e) {
+    document.querySelectorAll("details.sp-menu[open]").forEach(function (d) {
+      if (!d.contains(e.target)) d.removeAttribute("open");
+    });
+  });
 })();

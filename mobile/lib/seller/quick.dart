@@ -132,7 +132,7 @@ class _SellerQuickState extends State<SellerQuick> {
   static String _ext(String name) {
     final i = name.lastIndexOf('.');
     final e = i < 0 ? 'jpg' : name.substring(i + 1).toLowerCase();
-    return const ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(e) ? e : 'jpg';
+    return const ['jpg', 'jpeg', 'png', 'webp'].contains(e) ? e : 'jpg';
   }
 
   @override

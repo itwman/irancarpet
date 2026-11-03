@@ -53,7 +53,7 @@ class _SellerQuestionsState extends State<SellerQuestions> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('پرسش‌های مشتریان')),
+        appBar: AppBar(title: const Text('پرسش‌های مشتریان'), actions: [GuideButton('questions', onChanged: () => setState(() {}))]),
         body: RefreshIndicator(
           onRefresh: () async {
             _load();
@@ -69,10 +69,11 @@ class _SellerQuestionsState extends State<SellerQuestions> {
               final sorted = [...items.where((q) => (q['answers'] as List).isEmpty), ...items.where((q) => (q['answers'] as List).isNotEmpty)];
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: sorted.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final q = sorted[i];
+                itemCount: sorted.length + 1,
+                separatorBuilder: (_, i) => SizedBox(height: i == 0 ? 0 : 10),
+                itemBuilder: (_, j) {
+                  if (j == 0) return const GuideCard('questions');
+                  final q = sorted[j - 1];
                   final p = (q['product'] as Map?) ?? {};
                   final answers = (q['answers'] as List).cast<String>();
                   return Panel(

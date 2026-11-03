@@ -1,6 +1,5 @@
 {% extends "market/_base.html" %}{% load fa %}
 {% block panel %}
-<p class="sp-hint">فرصت ویژه یعنی چند تختهٔ محدود از یک سایز با قیمت کمتر. در ویترین، صفحهٔ کالا و سبد خرید با برچسب «فرصت ویژه» نشان داده می‌شود و وقتی تعدادش تمام شود، خودکار پایان می‌یابد. تخفیف باید واقعی باشد: قیمت پیش از تخفیف همان قیمت روز کالاست.</p>
 {% if errors %}<div class="alert-ic" role="alert">{% for k, e in errors.items %}{{ e }}<br>{% endfor %}</div>{% endif %}
 <details class="sp-card"{% if errors or not rows %} open{% endif %}>
   <summary class="fw-bold" style="cursor: pointer; min-height: 32px">+ فرصت ویژهٔ تازه</summary>

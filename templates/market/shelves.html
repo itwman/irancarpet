@@ -1,6 +1,5 @@
 {% extends "market/_base.html" %}{% load fa %}
 {% block panel %}
-<p class="sp-hint">قفسه‌ها دسته‌بندی خود ویترین شما هستند (مثل «حراج»، «اتاق کودک»، «۱۲۰۰ شانه»). هر کالا می‌تواند در چند قفسه باشد. کالاها را از <a href="/seller/products/">فهرست کالاها</a> (انتخاب چند کالا ← «گذاشتن در قفسه») یا صفحهٔ هر کالا در قفسه بگذارید.</p>
 <section class="sp-card">
   <h2>قفسهٔ تازه</h2>
   <form method="post" class="d-flex gap-2">{% csrf_token %}<input type="hidden" name="do" value="add">

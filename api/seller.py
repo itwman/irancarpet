@@ -13,6 +13,7 @@ from catalog.models import Product, Review, Variation
 from market import orders as O
 from market import products as P
 from market import stats as ST
+from market.guides import setup_steps
 from market.models import MarketSettings, Seller, SellerOrder
 from pricing.models import Album, Size
 
@@ -71,7 +72,15 @@ def summary(request):
                  "questions": _open_questions(s).count(), "rejected": prods.filter(review_status="rejected").count(),
                  "out": prods.filter(status="publish", stock_status="outofstock").count()},
         "balance": O.balances(s), "followers": s.followers.count(),
+        "guides": _guides(), "setup": setup_steps(s),
     })
+
+
+def _guides():
+    from market.guides import guide
+
+    ms = MarketSettings.load()
+    return {k: guide(k, ms) for k in ("home", "orders", "products", "albums", "questions", "stats")}
 
 
 @seller_endpoint()

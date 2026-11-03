@@ -27,7 +27,7 @@ class _SellerStatsState extends State<SellerStats> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('آمار فروشگاه')),
+        appBar: AppBar(title: const Text('آمار فروشگاه'), actions: [GuideButton('stats', onChanged: () => setState(() {}))]),
         body: Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -78,6 +78,7 @@ class _SellerStatsState extends State<SellerStats> {
         await _future;
       },
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
+        const GuideCard('stats'),
         Text('در مقایسه با ${faDigits(_d)} روز پیش از آن', style: const TextStyle(color: C.muted, fontSize: 12.5)),
         const SizedBox(height: 8),
         GridView.count(

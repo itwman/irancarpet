@@ -1,0 +1,12 @@
+{% load fa %}<section class="sp-guide" id="guide-{{ g.key }}" data-guide="{{ g.key }}" aria-labelledby="guide-{{ g.key }}-h">
+  <div class="sp-guide__head">
+    <svg aria-hidden="true"><use href="#mi-help"/></svg>
+    <h2 id="guide-{{ g.key }}-h">{{ g.title }}</h2>
+    <button type="button" class="sp-guide__x" data-guide-close aria-label="بستن راهنما"><svg aria-hidden="true"><use href="#mi-x"/></svg></button>
+  </div>
+  {% if g.ordered %}<ol class="sp-guide__steps is-ordered">{% else %}<ul class="sp-guide__steps">{% endif %}
+    {% for s in g.steps %}<li>{{ s }}</li>{% endfor %}
+  {% if g.ordered %}</ol>{% else %}</ul>{% endif %}
+  <button type="button" class="sp-guide__ok" data-guide-close>متوجه شدم</button>
+</section>
+<script>try{if((localStorage.getItem("sp-guide-off")||"").split(",").indexOf("{{ g.key }}")>-1){document.getElementById("guide-{{ g.key }}").hidden=true}}catch(e){}</script>

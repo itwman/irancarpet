@@ -317,3 +317,97 @@
 .sp-empty h2{font-size:1.1rem;color:var(--ink)}
 .sp .mk-save{bottom:72px}
 @media (min-width:900px){.sp .mk-save{bottom:0}}
+
+/* ------------------------------------------------------------------ پنل مستقل: نوار بالا، راهنما، راه‌اندازی */
+body.seller-page{background:#F6F7FB;min-height:100vh}
+.sp-bar{position:sticky;top:0;z-index:80;height:60px;background:#fff;border-bottom:1px solid var(--line)}
+.sp-bar__in{max-width:1280px;height:100%;margin:0 auto;display:flex;align-items:center;gap:.8rem;padding-inline:max(1rem,env(safe-area-inset-right)) max(1rem,env(safe-area-inset-left))}
+.sp-bar__brand{display:flex;align-items:center;gap:.55rem;color:var(--ink);flex:0 0 auto}
+.sp-bar__brand img{width:36px;height:36px;border-radius:10px}
+.sp-bar__brand span{display:none;flex-direction:column;line-height:1.3}
+.sp-bar__brand b{font-size:.95rem}
+.sp-bar__brand small{font-size:.72rem;color:var(--muted);font-weight:700}
+.sp-bar__store{display:flex;align-items:center;gap:.5rem;min-width:0;flex:1 1 auto}
+.sp-bar__store img,.sp-mono--sm{width:32px;height:32px;border-radius:9px;object-fit:cover;flex:0 0 auto;font-size:.95rem}
+.sp-bar__store>span{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.sp-bar__store b{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-bar__store small{font-size:.72rem;font-weight:700;display:inline-flex;align-items:center;gap:.3rem}
+.sp-bar__store small::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.sp-bar__store .is-on{color:var(--teal-d)}.sp-bar__store .is-off{color:#B45309}
+.sp-bar__act{display:flex;align-items:center;gap:.4rem;flex:0 0 auto}
+.sp-bar__btn{display:inline-flex;align-items:center;gap:.4rem;min-height:40px;min-width:40px;justify-content:center;padding:0 .6rem;border-radius:12px;color:var(--ink-2);font-weight:700;font-size:.85rem;background:transparent;border:0;cursor:pointer;list-style:none}
+.sp-bar__btn::-webkit-details-marker{display:none}
+.sp-bar__btn:hover{background:var(--soft);color:var(--ink)}
+.sp-bar__btn svg{width:20px;height:20px}
+.sp-bar__btn span{display:none}
+.sp-menu{position:relative}
+.sp-menu__pop{position:absolute;inset-inline-end:0;top:calc(100% + 6px);min-width:230px;background:#fff;border-radius:16px;box-shadow:0 0 0 1px var(--line),0 18px 40px -18px rgba(34,38,90,.35);padding:.4rem;display:flex;flex-direction:column}
+.sp-menu__pop a{display:flex;align-items:center;gap:.6rem;padding:.6rem .7rem;border-radius:10px;color:var(--ink);font-weight:700;font-size:.9rem}
+.sp-menu__pop a:hover{background:var(--soft)}
+.sp-menu__pop svg{width:18px;height:18px;color:var(--ink-2)}
+.sp{padding-top:1rem}
+@media (min-width:600px){
+  .sp-bar__brand span{display:flex}
+  .sp-bar__store{padding-inline-start:.8rem;border-inline-start:1px solid var(--line);margin-inline-start:.2rem}
+  .sp-bar__btn span{display:inline}
+}
+@media (min-width:900px){
+  .sp-bar{height:64px}
+  .sp-side{top:80px;max-height:calc(100vh - 96px)}
+  .sp{padding-top:1.4rem}
+}
+
+/* سرصفحهٔ هر بخش */
+.sp-top{display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;min-height:44px}
+.sp-title{display:block;flex:1;margin:0;font-size:1.25rem;font-weight:900}
+@media (min-width:900px){.sp-title{font-size:1.5rem}}
+.sp-help{display:inline-flex;align-items:center;gap:.35rem;min-height:40px;padding:0 .8rem;border-radius:999px;border:0;background:#fff;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-2);font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
+.sp-help:hover{color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink-2)}
+.sp-help svg{width:18px;height:18px}
+
+/* راهنمای بخش */
+.sp-guide{background:#fff;border-radius:18px;box-shadow:inset 0 0 0 1px var(--line);border-inline-start:4px solid var(--teal);padding:.9rem 1.1rem 1rem;margin-bottom:1.1rem}
+.sp-guide[hidden]{display:none}
+.sp-guide__head{display:flex;align-items:center;gap:.5rem}
+.sp-guide__head>svg{width:20px;height:20px;color:var(--teal-d);flex:0 0 auto}
+.sp-guide__head h2{flex:1;margin:0;font-size:1rem;font-weight:900}
+.sp-guide__x{width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.sp-guide__x:hover{background:var(--soft);color:var(--ink)}
+.sp-guide__x svg{width:18px;height:18px}
+.sp-guide__steps{margin:.5rem 0 .7rem;padding:0;list-style:none;display:flex;flex-direction:column;gap:.45rem;font-size:.9rem;line-height:1.9;color:var(--ink-2);max-width:72ch}
+.sp-guide__steps li{position:relative;padding-inline-start:1.1rem}
+.sp-guide__steps li::before{content:"";position:absolute;inset-inline-start:.15rem;top:.75em;width:6px;height:6px;border-radius:50%;background:var(--teal)}
+.sp-guide__steps.is-ordered{counter-reset:g}
+.sp-guide__steps.is-ordered li{counter-increment:g;padding-inline-start:2rem}
+.sp-guide__steps.is-ordered li::before{content:counter(g,persian);width:22px;height:22px;top:.25em;inset-inline-start:0;background:var(--teal-t);color:var(--teal-d);font-size:.75rem;font-weight:900;display:grid;place-items:center;line-height:1}
+.sp-guide__ok{border:0;background:var(--soft);color:var(--ink);font:inherit;font-weight:700;font-size:.85rem;border-radius:10px;padding:.4rem .9rem;min-height:38px;cursor:pointer}
+.sp-guide__ok:hover{background:var(--line)}
+
+/* راه‌اندازی فروشگاه */
+.sp-setup{background:#fff;border-radius:20px;box-shadow:0 0 0 1px var(--line);padding:1rem 1.1rem;margin-bottom:1rem}
+.sp-setup__head{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem}
+.sp-setup__head h2{margin:0;font-size:1.05rem;font-weight:900}
+.sp-setup__head span{font-size:.85rem;font-weight:700;color:var(--ink-2)}
+.sp-setup__bar{height:8px;border-radius:999px;background:var(--soft);margin:.6rem 0 .8rem;overflow:hidden}
+.sp-setup__bar i{display:block;height:100%;border-radius:inherit;background:var(--acc)}
+.sp-setup__list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:.4rem}
+.sp-setup__list li{display:flex;align-items:center;gap:.6rem;min-height:46px;padding:.2rem .5rem;border-radius:12px;font-size:.9rem;font-weight:700}
+.sp-setup__list a{display:flex;align-items:center;gap:.6rem;flex:1;color:var(--ink);min-height:42px}
+.sp-setup__list a svg{width:16px;height:16px;margin-inline-start:auto;color:var(--muted)}
+.sp-setup__list li:not(.is-done){background:var(--soft)}
+.sp-setup__list li:not(.is-done):hover{background:var(--line)}
+.sp-setup__list li.is-done{color:var(--muted)}
+.sp-setup__list s{text-decoration-thickness:1px}
+.sp-setup__ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-size:.78rem;background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.is-done .sp-setup__ic{background:var(--teal-d);color:#fff;box-shadow:none}
+.sp-setup__ic svg{width:15px;height:15px}
+
+/* مالی خانه */
+.sp-money{margin:0;display:flex;flex-direction:column}
+.sp-money div{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.65rem 0;border-top:1px solid var(--line)}
+.sp-money div:first-child{border-top:0;padding-top:.2rem}
+.sp-money dt{font-weight:700;color:var(--ink-2);font-size:.9rem}
+.sp-money dd{margin:0;font-weight:900;font-size:1.05rem}
+.sp-money dd small{font-weight:500;font-size:.75rem;color:var(--muted)}
+.sp-money .is-main dd{font-size:1.35rem;color:var(--teal-d)}
+@media (max-width:599px){.sp-setup__list li.is-done{display:none}}

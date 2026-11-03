@@ -71,12 +71,12 @@ def home(request):
     if out:
         todo.append({"n": out, "text": "کالای ناموجود در سایت", "hint": "اگر رسیده، موجودش کنید", "url": "/seller/products/?f=out",
                      "tone": "saffron", "icon": "box"})
-    if not s.logo_id or not (s.cover_id or s.slides.exists()):
-        todo.append({"n": "", "text": "ویترین را کامل کنید", "hint": "لوگو، کاور و رنگ فروشگاه", "url": "/seller/look/", "tone": "ink",
-                     "icon": "store"})
+    from .guides import setup_steps
+
+    setup = setup_steps(s)
     return render(request, "market/home.html", _ctx(
         request, "پنل فروشنده", "home", rows=rows, sm=sm, today=today, chart=ST.chart(rows, "sales"), vchart=ST.chart(rows, "views"),
-        todo=todo, bal=O.balances(s), followers=s.followers.count(), followers_new=ST.followers_new(s),
+        todo=todo, setup=setup, bal=O.balances(s), followers=s.followers.count(), followers_new=ST.followers_new(s),
         counts={"live": prods.filter(status="publish").count(), "pending": prods.filter(review_status="pending").count()},
     ))
 

@@ -56,6 +56,7 @@ class _SellerOrdersState extends State<SellerOrders> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: const Text('سفارش‌ها'),
+          actions: [GuideButton('orders', onChanged: () => setState(() {}))],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(52),
             child: SizedBox(
@@ -92,10 +93,11 @@ class _SellerOrdersState extends State<SellerOrders> {
               }
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemCount: items.length + 1,
+                separatorBuilder: (_, i) => SizedBox(height: i == 0 ? 0 : 10),
                 itemBuilder: (_, i) {
-                  final o = items[i];
+                  if (i == 0) return const GuideCard('orders');
+                  final o = items[i - 1];
                   final dl = _deadline(o);
                   return Panel(
                     onTap: () => _open(o),

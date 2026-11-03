@@ -37,7 +37,7 @@ class _SellerAlbumsState extends State<SellerAlbums> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('آلبوم‌های قیمت')),
+        appBar: AppBar(title: const Text('آلبوم‌های قیمت'), actions: [GuideButton('albums', onChanged: () => setState(() {}))]),
         body: RefreshIndicator(
           onRefresh: () async {
             _load();
@@ -57,12 +57,9 @@ class _SellerAlbumsState extends State<SellerAlbums> {
                   ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                     itemCount: items.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    separatorBuilder: (_, i) => SizedBox(height: i == 0 ? 0 : 10),
                     itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return const Text('قیمت آلبوم را که عوض کنید، قیمت همهٔ کالاهای آن یکجا به‌روز می‌شود.',
-                            style: TextStyle(color: C.muted, fontSize: 13));
-                      }
+                      if (i == 0) return const GuideCard('albums');
                       final a = items[i - 1];
                       return Panel(
                         onTap: () => _open(asInt(a['id'])),

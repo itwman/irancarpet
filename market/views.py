@@ -56,8 +56,11 @@ def _ctx(request, title, tab, **kw):
     pending_orders = s.orders.filter(status=SellerOrder.Status.NEW).count()
     from .seller import _open_questions
 
-    return {"meta": {**META, "title": title}, "seller": s, "tab": tab, "pending_orders": pending_orders, "ms": MarketSettings.load(),
-            "q_open": _open_questions(s).count(), **kw}
+    from .guides import guide
+
+    ms = MarketSettings.load()
+    return {"meta": {**META, "title": title}, "seller": s, "tab": tab, "pending_orders": pending_orders, "ms": ms,
+            "q_open": _open_questions(s).count(), "guide": guide(tab, ms), **kw}
 
 
 # ------------------------------------------------------------------ معرفی و ثبت‌نام

@@ -14,6 +14,7 @@ import 'home.dart';
 import 'more.dart';
 import 'orders.dart';
 import 'products.dart';
+import 'ui.dart';
 
 /// اپ «ایران کارپت فروشندگان»: همان حساب سایت؛ فقط برای کسی که فروشگاه فعال در بازارچه دارد.
 Future<void> runSellerApp() async {
@@ -60,7 +61,12 @@ class _SellerGateState extends State<SellerGate> {
     if (Api.i.token != null) _summary = _load();
   }
 
-  Future<Json> _load() async => await Api.i.get('/seller/summary/') as Json;
+  Future<Json> _load() async {
+    await Guides.load();
+    final d = await Api.i.get('/seller/summary/') as Json;
+    Guides.data = (d['guides'] as Map?)?.cast<String, dynamic>() ?? {};
+    return d;
+  }
 
   Future<void> _login() async {
     final ok = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const LoginScreen(

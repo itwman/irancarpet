@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/api.dart';
 import '../core/format.dart';
@@ -291,4 +292,94 @@ class Empty extends StatelessWidget {
         const SizedBox(height: 10),
         Text(text, textAlign: TextAlign.center, style: const TextStyle(color: C.muted)),
       ]);
+}
+
+/// راهنمای هر بخش (از سرور، همان متن پنل سایت). با «متوجه شدم» بسته می‌شود و در گوشی یادش می‌ماند.
+class Guides {
+  static Map<String, dynamic> data = {};
+  static Set<String> off = {};
+  static Future<void> load() async {
+    final p = await SharedPreferences.getInstance();
+    off = (p.getStringList('seller_guide_off') ?? []).toSet();
+  }
+
+  static Future<void> setOff(String key, bool v) async {
+    v ? off.add(key) : off.remove(key);
+    final p = await SharedPreferences.getInstance();
+    await p.setStringList('seller_guide_off', off.toList());
+  }
+}
+
+class GuideCard extends StatefulWidget {
+  const GuideCard(this.tab, {super.key});
+  final String tab;
+  @override
+  State<GuideCard> createState() => _GuideCardState();
+}
+
+class _GuideCardState extends State<GuideCard> {
+  @override
+  Widget build(BuildContext context) {
+    final g = Guides.data[widget.tab] as Map?;
+    if (g == null || Guides.off.contains(widget.tab)) return const SizedBox.shrink();
+    final steps = ((g['steps'] as List?) ?? []).cast<String>();
+    final ordered = g['ordered'] == true;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(kR),
+        border: const BorderDirectional(start: BorderSide(color: C.teal, width: 4), top: BorderSide(color: C.line),
+            end: BorderSide(color: C.line), bottom: BorderSide(color: C.line)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.help_outline_rounded, size: 20, color: C.tealDark),
+          const SizedBox(width: 8),
+          Expanded(child: Text('${g['title']}', style: const TextStyle(fontWeight: FontWeight.w900))),
+        ]),
+        const SizedBox(height: 6),
+        for (var i = 0; i < steps.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(
+                width: 24,
+                child: ordered
+                    ? Text('${faDigits(i + 1)}.', style: const TextStyle(color: C.tealDark, fontWeight: FontWeight.w900))
+                    : const Padding(padding: EdgeInsets.only(top: 8), child: CircleAvatar(radius: 3, backgroundColor: C.teal)),
+              ),
+              Expanded(child: Text(faDigits(steps[i]), style: const TextStyle(color: C.ink2, fontSize: 13.5, height: 1.7))),
+            ]),
+          ),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton(
+            onPressed: () async {
+              await Guides.setOff(widget.tab, true);
+              if (mounted) setState(() {});
+            },
+            child: const Text('متوجه شدم'),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// دکمهٔ «راهنما» در نوار بالا: راهنمای بسته‌شده را دوباره باز می‌کند.
+class GuideButton extends StatelessWidget {
+  const GuideButton(this.tab, {super.key, required this.onChanged});
+  final String tab;
+  final VoidCallback onChanged;
+  @override
+  Widget build(BuildContext context) => IconButton(
+        tooltip: 'راهنمای این بخش',
+        icon: const Icon(Icons.help_outline_rounded),
+        onPressed: () async {
+          await Guides.setOff(tab, !Guides.off.contains(tab));
+          onChanged();
+        },
+      );
 }

@@ -17,6 +17,12 @@ val fsKeyProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+// اپ فروشندگان هم کلید خودش را دارد (android/key-seller.properties)
+val sellerKeyProps = Properties().apply {
+    val f = rootProject.file("key-seller.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "net.irancarpet.app"
     compileSdk = flutter.compileSdkVersion
@@ -57,6 +63,14 @@ android {
                 keyPassword = keyProps.getProperty("keyPassword")
             }
         }
+        create("seller") {
+            if (sellerKeyProps.isNotEmpty()) {
+                storeFile = file(sellerKeyProps.getProperty("storeFile"))
+                storePassword = sellerKeyProps.getProperty("storePassword")
+                keyAlias = sellerKeyProps.getProperty("keyAlias")
+                keyPassword = sellerKeyProps.getProperty("keyPassword")
+            }
+        }
         create("farshestan") {
             if (fsKeyProps.isNotEmpty()) {
                 storeFile = file(fsKeyProps.getProperty("storeFile"))
@@ -89,7 +103,7 @@ android {
             applicationId = "net.irancarpet.seller"
             resValue("string", "app_name", "ایران کارپت فروشندگان")
             manifestPlaceholders["appScheme"] = "icseller"
-            signingConfig = if (keyProps.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            signingConfig = if (sellerKeyProps.isNotEmpty()) signingConfigs.getByName("seller") else signingConfigs.getByName("debug")
         }
         // فرشستان: همان کد، ظاهر «خانهٔ ایرانی» (با --dart-define=APP=farshestan بسازید)
         create("farshestan") {
