@@ -88,6 +88,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "seo.middleware.RedirectFallbackMiddleware",
+    "seo.middleware.QueryNoIndexMiddleware",  # نسخهٔ کوئری‌دار صفحه‌ها noindex (robots.txt دیگر آن‌ها را نمی‌بندد)
     "seo.middleware.StagingNoIndexMiddleware",
 ]
 

@@ -356,13 +356,12 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Disallow: /panel/",
-        "Disallow: /search/",
         "Disallow: /cart/",
         "Disallow: /checkout/",
         "Disallow: /my-account/",
-        "Disallow: /*?*",
-        # فایل‌های CSS و JS با ?v=نسخه بارگذاری می‌شوند؛ بدون این دو خط گوگل صفحه را بی‌ظاهر می‌بیند
-        # (در گوگل قانون بلندتر برنده است: Allow: /static/ بر Disallow: /*?* مقدم است)
+        # نشانی‌های کوئری‌دار (?size= ، ?sort= ، ?p= وردپرس و…) و جست‌وجو بسته نیستند: اگر با robots بسته باشند گوگل
+        # نمی‌تواند noindex و کنونیکالشان را ببیند و آن‌ها را «ایندکس‌شده با وجود مسدود بودن» نگه می‌دارد
+        # (آبان ۱۴۰۵: ۲۱ هزار نشانی). حالا خزیده می‌شوند و seo.middleware.QueryNoIndexMiddleware به آن‌ها noindex می‌دهد.
         "Allow: /static/",
         "Allow: /media/",
         "",

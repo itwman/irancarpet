@@ -354,3 +354,22 @@ class StagingNoIndexMiddleware:
         if settings.STAGING:
             response["X-Robots-Tag"] = "noindex, nofollow"
         return response
+
+
+class QueryNoIndexMiddleware:
+    """هر صفحه‌ای که با کوئری (?size= ، ?sort= ، ?utm_… ، ?add-to-cart= وردپرس…) یا از جست‌وجو باز شود «noindex, follow» می‌گیرد.
+
+    نسخهٔ بی‌کوئری همان صفحه کنونیکال و ایندکس‌شدنی است؛ این نسخه‌ها فقط نمایش دیگری از آن‌اند.
+    صفحه‌ای که خودش هدر X-Robots-Tag دارد دست نمی‌خورد. فایل‌های غیر HTML (تصویر، CSS، نقشهٔ سایت) هم نه.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if (request.method in ("GET", "HEAD") and (request.META.get("QUERY_STRING") or request.path.startswith("/search/"))
+                and response.status_code == 200 and "X-Robots-Tag" not in response
+                and (response.get("Content-Type") or "").startswith("text/html")):
+            response["X-Robots-Tag"] = "noindex, follow"
+        return response

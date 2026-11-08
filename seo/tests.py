@@ -235,6 +235,17 @@ class RobotsTxtTests(TestCase):
     def test_static_assets_with_version_are_crawlable(self):
         r = self.client.get("/robots.txt")
         body = r.content.decode()
-        self.assertIn("Disallow: /*?*", body)
+        self.assertNotIn("Disallow: /*?*", body)   # تا گوگل noindex نشانی‌های کوئری‌دار را ببیند
+        self.assertNotIn("Disallow: /search/", body)
+        self.assertIn("Disallow: /panel/", body)
         self.assertIn("Allow: /static/", body)
-        self.assertIn("Allow: /media/", body)
+
+    def test_query_urls_noindex(self):
+        self.assertNotIn("X-Robots-Tag", self.client.get("/blog/"))
+        r = self.client.get("/blog/?utm_source=x")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["X-Robots-Tag"], "noindex, follow")
+        r = self.client.get("/search/?q=" + "فرش")
+        if r.status_code == 200:
+            self.assertIn("noindex", r["X-Robots-Tag"])
+        self.assertNotIn("X-Robots-Tag", self.client.get("/robots.txt?x=1"))
