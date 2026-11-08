@@ -242,3 +242,20 @@ class AbroadNoticeTests(TestCase):
         s.abroad_closed = False
         s.save()
         self.assertNotContains(self.client.get("/ارسال-فرش-به-آلمان/"), "فعلاً انجام نمی‌شود")
+
+
+@override_settings(STAGING=True)
+class RewriteHoldTests(TestCase):
+    def test_held_not_auto_published(self):
+        cache.clear()
+        post = Post.objects.create(title="خرید فرش در گرگان", slug="خرید-فرش-در-گرگان", content="<p>x</p>", status="publish")
+        rewrite.load_plan([{"rank": 3, "slug": post.slug, "kind": "city", "hold": True}])
+        rewrite.import_data(sample(), "a")
+        rw = PostRewrite.objects.get()
+        self.assertTrue(rw.hold)
+        t = timezone.localtime().replace(hour=12) + timezone.timedelta(days=5)
+        with mock.patch("django.utils.timezone.now", return_value=t):
+            self.assertEqual(rewrite.publish_due(t), 0)
+            self.assertNotIn(rw.pk, rewrite.schedule(t))
+            rewrite.load_plan([{"rank": 3, "slug": post.slug, "kind": "city"}])  # نگه‌داشت برداشته شد
+            self.assertEqual(rewrite.publish_due(t), 1)

@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.utils.html import format_html, format_html_join
 
-from blog.models import BlogCategory, BlogTag, Comment, Faq, Page, Post
+from blog.models import Author, BlogCategory, BlogTag, Comment, Faq, Page, Post
 from catalog.models import Attribute, AttributeTerm, Brand, Category, KeywordRule, Product, ProductTag, Review
 from core.models import Media
 from core.templatetags.fa import fa_num, jdate, toman
@@ -742,10 +742,41 @@ register(Resource(
     search=["title", "slug"], filters=["status", "categories"], date_filter="published_at", ordering=("-published_at",),
     queryset=lambda qs: qs.select_related("image"), slug_from="title",
     fieldsets=[("نوشته", ["title", "slug", "content", "excerpt"], "main"),
-               ("انتشار", ["status", "published_at", "author_name"], "side"),
+               ("انتشار", ["status", "published_at", "author"], "side"),
                ("دسته و برچسب", ["primary_category", "categories", "tags"], "side"),
                ("فرش‌های پیشنهادی کنار و پایین مقاله", ["rec_category", "rec_tag"], "side"),
                ("تصویر شاخص", ["image"], "side"), SEO],
+    view_url=lambda o: o.get_absolute_url(),
+    actions={"set_author": ("تعیین نویسنده", lambda r, qs: _set_author(r, qs), "نویسنده", lambda: _author_choices())},
+))
+
+
+def _author_choices():
+    return [("0", "— خودکار (از دسته یا نویسندهٔ پیش‌فرض) —")] + [(str(a.pk), a.name) for a in Author.objects.filter(is_active=True)]
+
+
+def _set_author(request, qs):
+    val = (request.POST.get("action_value") or "").strip()
+    author = Author.objects.filter(pk=val, is_active=True).first() if val.isdigit() and val != "0" else None
+    if val != "0" and author is None:
+        return "نویسنده انتخاب نشد؛ چیزی تغییر نکرد."
+    n = qs.update(author=author)
+    return f"نویسندهٔ {fa_num(n)} مقاله " + (f"«{author.name}» شد." if author else "به حالت خودکار برگشت.")
+
+
+register(Resource(
+    key="authors", model=Author, title="نویسندگان مجله", single="نویسنده", group="مجله و برگه‌ها", icon="users",
+    columns=[Col("photo", "", thumb("photo"), cls="w-thumb"), Col("name", "نام", sort="name"), Col("role", "سمت"),
+             Col("cats", "دسته‌ها", lambda o: "، ".join(c.name for c in o.categories.all()) or "—"),
+             Col("own", "مقالهٔ مستقیم", lambda o: fa_num(o._n), "_n"),
+             Col("is_default", "پیش‌فرض", yesno("is_default")), Col("is_active", "فعال", yesno("is_active"))],
+    search=["name"], ordering=("sort_order", "name"), slug_from="name",
+    queryset=lambda qs: qs.prefetch_related("categories").select_related("photo").annotate(_n=Count("own_posts")),
+    fieldsets=[("نویسنده", ["name", "slug", "role", "bio", "knows_about", "same_as"], "main"),
+               ("کدام مقاله‌ها", ["categories", "is_default"], "side"),
+               ("عکس و نمایش", ["photo", "is_active", "sort_order"], "side")],
+    help="هر مقاله به نام نویسندهٔ خودش می‌آید؛ اگر خالی باشد، نویسندهٔ دستهٔ آن، وگرنه نویسندهٔ پیش‌فرض. "
+         "فقط نام آدم‌های واقعی را بگذارید که واقعاً مقاله را نوشته یا بازبینی کرده‌اند؛ معرفی هم باید درست و قابل‌استناد باشد.",
     view_url=lambda o: o.get_absolute_url(),
 ))
 register(Resource(

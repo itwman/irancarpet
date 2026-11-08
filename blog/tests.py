@@ -62,3 +62,52 @@ class TopicRecommendTests(__import__("django.test", fromlist=["TestCase"]).TestC
         self.assertEqual(R.topic_of(self.post), ("tag", tag))
         c = Category.objects.create(name="فرش 1000 شانه", slug="c1000")
         self.assertEqual(R.reeds_url("1000"), c.get_absolute_url())
+
+
+class AuthorTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        from blog.models import Author, BlogCategory, Post
+
+        cache.clear()
+        Author.objects.all().delete()
+        self.cat = BlogCategory.objects.create(name="نگهداری", slug="care")
+        self.a = Author.objects.create(name="محمدعلی ناظری", slug="محمدعلی-ناظری", role="مدیر فروش", is_default=True, bio="معرفی")
+        self.b = Author.objects.create(name="نویسندهٔ دوم", slug="b", role="کارشناس")
+        self.b.categories.add(self.cat)
+        cache.clear()
+        self.p1 = Post.objects.create(title="مقالهٔ یک", slug="p1", status="publish", content="<p>x</p>")
+        self.p2 = Post.objects.create(title="مقالهٔ دو", slug="p2", status="publish", content="<p>x</p>", primary_category=self.cat)
+        self.p2.categories.add(self.cat)
+        self.p3 = Post.objects.create(title="مقالهٔ سه", slug="p3", status="publish", content="<p>x</p>", author=self.b)
+
+    def test_byline_rules(self):
+        self.assertEqual(self.p1.byline(), self.a)   # پیش‌فرض
+        self.assertEqual(self.p2.byline(), self.b)   # از دسته
+        self.assertEqual(self.p3.byline(), self.b)   # مستقیم
+        self.assertEqual(set(self.b.posts()), {self.p2, self.p3})
+
+    def test_pages(self):
+        r = self.client.get("/p1/")
+        self.assertContains(r, '"@type": "Person"')
+        self.assertContains(r, 'href="/author/محمدعلی-ناظری/" rel="author"')
+        self.assertContains(r, "author-box")
+        r = self.client.get("/author/b/")
+        self.assertContains(r, "نویسندهٔ دوم")
+        self.assertContains(r, "ProfilePage")
+        self.assertContains(r, "مقالهٔ دو")
+        self.assertEqual(self.client.get("/author/nobody/").status_code, 404)
+
+    def test_panel(self):
+        from django.contrib.auth import get_user_model
+
+        boss = get_user_model().objects.create_user("boss", password="x" * 10, is_staff=True, is_superuser=True)
+        self.client.force_login(boss)
+        self.assertContains(self.client.get("/panel/authors/"), "نویسندهٔ دوم")
+        self.assertEqual(self.client.get("/panel/authors/add/").status_code, 200)
+        self.assertEqual(self.client.get(f"/panel/authors/{self.b.pk}/").status_code, 200)
+        self.assertContains(self.client.get(f"/panel/posts/{self.p1.pk}/"), "نویسنده")
+        r = self.client.post("/panel/posts/", {"action": "set_author", "action_value": str(self.b.pk), "ids": [self.p1.pk]}, follow=True)
+        self.p1.refresh_from_db()
+        self.assertEqual(self.p1.author, self.b)

@@ -74,12 +74,13 @@ def post_detail(request, post, preview=False):
     crumbs = [("مجله", "/blog/")] + ([(cat.name, cat.get_absolute_url())] if cat else []) + [(post.title, post.get_absolute_url())]
     related = Post.objects.published().filter(categories=cat).exclude(pk=post.pk).select_related("image")[:3] if cat else []
     site = settings.SITE_URL
+    author = post.byline()
     jsonld = {
         "@context": "https://schema.org", "@type": "BlogPosting", "headline": post.title[:110],
         "datePublished": post.published_at.isoformat(), "dateModified": post.modified_at.isoformat(),
         "mainEntityOfPage": site + post.get_absolute_url(),
         "image": [post.image.absolute_url] if post.image_id else [],
-        "author": {"@type": "Organization", "name": brand.name(), "url": site + "/"},
+        "author": _author_ld(author, site),
         "publisher": {"@type": "Organization", "name": brand.name(), "url": site + "/",
                       "logo": {"@type": "ImageObject", "url": site + "/static/img/logo.png"}},
         "inLanguage": "fa-IR",
@@ -108,10 +109,61 @@ def post_detail(request, post, preview=False):
 
     return render(request, "blog/post_detail.html", {
         "abroad_notice": ShopSettings.load().abroad_notice_for(post.slug),
-        "meta": meta, "post": post, "crumbs": crumbs, "related": related, **side,
+        "meta": meta, "post": post, "crumbs": crumbs, "related": related, "author": author, **side,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
         "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
         "price_updated": landing.last_price_update() if live else None,
+    })
+
+
+def _author_ld(author, site):
+    if author is None:
+        return {"@type": "Organization", "name": brand.name(), "url": site + "/"}
+    ld = {"@type": "Person", "name": author.name, "url": site + author.get_absolute_url(),
+          "worksFor": {"@type": "Organization", "name": brand.name(), "url": site + "/"}}
+    if author.role:
+        ld["jobTitle"] = author.role
+    if author.photo_id:
+        ld["image"] = author.photo.absolute_url
+    if author.topics():
+        ld["knowsAbout"] = author.topics()
+    if author.links():
+        ld["sameAs"] = author.links()
+    return ld
+
+
+def author_detail(request, slug, page=1):
+    from .models import Author
+
+    author = get_object_or_404(Author, slug=slug, is_active=True)
+    path = author.get_absolute_url()
+    page = int(page or 1)
+    paginator = Paginator(author.posts().order_by("-published_at").select_related("image"), settings.POSTS_PER_PAGE)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        raise Http404
+    link = lambda n: path + (f"page/{n}/" if n > 1 else "")  # noqa: E731
+    site = settings.SITE_URL
+    sep = "-"
+    try:
+        from core.models import SiteSettings
+
+        sep = SiteSettings.load().title_separator or "-"
+    except Exception:  # noqa: BLE001
+        pass
+    person = _author_ld(author, site)
+    jsonld = {"@context": "https://schema.org", "@type": "ProfilePage", "url": site + path,
+              "mainEntity": {**person, "description": author.bio[:300]} if author.bio else person}
+    title = f"{author.name}" + (f"، {author.role}" if author.role else "") + (f" (صفحهٔ {page})" if page > 1 else "")
+    meta = {"title": f"{title} {sep} {brand.name()}", "description": (author.bio or f"مقاله‌های {author.name} در مجلهٔ {brand.name()}")[:160],
+            "robots": "" if paginator.count else "noindex, follow", "canonical": site + link(page)}
+    return render(request, "blog/author_detail.html", {
+        "meta": meta, "author": author, "posts": page_obj.object_list, "page_obj": page_obj, "count": paginator.count,
+        "crumbs": [("مجله", "/blog/"), (author.name, path)], "jsonld": json.dumps(jsonld, ensure_ascii=False),
+        "prev_url": link(page - 1) if page_obj.has_previous() else "",
+        "next_url": link(page + 1) if page_obj.has_next() else "",
+        "page_links": [(n, link(n) if n != "…" else "") for n in paginator.get_elided_page_range(page, on_each_side=2, on_ends=1)],
     })
 
 

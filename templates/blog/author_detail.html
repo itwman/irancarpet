@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load fa %}
+{% block og %}<meta property="og:type" content="profile">{% if author.photo %}<meta property="og:image" content="{{ author.photo.absolute_url }}">{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  {% include "partials/breadcrumbs.html" %}
+  <header class="author-head">
+    {% if author.photo %}<img src="{{ author.photo.url }}" alt="{{ author.name }}" width="112" height="112" decoding="async">{% else %}<span class="author-box__mono author-box__mono--lg" aria-hidden="true">{{ author.name|slice:":1" }}</span>{% endif %}
+    <div>
+      <h1>{{ author.name }}</h1>
+      {% if author.role %}<p class="author-head__role">{{ author.role }}</p>{% endif %}
+      {% if author.bio %}<p class="author-head__bio">{{ author.bio|linebreaksbr }}</p>{% endif %}
+      {% if author.topics %}<p class="tags">{% for t in author.topics %}<span>{{ t }}</span>{% endfor %}</p>{% endif %}
+      {% if author.links %}<p class="author-head__links">{% for u in author.links %}<a href="{{ u }}" rel="me noopener" target="_blank">{{ u|cut:"https://"|cut:"http://"|truncatechars:40 }}</a>{% endfor %}</p>{% endif %}
+    </div>
+  </header>
+  {% if posts %}<h2 class="author-count">{{ count|fa_num }} مقاله</h2>
+  <div class="post-grid">{% for post in posts %}{% include "blog/_post_card.html" %}{% endfor %}</div>
+  {% else %}<div class="empty">هنوز مقاله‌ای به نام این نویسنده منتشر نشده.</div>{% endif %}
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

@@ -1900,3 +1900,22 @@ body.has-app-bar{padding-bottom:64px}
 .beta-ok{color:var(--teal-d);font-weight:700;margin:.2rem 0}
 .beta-no{color:var(--pink-d);font-weight:700;margin:.2rem 0}
 .beta-change summary{cursor:pointer;font-size:.9rem;font-weight:600;margin:.3rem 0}
+
+/* نویسندهٔ مقاله */
+.author-box{display:flex;gap:1rem;align-items:flex-start;margin:2rem 0 1rem;padding:1rem 1.25rem;border:1px solid var(--line);border-radius:14px;max-width:80ch}
+.author-box img,.author-box__mono{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none}
+.author-box__mono{display:grid;place-items:center;background:var(--paper-2,#f3f3f3);font-weight:900;font-size:1.6rem;color:var(--ink-2)}
+.author-box__mono--lg{width:112px;height:112px;font-size:2.4rem}
+.author-box__name{margin:0 0 .35rem;font-weight:900}
+.author-box__name a{color:inherit;text-decoration:none}
+.author-box__name span{display:block;font-weight:500;font-size:.9rem;color:var(--ink-2)}
+.author-box__bio{margin:0;color:var(--ink-2);line-height:1.9}
+.author-head{display:flex;gap:1.5rem;align-items:flex-start;margin:1rem 0 2rem;max-width:90ch}
+.author-head img{width:112px;height:112px;border-radius:50%;object-fit:cover;flex:none}
+.author-head h1{margin:0 0 .25rem}
+.author-head__role{margin:0 0 .75rem;color:var(--ink-2);font-weight:700}
+.author-head__bio{line-height:2;margin:0 0 .75rem}
+.author-head .tags span{display:inline-block;margin:0 0 .4rem .4rem;padding:.15rem .6rem;border:1px solid var(--line);border-radius:99px;font-size:.85rem}
+.author-head__links a{margin-inline-end:1rem}
+.author-count{font-size:1.1rem;margin:0 0 1rem}
+@media (max-width:600px){.author-head{flex-direction:column;align-items:center;text-align:center}}

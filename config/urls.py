@@ -92,6 +92,7 @@ urlpatterns = [
     re_path(rf"^brand/(?P<slug>[^/]+)/{P}$", catalog_views.brand_detail),
     re_path(rf"^category/(?P<path>.+?)/{P}$", blog_views.category_detail),
     re_path(rf"^tag/(?P<slug>[^/]+)/{P}$", blog_views.tag_detail),
+    re_path(rf"^author/(?P<slug>[^/]+)/{P}$", blog_views.author_detail),
     # صفحهٔ هر لیست قیمت (خود /carpets-price-list/ یک برگه با قالب price_list است)
     re_path(rf"^carpets/(?P<slug>[^/]+)/{P}$", landing_views.detail),
     re_path(rf"^carpets-price-list/(?P<slug>(?!page/)[^/]+)/{P}$", pricing_views.album_detail),

@@ -42,6 +42,8 @@ def _when(o):
         return "ریدایرکت شد " + jdate(o.published_at, "%Y/%m/%d")
     if o.merge_into and o.status in (S.READY, S.APPROVED):
         return "همراه مقالهٔ مقصد"
+    if o.status == S.READY and o.hold:
+        return "نگه‌داشته (فعلاً منتشر نمی‌شود؛ با «تأیید» منتشر می‌شود)"
     if o.status in (S.READY, S.APPROVED):
         at = _schedule().get(o.pk)
         if at is None:

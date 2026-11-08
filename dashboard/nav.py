@@ -37,7 +37,7 @@ LAYOUT = [
         "category-commissions",
     ]),
     ("محتوا و سئو", "pen", [
-        "posts", "rewrites", "pages", "comments", "blog-categories", "blog-tags",
+        "posts", "rewrites", "pages", "comments", "blog-categories", "blog-tags", "authors",
         ("#", "سئو"),
         "landing-pages", "redirects", "notfound", "search-log",
         ("#", "رسانه"),

@@ -54,9 +54,10 @@ def load_plan(items):
         rw.reason = (it.get("reason") or rw.reason)[:150]
         rw.keyword = (it.get("keyword") or rw.keyword)[:200]
         rw.merge_into = (it.get("merge_into") or rw.merge_into)[:300]
+        rw.hold = bool(it.get("hold"))
         if rw.merge_into and rw.status == S.QUEUED:
             rw.status, rw.ready_at = S.READY, timezone.now()  # ادغام نوشتن نمی‌خواهد؛ همراه مقالهٔ مقصد انجام می‌شود
-        rw.save(update_fields=["rank", "kind", "reason", "keyword", "merge_into", "status", "ready_at"])
+        rw.save(update_fields=["rank", "kind", "reason", "keyword", "merge_into", "hold", "status", "ready_at"])
         keep.add(rw.pk)
         n += 1
     if keep:
@@ -339,7 +340,7 @@ def schedule(now=None, horizon_days=400):
         return {}
     now = now or timezone.now()
     local = timezone.localtime(now)
-    rows = list(PostRewrite.objects.filter(status__in=[S.READY, S.APPROVED], merge_into="").order_by("rank")
+    rows = list(PostRewrite.objects.filter(status__in=[S.READY, S.APPROVED], merge_into="").exclude(status=S.READY, hold=True).order_by("rank")
                 .values("pk", "status", "rank", "publish_after"))
     approved = [r for r in rows if r["status"] == S.APPROVED]
     ready = sorted((r for r in rows if r["status"] == S.READY), key=lambda r: r["rank"])
@@ -390,7 +391,7 @@ def publish_due(now=None):
     if left <= 0:
         return 0
     approved = list(PostRewrite.objects.filter(status=S.APPROVED, merge_into="").order_by("rank")[:left])
-    due = list(PostRewrite.objects.filter(status=S.READY, publish_after__lte=now, merge_into="").order_by("rank")[:left - len(approved)]) \
+    due = list(PostRewrite.objects.filter(status=S.READY, publish_after__lte=now, merge_into="", hold=False).order_by("rank")[:left - len(approved)]) \
         if left > len(approved) else []
     n = 0
     for rw in approved + due:

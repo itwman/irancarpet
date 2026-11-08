@@ -57,6 +57,62 @@ class BlogTag(SeoFields):
         return f"/tag/{self.slug}/"
 
 
+class Author(models.Model):
+    """نویسندهٔ واقعی مقاله‌ها (برای اعتماد خواننده و گوگل): نام، سمت، معرفی و صفحهٔ /author/<نامک>/.
+
+    هر مقاله نویسندهٔ خودش را دارد؛ اگر خالی باشد از «دسته‌های این نویسنده» و بعد از نویسندهٔ پیش‌فرض می‌آید.
+    """
+    name = models.CharField("نام", max_length=120)
+    slug = models.SlugField("نامک", max_length=120, allow_unicode=True, unique=True)
+    role = models.CharField("سمت", max_length=200, blank=True, help_text="مثلاً «مدیر فروش ایران کارپت»")
+    bio = models.TextField("معرفی", blank=True, help_text="چند جملهٔ واقعی دربارهٔ تجربه و کار او در فرش؛ زیر هر مقاله و در صفحهٔ نویسنده می‌آید")
+    photo = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="عکس")
+    knows_about = models.CharField("حوزه‌های تخصص", max_length=300, blank=True, help_text="با ویرگول جدا کنید، مثل: فرش ماشینی، قیمت فرش، خرید اقساطی")
+    same_as = models.TextField("پیوند صفحه‌های رسمی او", blank=True, help_text="هر خط یک نشانی (لینکدین، صفحهٔ شرکت و…)")
+    categories = models.ManyToManyField(BlogCategory, blank=True, related_name="authors", verbose_name="نویسندهٔ مقاله‌های این دسته‌ها",
+                                        help_text="مقاله‌ای که نویسنده‌اش خالی است و در این دسته‌هاست به نام او می‌آید")
+    is_default = models.BooleanField("نویسندهٔ پیش‌فرض", default=False, help_text="مقاله‌های بی‌نویسنده که دسته‌شان به کسی نخورد")
+    is_active = models.BooleanField("فعال", default=True)
+    sort_order = models.PositiveSmallIntegerField("ترتیب", default=0)
+
+    class Meta:
+        verbose_name = "نویسنده"
+        verbose_name_plural = "نویسندگان"
+        ordering = ["sort_order", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return f"/author/{self.slug}/"
+
+    def save(self, *a, **kw):
+        from django.core.cache import cache
+
+        super().save(*a, **kw)
+        if self.is_default:
+            Author.objects.exclude(pk=self.pk).filter(is_default=True).update(is_default=False)
+        cache.delete("blog:authors")
+
+    def delete(self, *a, **kw):
+        from django.core.cache import cache
+
+        cache.delete("blog:authors")
+        return super().delete(*a, **kw)
+
+    def topics(self):
+        return [t.strip() for t in (self.knows_about or "").replace("،", ",").split(",") if t.strip()]
+
+    def links(self):
+        return [ln.strip() for ln in (self.same_as or "").splitlines() if ln.strip().startswith("http")]
+
+    def posts(self):
+        """مقاله‌های منتشرشدهٔ این نویسنده (چه مستقیم، چه از دسته‌هایش، چه پیش‌فرض)."""
+        ids = [p.pk for p in Post.objects.published().prefetch_related("categories").select_related("author")
+               if (p.byline() or Author()).pk == self.pk]
+        return Post.objects.filter(pk__in=ids)
+
+
 class PostQuerySet(models.QuerySet):
     def published(self):
         return self.filter(status=PublishStatus.PUBLISH, published_at__lte=timezone.now())
@@ -74,6 +130,8 @@ class Post(SeoFields):
     tags = models.ManyToManyField(BlogTag, related_name="posts", blank=True, verbose_name="برچسب‌ها")
     status = models.CharField("وضعیت", max_length=20, choices=PublishStatus.choices, default=PublishStatus.PUBLISH, db_index=True)
     author_name = models.CharField("نویسنده", max_length=200, blank=True)
+    author = models.ForeignKey(Author, null=True, blank=True, on_delete=models.SET_NULL, related_name="own_posts", verbose_name="نویسنده",
+                               help_text="خالی = از دستهٔ مقاله یا نویسندهٔ پیش‌فرض (پنل ← نویسندگان)")
     rec_category = models.ForeignKey("catalog.Category", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                      verbose_name="فرش‌های پیشنهادی از دستهٔ",
                                      help_text="خالی = خودکار از عنوان مقاله (مثل «موکا» ← دستهٔ فرش موکا)")
@@ -95,6 +153,41 @@ class Post(SeoFields):
 
     def get_absolute_url(self):
         return f"/{self.slug}/"
+
+    def byline(self):
+        """نویسندهٔ نمایش‌داده‌شده: نویسندهٔ خود مقاله ← نویسندهٔ دستهٔ مقاله ← پیش‌فرض ← None (به نام فروشگاه)."""
+        if self.author_id and self.author.is_active:
+            return self.author
+        return Author.pick(self)
+
+
+def _pick(post):
+    rows = _authors()
+    if not rows:
+        return None
+    cats = {c.pk for c in post.categories.all()}
+    if post.primary_category_id:
+        for a, ac in rows:
+            if post.primary_category_id in ac:
+                return a
+    for a, ac in rows:
+        if cats & ac:
+            return a
+    return next((a for a, _ in rows if a.is_default), None)
+
+
+def _authors():
+    """نویسندگان فعال با شناسهٔ دسته‌هایشان؛ برای هر درخواست یک بار خوانده می‌شود (کش کوتاه)."""
+    from django.core.cache import cache
+
+    rows = cache.get("blog:authors")
+    if rows is None:
+        rows = [(a, {c.pk for c in a.categories.all()}) for a in Author.objects.filter(is_active=True).select_related("photo").prefetch_related("categories")]
+        cache.set("blog:authors", rows, 120)
+    return rows
+
+
+Author.pick = staticmethod(_pick)
 
 
 # برگه‌های اضافی وردپرس که نسخهٔ دیگری از صفحهٔ اول یا فروشگاه‌اند: ۳۰۱ و بیرون از نقشهٔ سایت و llms.txt
@@ -202,6 +295,8 @@ class PostRewrite(models.Model):
     reason = models.CharField("چرا", max_length=150, blank=True)
     keyword = models.CharField("کلمهٔ هدف", max_length=200, blank=True)
     merge_into = models.CharField("ادغام در", max_length=300, blank=True, help_text="نشانی مقالهٔ اصلی؛ این مقاله با ریدایرکت ۳۰۱ به آن می‌رود")
+    hold = models.BooleanField("نگه‌داشته", default=False,
+                               help_text="از plan.json («hold»): خودکار منتشر نمی‌شود تا برداشته شود؛ با «تأیید» دستی منتشر می‌شود")
     status = models.CharField("وضعیت", max_length=10, choices=Status.choices, default=Status.QUEUED, db_index=True)
     gsc_clicks = models.PositiveIntegerField("کلیک گوگل", default=0)
     gsc_impressions = models.PositiveIntegerField("نمایش گوگل", default=0)

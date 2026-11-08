@@ -1,0 +1,7 @@
+<aside class="author-box" aria-label="دربارهٔ نویسنده">
+  {% if author.photo %}<img src="{{ author.photo.url }}" alt="{{ author.name }}" width="72" height="72" loading="lazy" decoding="async">{% else %}<span class="author-box__mono" aria-hidden="true">{{ author.name|slice:":1" }}</span>{% endif %}
+  <div>
+    <p class="author-box__name"><a href="{{ author.get_absolute_url }}" rel="author">{{ author.name }}</a>{% if author.role %}<span>{{ author.role }}</span>{% endif %}</p>
+    {% if author.bio %}<p class="author-box__bio">{{ author.bio }}</p>{% endif %}
+  </div>
+</aside>

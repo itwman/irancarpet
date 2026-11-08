@@ -867,6 +867,7 @@
  },
  {
   "rank": 58,
+  "hold": true,
   "slug": "کانال-فرش-های-ایران-کارپت-در-ایتا",
   "url": "https://irancarpet.net/کانال-فرش-های-ایران-کارپت-در-ایتا/",
   "kind": "guide",
@@ -885,6 +886,7 @@
  },
  {
   "rank": 59,
+  "hold": true,
   "slug": "طرح-های-فرش-700-شانه-افشان-دودی-جدیدترین-و",
   "url": "https://irancarpet.net/طرح-های-فرش-700-شانه-افشان-دودی-جدیدترین-و/",
   "kind": "guide",
@@ -903,6 +905,7 @@
  },
  {
   "rank": 60,
+  "hold": true,
   "slug": "خرید-فرش-در-دزفول",
   "url": "https://irancarpet.net/خرید-فرش-در-دزفول/",
   "kind": "city",
@@ -919,6 +922,7 @@
  },
  {
   "rank": 61,
+  "hold": true,
   "slug": "فرش-۲۴-متری-فرش-ماشینی-۶۴-متری",
   "url": "https://irancarpet.net/فرش-۲۴-متری-فرش-ماشینی-۶۴-متری/",
   "kind": "guide",
@@ -937,6 +941,7 @@
  },
  {
   "rank": 62,
+  "hold": true,
   "slug": "16986",
   "url": "https://irancarpet.net/16986/",
   "kind": "guide",
@@ -948,6 +953,7 @@
  },
  {
   "rank": 63,
+  "hold": true,
   "slug": "پشت-فرش-ماشینی",
   "url": "https://irancarpet.net/پشت-فرش-ماشینی/",
   "kind": "guide",
@@ -964,6 +970,7 @@
  },
  {
   "rank": 64,
+  "hold": true,
   "slug": "تاریخ-فرش-دستباف-در-ایران-و-اروپا",
   "url": "https://irancarpet.net/تاریخ-فرش-دستباف-در-ایران-و-اروپا/",
   "kind": "guide",
@@ -975,6 +982,7 @@
  },
  {
   "rank": 65,
+  "hold": true,
   "slug": "روش-های-تولید-ریسندگینخ-های-ریسیده-شد",
   "url": "https://irancarpet.net/روش-های-تولید-ریسندگینخ-های-ریسیده-شد/",
   "kind": "guide",
@@ -986,6 +994,7 @@
  },
  {
   "rank": 66,
+  "hold": true,
   "slug": "ویسکوز",
   "url": "https://irancarpet.net/ویسکوز/",
   "kind": "guide",
@@ -1004,6 +1013,7 @@
  },
  {
   "rank": 67,
+  "hold": true,
   "slug": "فرش-کناره-سرمه-ای-رنگ",
   "url": "https://irancarpet.net/فرش-کناره-سرمه-ای-رنگ/",
   "kind": "guide",
@@ -1022,6 +1032,7 @@
  },
  {
   "rank": 68,
+  "hold": true,
   "slug": "خرید-فرش-در-تربت-حیدریه",
   "url": "https://irancarpet.net/خرید-فرش-در-تربت-حیدریه/",
   "kind": "city",
@@ -1039,6 +1050,7 @@
  },
  {
   "rank": 69,
+  "hold": true,
   "slug": "خرید-فرش-در-شهرکرد",
   "url": "https://irancarpet.net/خرید-فرش-در-شهرکرد/",
   "kind": "city",
@@ -1053,6 +1065,7 @@
  },
  {
   "rank": 70,
+  "hold": true,
   "slug": "خرید-فرش-در-یزد",
   "url": "https://irancarpet.net/خرید-فرش-در-یزد/",
   "kind": "city",
@@ -1070,6 +1083,7 @@
  },
  {
   "rank": 71,
+  "hold": true,
   "slug": "خرید-فرش-در-خوی",
   "url": "https://irancarpet.net/خرید-فرش-در-خوی/",
   "kind": "city",
@@ -1083,6 +1097,7 @@
  },
  {
   "rank": 72,
+  "hold": true,
   "slug": "خرید-فرش-در-بانه",
   "url": "https://irancarpet.net/خرید-فرش-در-بانه/",
   "kind": "city",
@@ -1108,6 +1123,7 @@
  },
  {
   "rank": 74,
+  "hold": true,
   "slug": "پلی-پروپیلن",
   "url": "https://irancarpet.net/پلی-پروپیلن/",
   "kind": "guide",
@@ -1124,6 +1140,7 @@
  },
  {
   "rank": 75,
+  "hold": true,
   "slug": "خرید-فرش-در-برازجان",
   "url": "https://irancarpet.net/خرید-فرش-در-برازجان/",
   "kind": "city",
@@ -1138,6 +1155,7 @@
  },
  {
   "rank": 76,
+  "hold": true,
   "slug": "هنرمندان-و-پیش-کسوتان-معروف-فرش-کاشان",
   "url": "https://irancarpet.net/هنرمندان-و-پیش-کسوتان-معروف-فرش-کاشان/",
   "kind": "guide",
@@ -1164,6 +1182,7 @@
  },
  {
   "rank": 78,
+  "hold": true,
   "slug": "خرید-فرش-از-امارات-ارسال-فرش-به-دبی",
   "url": "https://irancarpet.net/خرید-فرش-از-امارات-ارسال-فرش-به-دبی/",
   "kind": "guide",
@@ -1215,6 +1234,7 @@
  },
  {
   "rank": 82,
+  "hold": true,
   "slug": "خرید-فرش-در-گلستان",
   "url": "https://irancarpet.net/خرید-فرش-در-گلستان/",
   "kind": "city",
@@ -1229,6 +1249,7 @@
  },
  {
   "rank": 83,
+  "hold": true,
   "slug": "شستن-فرش-در-منزل-بدون-اینکه-آسیبی-به-فرش",
   "url": "https://irancarpet.net/شستن-فرش-در-منزل-بدون-اینکه-آسیبی-به-فرش/",
   "kind": "guide",
@@ -1367,6 +1388,7 @@
  },
  {
   "rank": 95,
+  "hold": true,
   "slug": "معایب-فرش-700-شانه",
   "url": "https://irancarpet.net/معایب-فرش-700-شانه/",
   "kind": "guide",
@@ -1484,6 +1506,7 @@
  },
  {
   "rank": 104,
+  "hold": true,
   "slug": "مهد-فرش",
   "url": "https://irancarpet.net/مهد-فرش/",
   "kind": "guide",
