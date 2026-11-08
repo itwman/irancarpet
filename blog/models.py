@@ -69,6 +69,10 @@ class Author(models.Model):
     photo = models.ForeignKey(Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="+", verbose_name="عکس")
     knows_about = models.CharField("حوزه‌های تخصص", max_length=300, blank=True, help_text="با ویرگول جدا کنید، مثل: فرش ماشینی، قیمت فرش، خرید اقساطی")
     same_as = models.TextField("پیوند صفحه‌های رسمی او", blank=True, help_text="هر خط یک نشانی (لینکدین، صفحهٔ شرکت و…)")
+    title_words = models.CharField("نویسندهٔ مقاله‌هایی که عنوانشان این کلمه‌ها را دارد", max_length=300, blank=True,
+                                   help_text="با ویرگول جدا کنید، مثل: دستباف، گلیم، گبه. اولویتش از دسته بیشتر است")
+    title_skip = models.CharField("مگر اینکه عنوان این کلمه‌ها را هم داشته باشد", max_length=300, blank=True,
+                                  help_text="مثلاً «ماشینی» تا «فرش ماشینی یا دستباف؟» به نام نویسندهٔ فرش ماشینی بماند")
     categories = models.ManyToManyField(BlogCategory, blank=True, related_name="authors", verbose_name="نویسندهٔ مقاله‌های این دسته‌ها",
                                         help_text="مقاله‌ای که نویسنده‌اش خالی است و در این دسته‌هاست به نام او می‌آید")
     is_default = models.BooleanField("نویسندهٔ پیش‌فرض", default=False, help_text="مقاله‌های بی‌نویسنده که دسته‌شان به کسی نخورد")
@@ -99,6 +103,17 @@ class Author(models.Model):
 
         cache.delete("blog:authors")
         return super().delete(*a, **kw)
+
+    @staticmethod
+    def _words(text):
+        return [w.strip() for w in (text or "").replace("،", ",").split(",") if w.strip()]
+
+    def title_match(self, title):
+        t = (title or "").replace("\u200c", "").replace(" ", "")
+        norm = lambda w: w.replace("\u200c", "").replace(" ", "")  # noqa: E731
+        if not any(norm(w) in t for w in self._words(self.title_words)):
+            return False
+        return not any(norm(w) in t for w in self._words(self.title_skip))
 
     def topics(self):
         return [t.strip() for t in (self.knows_about or "").replace("،", ",").split(",") if t.strip()]
@@ -165,6 +180,9 @@ def _pick(post):
     rows = _authors()
     if not rows:
         return None
+    for a, _ in rows:
+        if a.title_words and a.title_match(post.title):
+            return a
     cats = {c.pk for c in post.categories.all()}
     if post.primary_category_id:
         for a, ac in rows:

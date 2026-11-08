@@ -773,9 +773,9 @@ register(Resource(
     search=["name"], ordering=("sort_order", "name"), slug_from="name",
     queryset=lambda qs: qs.prefetch_related("categories").select_related("photo").annotate(_n=Count("own_posts")),
     fieldsets=[("نویسنده", ["name", "slug", "role", "bio", "knows_about", "same_as"], "main"),
-               ("کدام مقاله‌ها", ["categories", "is_default"], "side"),
+               ("کدام مقاله‌ها", ["title_words", "title_skip", "categories", "is_default"], "side"),
                ("عکس و نمایش", ["photo", "is_active", "sort_order"], "side")],
-    help="هر مقاله به نام نویسندهٔ خودش می‌آید؛ اگر خالی باشد، نویسندهٔ دستهٔ آن، وگرنه نویسندهٔ پیش‌فرض. "
+    help="هر مقاله به نام نویسندهٔ خودش می‌آید؛ اگر خالی باشد، نویسنده‌ای که کلمه‌های عنوانش می‌خورد، بعد نویسندهٔ دسته، وگرنه نویسندهٔ پیش‌فرض. "
          "فقط نام آدم‌های واقعی را بگذارید که واقعاً مقاله را نوشته یا بازبینی کرده‌اند؛ معرفی هم باید درست و قابل‌استناد باشد.",
     view_url=lambda o: o.get_absolute_url(),
 ))

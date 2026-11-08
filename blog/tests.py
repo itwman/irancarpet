@@ -111,3 +111,20 @@ class AuthorTests(TestCase):
         r = self.client.post("/panel/posts/", {"action": "set_author", "action_value": str(self.b.pk), "ids": [self.p1.pk]}, follow=True)
         self.p1.refresh_from_db()
         self.assertEqual(self.p1.author, self.b)
+
+    def test_title_words(self):
+        from django.core.cache import cache
+
+        from blog.models import Author, Post
+
+        Author.objects.create(name="نسرین سمساریان", slug="ns", title_words="دستباف، قالی، گلیم", title_skip="ماشینی، قالیچه، قالین")
+        cache.clear()
+        mk = lambda t: Post.objects.create(title=t, slug=t.replace(" ", "-"), status="publish", content="<p>x</p>")  # noqa: E731
+        self.assertEqual(mk("حفظ و نگهداری فرش دستباف").byline().slug, "ns")
+        self.assertEqual(mk("تاریخچه قالی‌بافی در دوران صفویه").byline().slug, "ns")
+        self.assertEqual(mk("فرش ماشینی یا فرش دستباف؟").byline(), self.a)
+        self.assertEqual(mk("فرش کناره و قالیچه").byline(), self.a)
+        self.assertEqual(mk("خرید قالین کاشان در افغانستان").byline(), self.a)
+        p = mk("گلیم بافی یزد")
+        p.categories.add(self.cat)
+        self.assertEqual(p.byline().slug, "ns")   # کلمهٔ عنوان بر دسته مقدم است
