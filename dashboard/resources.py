@@ -448,7 +448,8 @@ register(Resource(
     key="tags", model=ProductTag, title="برچسب‌های محصول", single="برچسب", group="فروشگاه", icon="hash",
     columns=[Col("name", "نام", sort="name"), Col("slug", "نامک"), Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
     search=["name", "slug"], ordering=("name",), slug_from="name",
-    queryset=lambda qs: qs.annotate(_n=Count("products")), fieldsets=[TAX_FIELDS, SEO], view_url=lambda o: o.get_absolute_url(),
+    queryset=lambda qs: qs.annotate(_n=Count("products")), fieldsets=[TAX_FIELDS, ("یکی شدن با صفحهٔ دیگر", ["redirect_url"], "side"), SEO],
+    view_url=lambda o: o.get_absolute_url(),
     actions={"cleanup": ("دقیق‌کردن فرش‌های برچسب (کدام نقشه‌ها بمانند)…", None, "", None, {"href": "/panel/tags/cleanup/"})},
     help="برای صفحه‌ای مثل «فرش طرح افشان»: یک برچسب را تیک بزنید و «دقیق‌کردن فرش‌های برچسب» را بزنید تا فقط فرش‌های واقعاً مرتبط در آن بمانند.",
 ))
@@ -468,7 +469,8 @@ register(Resource(
              Col("n", "محصول", lambda o: fa_num(o._n), "_n")],
     search=["name", "slug"], filters=["attribute"], ordering=("attribute__order", "order"), slug_from="name",
     queryset=lambda qs: qs.select_related("attribute").annotate(_n=Count("products")),
-    fieldsets=[("اطلاعات", ["attribute", "name", "slug", "order", "description"], "main"), SEO],
+    fieldsets=[("اطلاعات", ["attribute", "name", "slug", "order", "description"], "main"),
+               ("یکی شدن با صفحهٔ دیگر", ["redirect_url"], "side"), SEO],
     view_url=lambda o: o.get_absolute_url() if o.attribute.is_public else "",
 ))
 

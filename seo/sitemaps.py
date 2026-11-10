@@ -31,7 +31,7 @@ def sections():
         "product_cat": (Category.objects.filter(redirect_url="").annotate(n=Count("products"), lm=Max("products__modified_at")).filter(n__gt=0)
                         .exclude(robots__contains="noindex"), False),
         # برچسب‌های فرش با دست‌کم ۴ فرش منتشرشده (در سرچ کنسول نمایش دارند ولی در سایت‌مپ نبودند)
-        "product_tag": (ProductTag.objects.exclude(robots__contains="noindex")
+        "product_tag": (ProductTag.objects.filter(redirect_url="").exclude(robots__contains="noindex")
                         .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True),
                                   lm=Max("products__modified_at", filter=Q(products__status="publish"))).filter(n__gte=4)
                         .order_by("-n"), False),
@@ -43,7 +43,7 @@ def sections():
 
     out["landing"] = (live().order_by("-count"), True)
     for attr in Attribute.objects.filter(is_public=True).exclude(slug__in=["brand"]):
-        out[f"pa_{attr.slug}"] = (AttributeTerm.objects.filter(attribute=attr).annotate(n=Count("products"), lm=Max("products__modified_at"))
+        out[f"pa_{attr.slug}"] = (AttributeTerm.objects.filter(attribute=attr, redirect_url="").annotate(n=Count("products"), lm=Max("products__modified_at"))
                                   .filter(n__gt=0), False)
     return out
 

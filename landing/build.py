@@ -266,7 +266,11 @@ def product_links(product, limit=6):
         for r in reeds:
             q |= Q(reeds_id=r, size_id__in=sizes) | Q(reeds_id=r, color_id__in=colors)
         q |= Q(reeds=None, color_id__in=colors, size_id__in=sizes)
-        ids = list(qs.filter(q).order_by("-count").values_list("pk", flat=True)[:limit])
+        # صفحه‌های دستی (نقشه، سبک، سجاده‌ای رنگی، قالیچه) اول؛ فقط اگر همین فرش در آن صفحه هست
+        manual = [lp.pk for lp in live().filter(auto=False).order_by("-count")[:20]
+                  if products_of(lp).filter(pk=product.pk).exists()]
+        ids = manual[:3] + [i for i in qs.filter(q).order_by("-count").values_list("pk", flat=True)[:limit] if i not in manual]
+        ids = ids[:limit]
         cache.set(key, ids, 3600)
     from .models import LandingPage
 

@@ -113,7 +113,9 @@ def price_rows():
     for (reeds, mat), by in sorted(groups.items(), key=lambda kv: (kv[0][0], order.get(kv[0][1], 2))):
         if reeds not in (700, 1000, 1200, 1500):
             continue
-        out.append((f"فرش {reeds} شانه {mat}".strip(), f"/reeds-per-meter/{reeds}/", by))
+        from .recommend import reeds_url
+
+        out.append((f"فرش {reeds} شانه {mat}".strip(), reeds_url(reeds) or f"/reeds-per-meter/{reeds}/", by))
     cache.set(key, out, 3600)
     return out
 

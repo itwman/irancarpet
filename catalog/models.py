@@ -85,6 +85,10 @@ class ProductTag(SeoFields):
     name = models.CharField("نام", max_length=255)
     slug = models.SlugField("نامک", max_length=255, allow_unicode=True, unique=True)
     description = models.TextField("توضیحات", blank=True)
+    redirect_url = models.CharField(
+        "انتقال دائمی به", max_length=300, blank=True,
+        help_text="اگر پر باشد، این صفحه جدا نمایش داده نمی‌شود: بازدیدکننده و گوگل با ۳۰۱ به این نشانی می‌روند و پیوندهای سایت هم "
+                  "مستقیم به آن اشاره می‌کنند (مثلاً «/carpets/فرش-افشان/» تا دو صفحه برای یک کلمه رقابت نکنند).")
 
     class Meta:
         verbose_name = "برچسب محصول"
@@ -95,7 +99,7 @@ class ProductTag(SeoFields):
         return self.name
 
     def get_absolute_url(self):
-        return f"/product-tag/{self.slug}/"
+        return self.redirect_url or f"/product-tag/{self.slug}/"
 
 
 def material_of(names):
@@ -190,6 +194,10 @@ class AttributeTerm(SeoFields):
     slug = models.SlugField("نامک", max_length=255, allow_unicode=True)
     description = models.TextField("توضیحات", blank=True)
     order = models.IntegerField("ترتیب", default=0)
+    redirect_url = models.CharField(
+        "انتقال دائمی به", max_length=300, blank=True,
+        help_text="اگر پر باشد، این صفحه جدا نمایش داده نمی‌شود: بازدیدکننده و گوگل با ۳۰۱ به این نشانی می‌روند و پیوندهای سایت هم "
+                  "مستقیم به آن اشاره می‌کنند (مثلاً «/carpets/فرش-افشان/» تا دو صفحه برای یک کلمه رقابت نکنند).")
 
     class Meta:
         verbose_name = "مقدار ویژگی"
@@ -201,7 +209,7 @@ class AttributeTerm(SeoFields):
         return f"{self.attribute.label}: {self.name}"
 
     def get_absolute_url(self):
-        return f"/{self.attribute.slug}/{self.slug}/"
+        return self.redirect_url or f"/{self.attribute.slug}/{self.slug}/"
 
 
 # ---------------------------------------------------------------------------

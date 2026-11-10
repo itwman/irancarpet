@@ -207,14 +207,42 @@ def category_detail(request, path, page=1):
         return HttpResponsePermanentRedirect(cat.redirect_url)
     crumbs = [(c.name, c.get_absolute_url()) for c in cat.ancestors()] + [(cat.name, cat.get_absolute_url())]
     qs = Product.objects.filter(categories__in=cat.descendant_ids())
+    intro = cat.description
+    if intro and "[" in intro:  # بلوک‌های زندهٔ مجله ([reeds_compare 700 1000] و…) در متن دسته هم کار می‌کنند
+        from blog import landing
+
+        if landing.has_blocks(intro):
+            intro = landing.render(intro, request, title=cat.name)
     return product_listing(
         request, qs, page=page, path=cat.get_absolute_url(), meta={"obj": cat, "kind": "product_cat"},
-        heading=cat.name, intro=cat.description, crumbs=crumbs, archive=cat,
+        heading=cat.name, intro=intro, crumbs=crumbs, archive=cat, extra={"landing_links": _reeds_landing_links(cat)},
     )
+
+
+def _reeds_landing_links(cat):
+    """دستهٔ یک شانه (carpet-700-reeds و زیردسته‌هایش) ← صفحه‌های فرود همان شانه بر اساس سایز و رنگ."""
+    import re as _re
+
+    m = _re.search(r"carpet-(\d{3,4})-reeds", cat.path)
+    if not m:
+        return []
+    try:
+        from django.db.models import Q
+
+        from landing.build import links_for
+
+        term = AttributeTerm.objects.filter(Q(attribute__slug="reeds-per-meter") | Q(attribute__label="شانه"), name=m.group(1)).first()
+        return links_for(reeds_id=term.pk, limit=30) if term else []
+    except Exception:  # noqa: BLE001 — پیوندهای کمکی نباید صفحهٔ دسته را از کار بیندازند
+        return []
 
 
 def tag_detail(request, slug, page=1):
     tag = get_object_or_404(ProductTag, slug=slug)
+    if tag.redirect_url:  # برچسبی که با صفحهٔ فرود یا دستهٔ هم‌موضوع یکی شده
+        from django.http import HttpResponsePermanentRedirect
+
+        return HttpResponsePermanentRedirect(tag.redirect_url)
     return product_listing(
         request, tag.products.all(), page=page, path=tag.get_absolute_url(), meta={"obj": tag, "kind": "product_tag"},
         heading=tag.name, intro=tag.description, crumbs=[(tag.name, tag.get_absolute_url())], archive=tag,
@@ -231,6 +259,11 @@ def brand_detail(request, slug, page=1):
 
 def attribute_term_detail(request, term, page=1):
     from landing.build import links_for
+
+    if term.redirect_url:  # مثل «/reeds-per-meter/1200/» که با دستهٔ «فرش ۱۲۰۰ شانه» یکی شده
+        from django.http import HttpResponsePermanentRedirect
+
+        return HttpResponsePermanentRedirect(term.redirect_url)
 
     return product_listing(
         request, term.products.all(), page=page, path=term.get_absolute_url(),
@@ -280,7 +313,7 @@ def _tag_links(product):
     """برچسب‌های فرش (مثل «فرش طرح افشان») که صفحهٔ قابل‌ایندکس با دست‌کم ۴ فرش دارند؛ پیوند داخلی به صفحهٔ موضوع."""
     from django.db.models import Count, Q
 
-    return list(ProductTag.objects.filter(pk__in=product.tags.values("pk")).exclude(robots__contains="noindex")
+    return list(ProductTag.objects.filter(pk__in=product.tags.values("pk"), redirect_url="").exclude(robots__contains="noindex")
                 .annotate(n=Count("products", filter=Q(products__status="publish"), distinct=True)).filter(n__gte=4)
                 .order_by("-n")[:6])
 

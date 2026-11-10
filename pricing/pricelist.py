@@ -141,7 +141,7 @@ def build():
             anchor=f"reeds-{reeds}" if reeds else "others",
             min_base=min(bases) if bases else None, max_base=max(bases) if bases else None,
             count=sum(x["count"] for x in g["albums"]), size_min=size_min,
-            reeds_url=f"/reeds-per-meter/{reeds}/" if reeds else "",
+            reeds_url=_reeds_url(reeds),
             per_m2=(min(bases) // 12) if bases else None,
         )
         del g["size_ids"]
@@ -184,3 +184,12 @@ def month_year(dt=None):
 
     j = jdatetime.date.fromgregorian(date=timezone.localtime(dt or timezone.now()).date())
     return JALALI_MONTHS[j.month - 1], fa_num(j.year)
+
+
+def _reeds_url(reeds):
+    """صفحهٔ اصلی «فرش N شانه» (دستهٔ همان شانه؛ نه آرشیو /reeds-per-meter/ که با دسته رقابت می‌کرد)."""
+    if not reeds:
+        return ""
+    from blog.recommend import reeds_url
+
+    return reeds_url(reeds) or f"/reeds-per-meter/{reeds}/"
