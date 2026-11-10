@@ -93,3 +93,33 @@ class ReedsHubTests(TestCase):
             MIG.forwards(apps, None)
         self.assertFalse(LandingPage.objects.filter(slug="فرش-افشان").exists())
         self.assertEqual(AttributeTerm.objects.get(pk=self.r700.pk).redirect_url, "")
+
+
+class MergeDuplicatesTests(TestCase):
+    def test_color_and_size_duplicates(self):
+        from finder.models import Need
+
+        seed_sizes()
+        mig = importlib.import_module("landing.migrations.0006_merge_color_size_duplicates")
+        cream = Need.objects.create(group="color", title="کرم و روشن")
+        red = Need.objects.create(group="color", title="قرمز و لاکی")
+        LandingPage.objects.create(slug="فرش-کرم", title="فرش کرم", color=cream, count=10)
+        LandingPage.objects.create(slug="فرش-قرمز", title="فرش قرمز", color=red, count=2)   # کم‌فرش؛ مقصد نمی‌شود
+        LandingPage.objects.create(slug="فرش-12-متری", title="فرش ۱۲ متری", size=Size.objects.get(slug="12-meter"), count=9)
+        color = Attribute.objects.create(slug="background-color", label="رنگ زمینه", is_public=True)
+        beige = AttributeTerm.objects.create(attribute=color, name="بژ", slug="بژ")
+        green_cream = AttributeTerm.objects.create(attribute=color, name="کرم سبز", slug="کرم-سبز")
+        red_t = AttributeTerm.objects.create(attribute=color, name="قرمز", slug="قرمز")
+        t_cream = ProductTag.objects.create(name="فرش زمینه کرم", slug="فرش-زمینه-کرم")
+        t12 = ProductTag.objects.create(name="فرش 12 متری", slug="فرش-12-متری")
+        mig.forwards(apps, None)
+        for o in (beige, green_cream, red_t, t_cream, t12):
+            o.refresh_from_db()
+        self.assertEqual(beige.redirect_url, "/carpets/فرش-کرم/")
+        self.assertEqual(t_cream.redirect_url, "/carpets/فرش-کرم/")
+        self.assertEqual(t12.redirect_url, "/carpets/فرش-12-متری/")
+        self.assertEqual(green_cream.redirect_url, "")   # رنگ ترکیبی صفحهٔ خودش را نگه می‌دارد
+        self.assertEqual(red_t.redirect_url, "")         # صفحهٔ مقصد زنده نیست
+        r = self.client.get("/background-color/بژ/")
+        self.assertEqual(r.status_code, 301)
+        self.assertEqual(unquote(r["Location"]), "/carpets/فرش-کرم/")
