@@ -28,7 +28,7 @@ venv/bin/python manage.py collectstatic --noinput -v0
 chown -R root:www-data . && chmod -R g+rX .
 chmod -R g+rw private && chmod -R o-rwx private
 echo "== کارهای دوره‌ای (هر ۱۰ دقیقه)"
-for U in irancarpet-jobs.service irancarpet-jobs.timer; do
+for U in irancarpet.service irancarpet-jobs.service irancarpet-jobs.timer; do
   cmp -s "deploy/$U" "/etc/systemd/system/$U" || cp "deploy/$U" "/etc/systemd/system/$U"
 done
 systemctl daemon-reload

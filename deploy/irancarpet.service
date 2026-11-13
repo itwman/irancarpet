@@ -4,12 +4,15 @@ Description=IranCarpet Django (gunicorn)
 After=network.target mysql.service
 
 [Service]
+# --max-requests: هر پروسه بعد از حدود ۱۰۰۰ درخواست آرام و بی‌قطعی عوض می‌شود تا حافظه‌ای که درخواست‌های سنگین
+# (فید ترب و فرشستان، نقشهٔ سایت) گرفته‌اند آزاد شود؛ بدون آن هر پروسه تا ۷۰۰ مگابایت بالا رفته بود.
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/irancarpet-django
 EnvironmentFile=/var/www/irancarpet-django/.env
 ExecStart=/var/www/irancarpet-django/venv/bin/gunicorn config.wsgi:application \
     --bind unix:/run/irancarpet/gunicorn.sock --workers 3 --timeout 60 \
+    --max-requests 1000 --max-requests-jitter 200 \
     --access-logfile - --error-logfile -
 RuntimeDirectory=irancarpet
 Restart=always

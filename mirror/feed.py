@@ -102,7 +102,10 @@ def stock(request):
     if request.GET.get("ids"):
         ids = [int(x) for x in request.GET["ids"].split(",") if x.strip().isdigit()][:200]
     picked = request.GET.get("all") != "1"
-    return JsonResponse({"ok": True, "at": timezone.now().isoformat(), "products": [compact(p) for p in _qs(ids, picked)]},
+    # تکه‌تکه (۲۰۰ تایی) تا هزاران فرش با همهٔ سایزها یکجا در حافظهٔ پروسهٔ سایت بار نشوند؛ پایتون حافظهٔ گرفته‌شده را
+    # به سیستم پس نمی‌دهد و هر بار سیر کامل فرشستان حافظهٔ پروسه را صدها مگابایت بالا می‌برد.
+    rows = [compact(p) for p in _qs(ids, picked).iterator(chunk_size=200)]
+    return JsonResponse({"ok": True, "at": timezone.now().isoformat(), "products": rows},
                         json_dumps_params={"ensure_ascii": False})
 
 
