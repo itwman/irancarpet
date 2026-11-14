@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
     def handle(self, apply=False, **opts):
         rx = href_rx()
-        client = Client(HTTP_HOST=host())  # بی User-Agent ← ربات حساب می‌شود و آمار بازدید فرش‌ها بالا نمی‌رود
+        client = Client(HTTP_HOST=host(), raise_request_exception=False)  # بی User-Agent ← ربات حساب می‌شود و آمار بازدید فرش‌ها بالا نمی‌رود
         cache, dead = {}, Counter()
 
         def resolve(path):

@@ -80,3 +80,19 @@ class ProductPageQueryTests(TestCase):
         r = self.client.get(self.url)
         self.assertContains(r, "فرصت ویژهٔ خرید")
         self.assertContains(r, "۳ تخته")
+
+    def test_stale_needs_cache_from_old_code(self):
+        """کش نیازها که نسخهٔ پیشین کد ساخته (بی _parts) نباید صفحهٔ فرش را خراب کند (خطای دیپلوی آبان ۱۴۰۵)."""
+        from finder.models import Need
+
+        need = Need.objects.create(group="color", title="رنگ ۰")
+        need.terms.add(self.colors[0])
+        old = list(Need.objects.filter(is_active=True).prefetch_related("categories", "terms", "exclude_categories"))
+        for n in old:
+            n.usable = True
+        cache.clear()
+        cache.set("finder:needs", old, 300)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        from landing import build
+
+        build.sync(log=lambda *_: None)

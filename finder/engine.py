@@ -57,7 +57,7 @@ def _need_parts(need):
         return parts
     if need.pk:
         for n in active_needs(with_empty=True):
-            if n.pk == need.pk:
+            if n.pk == need.pk and getattr(n, "_parts", None) is not None:  # کش ساخته‌شده با نسخهٔ قبلی _parts ندارد
                 return n._parts
     return _compute_parts(need)
 
@@ -99,6 +99,8 @@ def active_needs(with_empty=False):
     """نیازهای فعال. نیازِ بی‌قاعده فقط برای فهم جمله لازم است (تا «غیر برجسته» با «برجسته» اشتباه نشود)."""
     key = "finder:needs"
     data = cache.get(key)
+    if data is not None and any(not hasattr(n, "_parts") for n in data):  # کش نسخهٔ قبلی کد
+        data = None
     if data is None:
         data = list(Need.objects.filter(is_active=True).prefetch_related("categories", "terms", "exclude_categories"))
         for n in data:
