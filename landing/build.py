@@ -223,11 +223,49 @@ def sync(log=print):
             made += 1
     for lp in LandingPage.objects.all():
         refresh(lp)
+    merged = merge_runner_duplicates()
+    if merged:
+        log(f"صفحه‌های کنارهٔ تکراری: {merged} صفحه با ۳۰۱ به صفحهٔ هم‌فرش رفت")
     from django.core.cache import cache
 
     cache.delete("landing:links")
     log(f"صفحه‌های فرود: {made} تازه، {LandingPage.objects.count()} در کل")
     return made
+
+
+def merge_runner_duplicates():
+    """«کناره ۲×۱»، «۳×۱» و «۴×۱» (هر شانه/رنگ) معمولاً همان فرش‌ها را نشان می‌دهند، چون هر طرح در همهٔ طول‌ها بافته
+    می‌شود؛ سه صفحهٔ یکسان سر یک موضوع رقابت می‌کنند (ممیزی سئو: محتوای تکراری). از هر گروه هم‌فرش، صفحه‌ای که
+    فرش بیشتری دارد (در برابری، کنارهٔ بلندتر) می‌ماند و بقیه غیرفعال و با ۳۰۱ (همهٔ صفحه‌های شماره‌دارشان هم) به آن می‌روند.
+    برگشت: پنل ← صفحه‌های فرود (فعال کردن) و ریدایرکت‌ها (منشأ landing_merge)."""
+    from collections import defaultdict
+
+    from seo.models import Redirect
+
+    from .models import LandingPage
+
+    groups = defaultdict(list)
+    for lp in live().filter(auto=True, size__type="runner", style=None, name_contains="").select_related("size"):
+        groups[(lp.reeds_id, lp.color_id)].append(lp)
+    merged = 0
+    for lps in groups.values():
+        if len(lps) < 2:
+            continue
+        same = defaultdict(list)
+        for lp in lps:
+            same[frozenset(products_of(lp).values_list("pk", flat=True))].append(lp)
+        for ids, pages in same.items():
+            if len(pages) < 2 or not ids:
+                continue
+            pages.sort(key=lambda x: (-x.count, x.size.sort_order, x.pk))
+            keep = pages[0]
+            for lp in pages[1:]:
+                LandingPage.objects.filter(pk=lp.pk).update(is_active=False)
+                Redirect.objects.update_or_create(
+                    source=f"^carpets/{re.escape(lp.slug)}(/.*)?$", match=Redirect.Match.REGEX,
+                    defaults=dict(target=f"/carpets/{keep.slug}/", status_code=301, is_active=True, origin="landing_merge"))
+                merged += 1
+    return merged
 
 
 def live():
