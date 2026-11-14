@@ -175,8 +175,9 @@ class ShopSettings(models.Model):
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        from core.reqmemo import load_singleton
+
+        return load_singleton(cls)
 
     def deposit_amount(self, total):
         """بیعانه، گرد شده به بالا تا هزار تومان."""
@@ -522,7 +523,11 @@ class SpecialOffer(models.Model):
     @property
     def variation(self):
         if not hasattr(self, "_variation"):
-            self._variation = self.product.variations.filter(size=self.size).first()
+            pre = getattr(self.product, "_prefetched_objects_cache", {}).get("variations")
+            if pre is not None:  # live_offers سایزهای فرش را از قبل آورده است
+                self._variation = next((v for v in pre if v.size_id == self.size_id), None)
+            else:
+                self._variation = self.product.variations.filter(size=self.size).first()
         return self._variation
 
     @property
@@ -563,6 +568,8 @@ class SpecialOffer(models.Model):
 
         from django.db.models import Sum
 
+        if hasattr(self, "sold_n"):  # از live_offers
+            return self.sold_n or 0
         return OrderItem.objects.filter(taken_q(), offer=self).aggregate(n=Sum("quantity"))["n"] or 0
 
     @property

@@ -99,8 +99,9 @@ class ContentSettings(models.Model):
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        from core.reqmemo import load_singleton
+
+        return load_singleton(cls)
 
     def pair_list(self):
         return [x.strip() for x in (self.pair_colors or "").replace("،", ",").split(",") if x.strip()]

@@ -48,8 +48,9 @@ class MirrorSettings(models.Model):
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        from core.reqmemo import load_singleton
+
+        return load_singleton(cls)
 
     @property
     def is_target(self):

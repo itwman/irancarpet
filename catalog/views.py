@@ -24,7 +24,7 @@ SORTS = {
 
 def card_queryset(qs):
     return qs.select_related("image", "brand", "seller").only(
-        "title", "slug", "album_id", "min_price", "max_price", "stock_status", "sale_status", "rating_avg", "rating_count",
+        "title", "slug", "album_id", "price_unit", "min_price", "max_price", "stock_status", "sale_status", "rating_avg", "rating_count",
         "image__file", "image__alt", "image__width", "image__height", "brand__name", "published_at", "seller__name", "seller__slug",
     )
 
@@ -320,7 +320,8 @@ def _tag_links(product):
 
 def product_detail(request, slug):
     product = get_object_or_404(
-        Product.objects.select_related("image", "brand", "primary_category", "album__base_size", "seller"), slug=slug
+        Product.objects.select_related("image", "brand", "primary_category", "album__base_size", "seller")
+        .prefetch_related(Prefetch("specs", queryset=AttributeTerm.objects.select_related("attribute"))), slug=slug
     )
     from shop.offers import for_product
 

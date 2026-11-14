@@ -33,13 +33,9 @@ def _cat_ids(cats):
     return ids
 
 
-def need_q(need):
-    """شرط Q روی محصول برای یک نیاز (با زیرپرس‌وجو تا ترکیب «یا»/«و» درست بماند)."""
-    pos = Q(pk__in=[])
+def _compute_parts(need):
     cats = list(need.categories.all())
-    if cats:
-        pos |= Q(pk__in=Product.objects.filter(categories__in=_cat_ids(cats)).values("pk"))
-    terms = list(need.terms.values_list("pk", flat=True))
+    terms = [t.pk for t in need.terms.all()]
     words = split_words(need.term_keywords)
     if words:
         tq = Q()
@@ -49,21 +45,54 @@ def need_q(need):
         if need.term_attribute_id:
             qs = qs.filter(attribute_id=need.term_attribute_id)
         terms += list(qs.values_list("pk", flat=True))
+    ex = list(need.exclude_categories.all())
+    return (sorted(_cat_ids(cats)) if cats else [], sorted(set(terms)), sorted(_cat_ids(ex)) if ex else [])
+
+
+def _need_parts(need):
+    """شناسهٔ دسته‌ها (با زیرشاخه‌ها) و ویژگی‌های هر نیاز؛ برای نیازهای فعال همراه فهرست کش‌شدهٔ نیازها نگه داشته می‌شود
+    تا ساختن شرط نیاز در صفحهٔ محصول هیچ پرس‌وجویی نزند."""
+    parts = getattr(need, "_parts", None)
+    if parts is not None:
+        return parts
+    if need.pk:
+        for n in active_needs(with_empty=True):
+            if n.pk == need.pk:
+                return n._parts
+    return _compute_parts(need)
+
+
+def need_q(need):
+    """شرط Q روی محصول برای یک نیاز (با زیرپرس‌وجو تا ترکیب «یا»/«و» درست بماند)."""
+    cat_ids, terms, ex_ids = _need_parts(need)
+    pos = Q(pk__in=[])
+    if cat_ids:
+        pos |= Q(pk__in=Product.objects.filter(categories__in=cat_ids).values("pk"))
     if terms:
         pos |= Q(pk__in=Product.objects.filter(specs__in=terms).values("pk"))
     for w in split_words(need.title_keywords):
         pos |= Q(title__icontains=w)
     neg = Q()
-    ex = list(need.exclude_categories.all())
-    if ex:
-        neg |= Q(pk__in=Product.objects.filter(categories__in=_cat_ids(ex)).values("pk"))
+    if ex_ids:
+        neg |= Q(pk__in=Product.objects.filter(categories__in=ex_ids).values("pk"))
     for w in split_words(need.exclude_keywords):
         neg |= Q(title__icontains=w)
     return pos & ~neg if neg else pos
 
 
+def needs_of(product, needs):
+    """کدام نیازها این فرش را دارند — با یک پرس‌وجو به‌جای یکی برای هر نیاز."""
+    from django.db.models import Count
+
+    needs = list(needs)
+    if not needs or not product.pk:
+        return []
+    row = Product.objects.filter(pk=product.pk).aggregate(**{f"n{n.pk}": Count("pk", filter=need_q(n)) for n in needs})
+    return [n for n in needs if row.get(f"n{n.pk}")]
+
+
 def has_rules(need):
-    return bool(need.title_keywords.strip() or need.term_keywords.strip() or need.categories.exists() or need.terms.exists())
+    return bool(need.title_keywords.strip() or need.term_keywords.strip() or bool(need.categories.all()) or bool(need.terms.all()))
 
 
 def active_needs(with_empty=False):
@@ -74,6 +103,7 @@ def active_needs(with_empty=False):
         data = list(Need.objects.filter(is_active=True).prefetch_related("categories", "terms", "exclude_categories"))
         for n in data:
             n.usable = has_rules(n)
+            n._parts = _compute_parts(n)
         cache.set(key, data, 300)
     return data if with_empty else [n for n in data if n.usable]
 

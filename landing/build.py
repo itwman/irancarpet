@@ -255,11 +255,11 @@ def product_links(product, limit=6):
     key = f"landing:p:{product.pk}"
     ids = cache.get(key)
     if ids is None:
-        from finder.engine import active_needs, need_q
+        from finder.engine import active_needs, needs_of
 
-        reeds = list(product.specs.filter(Q(attribute__slug="reeds-per-meter") | Q(attribute__label="شانه")).values_list("pk", flat=True))
-        colors = [n.pk for n in active_needs() if n.group == "color"
-                  and Product.objects.filter(pk=product.pk).filter(need_q(n)).exists()]
+        reeds = [t.pk for t in product.specs.all()
+                 if t.attribute.slug == "reeds-per-meter" or t.attribute.label == "شانه"]
+        colors = [n.pk for n in needs_of(product, [n for n in active_needs() if n.group == "color"])]
         sizes = list(product.variations.filter(is_available=True).values_list("size_id", flat=True))
         qs = live().filter(style=None)
         q = Q(pk__in=[])
@@ -267,8 +267,14 @@ def product_links(product, limit=6):
             q |= Q(reeds_id=r, size_id__in=sizes) | Q(reeds_id=r, color_id__in=colors)
         q |= Q(reeds=None, color_id__in=colors, size_id__in=sizes)
         # صفحه‌های دستی (نقشه، سبک، سجاده‌ای رنگی، قالیچه) اول؛ فقط اگر همین فرش در آن صفحه هست
-        manual = [lp.pk for lp in live().filter(auto=False).order_by("-count")[:20]
-                  if products_of(lp).filter(pk=product.pk).exists()]
+        pages = list(live().filter(auto=False).select_related("color", "style").order_by("-count")[:20])
+        manual = []
+        if pages:  # همه در یک پرس‌وجو: این فرش در کدام صفحهٔ دستی هست؟
+            from django.db.models import Count
+
+            row = Product.objects.filter(pk=product.pk).aggregate(
+                **{f"l{lp.pk}": Count("pk", filter=Q(pk__in=products_of(lp).values("pk"))) for lp in pages})
+            manual = [lp.pk for lp in pages if row.get(f"l{lp.pk}")]
         ids = manual[:3] + [i for i in qs.filter(q).order_by("-count").values_list("pk", flat=True)[:limit] if i not in manual]
         ids = ids[:limit]
         cache.set(key, ids, 3600)

@@ -36,17 +36,15 @@ def _specs(p):
 def _color_family(p, color_ids):
     """محصولات هم‌خانوادهٔ رنگ (نیازهای رنگی فرش‌یاب که این فرش را دارند)."""
     try:
-        from finder.engine import active_needs, need_q
+        from finder.engine import active_needs, need_q, needs_of
     except Exception:  # noqa: BLE001
         return Product.objects.none()
     from django.db.models import Q
 
+    found = needs_of(p, [n for n in active_needs() if n.group == "color"])
     q = Q(pk__in=[])
-    found = False
-    for n in active_needs():
-        if n.group == "color" and Product.objects.filter(pk=p.pk).filter(need_q(n)).exists():
-            q |= need_q(n)
-            found = True
+    for n in found:
+        q |= need_q(n)
     return Product.objects.filter(q) if found else Product.objects.none()
 
 

@@ -24,6 +24,13 @@ def taken_q(prefix=""):
 def live_offers(sellers=False):
     """فرصت‌های فعال (با تعداد باقی‌مانده)؛ ۶۰ ثانیه کش.
     sellers=False: فقط فرصت‌های خود فروشگاه (صفحهٔ فرش جشنواره‌ای، صفحهٔ اول، پیامک‌ها)؛ True: فرصت فروشندگان بازارچه هم."""
+    from core.reqmemo import memo
+
+    out = memo("offers:live", _all_live)  # در یک درخواست چند بار خوانده می‌شود (صفحهٔ فرش، مرتبط‌ها)
+    return list(out) if sellers else [o for o in out if o.product.seller_id is None]
+
+
+def _all_live():
     from .models import SpecialOffer
 
     ids = cache.get(CACHE_KEY)
@@ -34,14 +41,14 @@ def live_offers(sellers=False):
               .filter(Q(_sold__isnull=True) | Q(_sold__lt=F("quantity"))))
         ids = list(qs.values_list("pk", flat=True))
         cache.set(CACHE_KEY, ids, 60)
-    out = []
-    qs = SpecialOffer.objects.filter(pk__in=ids)
-    if not sellers:
-        qs = qs.filter(product__seller__isnull=True)
-    for o in qs.select_related("product__image", "product__album", "size").order_by("-created_at"):
-        if o.is_live:
-            out.append(o)
-    return out
+    if not ids:
+        return []
+    # فروخته‌شده و سایزهای فرش همراه همین پرس‌وجو، تا هر فرصت جداگانه پرس‌وجو نزند
+    qs = (SpecialOffer.objects.filter(pk__in=ids)
+          .annotate(sold_n=Sum("items__quantity", filter=taken_q("items__")))
+          .select_related("product__image", "product__album", "size")
+          .prefetch_related("product__variations").order_by("-created_at"))
+    return [o for o in qs if o.is_live]
 
 
 def clear():

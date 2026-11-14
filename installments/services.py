@@ -8,14 +8,19 @@ from .models import InstallmentPlan
 def page_url():
     """آدرس برگهٔ «خرید اقساطی» (اگر منتشر شده باشد)."""
     from blog.models import Page
+    from core.reqmemo import memo
 
-    p = Page.objects.filter(template="installment", status="publish").first()
-    return p.get_absolute_url() if p else ""
+    def get():
+        p = Page.objects.filter(template="installment", status="publish").first()
+        return p.get_absolute_url() if p else ""
+
+    return memo("inst:page_url", get)
 
 
 def active_plans(total=None):
-    qs = InstallmentPlan.objects.filter(is_active=True)
-    plans = list(qs)
+    from core.reqmemo import memo
+
+    plans = list(memo("inst:plans", lambda: list(InstallmentPlan.objects.filter(is_active=True))))
     if total is not None:
         plans = [p for p in plans if not p.min_order_amount or total >= p.min_order_amount]
     return plans
