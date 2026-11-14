@@ -145,7 +145,7 @@ class DupProductsTests(TestCase):
         c = Product.objects.create(title="فرش یکتا", slug="unique")
         out = StringIO()
         call_command("dup_products", stdout=out)
-        self.assertIn("گروه تکراری: 1", out.getvalue())
+        self.assertIn("فرش تکراری که ۳۰۱ می‌شود: 1", out.getvalue())
         b.refresh_from_db()
         self.assertEqual(b.status, "publish")
         call_command("dup_products", "--apply", stdout=StringIO())
@@ -155,3 +155,19 @@ class DupProductsTests(TestCase):
         r = self.client.get("/product/panizh-2/")
         self.assertEqual(r.status_code, 301)
         self.assertEqual(unquote(r["Location"]), "/product/panizh/")
+
+    def test_same_name_other_album_is_not_merged(self):
+        seed_sizes()
+        size = Size.objects.get(slug="12-meter")
+        mehr = Album.objects.create(name="700 شانه ساده آلبوم مهر", code="M", base_size=size, base_price=Decimal("1"), shipping_fixed=0, waste_value=0)
+        jahan = Album.objects.create(name="700 شانه ساده آلبوم جهان", code="J", base_size=size, base_price=Decimal("1"), shipping_fixed=0, waste_value=0)
+        a = Product.objects.create(title="فرش نیلا", slug="nila-2", album=mehr, views=5)
+        b = Product.objects.create(title="فرش نیلا", slug="nila-3", album=jahan, views=9)
+        old = Product.objects.create(title="فرش نیلا", slug="nila", stock_status="outofstock", views=90)
+        call_command("dup_products", "--apply", stdout=StringIO())
+        for o in (a, b, old):
+            o.refresh_from_db()
+        self.assertEqual((a.status, b.status, old.status), ("publish", "publish", "draft"))
+        self.assertEqual(a.seo_title, "فرش نیلا | آلبوم مهر")
+        self.assertEqual(b.seo_title, "فرش نیلا | آلبوم جهان")
+        self.assertEqual(unquote(self.client.get("/product/nila/")["Location"]), "/product/nila-3/")  # بی‌آلبوم ← پربازدیدترین زنده
