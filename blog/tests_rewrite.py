@@ -259,3 +259,22 @@ class RewriteHoldTests(TestCase):
             self.assertNotIn(rw.pk, rewrite.schedule(t))
             rewrite.load_plan([{"rank": 3, "slug": post.slug, "kind": "city"}])  # نگه‌داشت برداشته شد
             self.assertEqual(rewrite.publish_due(t), 1)
+
+
+class DraftPreviewTests(TestCase):
+    def test_staff_sees_queued_text_public_gets_404(self):
+        from django.contrib.auth import get_user_model
+
+        cache.clear()
+        rewrite.load_plan([{"rank": 1, "slug": "مقاله-تازه", "kind": "guide", "new": True}])
+        d = sample()
+        d.update(slug="مقاله-تازه", new=True, title="مقالهٔ تازه")
+        rewrite.import_data(d, "a")
+        post = Post.objects.get(slug="مقاله-تازه")
+        self.assertNotEqual(post.status, "publish")
+        self.assertEqual(self.client.get("/مقاله-تازه/").status_code, 404)
+        boss = get_user_model().objects.create_user("boss", password="x" * 10, is_staff=True, is_superuser=True)
+        self.client.force_login(boss)
+        r = self.client.get("/مقاله-تازه/")
+        self.assertContains(r, "هنوز منتشر نشده")
+        self.assertContains(r, d["content"][:30])

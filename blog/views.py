@@ -88,7 +88,16 @@ def post_detail(request, post, preview=False):
     from . import landing
     from .tidy import tidy
 
-    content = tidy(post.content, post.title, phone=_site_mobile(), self_path=post.get_absolute_url())
+    draft_note = ""
+    src = post.content
+    if post.status != "publish":  # فقط مدیر این‌جاست: پیش‌نمایش مقالهٔ صف بازنویسی که هنوز منتشر نشده
+        rw = post.rewrite if hasattr(post, "rewrite") else None
+        if rw is not None and rw.content and not (src or "").strip():
+            src = rw.content
+        draft_note = ("این مقاله هنوز منتشر نشده و فقط مدیر آن را می‌بیند؛ بازدیدکننده و گوگل «صفحه پیدا نشد» می‌گیرند."
+                      + (" متن آماده در صف بازنویسی است و در نوبتش منتشر می‌شود؛ برای انتشار زودتر در پنل ← بازنویسی مقاله‌ها «تأیید» را بزنید."
+                         if rw is not None else ""))
+    content = tidy(src, post.title, phone=_site_mobile(), self_path=post.get_absolute_url())
     live = landing.has_blocks(content)
     content = landing.render(content, request, title=post.title) if live else content
     if live:
@@ -109,7 +118,7 @@ def post_detail(request, post, preview=False):
 
     return render(request, "blog/post_detail.html", {
         "abroad_notice": ShopSettings.load().abroad_notice_for(post.slug),
-        "meta": meta, "post": post, "crumbs": crumbs, "related": related, "author": author, **side,
+        "meta": meta, "post": post, "crumbs": crumbs, "related": related, "author": author, "draft_note": draft_note, **side,
         "comments": post.comments.filter(is_approved=True, parent=None).prefetch_related("replies"),
         "jsonld": json.dumps(jsonld, ensure_ascii=False), "content": content, "live": live,
         "price_updated": landing.last_price_update() if live else None,

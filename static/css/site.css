@@ -1919,3 +1919,6 @@ body.has-app-bar{padding-bottom:64px}
 .author-head__links a{margin-inline-end:1rem}
 .author-count{font-size:1.1rem;margin:0 0 1rem}
 @media (max-width:600px){.author-head{flex-direction:column;align-items:center;text-align:center}}
+
+/* پیام پیش‌نمایش مدیر (مقالهٔ منتشرنشده) */
+.notice--warn{margin:0 0 1rem;padding:.75rem 1rem;border-radius:12px;background:#fff6e0;border:1px solid #f0c060;color:#5a4300;line-height:1.9}

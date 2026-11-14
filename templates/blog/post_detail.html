@@ -7,6 +7,7 @@
     <div class="post-main">
       <article class="article">
         <header>
+          {% if draft_note %}<div class="notice notice--warn" role="status">{{ draft_note }}</div>{% endif %}
           <h1>{{ post.title }}</h1>
           <p class="muted">{% if price_updated %}قیمت‌ها و شرایط به‌روز در <time datetime="{{ price_updated|date:'c' }}">{{ price_updated|jdate }}</time>{% else %}<time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|jdate }}</time>{% endif %}{% if author %} · نوشتهٔ <a href="{{ author.get_absolute_url }}" rel="author">{{ author.name }}</a>{% elif post.author_name %} · {{ post.author_name }}{% endif %}</p>
         </header>
