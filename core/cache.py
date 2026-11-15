@@ -9,6 +9,7 @@
   - اگر باز هم فایلی خواندنی نبود، مثل «نبودن در کش» رفتار می‌شود، نه خطا.
 """
 import os
+import random
 
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
 from django.core.cache.backends.filebased import FileBasedCache
@@ -40,3 +41,12 @@ class SharedFileCache(FileBasedCache):
             super()._createdir()
         finally:
             os.umask(old)
+
+
+class PageFileCache(SharedFileCache):
+    """کش تکه‌های صفحهٔ فرش (هزاران فایل). جنگو در هر set کل پوشه را می‌شمارد تا بیش از سقف را پاک کند؛
+    با ده‌ها هزار فایل این شمارش خودش کند است، پس فقط در درصد کمی از نوشتن‌ها انجام می‌شود."""
+
+    def _cull(self):
+        if random.random() < 0.02:
+            super()._cull()

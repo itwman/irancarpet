@@ -7,12 +7,16 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from catalog.models import Attribute, AttributeTerm, Brand, Category, Product, ProductTag
 from pricing.albums import sync_album_variations
 from pricing.models import Album, Size, seed_sizes
+
+
+PAGES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+         "pages": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "pages-test"}}
 
 
 class ProductPageQueryTests(TestCase):
@@ -96,3 +100,27 @@ class ProductPageQueryTests(TestCase):
         from landing import build
 
         build.sync(log=lambda *_: None)
+
+    @override_settings(CACHES=PAGES)
+    def test_page_cache(self):
+        """بخش‌های سنگین صفحهٔ فرش یک ساعت آماده می‌مانند؛ ویرایش فرش از پنل بلافاصله دیده می‌شود."""
+        from django.core.cache import caches
+
+        caches["pages"].clear()
+        first = self.count()
+        second = self.count()
+        self.assertLess(second, first - 5)
+        p = self.products[0]
+        p.content = "<p>متن تازهٔ فرش</p>"
+        p.use_template = False
+        p.save()
+        self.assertContains(self.client.get(self.url), "متن تازهٔ فرش")
+
+    @override_settings(CACHES=PAGES)
+    def test_farshestan_not_cached(self):
+        from django.core.cache import caches
+
+        caches["pages"].clear()
+        with self.settings(SITE_THEME="farshestan"):
+            self.client.get(self.url)
+        self.assertIsNone(caches["pages"].get(f"pd:{self.products[0].pk}:{int(self.products[0].modified_at.timestamp())}"))

@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% load fa %}
+{% extends "base.html" %}{% load fa cache %}
 {% block og %}<meta property="og:type" content="product">{% if product.image %}<meta property="og:image" content="{{ product.image.absolute_url }}">{% endif %}{% endblock %}
 {% block head %}<meta name="ic-pid" content="{{ product.pk }}">{% with m=gallery.0 %}{% if m %}<link rel="preload" as="image" href="{{ m|thumb:960 }}" imagesrcset="{{ m|thumb:480 }} 480w, {{ m|thumb:960 }} 960w" imagesizes="(max-width: 992px) 100vw, 600px" fetchpriority="high">{% endif %}{% endwith %}{% endblock %}
 {% block content %}
@@ -179,6 +179,7 @@
     {% endfor %}
   </section>
 
+  {% cache 3600 pd_bottom product.pk product.modified_at|date:"U" using="pages" %}{# جستجوهای مرتبط، مشابه‌ها و مجموعه: یک ساعت آماده #}
   {% if landing_links or tag_links %}
   <nav class="lp-related" aria-label="جستجوهای مرتبط"><h2>جستجوهای مرتبط</h2>
     <div class="chips">{% for t in tag_links %}<a class="chip" href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% endfor %}{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>
@@ -196,6 +197,7 @@
     <div class="p-grid">{% for p in collection.items %}{% include "partials/product_card.html" %}{% endfor %}</div>
   </section>
   {% endif %}
+  {% endcache %}
 </div>
 {% endblock %}
 {% block scripts %}{% load static %}<script src="{% static 'js/product-tools.js' %}?v={{ ASSET_V }}" defer></script>{% if offers %}<script src="{% static 'js/countdown.js' %}?v={{ ASSET_V }}" defer></script>{% endif %}<script>

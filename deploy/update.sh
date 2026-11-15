@@ -8,8 +8,8 @@ git pull --ff-only
 echo "== کتابخانه‌ها"
 bash deploy/pip_install.sh "$(pwd)"
 echo "== پوشهٔ خصوصی و کش فایلی (قبل از migrate، تا فایل‌های کشی که root می‌سازد برای www-data هم خواندنی باشد)"
-mkdir -p private/cache
-chgrp -R www-data private && chmod 2770 private private/cache
+mkdir -p private/cache/pages
+chgrp -R www-data private && chmod 2770 private private/cache private/cache/pages
 echo "== جدول‌ها"
 venv/bin/python manage.py migrate --noinput
 echo "== اجازهٔ نوشتن در پوشهٔ تصاویر (برای آپلود از پنل)"

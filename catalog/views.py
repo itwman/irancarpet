@@ -349,42 +349,21 @@ def product_detail(request, slug):
     questions = product.reviews.filter(is_approved=True, parent=None, kind="question").prefetch_related(
         Prefetch("replies", queryset=Review.objects.filter(is_approved=True))
     ).order_by("-created_at")[:30]
-    from .related import related_products
-
-    related = related_products(product, cat)
     from core.viewcount import hit
 
     hit("p", product.pk, request)
-
-    from content.render import build as build_doc, color_siblings, design_of
-
-    doc = build_doc(product, variations)
-    siblings = color_siblings(product)
-    from .related import collection_for
-
-    collection = collection_for(product, [x.pk for x in related] + [s["product"].pk for s in siblings or []])
-    if siblings:
-        from api.serializers import thumb_url
-
-        for x in siblings:
-            x["thumb"] = thumb_url(x["product"].image, 240) if x["product"].image_id else ""
     m = seo.build(product, "product", extra={"wc_price": f"{product.min_price:,}" if product.min_price else ""})
     from .video import info as video_info, schema as video_schema
 
     video = video_info(product)
-    vschema = video_schema(product, video)
+    heavy = _product_heavy(product, cat, variations, gallery, crumbs, specs, video_schema(product, video))
     ctx = {
         "meta": m, "product": product, "variations": variations, "specs": specs, "gallery": gallery,
-        "crumbs": crumbs, "reviews": reviews, "questions": questions, "related": related, "pricing": PricingSettings.load(),
+        "crumbs": crumbs, "reviews": reviews, "questions": questions, "pricing": PricingSettings.load(),
         "faqs": product.faqs.filter(is_active=True),
-        "landing_links": _landing_links(product),
-        "tag_links": _tag_links(product),
-        "collection": collection,
-        "doc": doc, "siblings": siblings, "offers": offers, "offer_vids": {o.variation.pk for o in offers}, "design": design_of(product) if siblings else "",
-        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
-                             ensure_ascii=False),
+        **heavy,
+        "offers": offers, "offer_vids": {o.variation.pk for o in offers},
         "video": video, "alert_kind": "price" if product.is_purchasable else "stock",
-        "warranty": _warranty(product),
         "faved": request.user.is_authenticated and __import__("api.models", fromlist=["Wishlist"]).Wishlist.objects.filter(
             user=request.user, product=product).exists(),
         "review_photos": ReviewPhoto.objects.filter(review__product=product, review__is_approved=True).order_by("-pk")[:12],
@@ -417,6 +396,53 @@ def product_detail(request, slug):
 
         ctx["season"] = state()
     return render(request, "catalog/product_detail.html", ctx)
+
+
+PAGE_TTL = 3600  # مدیر گفته تا یک ساعت دیرتر دیده شدن تغییر قیمت/متن در صفحهٔ فرش مهم نیست (آبان ۱۴۰۵)
+
+
+def _product_heavy(product, cat, variations, gallery, crumbs, specs, vschema):
+    """بخش‌های سنگین و یکسان برای همهٔ بازدیدکننده‌ها: توضیحات ساخته‌شده از قالب، رنگ‌های دیگر، مرتبط‌ها، مجموعه،
+    پیوندهای جستجوی مرتبط و JSON-LD. روی ایران کارپت یک ساعت (به‌ازای هر ویرایش فرش جدا) نگه داشته می‌شود؛
+    قیمت جدول سایزها، فرصت‌های ویژه، نظرها و علاقه‌مندی هر بار تازه خوانده می‌شوند. فرشستان بی‌کش."""
+    from django.core.cache import caches
+
+    use = settings.SITE_THEME != "farshestan" and product.status == Product.Status.PUBLISH
+    key = f"pd:{product.pk}:{int(product.modified_at.timestamp())}" if use else ""
+    if use:
+        try:
+            got = caches["pages"].get(key)
+        except Exception:  # noqa: BLE001 — کش خراب نباید صفحه را از کار بیندازد
+            got = None
+        if got is not None:
+            return got
+    from content.render import build as build_doc, color_siblings, design_of
+
+    from .related import collection_for, related_products
+
+    related = related_products(product, cat)
+    doc = build_doc(product, variations)
+    siblings = color_siblings(product)
+    collection = collection_for(product, [x.pk for x in related] + [s["product"].pk for s in siblings or []])
+    if siblings:
+        from api.serializers import thumb_url
+
+        for x in siblings:
+            x["thumb"] = thumb_url(x["product"].image, 240) if x["product"].image_id else ""
+    heavy = {
+        "related": list(related), "doc": doc, "siblings": siblings, "collection": collection,
+        "design": design_of(product) if siblings else "",
+        "landing_links": list(_landing_links(product)), "tag_links": list(_tag_links(product)),
+        "warranty": _warranty(product),
+        "jsonld": json.dumps(product_jsonld(product, variations, gallery, crumbs, specs, doc) + ([vschema] if vschema else []),
+                             ensure_ascii=False),
+    }
+    if use:
+        try:
+            caches["pages"].set(key, heavy, PAGE_TTL)
+        except Exception:  # noqa: BLE001
+            pass
+    return heavy
 
 
 def _warranty(product):

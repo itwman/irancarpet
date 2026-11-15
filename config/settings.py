@@ -148,11 +148,18 @@ PASSWORD_HASHERS = [
 # کش مشترک بین همهٔ پردازه‌های gunicorn (تا تغییرات پنل فوراً همه‌جا دیده شود)
 # کش فایلی (core/cache.py): بدون کوئری و بدون نوشتن در binlog مای‌اسکیوال. در آزمون‌ها حافظه‌ای، تا اجراها به هم نچسبند.
 _TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+_CACHE_DIR = os.environ.get("CACHE_DIR") or str(Path(os.environ.get("PRIVATE_ROOT", BASE_DIR / "private")) / "cache")
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"} if _TESTING else {
     "BACKEND": "core.cache.SharedFileCache",
-    "LOCATION": os.environ.get("CACHE_DIR") or str(Path(os.environ.get("PRIVATE_ROOT", BASE_DIR / "private")) / "cache"),
+    "LOCATION": _CACHE_DIR,
     "OPTIONS": {"MAX_ENTRIES": 3000, "CULL_FREQUENCY": 3},
 }}
+# تکه‌های آماده‌شدهٔ صفحهٔ فرش (توضیحات، رنگ‌های دیگر، مرتبط‌ها) — یک ساعت؛ پوشهٔ جدا تا کش اصلی را بیرون نریزد
+CACHES["pages"] = {"BACKEND": "django.core.cache.backends.dummy.DummyCache"} if _TESTING else {  # در تست‌ها خاموش (شناسه‌ها تکرار می‌شوند)
+    "BACKEND": "core.cache.PageFileCache",
+    "LOCATION": str(Path(_CACHE_DIR) / "pages"),
+    "OPTIONS": {"MAX_ENTRIES": 40000, "CULL_FREQUENCY": 4},
+}
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
 FILE_UPLOAD_PERMISSIONS = 0o664
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o2775
