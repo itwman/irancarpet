@@ -627,3 +627,15 @@ a.dsh-kpi--lead:hover{color:#fff;box-shadow:0 0 0 2px var(--pink)}
 .side__link mark{background:rgba(255,178,30,.35);color:#fff;padding:0;border-radius:3px}
 .side__find input:not(:placeholder-shown)~kbd{display:none}
 .side__find input::-webkit-search-cancel-button{filter:invert(1);opacity:.6}
+
+/* سلامت سایت (آبان ۱۴۰۵) */
+.hl-row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-top:1px solid var(--line,#e7e3da)}
+.hl-row:first-of-type{border-top:0}
+.hl-dot{flex:none;width:.65rem;height:.65rem;border-radius:50%;background:#2f9e6b}
+.hl-warn .hl-dot{background:#d99a1e}
+.hl-bad .hl-dot{background:#c8423b}
+.hl-main{flex:1;min-width:0}
+.hl-n{font-weight:700;font-variant-numeric:tabular-nums;min-width:3ch;text-align:left}
+.hl-ok .hl-n{color:var(--muted,#7a7468)}
+.hl-bad{color:inherit}
+strong.hl-bad{color:#c8423b}

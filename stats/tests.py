@@ -216,3 +216,32 @@ class BotSignalTests(__import__("django.test", fromlist=["TestCase"]).TestCase):
         self.assertTrue(self.check(self.WIN, ch="", **bot))                              # کروم ۱۱۶ بی‌userAgentData
         self.assertTrue(self.check(self.WIN, ch="116", **bot))                           # شانگهای + ماوس آنی + بی‌فارسی
         self.assertTrue(self.check(self.WIN, ch="116", **{**human, "gl": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))"}))
+
+
+class InsightReportsTests(TestCase):
+    def test_pages_render(self):
+        from django.contrib.auth import get_user_model
+
+        from catalog.models import Product
+        from growth.models import SearchLog
+        from seo.models import NotFoundLog, Redirect
+        from stats.models import DailyProduct, DailyTotal
+
+        u = get_user_model().objects.create_user("admin", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+        p = Product.objects.create(title="فرش 700 شانه نقشه نیلا", slug="nila")
+        today = timezone.localdate()
+        DailyProduct.objects.create(day=today, product_id=p.pk, views=40, carts=2)
+        DailyTotal.objects.create(day=today, views=100, visits=50)
+        SearchLog.objects.create(query="فرش زرد", source="web", hits=5, results=0)
+        NotFoundLog.objects.create(path="old/x", hits=9)
+        Redirect.objects.create(source="a", target="/b/")
+        Redirect.objects.create(source="b", target="/c/")
+        r = self.client.get("/panel/reports/health/")
+        self.assertContains(r, "ریدایرکت زنجیره‌ای")
+        self.assertContains(r, "old/x")
+        r = self.client.get("/panel/reports/insights/")
+        self.assertContains(r, "فرش زرد")
+        self.assertContains(r, "نیلا")  # جهش و پربازدید بی‌فروش
+        r = self.client.get("/panel/reports/compare/?d=7")
+        self.assertContains(r, "نرخ تبدیل")

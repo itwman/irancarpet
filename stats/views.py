@@ -62,3 +62,28 @@ def campaign_view(request, pk):
 
     c = get_object_or_404(Campaign, pk=pk)
     return render(request, "stats/campaign.html", {"c": c, "r": reports.campaign(c)})
+
+
+@staff_required
+def health_view(request):
+    from .insights import health
+
+    return render(request, "stats/health.html", {"h": health()})
+
+
+@staff_required
+def insights_view(request):
+    from .insights import opportunities
+
+    days = int(request.GET.get("d") or 30) if (request.GET.get("d") or "30") in ("7", "30", "90") else 30
+    return render(request, "stats/insights.html", {"x": opportunities(days), "d": str(days),
+                                                   "periods": [("7", "۷ روز"), ("30", "۳۰ روز"), ("90", "۳ ماه")]})
+
+
+@staff_required
+def compare_view(request):
+    from .insights import compare
+
+    days = int(request.GET.get("d") or 30) if (request.GET.get("d") or "30") in ("7", "30", "90", "365") else 30
+    return render(request, "stats/compare.html", {"c": compare(days), "d": str(days),
+                                                  "periods": [("7", "۷ روز"), ("30", "۳۰ روز"), ("90", "۳ ماه"), ("365", "یک سال")]})

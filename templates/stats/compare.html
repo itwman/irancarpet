@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}مقایسهٔ دو بازه{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>مقایسهٔ دو بازه</h1>
+    <p class="muted">{{ c.a.0|jdate:"%d %B" }} تا {{ c.a.1|jdate:"%d %B %Y" }} در برابر {{ c.b.0|jdate:"%d %B" }} تا {{ c.b.1|jdate:"%d %B %Y" }}؛ سفارش‌ها با وضعیت امروزشان.</p></div>
+</div>
+<nav class="tabs-p" aria-label="طول بازه">{% for k, t in periods %}<a href="?d={{ k }}" class="{% if k == d %}on{% endif %}">{{ t }}</a>{% endfor %}</nav>
+<section class="card-p"><div class="table-wrap"><table class="tbl"><thead><tr><th>شاخص</th><th>این بازه</th><th>بازهٔ قبل</th><th>تغییر</th></tr></thead><tbody>
+  {% for m in c.metrics %}<tr><td>{{ m.label }}</td><td class="num">{% if m.money %}{{ m.now|toman }}{% else %}{{ m.now|fa_num }}{% endif %}</td><td class="num">{% if m.money %}{{ m.before|toman }}{% else %}{{ m.before|fa_num }}{% endif %}</td>
+    <td>{% if m.pct is None %}—{% elif m.pct > 0 %}<span class="dsh-d dsh-d--up">▲ {{ m.pct|fa_num }}٪</span>{% elif m.pct < 0 %}<span class="dsh-d dsh-d--down">▼ {{ m.pct|cut:"-"|fa_num }}٪</span>{% else %}<span class="dsh-d">بدون تغییر</span>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></section>
+<div class="grid-2">
+  {% for dim in c.dims %}<section class="card-p"><h2>{{ dim.label }} <small class="muted">(تخته)</small></h2>
+    {% if dim.rows %}<div class="table-wrap"><table class="tbl tbl-sm"><thead><tr><th></th><th>این بازه</th><th>قبل</th><th>تغییر</th><th>فروش این بازه</th></tr></thead><tbody>
+    {% for r in dim.rows %}<tr><td>{{ r.k|fa_num }}</td><td>{{ r.now|fa_num }}</td><td>{{ r.before|fa_num }}</td>
+      <td>{% if r.pct is None %}{% if r.now %}<span class="dsh-d dsh-d--up">تازه</span>{% endif %}{% elif r.pct > 0 %}<span class="dsh-d dsh-d--up">▲ {{ r.pct|fa_num }}٪</span>{% elif r.pct < 0 %}<span class="dsh-d dsh-d--down">▼ {{ r.pct|cut:"-"|fa_num }}٪</span>{% endif %}</td>
+      <td class="num">{{ r.s|toman }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted">در این دو بازه فروشی نیست.</p>{% endif %}
+  </section>{% endfor %}
+</div>
+{% endblock %}

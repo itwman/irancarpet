@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}سلامت سایت{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>سلامت سایت</h1>
+    <p class="muted">مشکل‌هایی که فروش یا گوگل را تحت تأثیر می‌گذارند، با پیوند به جای رفعشان. {% if h.bad %}<strong class="hl-bad">{{ h.bad|fa_num }} مورد فوری</strong>{% endif %}{% if h.warn %}{% if h.bad %}، {% endif %}{{ h.warn|fa_num }} مورد قابل بررسی.{% endif %}{% if not h.bad and not h.warn %}همه‌چیز رو به راه است.{% endif %}</p></div>
+</div>
+<div class="edit__grid">
+  <div class="edit__main">
+    {% regroup h.rows by group as groups %}
+    {% for g in groups %}<section class="card-p"><h2>{{ g.grouper }}</h2>
+      {% for r in g.list %}<div class="hl-row hl-{{ r.level }}">
+        <span class="hl-dot" aria-hidden="true"></span>
+        <div class="hl-main"><strong>{{ r.title|fa_num }}</strong>{% if r.hint %}<small class="muted d-block">{{ r.hint|fa_num }}</small>{% endif %}</div>
+        <span class="hl-n">{{ r.n|fa_num }}</span>
+        {% if r.url and r.n %}<a class="btn btn-sm btn-light" href="{{ r.url }}">بررسی</a>{% endif %}
+      </div>{% endfor %}
+    </section>{% endfor %}
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>پرتکرارترین ۴۰۴های هفته</h2>
+      {% for n in h.top404 %}<div class="kv"><span class="small ltr-num" dir="auto">{{ n.path|truncatechars:40 }}</span><strong>{{ n.hits|fa_num }}</strong></div>
+      {% empty %}<p class="muted">در هفتهٔ اخیر صفحهٔ ناموجودی دیده نشده.</p>{% endfor %}
+      {% if h.top404 %}<a class="small" href="/panel/notfound/">همه و ریدایرکت کردن</a>{% endif %}
+    </section>
+    {% if h.chains %}<section class="card-p"><h2>ریدایرکت‌های زنجیره‌ای</h2>
+      {% for r in h.chains %}<div class="small ltr-num" dir="auto">/{{ r.source|truncatechars:34 }} → {{ r.target|truncatechars:34 }}</div>{% endfor %}
+    </section>{% endif %}
+  </div>
+</div>
+{% endblock %}

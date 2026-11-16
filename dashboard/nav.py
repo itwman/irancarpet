@@ -1,4 +1,4 @@
-"""چیدمان منوی پنل مدیریت: پرکاربردها بالا، ابزارهای کم‌کاربرد زیر یک عنوان کوچک.
+"""چیدمان منوی پنل مدیریت (مثل پرشین پی‌دی‌اف): همهٔ گزارش‌ها در گروه اول، هر گروه با زیرعنوان‌های کوچک.
 
 هر گروه: (عنوان، آیکن، ردیف‌ها). ردیف‌ها:
   "کلید"                 ← بخشی از REGISTRY (عنوان و آیکن از خودش)
@@ -9,24 +9,35 @@
 """
 
 LAYOUT = [
+    ("گزارش‌ها", "list", [
+        ("سلامت سایت", "/panel/reports/health/"),
+        ("فروش و مشتریان", "/panel/crm/report/"),
+        ("مقایسهٔ دو بازه", "/panel/reports/compare/"),
+        ("بازدید و ورودی‌ها", "/panel/stats/"),
+        ("فرصت‌ها و هشدارهای بازدید", "/panel/reports/insights/"),
+        ("جستجوهای مشتری‌ها", "search-log"),
+        ("فعالیت کارمندان", "activity"),
+    ]),
     ("سفارش و فروش", "receipt", [
-        "orders", "payments", "installment-plans", ("اقساط بتا (بازنشستگان)", "/panel/beta/"),
-        "contact-messages", "abandoned-carts", "product-alerts",
-        ("#", "گزارش"),
-        ("گزارش فروش و مشتریان", "/panel/crm/report/"), ("گزارش بازدید و ورودی‌ها", "/panel/stats/"),
+        "orders", "payments", "abandoned-carts",
+        ("#", "اقساط"),
+        "installment-plans", ("اقساط بتا (بازنشستگان)", "/panel/beta/"),
     ]),
     ("فرش‌ها", "carpet", [
         "products", ("افزودن سریع فرش‌های آلبوم", "/panel/products/quick/"), ("ساخت گروهی یک نقشه", "/panel/products/bulk/"),
-        "special-offers", "reviews", "faqs",
+        "special-offers",
+        ("#", "قیمت"),
+        "albums", "sizes", "pricelog",
         ("#", "دسته‌بندی"),
         "categories", "attributes", "brands", "tags",
         ("#", "ابزارهای متن"),
         "content-templates", "info-blocks", ("جایگزینی متن و لینک‌ها", "/panel/content-tools/"), "keyword-rules", "name-hints",
     ]),
-    ("قیمت", "layers", ["albums", "sizes", "pricelog"]),
+    ("نظرات و پیام‌ها", "chat", [
+        "reviews", "faqs", "comments", "contact-messages", "product-alerts",
+    ]),
     ("مشتریان و بازاریابی", "users", [
-        ("مشتریان", "customers"), ("کارمندان", "/panel/customers/?is_staff=1"),
-        ("پروفایل و گروه‌های مشتریان", "/panel/crm/segments/"), "coupons", "sms",
+        ("مشتریان", "customers"), ("پروفایل و گروه‌های مشتریان", "/panel/crm/segments/"), "coupons", "sms",
         ("#", "باشگاه مشتریان"),
         "crm-campaigns", "crm-calendar", "crm-points", "crm-sms", "spam-users",
         ("#", "همکاری در فروش"),
@@ -37,9 +48,9 @@ LAYOUT = [
         "category-commissions",
     ]),
     ("محتوا و سئو", "pen", [
-        "posts", "rewrites", "pages", "comments", "blog-categories", "blog-tags", "authors",
+        "posts", "rewrites", "pages", "blog-categories", "blog-tags", "authors",
         ("#", "سئو"),
-        "landing-pages", "redirects", "notfound", "search-log",
+        "landing-pages", "redirects", "notfound",
         ("#", "رسانه"),
         "media", ("رسانه‌های بی‌استفاده", "/panel/media/unused/"),
     ]),
@@ -51,9 +62,9 @@ LAYOUT = [
         "finder-needs", "finder-requests",
     ]),
     ("تنظیمات", "settings", [
-        ("تنظیمات سایت، درگاه و پیامک", "/panel/settings/"), ("تنظیمات اپلیکیشن", "/panel/settings/?tab=app"),
-        ("تنظیمات پیامک سفارش و باشگاه", "/panel/settings/?tab=crm"), ("تنظیمات همکاری در فروش", "/panel/settings/?tab=affiliate"),
-        ("تنظیمات مارکت‌پلیس", "/panel/settings/?tab=market"), "activity",
+        ("سایت، درگاه و پیامک", "/panel/settings/"), ("پیامک سفارش و باشگاه", "/panel/settings/?tab=crm"),
+        ("اپلیکیشن", "/panel/settings/?tab=app"), ("همکاری در فروش", "/panel/settings/?tab=affiliate"),
+        ("مارکت‌پلیس", "/panel/settings/?tab=market"), ("کارمندان پنل", "/panel/customers/?is_staff=1"),
     ]),
 ]
 OTHER = ("سایر", "box")

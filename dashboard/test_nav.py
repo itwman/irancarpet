@@ -24,7 +24,14 @@ class PanelNavTests(SimpleTestCase):
 
     def test_single_active_item(self):
         for path, title in [("/panel/products/quick/", "افزودن سریع فرش‌های آلبوم"), ("/panel/products/12/", "محصولات"),
-                            ("/panel/customers/?is_staff=1", "کارمندان"), ("/panel/customers/", "مشتریان"),
-                            ("/panel/settings/?tab=market", "تنظیمات مارکت‌پلیس"), ("/panel/settings/", "تنظیمات سایت، درگاه و پیامک")]:
+                            ("/panel/customers/?is_staff=1", "کارمندان پنل"), ("/panel/customers/", "مشتریان"),
+                            ("/panel/settings/?tab=market", "مارکت‌پلیس"), ("/panel/settings/", "سایت، درگاه و پیامک"),
+                            ("/panel/reports/health/", "سلامت سایت")]:
             act = [i["title"] for g in nav(path) for i in g["items"] if i.get("active")]
             self.assertEqual(act, [title], path)
+
+
+    def test_reports_group_first(self):
+        g = nav("/panel/")[0]
+        self.assertEqual(g["title"], "گزارش‌ها")
+        self.assertIn("سلامت سایت", [i.get("title") for i in g["items"]])

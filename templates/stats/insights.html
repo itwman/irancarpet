@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}{% load fa %}
+{% block title %}فرصت‌ها و هشدارهای بازدید{% endblock %}
+{% block content %}
+<div class="page-top">
+  <div><h1>فرصت‌ها و هشدارهای بازدید</h1>
+    <p class="muted">از آمار بازدید خود سایت؛ بازدید کارمندان و ربات‌ها شمرده نمی‌شود.</p></div>
+</div>
+<nav class="tabs-p" aria-label="بازهٔ زمانی">{% for k, t in periods %}<a href="?d={{ k }}" class="{% if k == d %}on{% endif %}">{{ t }}</a>{% endfor %}</nav>
+<div class="edit__grid">
+  <div class="edit__main">
+    <section class="card-p"><h2>جهش ناگهانی بازدید (۳ روز اخیر)</h2>
+      <p class="small muted">فرش‌هایی که بازدیدشان دست‌کم سه برابر معمول شده؛ اغلب از گوگل، اینستاگرام یا یک لینک بیرونی. وقت خوبی برای فرصت ویژه یا بررسی موجودی است.</p>
+      {% if x.spikes %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>فرش</th><th>بازدید ۳ روز</th><th>معمول ۳ روز</th><th>چند برابر</th></tr></thead><tbody>
+      {% for r in x.spikes %}<tr{% if r.p %} data-href="/panel/products/{{ r.pid }}/edit/"{% endif %}><td>{% if r.p %}{{ r.p.title|fa_num|truncatechars:60 }}{% else %}فرش حذف‌شده{% endif %}{% if r.new %} <span class="dsh-d dsh-d--up">تازه</span>{% endif %}</td><td>{{ r.views|fa_num }}</td><td>{{ r.before|fa_num }}</td><td>{{ r.x|fa_num }}×</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">جهش غیرعادی‌ای دیده نشد.</p>{% endif %}
+    </section>
+    <section class="card-p"><h2>پربازدید ولی بی‌فروش ({{ x.days|fa_num }} روز)</h2>
+      <p class="small muted">مشتری می‌بیند ولی نمی‌خرد: قیمت، عکس، توضیح یا فرصت ویژه را بررسی کنید. «سبد» یعنی تا افزودن به سبد آمده‌اند.</p>
+      {% if x.no_sale %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>فرش</th><th>بازدید</th><th>سبد</th><th>قیمت پایه</th></tr></thead><tbody>
+      {% for r in x.no_sale %}<tr{% if r.p %} data-href="/panel/products/{{ r.pid }}/edit/"{% endif %}><td>{% if r.p %}{{ r.p.title|fa_num|truncatechars:60 }}{% if r.p.stock_status == "outofstock" %} <span class="muted small">ناموجود</span>{% endif %}{% else %}فرش حذف‌شده{% endif %}</td><td>{{ r.views|fa_num }}</td><td>{{ r.carts|fa_num }}</td><td class="num">{% if r.p.min_price %}{{ r.p.min_price|toman }}{% else %}—{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">—</p>{% endif %}
+    </section>
+    <section class="card-p"><h2>صفحه‌های ورود رو به افت (۱۴ روز اخیر در برابر ۱۴ روز قبل)</h2>
+      {% if x.falling %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>صفحه</th><th>ورود اخیر</th><th>ورود قبل</th><th>تغییر</th></tr></thead><tbody>
+      {% for r in x.falling %}<tr><td><a href="{{ r.path }}" target="_blank" rel="noopener">{{ r.path|truncatechars:60 }}</a></td><td>{{ r.now|fa_num }}</td><td>{{ r.before|fa_num }}</td><td><span class="dsh-d dsh-d--down">{{ r.pct|fa_num }}٪</span></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">افت محسوسی نیست.</p>{% endif %}
+    </section>
+    <section class="card-p"><h2>صفحه‌های ورود رو به رشد</h2>
+      {% if x.rising %}<div class="table-wrap"><table class="tbl mt-2"><thead><tr><th>صفحه</th><th>ورود اخیر</th><th>ورود قبل</th><th>تغییر</th></tr></thead><tbody>
+      {% for r in x.rising %}<tr><td><a href="{{ r.path }}" target="_blank" rel="noopener">{{ r.path|truncatechars:60 }}</a></td><td>{{ r.now|fa_num }}</td><td>{{ r.before|fa_num }}</td><td>{% if r.pct is None %}<span class="dsh-d dsh-d--up">تازه</span>{% else %}<span class="dsh-d dsh-d--up">+{{ r.pct|fa_num }}٪</span>{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">—</p>{% endif %}
+    </section>
+  </div>
+  <div class="edit__side">
+    <section class="card-p"><h2>جستجوهای بی‌نتیجه</h2>
+      <p class="small muted mb-2">فرش‌هایی که مشتری می‌خواهد و پیدا نمی‌کند: کالای تازه، نام دیگر (راهنمای نام‌ها) یا صفحهٔ فرود.</p>
+      {% for s in x.searches %}<div class="kv"><span>{{ s.query|fa_num }} <small class="muted">({{ s.get_source_display }})</small></span><strong>{{ s.hits|fa_num }}</strong></div>
+      {% empty %}<p class="muted">—</p>{% endfor %}
+    </section>
+    <section class="card-p"><h2>صفحه‌های فرود پرورود</h2>
+      {% for r in x.landing %}<div class="kv"><span class="small"><a href="{{ r.path }}" target="_blank" rel="noopener">{{ r.path|cut:"/carpets/"|cut:"/"|truncatechars:34 }}</a></span><strong>{{ r.e|fa_num }}</strong></div>
+      {% empty %}<p class="muted">—</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}
