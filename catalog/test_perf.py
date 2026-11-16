@@ -117,10 +117,38 @@ class ProductPageQueryTests(TestCase):
         self.assertContains(self.client.get(self.url), "متن تازهٔ فرش")
 
     @override_settings(CACHES=PAGES)
+    def test_long_cache_invalidation(self):
+        """کش ۷ روزه: قیمت آلبوم، قیمت یک سایز و قالب/تنظیمات کل، کش صفحه را فوراً کهنه می‌کنند."""
+        from django.core.cache import caches
+
+        from catalog import pagecache
+
+        caches["pages"].clear()
+        p = self.products[0]
+        s0 = pagecache.stamp(p)
+        self.client.get(self.url)
+        self.assertLess(self.count(), 30)          # آماده
+        self.assertEqual(pagecache.stamp(p), s0)
+        self.album.base_price = Decimal("50000000")
+        self.album.save()                          # نسخهٔ آلبوم
+        s1 = pagecache.stamp(p)
+        self.assertNotEqual(s1, s0)
+        v = p.variations.first()
+        v.save()                                   # نسخهٔ فرش
+        s2 = pagecache.stamp(p)
+        self.assertNotEqual(s2, s1)
+        from pricing.models import PricingSettings
+
+        PricingSettings.load().save()              # نسخهٔ کل
+        self.assertNotEqual(pagecache.stamp(p), s2)
+        caches["pages"].delete("pv:all")           # نسخهٔ گم‌شده ← نسخهٔ تازه، نه کهنه
+        self.assertNotEqual(pagecache.stamp(p), s2)
+
+    @override_settings(CACHES=PAGES)
     def test_farshestan_not_cached(self):
         from django.core.cache import caches
 
         caches["pages"].clear()
         with self.settings(SITE_THEME="farshestan"):
             self.client.get(self.url)
-        self.assertIsNone(caches["pages"].get(f"pd:{self.products[0].pk}:{int(self.products[0].modified_at.timestamp())}"))
+        self.assertFalse([k for k in caches["pages"]._cache if ":pd:" in k])

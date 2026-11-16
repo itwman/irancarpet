@@ -351,6 +351,9 @@ class Product(SeoFields):
             Product.objects.filter(pk=self.pk).update(
                 min_price=self.min_price, max_price=self.max_price, stock_status=self.stock_status, price_unit=self.price_unit
             )
+            from .pagecache import bump_product
+
+            bump_product(self.pk)  # قیمت/موجودی عوض شد ← کش صفحهٔ این فرش کهنه
 
     def only_size_ids(self):
         """«فقط این سایزهای آلبوم»؛ قیمت این سایزها هم از فرمول آلبوم است حتی اگر جزو سایزهای آلبوم نباشند."""

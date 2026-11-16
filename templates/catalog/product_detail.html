@@ -179,7 +179,7 @@
     {% endfor %}
   </section>
 
-  {% cache 3600 pd_bottom product.pk product.modified_at|date:"U" using="pages" %}{# جستجوهای مرتبط، مشابه‌ها و مجموعه: یک ساعت آماده #}
+  {% cache cards_ttl pd_bottom product.pk pc_stamp using="pages" %}{# جستجوهای مرتبط، مشابه‌ها و مجموعه: ۲۴ ساعت #}
   {% if landing_links or tag_links %}
   <nav class="lp-related" aria-label="جستجوهای مرتبط"><h2>جستجوهای مرتبط</h2>
     <div class="chips">{% for t in tag_links %}<a class="chip" href="{{ t.get_absolute_url }}">{{ t.name|fa_num }}</a>{% endfor %}{% for x in landing_links %}<a class="chip" href="{{ x.get_absolute_url }}">{{ x.title }}</a>{% endfor %}</div>

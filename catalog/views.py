@@ -398,24 +398,25 @@ def product_detail(request, slug):
     return render(request, "catalog/product_detail.html", ctx)
 
 
-PAGE_TTL = 3600  # مدیر گفته تا یک ساعت دیرتر دیده شدن تغییر قیمت/متن در صفحهٔ فرش مهم نیست (آبان ۱۴۰۵)
-
-
 def _product_heavy(product, cat, variations, gallery, crumbs, specs, vschema):
     """بخش‌های سنگین و یکسان برای همهٔ بازدیدکننده‌ها: توضیحات ساخته‌شده از قالب، رنگ‌های دیگر، مرتبط‌ها، مجموعه،
-    پیوندهای جستجوی مرتبط و JSON-LD. روی ایران کارپت یک ساعت (به‌ازای هر ویرایش فرش جدا) نگه داشته می‌شود؛
-    قیمت جدول سایزها، فرصت‌های ویژه، نظرها و علاقه‌مندی هر بار تازه خوانده می‌شوند. فرشستان بی‌کش."""
+    پیوندهای جستجوی مرتبط و JSON-LD. روی ایران کارپت تا ۷ روز می‌ماند و هر تغییر مؤثر (قیمت، موجودی، متن فرش،
+    آلبوم، قالب‌ها، تنظیمات) فوراً کهنه‌اش می‌کند (catalog.pagecache). قیمت جدول سایزها، فرصت‌های ویژه، نظرها و
+    علاقه‌مندی هر بار تازه خوانده می‌شوند. فرشستان بی‌کش."""
     from django.core.cache import caches
 
+    from .pagecache import CARDS_TTL, TEXT_TTL, stamp
+
     use = settings.SITE_THEME != "farshestan" and product.status == Product.Status.PUBLISH
-    key = f"pd:{product.pk}:{int(product.modified_at.timestamp())}" if use else ""
+    pc_stamp = stamp(product) if use else ""
+    key = f"pd:{product.pk}:{pc_stamp}"
     if use:
         try:
             got = caches["pages"].get(key)
         except Exception:  # noqa: BLE001 — کش خراب نباید صفحه را از کار بیندازد
             got = None
         if got is not None:
-            return got
+            return {**got, "pc_stamp": pc_stamp, "cards_ttl": CARDS_TTL}
     from content.render import build as build_doc, color_siblings, design_of
 
     from .related import collection_for, related_products
@@ -439,10 +440,10 @@ def _product_heavy(product, cat, variations, gallery, crumbs, specs, vschema):
     }
     if use:
         try:
-            caches["pages"].set(key, heavy, PAGE_TTL)
+            caches["pages"].set(key, heavy, TEXT_TTL)
         except Exception:  # noqa: BLE001
             pass
-    return heavy
+    return {**heavy, "pc_stamp": pc_stamp, "cards_ttl": CARDS_TTL if use else 0}
 
 
 def _warranty(product):
