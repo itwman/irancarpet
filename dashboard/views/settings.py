@@ -105,6 +105,7 @@ FORMS = {
                           "winback_auto", "winback_days", "winback_amount", "winback_min_order", "winback_valid_days", "winback_text",
                           "points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days",
                           "points_since", "birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text",
+                          "review_invite_enabled", "review_invite_days", "review_invite_text",
                           "review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days",
                           "review_reward_text", "album_text", "offer_sms_enabled", "offer_sms_weekday", "offer_sms_hour",
                           "offer_sms_segment", "offer_sms_min_percent", "offer_sms_text", "offer_set_text",
@@ -235,6 +236,8 @@ CRM_GROUPS = [
      ["points_enabled", "points_per", "point_value", "points_min_redeem", "points_min_order", "points_valid_days", "points_since"]),
     ("هدیهٔ تولد", "مشتری روز و ماه تولدش را یک‌بار در صفحهٔ باشگاه ثبت می‌کند؛ آن روز کد هدیه پیامک می‌شود.",
      ["birthday_enabled", "birthday_amount", "birthday_min_order", "birthday_valid_days", "birthday_text"]),
+    ("دعوت به ثبت نظر", "چند روز بعد از ارسال سفارش، پیوند ثبت نظر و عکس (بی‌نیاز به ورود) برای خریدار پیامک می‌شود. نظرهای خریداران "
+     "متن یکتا و ستاره‌های امتیاز را در نتیجهٔ گوگل می‌سازد.", ["review_invite_enabled", "review_invite_days", "review_invite_text"]),
     ("جایزهٔ نظر با عکس", "در پیامک دعوت به نظر هم گفته می‌شود. بعد از اینکه نظر را در «نظرات محصولات» تأیید کنید، کد هدیه می‌رود.",
      ["review_reward_enabled", "review_reward_amount", "review_reward_min_order", "review_reward_valid_days", "review_reward_text"]),
     ("اطلاع افزایش قیمت آلبوم", "از «آلبوم‌های قیمت» آلبوم‌ها را انتخاب کنید و عملیات «پیامک قیمت به‌زودی بالا می‌رود» را بزنید.", ["album_text"]),

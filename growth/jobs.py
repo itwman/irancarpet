@@ -73,23 +73,27 @@ def run_alerts(now=None):
 
 # ------------------------------------------------------------------ دعوت به ثبت نظر
 def invite_reviews(now=None):
-    """۷ روز بعد از ارسال یا تحویل، فقط برای سفارش‌های همین سایت (نه سفارش‌های قدیمی وردپرس)."""
+    """چند روز (پنل ← تنظیمات ← پیامک سفارش و باشگاه) بعد از ثبت سفارش ارسال‌شده/تحویل‌شده؛ فقط سفارش‌های همین سایت."""
     from shop.models import Order
 
     from crm.links import shorten
     from crm.models import CrmSettings
     from core.templatetags.fa import toman
 
+    from crm.notify import render
+
     cs = CrmSettings.load()
+    if not cs.review_invite_enabled:
+        return 0
+    days = cs.review_invite_days or 7
     gift = (f" با فرستادن عکس، کد هدیهٔ {toman(cs.review_reward_amount)} تومانی می‌گیرید."
             if cs.review_reward_enabled and cs.review_reward_amount else "")
     now = now or timezone.now()
     qs = Order.objects.filter(status__in=["shipped", "completed"], review_invited_at__isnull=True, wp_id__isnull=True,
-                              created_at__gte=now - td(days=90), created_at__lte=now - td(days=7))
+                              created_at__gte=now - td(days=90 + days), created_at__lte=now - td(days=days))
     sent = 0
     for o in qs[:100]:
-        text = (f"{o.first_name} عزیز، امیدواریم از فرش‌تان راضی باشید. نظر و عکس فرش در خانه‌تان به خریداران دیگر کمک می‌کند.{gift}"
-                f" ثبت نظر: {shorten(review_url(o), 'r')}")
+        text = render(cs.review_invite_text, name=o.first_name, gift=gift, link=shorten(review_url(o), "r"))
         if send(o.mobile, text, "invite", o):
             Order.objects.filter(pk=o.pk).update(review_invited_at=now)
             sent += 1

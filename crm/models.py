@@ -62,6 +62,11 @@ class CrmSettings(models.Model):
     cart_hours = models.PositiveSmallIntegerField("چند ساعت بعد از آخرین تغییر سبد", default=3)
     cart_text = models.TextField("متن یادآوری سبد", default=texts.CART)
 
+    review_invite_enabled = models.BooleanField("پیامک دعوت به ثبت نظر", default=True,
+                                                help_text="چند روز بعد از ثبت سفارش ارسال‌شده یا تحویل‌شده؛ هر سفارش یک‌بار (سفارش‌های قدیمی وردپرس نه)")
+    review_invite_days = models.PositiveSmallIntegerField("چند روز بعد از ثبت سفارش", default=7)
+    review_invite_text = models.TextField("متن دعوت به نظر", default=texts.REVIEW_INVITE,
+                                          help_text="{name} نام، {link} پیوند ثبت نظر (بی‌نیاز به ورود)، {gift} جملهٔ کد هدیهٔ نظر با عکس (اگر روشن باشد)")
     review_reward_enabled = models.BooleanField("جایزهٔ نظر با عکس", default=True,
                                                 help_text="بعد از تأیید نظرِ خریدار که عکس دارد، کد هدیه پیامک می‌شود (هر شماره هر ۶۰ روز یک‌بار)")
     review_reward_amount = models.PositiveBigIntegerField("مبلغ جایزهٔ نظر (تومان)", default=500_000)
