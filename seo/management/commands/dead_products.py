@@ -44,6 +44,8 @@ class Command(BaseCommand):
         specs = Prefetch("specs", queryset=AttributeTerm.objects.select_related("attribute"))
         pub = Product.objects.published()
         dead_qs = pub.filter(album__isnull=True, stock_status="outofstock").select_related("primary_category").prefetch_related(specs)
+        mirrored = dead_qs.filter(mirror_pick__isnull=False).count()
+        dead_qs = dead_qs.filter(mirror_pick__isnull=True)  # فرشی که برای فرشستان انتخاب شده دست نمی‌خورد
         ordered = set(OrderItem.objects.filter(product__in=dead_qs).values_list("product_id", flat=True))
         live = list(pub.filter(album__isnull=False).exclude(stock_status="outofstock").prefetch_related(specs)
                     .only("pk", "title", "slug", "design_name", "views"))
@@ -84,7 +86,8 @@ class Command(BaseCommand):
             rows.append((p, target, how))
 
         self.stdout.write(f"فرش منتشرشدهٔ بی‌آلبوم و ناموجود: {kept_orders + kept_views + sum(buckets.values())}")
-        self.stdout.write(f"  می‌ماند چون سفارش دارد: {kept_orders} — چون بیش از {max_views} بازدید دارد: {kept_views}")
+        self.stdout.write(f"  می‌ماند چون سفارش دارد: {kept_orders} — چون بیش از {max_views} بازدید دارد: {kept_views}"
+                          f" — چون برای فرشستان انتخاب شده: {mirrored}")
         self.stdout.write("  بازدید فرش‌های مرده: " + "، ".join(f"{k}: {v}" for k, v in views_hist.items()))
         self.stdout.write("مقصد ۳۰۱:")
         for k, v in buckets.most_common():
