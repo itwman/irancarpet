@@ -171,3 +171,27 @@ class DupProductsTests(TestCase):
         self.assertEqual(a.seo_title, "فرش نیلا | آلبوم مهر")
         self.assertEqual(b.seo_title, "فرش نیلا | آلبوم جهان")
         self.assertEqual(unquote(self.client.get("/product/nila/")["Location"]), "/product/nila-3/")  # بی‌آلبوم ← پربازدیدترین زنده
+
+
+class DeadProductsTests(TestCase):
+    def test_dead(self):
+        seed_sizes()
+        size = Size.objects.get(slug="12-meter")
+        album = Album.objects.create(name="آلبوم", code="A", base_size=size, base_price=Decimal("1"), shipping_fixed=0, waste_value=0)
+        cat = Category.objects.create(name="۷۰۰ شانه", slug="c700")
+        live = Product.objects.create(title="فرش 700 شانه نقشه نیلا زمینه کرم", slug="nila", album=album, views=5)
+        dead = Product.objects.create(title="فرش 700 شانه نقشه نیلا زمینه کرم قدیمی", slug="nila-old", stock_status="outofstock",
+                                      design_name="نیلا", primary_category=cat)
+        live.design_name = "نیلا"
+        live.save()
+        nodesign = Product.objects.create(title="فرش بی‌نام", slug="x", stock_status="outofstock", primary_category=cat)
+        popular = Product.objects.create(title="فرش پربازدید", slug="pop", stock_status="outofstock", views=500, primary_category=cat)
+        out = StringIO()
+        call_command("dead_products", stdout=out)
+        self.assertIn("فرش‌هایی که ۳۰۱ می‌شوند: 2", out.getvalue())
+        call_command("dead_products", "--apply", stdout=StringIO())
+        for o in (live, dead, nodesign, popular):
+            o.refresh_from_db()
+        self.assertEqual((live.status, dead.status, nodesign.status, popular.status), ("publish", "draft", "draft", "publish"))
+        self.assertEqual(unquote(self.client.get("/product/nila-old/")["Location"]), "/product/nila/")
+        self.assertEqual(unquote(self.client.get("/product/x/")["Location"]), "/product-category/c700/")
