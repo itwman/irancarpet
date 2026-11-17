@@ -408,3 +408,33 @@ def _test_available_opens_closed_sizes(self):
 
 
 PanelTests.test_available_opens_closed_sizes = _test_available_opens_closed_sizes
+
+
+class TipaxLabelTests(TestCase):
+    def test_tipax_page(self):
+        import json
+
+        from django.contrib.auth import get_user_model
+
+        from shop.models import Order, OrderItem, ShopSettings
+
+        u = get_user_model().objects.create_user("st", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+        s = ShopSettings.load()
+        s.tipax_contract = "7788"
+        s.save()
+        a = Order.objects.create(first_name="رضا", last_name="</script>", mobile="09120000000", province="تهران", city="تهران",
+                                 address="آدرس", items_total=40_000_000, paid_amount=4_000_000, payment_mode="deposit")
+        OrderItem.objects.create(order=a, title="فرش یک", unit_price=20_000_000)
+        OrderItem.objects.create(order=a, title="فرش دو", unit_price=20_000_000)
+        b = Order.objects.create(first_name="مینا", last_name="ب", mobile="09120000001", province="قم", city="قم", address="آدرس",
+                                 items_total=30_000_000, payment_mode="installment")
+        r = self.client.get(f"/panel/orders/tipax/?ids={a.pk}&ids={b.pk}")
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, "</script>\",")  # json_script: متن مشتری کد اجرا نمی‌کند
+        data = json.loads(r.content.decode().split('id="tipax-data" type="application/json">')[1].split("</script>")[0])
+        cod = {o["number"]: o["cod"] for o in data["orders"]}
+        self.assertEqual(cod[a.number], 36_000_000)
+        self.assertEqual(cod[b.number], 0)  # اقساطی COD ندارد
+        self.assertEqual(data["contract"], "7788")
+        self.assertEqual(len(data["orders"][0]["items"]), 2)

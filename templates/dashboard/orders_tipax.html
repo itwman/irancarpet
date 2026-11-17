@@ -1,0 +1,190 @@
+{% load static fa %}<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>برچسب تیپاکس ({{ count|fa_num }} سفارش)</title>
+<style>
+@font-face{font-family:Vazirmatn;src:url({% static "vendor/vazirmatn/vazirmatn-arabic-wght-normal.woff2" %}) format("woff2");font-weight:100 900}
+@font-face{font-family:Vazirmatn;src:url({% static "vendor/vazirmatn/vazirmatn-latin-wght-normal.woff2" %}) format("woff2");font-weight:100 900;unicode-range:U+0000-00FF}
+@page{size:A5 landscape;margin:0}
+*{box-sizing:border-box}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;color:#111;background:#e9e6df}
+/* ویرایشگر (فقط صفحه) */
+.ed{max-width:1100px;margin:0 auto;padding:16px}
+.ed h1{font-size:20px;margin:0 0 4px}
+.ed .hint{color:#555;font-size:13px;margin:0 0 12px;line-height:1.8}
+.bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #d8d3c8;border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.bar .grow{flex:1}
+.btn{font:inherit;border:0;border-radius:9px;padding:8px 16px;cursor:pointer;background:#1f2a44;color:#fff;font-weight:700}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #e2a03f;outline-offset:2px}
+.btn-light{background:#f1eee7;color:#1f2a44}
+.warn{background:#fff4e0;border:1px solid #e9b75b;color:#6b4300;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+.card{background:#fff;border:1px solid #d8d3c8;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card h2 small{font-weight:400;color:#666}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:5px 6px;border-top:1px solid #eee;vertical-align:middle}
+th{color:#666;font-weight:600;border-top:0}
+select,input{font:inherit;font-size:13px;border:1px solid #cfc9bd;border-radius:7px;padding:4px 6px;background:#fff}
+input.money{width:150px;direction:ltr;text-align:left}
+.pk{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px dashed #e3ded4;font-size:13px}
+.pk b{min-width:64px}
+.err{color:#b3261e;font-size:12.5px;font-weight:700}
+.ok{color:#2f7a4f;font-size:12.5px}
+.tag{display:inline-block;background:#f1eee7;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600}
+.prev-title{margin:18px 0 8px;font-size:14px;color:#444}
+/* برگ A5 افقی: دو برچسب ۱۰٫۵ × ۱۴٫۸ سانتی */
+.sheets{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:30px}
+.sheet{width:210mm;height:148mm;background:#fff;display:flex;flex-direction:row;box-shadow:0 2px 10px rgba(0,0,0,.2);position:relative;page-break-after:always;break-after:page;overflow:hidden}
+.lab{width:105mm;height:148mm;padding:4.5mm 5mm;display:flex;flex-direction:column;gap:2mm}
+.lab+.lab{border-right:1px dashed #999}
+.lab.empty{align-items:center;justify-content:center;color:#bbb;font-size:12px}
+.l-top{border:1.4px solid #111;border-radius:2mm;padding:1.2mm 2.5mm;display:flex;justify-content:space-between;align-items:center;gap:2mm;font-size:9.5px}
+.l-top b{font-size:11px}
+.pkg{background:#111;color:#fff;border-radius:1.4mm;padding:.5mm 2mm;font-weight:800;white-space:nowrap;font-size:10.5px}
+.l-code{display:flex;justify-content:space-between;align-items:center;gap:2mm;font-size:9.5px}
+.l-code svg{height:11mm;width:auto;max-width:62mm}
+.l-code .num{font-weight:800;font-size:13px;letter-spacing:.5px}
+.box{border:1.4px solid #111;border-radius:2mm;padding:1.8mm 2.8mm;display:flex;flex-direction:column;gap:.6mm}
+.box h3{margin:0;font-size:9px;font-weight:700;color:#555}
+.to{flex:1;min-height:0}
+.to .name{font-size:15px;font-weight:800;line-height:1.35}
+.to .tel{font-size:14px;font-weight:800;direction:ltr;text-align:right}
+.to .city{font-size:12px;font-weight:800}
+.to .addr{font-size:11px;line-height:1.55;overflow:hidden}
+.small{font-size:9.5px;color:#333}
+.from{background:#f2f2f2;font-size:9.5px;line-height:1.5}
+.from .name{font-size:11px;font-weight:800}
+.contents{border:1.4px solid #111;border-radius:2mm;padding:1.3mm 2.8mm;font-size:9.5px;line-height:1.6}
+.chip{display:inline-block;border:1.2px solid #111;border-radius:1.2mm;padding:0 1.4mm;font-weight:800}
+.cod{border:2.4px solid #111;border-radius:2mm;padding:1.4mm 2.8mm;text-align:center}
+.cod .t{font-size:9.5px;font-weight:800}
+.cod .v{font-size:17px;font-weight:900;line-height:1.3}
+.cod .s{font-size:9px;color:#333}
+.cod.no{border-style:dashed}
+.cod.no .v{font-size:13px}
+@media print{
+  body{background:#fff}
+  .ed,.prev-title{display:none !important}
+  .sheets{display:block;padding:0;gap:0}
+  .sheet{box-shadow:none;margin:0}
+  .sheet:last-child{page-break-after:auto;break-after:auto}
+}
+</style></head><body>
+<div class="ed">
+  <h1>برچسب تیپاکس</h1>
+  <p class="hint">هر ردیف سفارش پیش‌فرض یک بسته است؛ برای گذاشتن چند ردیف در یک بسته، شمارهٔ بستهٔ آن‌ها را یکی کنید. مبلغ COD (ماندهٔ سفارش)
+    به‌طور مساوی بین بسته‌ها پخش می‌شود و قابل ویرایش است؛ جمع بسته‌ها باید برابر مانده باشد. سفارش اقساطی COD ندارد.
+    در پنجرهٔ چاپ: کاغذ <b>A5</b>، جهت <b>افقی</b>، مقیاس <b>۱۰۰٪</b> و حاشیه «هیچ».</p>
+  {% if not contract %}<div class="warn">شمارهٔ قرارداد تیپاکس هنوز ثبت نشده: پنل ← تنظیمات ← فروش و ارسال ← «شمارهٔ قرارداد تیپاکس».</div>{% endif %}
+  {% if not count %}<div class="warn">سفارشی انتخاب نشده؛ از فهرست سفارش‌ها چند سفارش را تیک بزنید و «چاپ برچسب تیپاکس» را بزنید.</div>{% endif %}
+  <div class="bar"><span class="grow" id="sum"></span><button class="btn" type="button" id="print">چاپ برچسب‌ها</button>
+    <button class="btn btn-light" type="button" onclick="history.back()">بازگشت</button></div>
+  <div id="orders"></div>
+</div>
+<p class="prev-title" style="text-align:center">پیش‌نمایش برگ‌ها</p>
+<div class="sheets" id="sheets"></div>
+{{ payload|json_script:"tipax-data" }}
+<script src="{% static "vendor/jsbarcode/JsBarcode.code128.min.js" %}"></script>
+<script>
+(function(){
+  "use strict";
+  var D = JSON.parse(document.getElementById("tipax-data").textContent);
+  var FA = "۰۱۲۳۴۵۶۷۸۹";
+  function fa(s){ return String(s == null ? "" : s).replace(/[0-9]/g, function(d){ return FA[d]; }); }
+  function money(n){ return fa(Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬")); }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function toInt(s){ s = String(s || "").replace(/[۰-۹]/g, function(d){ return FA.indexOf(d); }).replace(/[^0-9]/g, ""); return s ? parseInt(s, 10) : 0; }
+  function tel(m){ m = String(m || ""); return m.length === 11 ? fa(m.slice(0,4) + " " + m.slice(4,7) + " " + m.slice(7)) : fa(m); }
+  var today = "{{ today|jdate:"%d %B %Y" }}";
+
+  // حالت هر سفارش: بستهٔ هر ردیف، COD هر بسته، نوع کرایه
+  D.orders.forEach(function(o){
+    o.pkgOf = o.items.map(function(_, i){ return i + 1; });
+    if (!o.items.length) o.pkgOf = [];
+    o.freight = "پس‌کرایه";
+    split(o);
+  });
+  function pkgs(o){ var u = []; o.pkgOf.forEach(function(p){ if (u.indexOf(p) < 0) u.push(p); }); u.sort(function(a,b){return a-b;}); return u.length ? u : [1]; }
+  function split(o){
+    var list = pkgs(o), n = list.length, total = o.cod, each = Math.floor(total / n / 1000) * 1000;
+    o.codOf = {};
+    list.forEach(function(p, i){ o.codOf[p] = i === n - 1 ? total - each * (n - 1) : each; });
+  }
+  function codSum(o){ return pkgs(o).reduce(function(s, p){ return s + (o.codOf[p] || 0); }, 0); }
+
+  function renderEditor(){
+    var html = "";
+    D.orders.forEach(function(o, oi){
+      var list = pkgs(o), opts = o.items.map(function(_, i){ return i + 1; });
+      html += '<section class="card" data-o="' + oi + '"><h2>سفارش ' + fa(o.number) + ' <small>' + esc(o.name) + "، " + esc(o.city) + '</small>' +
+        (o.installment ? ' <span class="tag">اقساطی؛ COD ندارد</span>' : (o.cod ? ' <span class="tag">مانده: ' + money(o.cod) + ' تومان</span>' : ' <span class="tag">تسویه‌شده؛ COD ندارد</span>')) +
+        ' <label class="small">کرایه: <select data-f="freight"><option' + (o.freight === "پس‌کرایه" ? " selected" : "") + '>پس‌کرایه</option><option' +
+        (o.freight === "پیش‌کرایه" ? " selected" : "") + '>پیش‌کرایه</option></select></label></h2>';
+      html += '<table><thead><tr><th>ردیف</th><th>کالا</th><th>سایز</th><th>تعداد</th><th>بسته</th></tr></thead><tbody>';
+      o.items.forEach(function(it, i){
+        html += "<tr><td>" + fa(i + 1) + "</td><td>" + esc(fa(it.title)) + "</td><td>" + esc(fa(it.size)) + "</td><td>" + fa(it.qty) + '</td><td><select data-row="' + i + '" aria-label="بستهٔ ردیف ' + fa(i + 1) + '">' +
+          opts.map(function(p){ return "<option value=\"" + p + "\"" + (o.pkgOf[i] === p ? " selected" : "") + ">بستهٔ " + fa(p) + "</option>"; }).join("") + "</select></td></tr>";
+      });
+      html += "</tbody></table>";
+      if (o.cod) {
+        list.forEach(function(p, k){
+          html += '<div class="pk"><b>بستهٔ ' + fa(k + 1) + ' از ' + fa(list.length) + '</b><label>COD: <input class="money" inputmode="numeric" data-p="' + p + '" value="' + money(o.codOf[p] || 0) + '"></label> تومان</div>';
+        });
+        var diff = codSum(o) - o.cod;
+        html += diff ? '<div class="err">جمع COD بسته‌ها ' + money(codSum(o)) + " است؛ باید برابر مانده (" + money(o.cod) + ") باشد.</div>"
+                     : '<div class="ok">جمع COD بسته‌ها برابر ماندهٔ سفارش است.</div>';
+      }
+      html += "</section>";
+    });
+    document.getElementById("orders").innerHTML = html;
+  }
+
+  function label(o, p, k, n){
+    var rows = o.items.filter(function(_, i){ return o.pkgOf[i] === p; });
+    var contents = rows.map(function(it){ return fa(it.qty) + " تخته " + esc(fa(it.title)) + (it.size ? "، " + esc(fa(it.size)) : ""); }).join("؛ ") || "—";
+    var c = o.cod ? (o.codOf[p] || 0) : 0, s = D.sender;
+    var cod = c ? '<div class="cod"><div class="t">COD این بسته</div><div class="v">' + money(c) + ' تومان</div><div class="s">کل ماندهٔ سفارش: ' + money(o.cod) + " (" + fa(n) + " بسته)</div></div>"
+                : '<div class="cod no"><div class="t">COD</div><div class="v">ندارد</div><div class="s">' + (o.installment ? "خرید اقساطی" : (o.cod ? "این بسته بی‌مبلغ است" : "سفارش کامل پرداخت شده")) + "</div></div>";
+    return '<section class="lab">' +
+      '<div class="l-top"><span>قرارداد تیپاکس: <b>' + (D.contract ? fa(esc(D.contract)) : "—") + '</b></span><span>' + today + '</span><span class="pkg">بستهٔ ' + fa(k) + " از " + fa(n) + "</span></div>" +
+      '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span></span></div>" +
+      '<div class="box to"><h3>گیرنده</h3><div class="name">' + esc(o.name) + '</div><div class="tel">' + tel(o.mobile) + "</div>" +
+        '<div class="city">' + esc(o.province) + (o.city && o.city !== o.province ? "، " + esc(o.city) : "") + '</div><div class="addr">' + esc(fa(o.address)) + "</div>" +
+        (o.postal ? '<div class="small">کد پستی: ' + fa(esc(o.postal)) + "</div>" : "") + "</div>" +
+      '<div class="box from"><h3>فرستنده</h3><div class="name">' + esc(s.name) + "</div><div>" + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) + "</div>" +
+        (s.postal ? "<div>کد پستی: " + fa(esc(s.postal)) + "</div>" : "") + "</div>" +
+      '<div class="contents"><b>محتوا:</b> ' + contents + '<br><b>کرایه:</b> <span class="chip">' + o.freight + "</span>" + (o.freight === "پس‌کرایه" ? ' <span class="small">(با گیرنده)</span>' : "") + "</div>" +
+      cod + "</section>";
+  }
+
+  function renderSheets(){
+    var labs = [];
+    D.orders.forEach(function(o){ var list = pkgs(o); list.forEach(function(p, k){ labs.push(label(o, p, k + 1, list.length)); }); });
+    var html = "";
+    for (var i = 0; i < labs.length; i += 2) html += '<div class="sheet">' + labs[i] + (labs[i + 1] || '<section class="lab empty">نیمهٔ خالی</section>') + "</div>";
+    document.getElementById("sheets").innerHTML = html;
+    if (window.JsBarcode) document.querySelectorAll("svg.bc").forEach(function(el){
+      try { JsBarcode(el, el.getAttribute("data-v"), {format: "CODE128", displayValue: false, height: 42, width: 1.7, margin: 0}); } catch (e) {}
+    });
+    var bad = D.orders.filter(function(o){ return o.cod && codSum(o) !== o.cod; }).length;
+    document.getElementById("sum").innerHTML = fa(D.orders.length) + " سفارش، " + fa(labs.length) + " بسته، " + fa(Math.ceil(labs.length / 2)) + " برگ A5" +
+      (bad ? ' — <span class="err">' + fa(bad) + " سفارش جمع COD نادرست دارد</span>" : "");
+    return bad;
+  }
+  function all(){ renderEditor(); renderSheets(); }
+
+  var box = document.getElementById("orders");
+  box.addEventListener("change", function(e){
+    var card = e.target.closest(".card"); if (!card) return;
+    var o = D.orders[+card.getAttribute("data-o")];
+    if (e.target.hasAttribute("data-row")) { o.pkgOf[+e.target.getAttribute("data-row")] = +e.target.value; split(o); all(); }
+    else if (e.target.getAttribute("data-f") === "freight") { o.freight = e.target.value; renderSheets(); }
+    else if (e.target.hasAttribute("data-p")) { o.codOf[+e.target.getAttribute("data-p")] = toInt(e.target.value); all(); }
+  });
+  document.getElementById("print").addEventListener("click", function(){
+    if (renderSheets() && !confirm("جمع COD بعضی سفارش‌ها با مانده برابر نیست. باز هم چاپ شود؟")) return;
+    window.print();
+  });
+  all();
+})();
+</script>
+</body></html>

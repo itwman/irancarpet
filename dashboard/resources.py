@@ -68,6 +68,7 @@ register(Resource(
                    {"confirm": "سفارش‌های پرداخت‌نشدهٔ انتخاب‌شده لغو شوند؟ سفارش‌هایی که پرداخت دارند دست نمی‌خورند."}),
         "print": ("چاپ فاکتور", None, "", None, {"href": "/panel/orders/print/"}),
         "labels": ("چاپ برچسب ارسال", None, "", None, {"href": "/panel/orders/print/?mode=label"}),
+        "tipax": ("چاپ برچسب تیپاکس (A5)", None, "", None, {"href": "/panel/orders/tipax/"}),
     },
 ))
 

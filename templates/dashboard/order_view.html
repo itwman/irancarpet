@@ -5,7 +5,8 @@
   <div><a href="/panel/orders/" class="back">‹ سفارش‌ها</a>
     <h1>سفارش {{ order.number|fa_num }} <span class="badge-ic b-{{ order.status }}">{{ order.status_label }}</span></h1>
     <p class="muted">{{ order.created_at|jdate:"%d %B %Y، ساعت %H:%M" }}{% if customer_url %} · <a href="{{ customer_url }}">پروفایل مشتری و سفارش‌های قبلی</a>{% endif %}{% if order.user %} · <a href="/panel/customers/{{ order.user_id }}/edit/">حساب کاربری</a>{% endif %}</p></div>
-  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/orders/{{ order.pk }}/print/" target="_blank"><svg class="ic"><use href="#i-print"/></svg> چاپ فاکتور</a></div>
+  <div class="page-top__actions"><a class="btn btn-light btn-sm" href="/panel/orders/{{ order.pk }}/print/" target="_blank"><svg class="ic"><use href="#i-print"/></svg> چاپ فاکتور</a>
+    <a class="btn btn-light btn-sm" href="/panel/orders/tipax/?ids={{ order.pk }}" target="_blank"><svg class="ic"><use href="#i-print"/></svg> برچسب تیپاکس</a></div>
 </div>
 <div class="edit__grid">
   <div class="edit__main">

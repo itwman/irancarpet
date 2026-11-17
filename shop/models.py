@@ -132,6 +132,13 @@ class ShopSettings(models.Model):
                 "خرید-فرش-ماشینی-کاشان-از-تمام-دنیا-ممکن\nخرید-فرش-از-امارات-ارسال-فرش-به-دبی\nخرید-قالین-کاشان-در-افغانستان",
         help_text="نامک هر صفحه یا نوشته در یک خط (همان بخش نشانی بین دو /).")
 
+    # برچسب تیپاکس (پنل ← سفارش‌ها ← چاپ برچسب تیپاکس)
+    tipax_contract = models.CharField("شمارهٔ قرارداد تیپاکس", max_length=40, blank=True)
+    sender_name = models.CharField("نام فرستنده روی برچسب", max_length=80, blank=True, default="ایران کارپت")
+    sender_phone = models.CharField("تلفن فرستنده", max_length=40, blank=True, default="09125347596")
+    sender_address = models.TextField("آدرس فرستنده", blank=True, help_text="خالی: آدرس فروشگاه در تنظیمات سایت")
+    sender_postal_code = models.CharField("کد پستی فرستنده", max_length=10, blank=True)
+
     class Meta:
         verbose_name = "تنظیمات فروش"
         verbose_name_plural = "تنظیمات فروش"

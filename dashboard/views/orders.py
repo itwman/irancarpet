@@ -146,6 +146,29 @@ def orders_print(request):
 
 
 @staff_required
+def orders_tipax(request):
+    """برچسب تیپاکس روی A5 افقی (دو برچسب در هر برگ). هر ردیف سفارش پیش‌فرض یک بسته است و پیش از چاپ می‌شود چند ردیف را
+    در یک بسته گذاشت؛ COD (ماندهٔ سفارش) به‌طور مساوی بین بسته‌ها پخش و قابل ویرایش است. سفارش اقساطی COD ندارد."""
+    from core.models import SiteSettings
+    from shop.models import ShopSettings
+
+    shop, site = ShopSettings.load(), SiteSettings.load()
+    orders = []
+    for o in _selected(request).prefetch_related("items")[:200]:
+        orders.append({
+            "id": o.pk, "number": o.number, "name": o.full_name, "mobile": o.mobile, "province": o.province, "city": o.city,
+            "address": o.address, "postal": o.postal_code,
+            "cod": 0 if o.is_installment else int(o.remaining), "installment": o.is_installment,
+            "items": [{"title": it.title, "size": it.size_label, "qty": it.quantity} for it in o.items.all()],
+        })
+    sender = {"name": shop.sender_name or site.site_name, "phone": shop.sender_phone or site.phone,
+              "address": shop.sender_address or site.address, "postal": shop.sender_postal_code or getattr(site, "store_postal_code", "")}
+    return render(request, "dashboard/orders_tipax.html", {
+        "payload": {"orders": orders, "sender": sender, "contract": shop.tipax_contract},
+        "count": len(orders), "contract": shop.tipax_contract, "today": timezone.localdate()})
+
+
+@staff_required
 def notify(request):
     """زنگولهٔ بالای پنل: سفارش‌های تازه (بعد از since) و کارهای فوری؛ هر دقیقه خوانده می‌شود."""
     from django.core.cache import cache
