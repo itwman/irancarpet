@@ -438,6 +438,7 @@ class TipaxLabelTests(TestCase):
         self.assertEqual(cod[b.number], 0)  # اقساطی COD ندارد
         self.assertEqual(data["contract"], "7788")
         self.assertEqual(len(data["orders"][0]["items"]), 2)
+        self.assertEqual(data["orders"][0]["items"][0]["price"], 20_000_000)  # ارزش اظهاری برای بیمه
 
     def test_title_guess_and_save(self):
         from shop.titles import guess

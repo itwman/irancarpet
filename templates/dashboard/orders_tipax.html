@@ -34,7 +34,8 @@ input.money{width:150px;direction:ltr;text-align:left}
 /* برگ A5 افقی: دو برچسب ۱۰٫۵ × ۱۴٫۸ سانتی */
 .sheets{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:30px}
 .sheet{width:210mm;height:148mm;background:#fff;display:flex;flex-direction:row;box-shadow:0 2px 10px rgba(0,0,0,.2);position:relative;page-break-after:always;break-after:page;overflow:hidden}
-.lab{width:105mm;height:148mm;padding:4mm 4.5mm;display:flex;flex-direction:column;gap:1.8mm}
+.lab{width:105mm;height:148mm;padding:5mm;display:flex;flex-direction:column;gap:1.8mm}
+.m-v2 .lab+.lab{padding-left:5mm}
 .m-v2 .lab+.lab{border-right:1px dashed #999}
 .sheet.m-s2,.sheet.m-s3{flex-direction:column}
 .ttl{font-size:13px;font-weight:700;color:#333}
@@ -55,6 +56,11 @@ input.money{width:150px;direction:ltr;text-align:left}
 .small{font-size:12px;color:#222}
 .from{background:#f2f2f2;font-size:12.5px;line-height:1.5}
 .from .name{font-size:14px;font-weight:800}
+.m-v2 .from{position:relative;font-size:11.5px;line-height:1.5;padding:1.4mm 2.8mm}
+.m-v2 .from .name{font-size:13px}
+.from-t{position:absolute;top:1mm;left:2mm;font-size:9.5px;color:#555;font-weight:700}
+.strip .from-t{display:none}
+.m-v2 .cod .val{border-bottom:1px solid #999;padding-bottom:.6mm;margin-bottom:.6mm;font-size:11.5px}
 .contents{border:1.4px solid #111;border-radius:2mm;padding:1.3mm 2.8mm;font-size:12.5px;line-height:1.6}
 .chip{display:inline-block;border:1.2px solid #111;border-radius:1.2mm;padding:0 1.4mm;font-weight:800}
 .cod{border:2.4px solid #111;border-radius:2mm;padding:1.4mm 2.8mm;text-align:center}
@@ -64,9 +70,11 @@ input.money{width:150px;direction:ltr;text-align:left}
 .cod.no{border-style:dashed}
 .cod.no .v{font-size:17px}
 /* نوار ۲۱ سانتی (۲ یا ۳ در هر برگ) برای زیر چسب پهن */
-.strip{width:210mm;display:grid;grid-template-columns:1fr 50mm 46mm;gap:2.5mm;padding:2.6mm 3.5mm;overflow:hidden}
+.strip{width:210mm;display:grid;grid-template-columns:1fr 50mm 46mm;gap:2.5mm;padding:3mm 5mm;overflow:hidden}
+.strip:first-child{padding-top:5mm}
+.strip:last-child{padding-bottom:5mm}
 .m-s2 .strip{height:74mm}
-.m-s3 .strip{height:49.3mm;padding:2mm 3mm;gap:2mm}
+.m-s3 .strip{height:49.3mm;padding:2mm 5mm;gap:2mm;grid-template-columns:1fr 48mm 44mm}
 .strip+.strip{border-top:1px dashed #999}
 .strip-empty{display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px}
 .strip .to{height:100%;padding:1.6mm 2.6mm}
@@ -89,23 +97,28 @@ input.money{width:150px;direction:ltr;text-align:left}
 .strip .cod .v{font-size:17px}
 .strip .cod .s{font-size:9.5px}
 .strip .cont{font-size:11px;line-height:1.45;color:#222;border-top:1px solid #bbb;padding-top:.8mm;margin-top:auto}
-.m-s3 .strip .to .name{font-size:16.5px}
-.m-s3 .strip .to .tel{font-size:16px}
-.m-s3 .strip .to .city{font-size:13px}
-.m-s3 .strip .to .addr{font-size:13.5px;line-height:1.5}
+.m-s3 .strip .to .name{font-size:19px}
+.m-s3 .strip .to .tel{font-size:19px}
+.m-s3 .strip .to .city{font-size:15px}
+.m-s3 .strip .to .addr{font-size:16px;line-height:1.45}
 .m-s3 .strip .to{gap:.2mm;padding:1.2mm 2.4mm}
 .m-s3 .strip .box h3{display:none}
-.m-s3 .strip .cont{font-size:10px}
-.m-s3 .strip .meta{font-size:9.5px;line-height:1.45}
-.m-s3 .strip .meta b{font-size:11px}
-.m-s3 .strip .from{font-size:9.5px;line-height:1.35}
-.m-s3 .strip .from .name{font-size:10.5px}
+.m-s3 .strip .cont{font-size:11.5px}
+.m-s3 .strip .meta{font-size:11px;line-height:1.4}
+.m-s3 .strip .meta b{font-size:13px}
+.m-s3 .strip .from{font-size:11.5px;line-height:1.35}
+.m-s3 .strip .from .name{font-size:13px}
 .m-s3 .strip .l-code svg{height:7mm}
 .m-s3 .strip .l-code .num{font-size:12px}
-.m-s3 .strip .cod .t{font-size:9.5px}
-.m-s3 .strip .cod .v{font-size:14px;line-height:1.2}
-.m-s3 .strip .cod .s{font-size:8.5px}
-.m-s3 .strip .chip{font-size:9.5px}
+.m-s3 .strip .cod .t{font-size:11px}
+.m-s3 .strip .cod .v{font-size:17px;line-height:1.2}
+.m-s3 .strip .cod .s{font-size:10px}
+.m-s3 .strip .chip{font-size:11px}
+.val{font-size:12px;line-height:1.4}
+.val b{font-size:13.5px}
+.strip .val{border:1.4px solid #111;border-radius:2mm;padding:.8mm 2mm;text-align:center}
+.m-s3 .strip .val{font-size:10.5px}
+.m-s3 .strip .val b{font-size:12.5px}
 @media print{
   body{background:#fff}
   .ed,.prev-title{display:none !important}
@@ -158,12 +171,21 @@ input.money{width:150px;direction:ltr;text-align:left}
     if (!o.items.length) o.pkgOf = [];
     o.freight = "پس‌کرایه";
     split(o);
+    o.valOf = {};
+    values(o);
   });
   function pkgs(o){ var u = []; o.pkgOf.forEach(function(p){ if (u.indexOf(p) < 0) u.push(p); }); u.sort(function(a,b){return a-b;}); return u.length ? u : [1]; }
   function split(o){
     var list = pkgs(o), n = list.length, total = o.cod, each = Math.floor(total / n / 1000) * 1000;
     o.codOf = {};
     list.forEach(function(p, i){ o.codOf[p] = i === n - 1 ? total - each * (n - 1) : each; });
+  }
+  // ارزش اظهاری هر بسته برای بیمه = جمع مبلغ ردیف‌های همان بسته (قابل ویرایش)
+  function values(o){
+    o.valOf = {};
+    pkgs(o).forEach(function(p){
+      o.valOf[p] = o.items.reduce(function(s, it, i){ return s + (o.pkgOf[i] === p ? (it.price || 0) : 0); }, 0);
+    });
   }
   function codSum(o){ return pkgs(o).reduce(function(s, p){ return s + (o.codOf[p] || 0); }, 0); }
 
@@ -184,10 +206,12 @@ input.money{width:150px;direction:ltr;text-align:left}
           opts.map(function(p){ return "<option value=\"" + p + "\"" + (o.pkgOf[i] === p ? " selected" : "") + ">بستهٔ " + fa(p) + "</option>"; }).join("") + "</select></td></tr>";
       });
       html += "</tbody></table>";
+      list.forEach(function(p, k){
+        html += '<div class="pk"><b>بستهٔ ' + fa(k + 1) + ' از ' + fa(list.length) + '</b>' +
+          '<label>ارزش برای بیمه: <input class="money" inputmode="numeric" data-v="' + p + '" value="' + money(o.valOf[p] || 0) + '"></label> تومان' +
+          (o.cod ? ' &nbsp; <label>COD: <input class="money" inputmode="numeric" data-p="' + p + '" value="' + money(o.codOf[p] || 0) + '"></label> تومان' : "") + "</div>";
+      });
       if (o.cod) {
-        list.forEach(function(p, k){
-          html += '<div class="pk"><b>بستهٔ ' + fa(k + 1) + ' از ' + fa(list.length) + '</b><label>COD: <input class="money" inputmode="numeric" data-p="' + p + '" value="' + money(o.codOf[p] || 0) + '"></label> تومان</div>';
-        });
         var diff = codSum(o) - o.cod;
         html += diff ? '<div class="err">جمع COD بسته‌ها ' + money(codSum(o)) + " است؛ باید برابر مانده (" + money(o.cod) + ") باشد.</div>"
                      : '<div class="ok">جمع COD بسته‌ها برابر ماندهٔ سفارش است.</div>';
@@ -203,7 +227,8 @@ input.money{width:150px;direction:ltr;text-align:left}
     var c = o.cod ? (o.codOf[p] || 0) : 0, s = D.sender;
     var cod = c ? '<div class="cod"><div class="t">COD این بسته</div><div class="v">' + money(c) + ' تومان</div><div class="s">کل ماندهٔ سفارش: ' + money(o.cod) + " (" + fa(n) + " بسته)</div></div>"
                 : '<div class="cod no"><div class="t">COD</div><div class="v">ندارد</div><div class="s">' + (o.installment ? "خرید اقساطی" : (o.cod ? "این بسته بی‌مبلغ است" : "سفارش کامل پرداخت شده")) + "</div></div>";
-    var who = esc(o.name), t = ttl(o);
+    var who = esc(o.name), t = ttl(o), val = o.valOf[p] || 0;
+    var valHtml = '<div class="val">ارزش اظهاری (بیمه): <b>' + money(val) + "</b> تومان</div>";
     if (MODE !== "v2") {
       return '<section class="strip">' +
         '<div class="box to"><h3>گیرنده</h3><div class="row1"><div class="name">' + (t ? '<span class="ttl">' + t + "</span> " : "") + who + '</div><div class="tel">' + tel(o.mobile) + "</div></div>" +
@@ -212,8 +237,8 @@ input.money{width:150px;direction:ltr;text-align:left}
         '<div class="mid"><div class="meta">قرارداد تیپاکس: <b><bdi dir="ltr">' + (D.contract ? fa(esc(D.contract)) : "—") + '</bdi></b><br>' + today + ' — <span class="pkg">بستهٔ ' + fa(k) + " از " + fa(n) + "</span></div>" +
           '<div class="box from"><h3>فرستنده</h3><div class="name">' + esc(s.name) + "</div><div>" + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) + "</div>" +
           (s.postal ? "<div>کد پستی: " + fa(esc(s.postal)) + "</div>" : "") + "</div></div>" +
-        '<div class="end"><div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span></span></div>" +
-          cod.replace('class="s">', 'class="s"><span class="chip">' + o.freight + "</span> ") + "</div>" +
+        '<div class="end">' + '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span></span></div>" +
+          valHtml + cod.replace('class="s">', 'class="s"><span class="chip">' + o.freight + "</span> ") + "</div>" +
         "</section>";
     }
     return '<section class="lab">' +
@@ -222,10 +247,10 @@ input.money{width:150px;direction:ltr;text-align:left}
       '<div class="box to"><h3>گیرنده</h3>' + (t ? '<div class="ttl">' + t + "</div>" : "") + '<div class="name">' + who + '</div><div class="tel">' + tel(o.mobile) + "</div>" +
         '<div class="city">' + esc(o.province) + (o.city && o.city !== o.province ? "، " + esc(o.city) : "") + '</div><div class="addr">' + esc(fa(o.address)) + "</div>" +
         (o.postal ? '<div class="small">کد پستی: ' + fa(esc(o.postal)) + "</div>" : "") + "</div>" +
-      '<div class="box from"><h3>فرستنده</h3><div class="name">' + esc(s.name) + "</div><div>" + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) + "</div>" +
-        (s.postal ? "<div>کد پستی: " + fa(esc(s.postal)) + "</div>" : "") + "</div>" +
+      '<div class="box from"><div><span class="name">' + esc(s.name) + "</span> — " + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) +
+        (s.postal ? " — کد پستی: " + fa(esc(s.postal)) : "") + '</div><span class="from-t">فرستنده</span></div>' +
       '<div class="contents"><b>محتوا:</b> ' + contents + '<br><b>کرایه:</b> <span class="chip">' + o.freight + "</span>" + (o.freight === "پس‌کرایه" ? ' <span class="small">(با گیرنده)</span>' : "") + "</div>" +
-      cod + "</section>";
+      cod.replace('<div class="t">', valHtml + '<div class="t">') + "</section>";
   }
 
   function renderSheets(){
@@ -241,19 +266,21 @@ input.money{width:150px;direction:ltr;text-align:left}
     if (window.JsBarcode) document.querySelectorAll("svg.bc").forEach(function(el){
       try { JsBarcode(el, el.getAttribute("data-v"), {format: "CODE128", displayValue: false, height: 42, width: 1.7, margin: 0}); } catch (e) {}
     });
-    // جادادن خودکار: اگر آدرس بلند بود اول خود آدرس (تا ۱۲px) و بعد بقیهٔ کادر گیرنده کمی کوچک می‌شود تا چیزی بریده نشود
-    document.querySelectorAll(".lab .to").forEach(function(box){
-      function over(){ return box.scrollHeight > box.clientHeight + 1; }
-      var addr = box.querySelector(".addr"), size = parseFloat(getComputedStyle(addr).fontSize), min = size * 0.75;
-      while (over() && size > min) { size -= 0.5; addr.style.fontSize = size + "px"; }
-      var k = 1, els = box.querySelectorAll(".name,.tel,.city,.small,.ttl,.cont");
-      var base = Array.prototype.map.call(els, function(el){ return parseFloat(getComputedStyle(el).fontSize); });
-      while (over() && k > 0.65) {
-        k -= 0.05;
-        els.forEach(function(el, i){ el.style.fontSize = (base[i] * k) + "px"; });
-        addr.style.fontSize = (size * Math.max(k, 0.85)) + "px";
-      }
-    });
+    // جادادن خودکار هر کادر: متن تا جایی که کادر پر شود درشت می‌شود (فضای خالی نماند) و اگر جا نشد کوچک (بریده نشود)
+    function fit(box, sel, maxK){
+      var els = Array.prototype.slice.call(box.querySelectorAll(sel));
+      if (!els.length) return;
+      var base = els.map(function(el){ el.style.fontSize = ""; return parseFloat(getComputedStyle(el).fontSize); });
+      function apply(k){ els.forEach(function(el, i){ el.style.fontSize = (base[i] * k).toFixed(2) + "px"; }); }
+      function fits(){ return box.scrollHeight <= box.clientHeight + 1 && box.scrollWidth <= box.clientWidth + 1; }
+      var lo = 0.6, hi = maxK;
+      apply(hi); if (fits()) return;
+      for (var n = 0; n < 9; n++) { var mid = (lo + hi) / 2; apply(mid); if (fits()) lo = mid; else hi = mid; }
+      apply(lo);
+    }
+    // در نوارها کادر فرستنده ارتفاع ثابت دارد و پر می‌شود؛ در برچسب عمودی اندازه‌اش ثابت می‌ماند تا جای گیرنده را نگیرد
+    if (MODE !== "v2") document.querySelectorAll(".sheet .from").forEach(function(b){ fit(b, "div", 1.5); });
+    document.querySelectorAll(".sheet .to").forEach(function(b){ fit(b, ".name,.tel,.city,.addr,.small,.ttl,.cont", MODE === "v2" ? 1.25 : 1.45); });
     var bad = D.orders.filter(function(o){ return o.cod && codSum(o) !== o.cod; }).length;
     document.getElementById("sum").innerHTML = fa(D.orders.length) + " سفارش، " + fa(labs.length) + " بسته، " + fa(Math.ceil(labs.length / PER[MODE])) + " برگ A5" +
       (bad ? ' — <span class="err">' + fa(bad) + " سفارش جمع COD نادرست دارد</span>" : "");
@@ -265,7 +292,8 @@ input.money{width:150px;direction:ltr;text-align:left}
   box.addEventListener("change", function(e){
     var card = e.target.closest(".card"); if (!card) return;
     var o = D.orders[+card.getAttribute("data-o")];
-    if (e.target.hasAttribute("data-row")) { o.pkgOf[+e.target.getAttribute("data-row")] = +e.target.value; split(o); all(); }
+    if (e.target.hasAttribute("data-row")) { o.pkgOf[+e.target.getAttribute("data-row")] = +e.target.value; split(o); values(o); all(); }
+    else if (e.target.hasAttribute("data-v")) { o.valOf[+e.target.getAttribute("data-v")] = toInt(e.target.value); all(); }
     else if (e.target.getAttribute("data-f") === "freight") { o.freight = e.target.value; renderSheets(); }
     else if (e.target.getAttribute("data-f") === "title") {
       o.title = e.target.value; o.title_saved = false; all();

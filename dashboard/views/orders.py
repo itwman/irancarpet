@@ -167,7 +167,8 @@ def orders_tipax(request):
             "title_saved": bool(o.recipient_title or known.get(o.mobile)), "mobile": o.mobile, "province": o.province, "city": o.city,
             "address": o.address, "postal": o.postal_code,
             "cod": 0 if o.is_installment else int(o.remaining), "installment": o.is_installment,
-            "items": [{"title": it.title, "size": it.size_label, "qty": it.quantity} for it in o.items.all()],
+            "items": [{"title": it.title, "size": it.size_label, "qty": it.quantity, "price": it.unit_price * it.quantity}
+                      for it in o.items.all()],
         })
     sender = {"name": shop.sender_name or site.site_name, "phone": shop.sender_phone or site.phone,
               "address": shop.sender_address or site.address, "postal": shop.sender_postal_code or getattr(site, "store_postal_code", "")}
