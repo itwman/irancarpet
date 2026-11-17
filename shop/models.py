@@ -216,6 +216,10 @@ class Order(models.Model):
     first_name = models.CharField("نام", max_length=100)
     last_name = models.CharField("نام خانوادگی", max_length=100)
     mobile = models.CharField("موبایل", max_length=11, db_index=True)
+    recipient_title = models.CharField(
+        "عنوان گیرنده روی برچسب", max_length=4, blank=True,
+        choices=[("mr", "جناب آقای"), ("mrs", "سرکار خانم"), ("co", "شرکت"), ("none", "بدون عنوان")],
+        help_text="در صفحهٔ برچسب تیپاکس انتخاب و برای سفارش‌های بعدی همین موبایل هم پیشنهاد می‌شود")
     email = models.EmailField("ایمیل", blank=True)
     province = models.CharField("استان", max_length=60)
     city = models.CharField("شهر", max_length=80)

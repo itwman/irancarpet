@@ -152,11 +152,19 @@ def orders_tipax(request):
     from core.models import SiteSettings
     from shop.models import ShopSettings
 
+    from shop.titles import guess
+
     shop, site = ShopSettings.load(), SiteSettings.load()
+    rows = list(_selected(request).prefetch_related("items")[:200])
+    # عنوانی که قبلاً برای همین موبایل انتخاب شده
+    known = dict(Order.objects.filter(mobile__in={o.mobile for o in rows}).exclude(recipient_title="")
+                 .order_by("created_at").values_list("mobile", "recipient_title"))
     orders = []
-    for o in _selected(request).prefetch_related("items")[:200]:
+    for o in rows:
         orders.append({
-            "id": o.pk, "number": o.number, "name": o.full_name, "mobile": o.mobile, "province": o.province, "city": o.city,
+            "id": o.pk, "number": o.number, "name": o.full_name,
+            "title": o.recipient_title or known.get(o.mobile) or guess(o.first_name, o.last_name),
+            "title_saved": bool(o.recipient_title or known.get(o.mobile)), "mobile": o.mobile, "province": o.province, "city": o.city,
             "address": o.address, "postal": o.postal_code,
             "cod": 0 if o.is_installment else int(o.remaining), "installment": o.is_installment,
             "items": [{"title": it.title, "size": it.size_label, "qty": it.quantity} for it in o.items.all()],
@@ -166,6 +174,20 @@ def orders_tipax(request):
     return render(request, "dashboard/orders_tipax.html", {
         "payload": {"orders": orders, "sender": sender, "contract": shop.tipax_contract},
         "count": len(orders), "contract": shop.tipax_contract, "today": timezone.localdate()})
+
+
+@staff_required
+def orders_tipax_title(request):
+    """ذخیرهٔ عنوان گیرنده (جناب آقای/سرکار خانم/شرکت/بی‌عنوان) از صفحهٔ برچسب تیپاکس؛ برای سفارش‌های بعدی همین موبایل هم پیشنهاد می‌شود."""
+    from django.http import JsonResponse
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    title = request.POST.get("title", "")
+    if title not in ("mr", "mrs", "co", "none", ""):
+        return JsonResponse({"ok": False}, status=400)
+    n = Order.objects.filter(pk=request.POST.get("id") or 0).update(recipient_title=title)
+    return JsonResponse({"ok": bool(n)})
 
 
 @staff_required

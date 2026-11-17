@@ -438,3 +438,22 @@ class TipaxLabelTests(TestCase):
         self.assertEqual(cod[b.number], 0)  # اقساطی COD ندارد
         self.assertEqual(data["contract"], "7788")
         self.assertEqual(len(data["orders"][0]["items"]), 2)
+
+    def test_title_guess_and_save(self):
+        from shop.titles import guess
+
+        self.assertEqual(guess("محمدعلی"), "mr")
+        self.assertEqual(guess("سیده زهرا"), "mrs")
+        self.assertEqual(guess("نیک"), "")          # نام مبهم/ناشناخته: حدس نمی‌زند
+        self.assertEqual(guess("علی", "شرکت فرش"), "co")
+        u = get_user_model().objects.create_user("st2", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(u)
+        old = Order.objects.create(first_name="نیک", last_name="ب", mobile="09125550000", province="قم", city="قم", address="آ", items_total=1)
+        new = Order.objects.create(first_name="نیک", last_name="ب", mobile="09125550000", province="قم", city="قم", address="آ", items_total=1)
+        self.assertTrue(self.client.post("/panel/orders/tipax/title/", {"id": old.pk, "title": "mrs"}).json()["ok"])
+        old.refresh_from_db()
+        self.assertEqual(old.recipient_title, "mrs")
+        r = self.client.get(f"/panel/orders/tipax/?ids={new.pk}")
+        data = json.loads(r.content.decode().split('id="tipax-data" type="application/json">')[1].split("</script>")[0])
+        self.assertEqual(data["orders"][0]["title"], "mrs")   # از سفارش قبلی همین موبایل
+        self.assertEqual(self.client.post("/panel/orders/tipax/title/", {"id": new.pk, "title": "bad"}).status_code, 400)

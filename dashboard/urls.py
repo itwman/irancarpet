@@ -43,6 +43,7 @@ urlpatterns = [
     path("orders/<int:pk>/beta/", beta.order_beta),
     path("orders/print/", orders.orders_print),
     path("orders/tipax/", orders.orders_tipax),
+    path("orders/tipax/title/", orders.orders_tipax_title),
     path("orders/notify/", orders.notify),
     path("orders/<int:pk>/view/", orders.order_view),
     path("orders/<int:pk>/print/", orders.order_print),
