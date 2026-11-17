@@ -58,8 +58,18 @@ input.money{width:150px;direction:ltr;text-align:left}
 .from .name{font-size:14px;font-weight:800}
 .m-v2 .from{position:relative;font-size:11.5px;line-height:1.5;padding:1.4mm 2.8mm}
 .m-v2 .from .name{font-size:13px}
+.site{font-weight:800;letter-spacing:.2px;font-family:Vazirmatn,sans-serif}
+.from .site{font-size:.9em}
+.lc-r{text-align:left;line-height:1.5}
+.lc-r .site{font-size:13px}
+.strip .l-code .site{font-size:11px}
 .from-t{position:absolute;top:1mm;left:2mm;font-size:9.5px;color:#555;font-weight:700}
-.strip .from-t{display:none}
+.strip .site{font-weight:800;letter-spacing:.2px;font-family:Vazirmatn,sans-serif}
+.from .site{font-size:.9em}
+.lc-r{text-align:left;line-height:1.5}
+.lc-r .site{font-size:13px}
+.strip .l-code .site{font-size:11px}
+.from-t{display:none}
 .m-v2 .cod .val{border-bottom:1px solid #999;padding-bottom:.6mm;margin-bottom:.6mm;font-size:11.5px}
 .contents{border:1.4px solid #111;border-radius:2mm;padding:1.3mm 2.8mm;font-size:12.5px;line-height:1.6}
 .chip{display:inline-block;border:1.2px solid #111;border-radius:1.2mm;padding:0 1.4mm;font-weight:800}
@@ -235,19 +245,19 @@ input.money{width:150px;direction:ltr;text-align:left}
           '<div class="city">' + esc(o.province) + (o.city && o.city !== o.province ? "، " + esc(o.city) : "") + (o.postal ? ' <span class="small">— کد پستی: ' + fa(esc(o.postal)) + "</span>" : "") + "</div>" +
           '<div class="addr">' + esc(fa(o.address)) + '</div><div class="cont"><b>محتوا:</b> ' + contents + "</div></div>" +
         '<div class="mid"><div class="meta">قرارداد تیپاکس: <b><bdi dir="ltr">' + (D.contract ? fa(esc(D.contract)) : "—") + '</bdi></b><br>' + today + ' — <span class="pkg">بستهٔ ' + fa(k) + " از " + fa(n) + "</span></div>" +
-          '<div class="box from"><h3>فرستنده</h3><div class="name">' + esc(s.name) + "</div><div>" + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) + "</div>" +
+          '<div class="box from"><h3>فرستنده</h3><div class="name">' + esc(s.name) + ' <span class="site">' + "<bdi dir=\"ltr\">" + esc(s.site) + "</bdi></span></div><div>" + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) + "</div>" +
           (s.postal ? "<div>کد پستی: " + fa(esc(s.postal)) + "</div>" : "") + "</div></div>" +
-        '<div class="end">' + '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span></span></div>" +
+        '<div class="end">' + '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span> — <span class=\"site\"><bdi dir=\"ltr\">" + esc(s.site) + "</bdi></span></span></div>" +
           valHtml + cod.replace('class="s">', 'class="s"><span class="chip">' + o.freight + "</span> ") + "</div>" +
         "</section>";
     }
     return '<section class="lab">' +
       '<div class="l-top"><span>قرارداد تیپاکس: <b><bdi dir="ltr">' + (D.contract ? fa(esc(D.contract)) : "—") + '</bdi></b></span><span>' + today + '</span><span class="pkg">بستهٔ ' + fa(k) + " از " + fa(n) + "</span></div>" +
-      '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span>سفارش <span class="num">' + fa(o.number) + "</span></span></div>" +
+      '<div class="l-code"><svg class="bc" data-v="' + o.number + '"></svg><span class="lc-r">سفارش <span class="num">' + fa(o.number) + "</span><br><span class=\"site\"><bdi dir=\"ltr\">" + esc(s.site) + "</bdi></span></span></div>" +
       '<div class="box to"><h3>گیرنده</h3>' + (t ? '<div class="ttl">' + t + "</div>" : "") + '<div class="name">' + who + '</div><div class="tel">' + tel(o.mobile) + "</div>" +
         '<div class="city">' + esc(o.province) + (o.city && o.city !== o.province ? "، " + esc(o.city) : "") + '</div><div class="addr">' + esc(fa(o.address)) + "</div>" +
         (o.postal ? '<div class="small">کد پستی: ' + fa(esc(o.postal)) + "</div>" : "") + "</div>" +
-      '<div class="box from"><div><span class="name">' + esc(s.name) + "</span> — " + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) +
+      '<div class="box from"><div><span class="name">' + esc(s.name) + '</span> <span class="site"><bdi dir="ltr">' + esc(s.site) + "</bdi></span> — " + fa(esc(s.phone)) + "</div><div>" + esc(fa(s.address)) +
         (s.postal ? " — کد پستی: " + fa(esc(s.postal)) : "") + '</div><span class="from-t">فرستنده</span></div>' +
       '<div class="contents"><b>محتوا:</b> ' + contents + '<br><b>کرایه:</b> <span class="chip">' + o.freight + "</span>" + (o.freight === "پس‌کرایه" ? ' <span class="small">(با گیرنده)</span>' : "") + "</div>" +
       cod.replace('<div class="t">', valHtml + '<div class="t">') + "</section>";

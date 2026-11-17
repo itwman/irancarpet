@@ -152,6 +152,10 @@ def orders_tipax(request):
     from core.models import SiteSettings
     from shop.models import ShopSettings
 
+    from urllib.parse import urlsplit
+
+    from django.conf import settings
+
     from shop.titles import guess
 
     shop, site = ShopSettings.load(), SiteSettings.load()
@@ -171,7 +175,8 @@ def orders_tipax(request):
                       for it in o.items.all()],
         })
     sender = {"name": shop.sender_name or site.site_name, "phone": shop.sender_phone or site.phone,
-              "address": shop.sender_address or site.address, "postal": shop.sender_postal_code or getattr(site, "store_postal_code", "")}
+              "address": shop.sender_address or site.address, "postal": shop.sender_postal_code or getattr(site, "store_postal_code", ""),
+              "site": urlsplit(settings.SITE_URL).netloc.replace("www.", "") or "irancarpet.net"}
     return render(request, "dashboard/orders_tipax.html", {
         "payload": {"orders": orders, "sender": sender, "contract": shop.tipax_contract},
         "count": len(orders), "contract": shop.tipax_contract, "today": timezone.localdate()})
